@@ -1,0 +1,79 @@
+﻿<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Patient Directory</h1>
+      <p class="subtitle">Manage patient records, appointments, and medical histories</p>
+    </div>
+    <button mat-flat-button color="primary" class="action-btn">
+      <mat-icon>person_add</mat-icon>
+      <span>Register Patient</span>
+    </button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" placeholder="Search by name, phone, or MRN..." (input)="onSearch($event)" />
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading patient directory...</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table mat-table [dataSource]="patients()" class="custom-table">
+          <ng-container matColumnDef="mrn">
+            <th mat-header-cell *matHeaderCellDef>MRN</th>
+            <td mat-cell *matCellDef="let p">
+              <span class="mrn-badge">{{ p.medicalRecordNumber }}</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Patient Name</th>
+            <td mat-cell *matCellDef="let p">
+              <div class="name-cell">
+                <div class="avatar">{{ p.firstName[0] }}{{ p.lastName[0] }}</div>
+                <div>
+                  <div class="font-medium text-white">{{ p.firstName }} {{ p.lastName }}</div>
+                  <div class="text-xs text-muted">{{ p.email || 'No email' }}</div>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="gender">
+            <th mat-header-cell *matHeaderCellDef>Gender</th>
+            <td mat-cell *matCellDef="let p">{{ p.gender }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="phone">
+            <th mat-header-cell *matHeaderCellDef>Phone</th>
+            <td mat-cell *matCellDef="let p">{{ p.phone }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="bloodGroup">
+            <th mat-header-cell *matHeaderCellDef>Blood Group</th>
+            <td mat-cell *matCellDef="let p">
+              <span class="blood-badge">{{ p.bloodGroup || 'N/A' }}</span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" [routerLink]="['/patients', row.id]" class="clickable-row"></tr>
+        </table>
+      </div>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageSize]="10"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)">
+      </mat-paginator>
+    }
+  </div>
+</div>

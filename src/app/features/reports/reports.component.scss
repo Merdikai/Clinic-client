@@ -1,0 +1,15 @@
+﻿.page-container { padding: 32px; max-width: 1400px; margin: 0 auto; font-family: 'Plus Jakarta Sans', sans-serif; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+h1 { font-size: 28px; font-weight: 700; color: #f8fafc; margin: 0 0 6px 0; }
+.subtitle { color: #94a3b8; margin: 0; font-size: 14px; }
+.export-actions { display: flex; gap: 12px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+.kpi-card { background: rgba(26, 34, 52, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 24px; display: flex; align-items: center; gap: 20px; }
+.kpi-icon-box { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.kpi-icon-box.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.kpi-icon-box.green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.kpi-icon-box.purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.kpi-icon-box.orange { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+.kpi-label { color: #94a3b8; font-size: 13px; margin-bottom: 4px; }
+.kpi-value { color: #f8fafc; font-size: 24px; font-weight: 700; }
+.loading-state { text-align: center; padding: 60px; color: #94a3b8; }

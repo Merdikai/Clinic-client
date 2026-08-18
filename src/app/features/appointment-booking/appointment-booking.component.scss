@@ -1,0 +1,9 @@
+﻿.page-container { padding: 32px; max-width: 600px; margin: 0 auto; font-family: 'Plus Jakarta Sans', sans-serif; }
+.back-btn { color: #94a3b8; margin-bottom: 16px; }
+.booking-card { background: rgba(26, 34, 52, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 32px; color: #fff; }
+h2 { margin: 0 0 6px 0; color: #f8fafc; }
+.subtitle { color: #94a3b8; margin: 0 0 24px 0; font-size: 14px; }
+.booking-form { display: flex; flex-direction: column; gap: 16px; }
+.form-field { width: 100%; }
+.submit-btn { height: 48px; border-radius: 12px; font-weight: 600; font-size: 15px; }
+.error-banner { background: rgba(239, 68, 68, 0.15); color: #fca5a5; padding: 12px; border-radius: 8px; font-size: 13px; }

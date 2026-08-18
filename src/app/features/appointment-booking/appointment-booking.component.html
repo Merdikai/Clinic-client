@@ -1,0 +1,44 @@
+﻿<div class="page-container">
+  <button mat-button routerLink="/appointments" class="back-btn">
+    <mat-icon>arrow_back</mat-icon> Back to Appointments
+  </button>
+
+  <div class="booking-card">
+    <h2>Schedule an Appointment</h2>
+    <p class="subtitle">Book a consultation with a certified doctor</p>
+
+    <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()" class="booking-form">
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Patient ID</mat-label>
+        <input matInput formControlName="patientId" placeholder="Patient UUID" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Doctor ID</mat-label>
+        <input matInput formControlName="doctorId" placeholder="Doctor UUID" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Scheduled Date & Time</mat-label>
+        <input matInput type="datetime-local" formControlName="scheduledDateTime" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Reason for Visit</mat-label>
+        <textarea matInput formControlName="reasonForVisit" rows="3"></textarea>
+      </mat-form-field>
+
+      @if (errorMessage()) {
+        <div class="error-banner">{{ errorMessage() }}</div>
+      }
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="bookingForm.invalid || isLoading()" class="submit-btn">
+        @if (isLoading()) {
+          <span>Confirming Booking...</span>
+        } @else {
+          <span>Confirm Appointment</span>
+        }
+      </button>
+    </form>
+  </div>
+</div>

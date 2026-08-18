@@ -1,0 +1,65 @@
+﻿<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Clinic Analytics & Reports</h1>
+      <p class="subtitle">Operational metrics, revenue summary, and data exports</p>
+    </div>
+    <div class="export-actions">
+      <a mat-flat-button color="primary" [href]="exportPatientsUrl" target="_blank">
+        <mat-icon>download</mat-icon> Export Patients (CSV)
+      </a>
+      <a mat-flat-button color="accent" [href]="exportInvoicesUrl" target="_blank">
+        <mat-icon>download</mat-icon> Export Invoices (CSV)
+      </a>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Gathering analytics...</p>
+    </div>
+  } @else if (summary()) {
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon-box blue">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+        <div>
+          <div class="kpi-label">Total Patients</div>
+          <div class="kpi-value">{{ summary()?.totalPatients }}</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-box green">
+          <span class="material-symbols-outlined">event_available</span>
+        </div>
+        <div>
+          <div class="kpi-label">Today's Appointments</div>
+          <div class="kpi-value">{{ summary()?.todayAppointments }}</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-box purple">
+          <span class="material-symbols-outlined">payments</span>
+        </div>
+        <div>
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-value">{{ summary()?.totalRevenue | currency }}</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-box orange">
+          <span class="material-symbols-outlined">pending_actions</span>
+        </div>
+        <div>
+          <div class="kpi-label">Pending Invoices</div>
+          <div class="kpi-value">{{ summary()?.pendingInvoices }}</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

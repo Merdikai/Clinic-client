@@ -1,0 +1,52 @@
+﻿<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo-box">
+        <span class="material-symbols-outlined logo-icon">local_hospital</span>
+      </div>
+      <h1>Clinic OS</h1>
+      <p class="subtitle">Enter your credentials to access the portal</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Username</mat-label>
+        <input matInput formControlName="username" placeholder="e.g. admin" />
+        <mat-icon matSuffix>person</mat-icon>
+        @if (loginForm.get('username')?.hasError('required') && loginForm.get('username')?.touched) {
+          <mat-error>Username is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Password</mat-label>
+        <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password" />
+        <button type="button" mat-icon-button matSuffix (click)="hidePassword.set(!hidePassword())">
+          <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
+          <mat-error>Password is required</mat-error>
+        }
+      </mat-form-field>
+
+      @if (errorMessage()) {
+        <div class="error-banner">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="loginForm.invalid || isLoading()">
+        @if (isLoading()) {
+          <span>Authenticating...</span>
+        } @else {
+          <span>Sign In to Workspace</span>
+        }
+      </button>
+    </form>
+
+    <div class="demo-hints">
+      <span>Demo Access: <strong>admin</strong> / <strong>Admin@123!</strong></span>
+    </div>
+  </div>
+</div>
