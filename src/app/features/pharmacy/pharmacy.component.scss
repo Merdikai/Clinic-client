@@ -1,13 +1,54 @@
-﻿.page-container { padding: 32px; max-width: 1400px; margin: 0 auto; font-family: 'Plus Jakarta Sans', sans-serif; }
-.page-header { margin-bottom: 28px; }
-h1 { font-size: 28px; font-weight: 700; color: #f8fafc; margin: 0 0 6px 0; }
-.subtitle { color: #94a3b8; margin: 0; font-size: 14px; }
-.table-card { background: rgba(26, 34, 52, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; }
-.custom-table { width: 100%; background: transparent; color: #cbd5e1; }
-th.mat-header-cell { color: #94a3b8; font-size: 13px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 16px 24px; }
-td.mat-cell { border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding: 16px 24px; color: #e2e8f0; font-size: 14px; }
-.code-badge { background: rgba(139, 92, 246, 0.15); color: #c4b5fd; padding: 4px 8px; border-radius: 6px; font-family: monospace; }
-.stock-low { color: #fca5a5; font-weight: 600; }
-.stock-ok { color: #86efac; }
-.loading-state { text-align: center; padding: 60px; color: #94a3b8; }
-.text-white { color: #fff; }
+﻿.container {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+}
+
+.alert-badge {
+  background: #ef4444;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.toolbar {
+  margin-bottom: 20px;
+}
+
+.search-field {
+  width: 320px;
+}
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px;
+}
+
+.stock-value {
+  font-weight: 700;
+}

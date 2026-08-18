@@ -5,9 +5,15 @@ import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AppointmentStore } from '../../store/appointment.store';
 import { LiveSyncService } from '../../services/live-sync.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-appointment-list',
@@ -19,28 +25,64 @@ import { LiveSyncService } from '../../services/live-sync.service';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule
   ],
   templateUrl: './appointment-list.component.html',
   styleUrls: ['./appointment-list.component.scss']
 })
 export class AppointmentListComponent implements OnInit {
-  apptStore = inject(AppointmentStore);
-  private liveSync = inject(LiveSyncService);
+  appointmentStore = inject(AppointmentStore);
+  apptStore = this.appointmentStore;
+  private liveSyncService = inject(LiveSyncService);
 
-  appointments = this.apptStore.appointments;
-  isLoading = this.apptStore.isLoading;
-  displayedColumns = ['patient', 'doctor', 'dateTime', 'reason', 'status', 'actions'];
+  appointments = this.appointmentStore.appointments;
+  isLoading = this.appointmentStore.isLoading;
+  displayedColumns = ['date', 'patient', 'doctor', 'status', 'actions'];
+
+  constructor() {
+    this.liveSyncService.appointmentBooked$.pipe(
+      takeUntilDestroyed()
+    ).subscribe(() => {
+      this.appointmentStore.loadAppointments();
+    });
+
+    this.liveSyncService.patientCheckedIn$.pipe(
+      takeUntilDestroyed()
+    ).subscribe(() => {
+      this.appointmentStore.loadAppointments();
+    });
+  }
 
   ngOnInit() {
-    this.apptStore.loadAppointments();
+    this.appointmentStore.loadAppointments();
+  }
 
-    this.liveSync.appointmentBooked$.subscribe(() => {
-      this.apptStore.loadAppointments();
-    });
+  onDateChange(date: Date | null) {
+    this.appointmentStore.setSelectedDate(date);
+    this.appointmentStore.loadAppointments();
+  }
 
-    this.liveSync.patientCheckedIn$.subscribe(() => {
-      this.apptStore.loadAppointments();
-    });
+  checkIn(appointmentId: string) {
+    this.appointmentStore.checkIn(appointmentId);
+  }
+
+  cancel(appointmentId: string) {
+    this.appointmentStore.cancel(appointmentId);
+  }
+
+  getStatusColor(status: string): string {
+    switch (status) {
+      case 'Scheduled': return 'primary';
+      case 'CheckedIn': return 'accent';
+      case 'InConsultation': return 'warn';
+      case 'Completed': return 'success';
+      case 'Cancelled': return 'danger';
+      default: return 'primary';
+    }
   }
 }

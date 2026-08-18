@@ -1,83 +1,98 @@
-﻿<div class="shell-layout">
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-icon">
-        <mat-icon>local_hospital</mat-icon>
+﻿<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav mode="side" opened class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <mat-icon class="brand-icon">health_and_safety</mat-icon>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">MedFlow</span>
+          <span class="brand-sub">Clinic Cloud</span>
+        </div>
       </div>
-      <span class="logo-text">Clinic MS</span>
+      <div class="header-actions">
+        <button mat-icon-button (click)="toggleTheme()" [matTooltip]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'" class="theme-toggle-btn">
+          <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+      </div>
     </div>
 
-    <nav class="nav-menu">
-      @if (hasRole('Admin') || hasRole('Receptionist') || hasRole('Doctor') || hasRole('Nurse')) {
-        <a class="nav-link" routerLink="/patients" routerLinkActive="active">
-          <mat-icon>people</mat-icon>
-          <span>Patients</span>
+    <div class="sync-banner" [class.connected]="liveSync.isConnected()">
+      <span class="status-dot"></span>
+      <span class="status-label">{{ liveSync.isConnected() ? 'SignalR Live Sync Active' : 'Connecting Real-time...' }}</span>
+    </div>
+
+    <mat-nav-list class="nav-list">
+      <div class="nav-section-title">CLINICAL OPS</div>
+      <a mat-list-item routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon matListItemIcon>groups</mat-icon>
+        <span matListItemTitle>Patients Directory</span>
+      </a>
+
+      <a mat-list-item routerLink="/patients/new" routerLinkActive="active">
+        <mat-icon matListItemIcon>person_add</mat-icon>
+        <span matListItemTitle>Register Patient</span>
+      </a>
+
+      <a mat-list-item routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon matListItemIcon>event_note</mat-icon>
+        <span matListItemTitle>Appointments</span>
+      </a>
+
+      <a mat-list-item routerLink="/appointments/book" routerLinkActive="active">
+        <mat-icon matListItemIcon>add_alarm</mat-icon>
+        <span matListItemTitle>Book Consultation</span>
+      </a>
+
+      <div class="nav-section-title">SERVICES & FINANCE</div>
+      @if (hasAnyRole(['Admin', 'Pharmacist', 'Doctor'])) {
+        <a mat-list-item routerLink="/pharmacy" routerLinkActive="active">
+          <mat-icon matListItemIcon>medication</mat-icon>
+          <span matListItemTitle>Pharmacy & Inventory</span>
         </a>
       }
 
-      @if (hasRole('Admin') || hasRole('Receptionist') || hasRole('Doctor')) {
-        <a class="nav-link" routerLink="/appointments" routerLinkActive="active">
-          <mat-icon>calendar_today</mat-icon>
-          <span>Appointments</span>
+      @if (hasAnyRole(['Admin', 'Accountant', 'Receptionist'])) {
+        <a mat-list-item routerLink="/billing" routerLinkActive="active">
+          <mat-icon matListItemIcon>receipt_long</mat-icon>
+          <span matListItemTitle>Billing & Invoices</span>
         </a>
       }
 
-      @if (hasRole('Admin') || hasRole('Pharmacist')) {
-        <a class="nav-link" routerLink="/pharmacy" routerLinkActive="active">
-          <mat-icon>medication</mat-icon>
-          <span>Pharmacy</span>
+      @if (hasAnyRole(['Admin', 'Doctor', 'Accountant'])) {
+        <a mat-list-item routerLink="/reports" routerLinkActive="active">
+          <mat-icon matListItemIcon>insights</mat-icon>
+          <span matListItemTitle>Analytics & Reports</span>
         </a>
       }
 
-      @if (hasRole('Admin') || hasRole('Accountant')) {
-        <a class="nav-link" routerLink="/billing" routerLinkActive="active">
-          <mat-icon>receipt</mat-icon>
-          <span>Billing</span>
+      @if (hasRole('Admin')) {
+        <div class="nav-section-title">ADMINISTRATION</div>
+        <a mat-list-item routerLink="/users" routerLinkActive="active">
+          <mat-icon matListItemIcon>admin_panel_settings</mat-icon>
+          <span matListItemTitle>User Management</span>
         </a>
       }
-
-      @if (hasRole('Admin') || hasRole('Accountant') || hasRole('Receptionist')) {
-        <a class="nav-link" routerLink="/reports" routerLinkActive="active">
-          <mat-icon>analytics</mat-icon>
-          <span>Reports</span>
-        </a>
-      }
-    </nav>
+    </mat-nav-list>
 
     <div class="sidebar-footer">
-      <div class="live-pill">
-        <span class="pulse-dot" [ngClass]="liveSync.connectionState() === 'connected' ? 'online' : 'connecting'"></span>
-        <span>{{ liveSync.connectionState() === 'connected' ? 'Realtime Sync Active' : 'Sync: ' + liveSync.connectionState() }}</span>
-      </div>
-    </div>
-  </aside>
-
-  <div class="main-body">
-    <header class="topbar">
-      <h1 class="page-title">{{ pageTitle() }}</h1>
-      <div class="topbar-spacer"></div>
-
-      <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn">
-        <div class="avatar-sm">{{ currentUser()?.username?.[0]?.toUpperCase() }}</div>
-        <span class="username-label">{{ currentUser()?.username }}</span>
-        <mat-icon>arrow_drop_down</mat-icon>
-      </button>
-
-      <mat-menu #userMenu="matMenu">
-        <div class="user-dropdown-header">
-          <strong>{{ currentUser()?.username }}</strong>
-          <small>{{ currentUser()?.roles?.[0] || 'Staff' }}</small>
+      <div class="user-profile-card">
+        <div class="avatar-badge">{{ (currentUser()?.fullName || 'U')[0] }}</div>
+        <div class="user-info-text">
+          <div class="user-display-name">{{ currentUser()?.fullName || currentUser()?.username }}</div>
+          <div class="user-role-tag">{{ currentUser()?.roles?.join(', ') || 'Medical Staff' }}</div>
         </div>
-        <mat-divider></mat-divider>
-        <button mat-menu-item (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>Logout</span>
-        </button>
-      </mat-menu>
-    </header>
+      </div>
+      <button mat-flat-button color="warn" class="logout-btn" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    </div>
+  </mat-sidenav>
 
-    <main class="content-container">
+  <mat-sidenav-content class="main-viewport">
+    <div class="content-wrapper">
       <router-outlet></router-outlet>
-    </main>
-  </div>
-</div>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

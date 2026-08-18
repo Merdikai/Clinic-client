@@ -1,136 +1,198 @@
 ﻿.page-container {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.page-header {
   display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-header-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    .header-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-lg);
+      background: var(--primary-50);
+      color: var(--primary-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-subtle);
+
+      mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .page-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+  }
+
+  .create-btn {
+    height: 44px;
+    padding: 0 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+  }
 }
-h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #f8fafc;
-  margin: 0 0 6px 0;
-}
-.subtitle {
-  color: #94a3b8;
-  margin: 0;
-  font-size: 14px;
-}
-.action-btn {
-  border-radius: 12px;
-  height: 44px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.table-card {
-  background: rgba(26, 34, 52, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+
+.content-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
+
+  .table-toolbar {
+    padding: 20px 24px 8px;
+
+    .search-field {
+      width: 100%;
+      max-width: 460px;
+    }
+  }
 }
-.table-toolbar {
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px 16px;
-  border-radius: 12px;
-  max-width: 420px;
-}
-.search-box input {
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #fff;
-  font-size: 14px;
+
+.table-responsive {
   width: 100%;
+  overflow-x: auto;
 }
-.search-icon {
-  color: #94a3b8;
-}
-.custom-table {
-  width: 100%;
-  background: transparent;
-  color: #cbd5e1;
-}
-th.mat-header-cell {
-  color: #94a3b8;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 16px 24px;
-}
-td.mat-cell {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  padding: 16px 24px;
-  color: #e2e8f0;
-  font-size: 14px;
-}
-.clickable-row {
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.clickable-row:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-.name-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-}
-.mrn-badge {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-family: monospace;
-  font-size: 13px;
-}
-.blood-badge {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-weight: 600;
+
+.id-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
   font-size: 12px;
+  background: var(--primary-50);
+  color: var(--primary-600);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
 }
+
+.patient-name-block {
+  display: flex;
+  flex-direction: column;
+
+  .name-text {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  .contact-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+}
+
+.gender-pill {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+
+  &.male {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border-color: var(--info-border);
+  }
+
+  &.female {
+    background: rgba(236, 72, 153, 0.12);
+    color: #db2777;
+    border-color: rgba(236, 72, 153, 0.3);
+  }
+}
+
+.blood-badge {
+  font-weight: 700;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.view-btn {
+  font-size: 12.5px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+  }
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px;
-  color: #94a3b8;
+  padding: 80px 20px;
   gap: 16px;
+
+  p {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
 }
-.text-white { color: #f8fafc; }
-.text-muted { color: #64748b; }
-.text-xs { font-size: 12px; }
-.font-medium { font-weight: 500; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    margin-top: 4px;
+  }
+}

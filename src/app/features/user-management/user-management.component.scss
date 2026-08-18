@@ -13,8 +13,6 @@
   align-items: center;
   justify-content: space-between;
   box-shadow: var(--shadow-sm);
-  flex-wrap: wrap;
-  gap: 16px;
 
   .header-left {
     display: flex;
@@ -52,13 +50,6 @@
       margin-top: 2px;
     }
   }
-
-  .create-btn {
-    height: 44px;
-    padding: 0 20px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-  }
 }
 
 .content-card {
@@ -67,74 +58,47 @@
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-
-  .table-toolbar {
-    padding: 20px 24px 8px;
-
-    .date-field {
-      width: 100%;
-      max-width: 320px;
-    }
-  }
 }
 
-.date-cell {
-  display: flex;
-  flex-direction: column;
-
-  .date-main {
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-  .time-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-}
-
-.person-name {
+.staff-name {
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.doctor-badge {
-  font-weight: 600;
-  color: var(--primary-600);
+.roles-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.actions-group {
-  display: flex;
-  gap: 8px;
-
-  button {
-    height: 32px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: var(--radius-sm);
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 4px;
-    }
-  }
-}
-
-.loading-state, .empty-state {
-  display: flex;
-  flex-direction: column;
+.role-chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  p {
-    color: var(--text-secondary);
+  gap: 4px;
+  background: var(--primary-50);
+  color: var(--primary-600);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .remove-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
   }
-  mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
+
+  &:hover {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
   }
+}
+
+.role-select-box {
+  width: 160px;
+  margin-bottom: -16px;
 }

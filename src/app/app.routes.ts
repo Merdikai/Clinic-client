@@ -5,7 +5,18 @@ import { ShellComponent } from './shell/shell.component';
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent)
+    loadComponent: () => import('./features/login/login.component')
+      .then(m => m.LoginComponent)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/register/register.component')
+      .then(m => m.RegisterComponent)
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () => import('./features/forgot-password/forgot-password.component')
+      .then(m => m.ForgotPasswordComponent)
   },
   {
     path: '',
@@ -14,45 +25,48 @@ export const routes: Routes = [
     children: [
       {
         path: 'patients',
-        loadComponent: () =>
-          import('./features/patient-list/patient-list.component').then((m) => m.PatientListComponent)
+        loadComponent: () => import('./features/patient-list/patient-list.component')
+          .then(m => m.PatientListComponent)
       },
       {
         path: 'patients/new',
-        loadComponent: () =>
-          import('./features/patient-form/patient-form.component').then((m) => m.PatientFormComponent)
+        loadComponent: () => import('./features/patient-form/patient-form.component')
+          .then(m => m.PatientFormComponent)
       },
       {
         path: 'patients/:id',
-        loadComponent: () =>
-          import('./features/patient-detail/patient-detail.component').then((m) => m.PatientDetailComponent)
+        loadComponent: () => import('./features/patient-detail/patient-detail.component')
+          .then(m => m.PatientDetailComponent)
       },
       {
         path: 'appointments',
-        loadComponent: () =>
-          import('./features/appointment-list/appointment-list.component').then((m) => m.AppointmentListComponent)
+        loadComponent: () => import('./features/appointment-list/appointment-list.component')
+          .then(m => m.AppointmentListComponent)
       },
       {
         path: 'appointments/book',
-        loadComponent: () =>
-          import('./features/appointment-booking/appointment-booking.component').then(
-            (m) => m.AppointmentBookingComponent
-          )
+        loadComponent: () => import('./features/appointment-booking/appointment-booking.component')
+          .then(m => m.AppointmentBookingComponent)
       },
       {
         path: 'pharmacy',
-        loadComponent: () =>
-          import('./features/pharmacy/pharmacy.component').then((m) => m.PharmacyComponent)
+        loadComponent: () => import('./features/pharmacy/pharmacy.component')
+          .then(m => m.PharmacyComponent)
       },
       {
         path: 'billing',
-        loadComponent: () =>
-          import('./features/billing/billing.component').then((m) => m.BillingComponent)
+        loadComponent: () => import('./features/billing/billing.component')
+          .then(m => m.BillingComponent)
       },
       {
         path: 'reports',
-        loadComponent: () =>
-          import('./features/reports/reports.component').then((m) => m.ReportsComponent)
+        loadComponent: () => import('./features/reports/reports.component')
+          .then(m => m.ReportsComponent)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./features/user-management/user-management.component')
+          .then(m => m.UserManagementComponent)
       },
       {
         path: '',

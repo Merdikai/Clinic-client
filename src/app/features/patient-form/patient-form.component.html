@@ -1,103 +1,131 @@
 ﻿<div class="page-container">
-  <button mat-button routerLink="/patients" class="back-btn">
-    <mat-icon>arrow_back</mat-icon> Back to Directory
-  </button>
-
-  <div class="form-card">
-    <div class="card-header">
-      <h2>Register New Patient</h2>
-      <p class="subtitle">Enter patient demographics and contact details</p>
+  <div class="page-header-card">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>person_add</mat-icon>
+      </div>
+      <div>
+        <h1 class="page-title">Register New Patient</h1>
+        <p class="page-subtitle">Enter clinical profile, demographic records, and emergency contacts</p>
+      </div>
     </div>
+    <div class="header-actions">
+      <a mat-stroked-button routerLink="/patients">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Back to List</span>
+      </a>
+    </div>
+  </div>
 
-    <form [formGroup]="patientForm" (ngSubmit)="onSubmit()" class="form-body">
-      <div class="form-row">
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>First Name</mat-label>
-          <input matInput formControlName="firstName" placeholder="First Name" />
-          @if (patientForm.get('firstName')?.hasError('required') && patientForm.get('firstName')?.touched) {
-            <mat-error>First name is required</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Last Name</mat-label>
-          <input matInput formControlName="lastName" placeholder="Last Name" />
-          @if (patientForm.get('lastName')?.hasError('required') && patientForm.get('lastName')?.touched) {
-            <mat-error>Last name is required</mat-error>
-          }
-        </mat-form-field>
-      </div>
-
-      <div class="form-row">
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Date of Birth</mat-label>
-          <input matInput type="date" formControlName="dateOfBirth" />
-          @if (patientForm.get('dateOfBirth')?.hasError('required') && patientForm.get('dateOfBirth')?.touched) {
-            <mat-error>Date of birth is required</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Gender</mat-label>
-          <mat-select formControlName="gender">
-            @for (g of genders; track g) {
-              <mat-option [value]="g">{{ g }}</mat-option>
+  <div class="form-content-card">
+    <form [formGroup]="patientForm" (ngSubmit)="onSubmit()" class="patient-grid-form">
+      <!-- Section 1: Demographics -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <mat-icon>badge</mat-icon>
+          <span>Personal & Demographic Information</span>
+        </h3>
+        <div class="form-grid-3">
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" placeholder="First Name">
+            @if (patientForm.get('firstName')?.hasError('required') && patientForm.get('firstName')?.touched) {
+              <mat-error>First name is required</mat-error>
             }
-          </mat-select>
-          @if (patientForm.get('gender')?.hasError('required') && patientForm.get('gender')?.touched) {
-            <mat-error>Gender is required</mat-error>
-          }
-        </mat-form-field>
-      </div>
+          </mat-form-field>
 
-      <div class="form-row">
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Phone Number</mat-label>
-          <input matInput formControlName="phone" placeholder="+1 (555) 000-0000" />
-          @if (patientForm.get('phone')?.hasError('required') && patientForm.get('phone')?.touched) {
-            <mat-error>Phone is required</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Email Address</mat-label>
-          <input matInput formControlName="email" type="email" placeholder="patient@example.com" />
-        </mat-form-field>
-      </div>
-
-      <div class="form-row">
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Blood Group</mat-label>
-          <mat-select formControlName="bloodGroup">
-            @for (bg of bloodGroups; track bg) {
-              <mat-option [value]="bg">{{ bg }}</mat-option>
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" placeholder="Last Name">
+            @if (patientForm.get('lastName')?.hasError('required') && patientForm.get('lastName')?.touched) {
+              <mat-error>Last name is required</mat-error>
             }
-          </mat-select>
-        </mat-form-field>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Emergency Contact</mat-label>
-          <input matInput formControlName="emergencyContact" placeholder="Name & Phone" />
+          <mat-form-field appearance="outline">
+            <mat-label>Gender</mat-label>
+            <mat-select formControlName="gender">
+              <mat-option value="Male">Male</mat-option>
+              <mat-option value="Female">Female</mat-option>
+              <mat-option value="Other">Other</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-grid-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Date of Birth</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="dateOfBirth" placeholder="Choose Date of Birth">
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Blood Group</mat-label>
+            <mat-select formControlName="bloodGroup">
+              <mat-option value="A+">A+</mat-option>
+              <mat-option value="A-">A-</mat-option>
+              <mat-option value="B+">B+</mat-option>
+              <mat-option value="B-">B-</mat-option>
+              <mat-option value="AB+">AB+</mat-option>
+              <mat-option value="AB-">AB-</mat-option>
+              <mat-option value="O+">O+</mat-option>
+              <mat-option value="O-">O-</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Section 2: Contact & Address -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <mat-icon>contacts</mat-icon>
+          <span>Contact & Address Details</span>
+        </h3>
+        <div class="form-grid-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Phone Number</mat-label>
+            <input matInput formControlName="phoneNumber" placeholder="+1 (555) 000-0000">
+            @if (patientForm.get('phoneNumber')?.hasError('required') && patientForm.get('phoneNumber')?.touched) {
+              <mat-error>Phone number is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Email Address</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="patient@example.com">
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Residential Address</mat-label>
+          <input matInput formControlName="address" placeholder="Street address, city, state, postal code">
         </mat-form-field>
       </div>
 
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Residential Address</mat-label>
-        <textarea matInput rows="3" formControlName="address" placeholder="Full address"></textarea>
-      </mat-form-field>
+      <!-- Section 3: Emergency Contact -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <mat-icon>emergency</mat-icon>
+          <span>Emergency Contact Person</span>
+        </h3>
+        <div class="form-grid-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Emergency Contact Name</mat-label>
+            <input matInput formControlName="emergencyContactName" placeholder="Full name of contact">
+          </mat-form-field>
 
-      @if (errorMessage()) {
-        <div class="error-banner">{{ errorMessage() }}</div>
-      }
+          <mat-form-field appearance="outline">
+            <mat-label>Emergency Contact Phone</mat-label>
+            <input matInput formControlName="emergencyContactPhone" placeholder="+1 (555) 111-2222">
+          </mat-form-field>
+        </div>
+      </div>
 
-      <div class="form-actions">
-        <button mat-button type="button" routerLink="/patients">Cancel</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="patientForm.invalid || isSubmitting()" class="submit-btn">
-          @if (isSubmitting()) {
-            <span>Registering...</span>
-          } @else {
-            <span>Create Patient Record</span>
-          }
+      <div class="form-actions-bar">
+        <button mat-raised-button color="primary" type="submit" [disabled]="patientForm.invalid || isSubmitting()" class="submit-btn">
+          <mat-icon>check</mat-icon>
+          <span>{{ isSubmitting() ? 'Saving Patient Record...' : 'Complete Patient Registration' }}</span>
         </button>
       </div>
     </form>

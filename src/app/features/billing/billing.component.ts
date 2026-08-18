@@ -1,11 +1,13 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { environment } from '../../../environments/environment';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { BillingStore } from '../../store/billing.store';
+import { LiveSyncService } from '../../services/live-sync.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-billing',
@@ -13,31 +15,36 @@ import { environment } from '../../../environments/environment';
   imports: [
     CommonModule,
     MatTableModule,
+    MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatTooltipModule
   ],
   templateUrl: './billing.component.html',
   styleUrls: ['./billing.component.scss']
 })
 export class BillingComponent implements OnInit {
-  private http = inject(HttpClient);
-  invoices = signal<any[]>([]);
-  isLoading = signal(false);
-  displayedColumns = ['number', 'patient', 'date', 'total', 'status', 'actions'];
+  private billingStore = inject(BillingStore);
+  private liveSyncService = inject(LiveSyncService);
 
-  ngOnInit() {
-    this.isLoading.set(true);
-    this.http.get<any[]>(`${environment.apiUrl}/billing/invoices/unpaid`).subscribe({
-      next: (res) => {
-        this.invoices.set(res || []);
-        this.isLoading.set(false);
-      },
-      error: () => this.isLoading.set(false)
+  invoices = this.billingStore.invoices;
+  totalRevenue = this.billingStore.totalRevenue;
+  outstandingBalance = this.billingStore.outstandingBalance;
+  displayedColumns = ['invoiceNumber', 'patient', 'date', 'status', 'total', 'balance', 'actions'];
+
+  constructor() {
+    this.liveSyncService.invoicePaid$.pipe(
+      takeUntilDestroyed()
+    ).subscribe(() => {
+      this.billingStore.loadInvoices();
     });
   }
 
-  getDownloadUrl(id: string): string {
-    return `${environment.apiUrl}/billing/invoices/${id}/pdf`;
+  ngOnInit() {
+    this.billingStore.loadInvoices();
+  }
+
+  downloadPdf(invoiceId: string) {
+    this.billingStore.downloadInvoicePdf(invoiceId);
   }
 }

@@ -1,37 +1,127 @@
 ﻿.page-container {
-  padding: 32px;
-  max-width: 800px;
-  margin: 0 auto;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.back-btn { color: #94a3b8; margin-bottom: 20px; }
-.form-card {
-  background: rgba(26, 34, 52, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 32px;
-  color: #fff;
-}
-.card-header { margin-bottom: 28px; }
-h2 { font-size: 24px; font-weight: 700; color: #f8fafc; margin: 0 0 6px 0; }
-.subtitle { color: #94a3b8; margin: 0; font-size: 14px; }
-.form-body { display: flex; flex-direction: column; gap: 16px; }
-.form-row { display: flex; gap: 16px; }
-.flex-1 { flex: 1; }
-.full-width { width: 100%; }
-.form-actions {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
+  flex-direction: column;
+  gap: 24px;
 }
-.submit-btn { height: 44px; border-radius: 12px; font-weight: 600; }
-.error-banner {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 13px;
+
+.page-header-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    .header-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-lg);
+      background: var(--primary-50);
+      color: var(--primary-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-subtle);
+
+      mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .page-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+  }
+}
+
+.form-content-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 32px 30px;
+  box-shadow: var(--shadow-sm);
+
+  .patient-grid-form {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+
+      mat-icon {
+        color: var(--primary-500);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+
+  .form-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .form-actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+
+    .submit-btn {
+      height: 48px;
+      padding: 0 28px;
+      border-radius: var(--radius-md);
+      font-size: 14.5px;
+      font-weight: 700;
+      mat-icon {
+        margin-right: 6px;
+      }
+    }
+  }
 }

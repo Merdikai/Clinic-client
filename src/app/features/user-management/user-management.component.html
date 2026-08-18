@@ -1,0 +1,66 @@
+﻿<div class="page-container">
+  <div class="page-header-card">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>admin_panel_settings</mat-icon>
+      </div>
+      <div>
+        <h1 class="page-title">User & Role Management</h1>
+        <p class="page-subtitle">Configure system security, assign medical roles, and manage permissions</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="table-responsive">
+      <table mat-table [dataSource]="users()" class="custom-table">
+        <ng-container matColumnDef="username">
+          <th mat-header-cell *matHeaderCellDef>Username</th>
+          <td mat-cell *matCellDef="let user">
+            <span class="id-tag">{{ user.username }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fullName">
+          <th mat-header-cell *matHeaderCellDef>Staff Name</th>
+          <td mat-cell *matCellDef="let user">
+            <span class="staff-name">{{ user.fullName || user.username }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="roles">
+          <th mat-header-cell *matHeaderCellDef>Assigned Roles (Click ✕ to revoke)</th>
+          <td mat-cell *matCellDef="let user">
+            <div class="roles-wrapper">
+              @for (role of user.roles; track role) {
+                <span class="role-chip" (click)="removeRole(user.userId, role)" title="Click to remove {{ role }}">
+                  <span>{{ role }}</span>
+                  <mat-icon class="remove-icon">close</mat-icon>
+                </span>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Grant Role</th>
+          <td mat-cell *matCellDef="let user">
+            <mat-form-field appearance="outline" class="role-select-box">
+              <mat-label>Add Role</mat-label>
+              <mat-select (selectionChange)="assignRole(user.userId, $event.value)">
+                @for (role of availableRoles; track role) {
+                  @if (!hasRole(user, role)) {
+                    <mat-option [value]="role">{{ role }}</mat-option>
+                  }
+                }
+              </mat-select>
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+  </div>
+</div>

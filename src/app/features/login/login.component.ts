@@ -1,14 +1,15 @@
 ﻿import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../services/auth.service';
-import { LiveSyncService } from '../../services/live-sync.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-login',
@@ -16,11 +17,13 @@ import { LiveSyncService } from '../../services/live-sync.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatTooltipModule
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
@@ -28,38 +31,45 @@ import { LiveSyncService } from '../../services/live-sync.service';
 export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
-  private liveSync = inject(LiveSyncService);
   private router = inject(Router);
+  themeService = inject(ThemeService);
 
-  loginForm = this.fb.group({
-    username: ['', Validators.required],
-    password: ['', Validators.required]
-  });
-
-  isLoading = signal(false);
+  isSubmitting = signal(false);
   errorMessage = signal('');
   hidePassword = signal(true);
+  isDarkMode = this.themeService.isDark;
+
+  loginForm = this.fb.group({
+    username: ['', [Validators.required, Validators.minLength(3)]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
 
   onSubmit() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
 
-    this.isLoading.set(true);
+    this.isSubmitting.set(true);
     this.errorMessage.set('');
 
-    const request = {
+    const credentials = {
       username: this.loginForm.value.username!,
       password: this.loginForm.value.password!
     };
 
-    this.authService.login(request).subscribe({
+    this.authService.login(credentials).subscribe({
       next: () => {
-        this.isLoading.set(false);
-        this.liveSync.connect();
+        this.isSubmitting.set(false);
         this.router.navigate(['/patients']);
       },
       error: (error) => {
-        this.isLoading.set(false);
-        this.errorMessage.set(error.error?.detail || error.error?.message || 'Login failed. Invalid username or password.');
+        this.isSubmitting.set(false);
+        this.errorMessage.set(error.error?.detail || error.error?.title || 'Invalid username or password');
       }
     });
   }

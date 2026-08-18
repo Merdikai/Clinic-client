@@ -1,13 +1,14 @@
-﻿import { Component, inject, signal } from '@angular/core';
+﻿import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../services/auth.service';
 import { LiveSyncService } from '../services/live-sync.service';
-import { filter } from 'rxjs';
+import { ThemeService } from '../services/theme.service';
 
 @Component({
   selector: 'app-shell',
@@ -15,56 +16,36 @@ import { filter } from 'rxjs';
   imports: [
     CommonModule,
     RouterModule,
+    MatSidenavModule,
+    MatListModule,
     MatIconModule,
     MatButtonModule,
-    MatMenuModule,
-    MatDividerModule
+    MatTooltipModule
   ],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss']
 })
 export class ShellComponent {
-  private authService = inject(AuthService);
+  authService = inject(AuthService);
   liveSync = inject(LiveSyncService);
-  private router = inject(Router);
+  themeService = inject(ThemeService);
 
   currentUser = this.authService.currentUser;
-  pageTitle = signal('Dashboard');
+  isDarkMode = this.themeService.isDark;
 
-  constructor() {
-    if (this.authService.isAuthenticated()) {
-      this.liveSync.connect();
-    }
-
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => {
-        this.updatePageTitle();
-      });
-
-    this.updatePageTitle();
-  }
-
-  private updatePageTitle() {
-    const url = this.router.url;
-    if (url.includes('/patients/new')) this.pageTitle.set('Register New Patient');
-    else if (url.includes('/patients/')) this.pageTitle.set('Patient Profile');
-    else if (url.includes('/patients')) this.pageTitle.set('Patients Directory');
-    else if (url.includes('/appointments/book')) this.pageTitle.set('Book Appointment');
-    else if (url.includes('/appointments')) this.pageTitle.set('Appointments Schedule');
-    else if (url.includes('/pharmacy')) this.pageTitle.set('Pharmacy & Inventory');
-    else if (url.includes('/billing')) this.pageTitle.set('Invoices & Billing');
-    else if (url.includes('/reports')) this.pageTitle.set('Clinic Analytics');
-    else this.pageTitle.set('Clinic Management');
-  }
-
-  logout() {
-    this.authService.logout();
-    this.liveSync.disconnect();
-    this.router.navigate(['/login']);
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
   }
 
   hasRole(role: string): boolean {
     return this.authService.hasRole(role);
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    return this.authService.hasAnyRole(roles);
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 }

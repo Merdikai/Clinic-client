@@ -1,58 +1,86 @@
 ﻿<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1>Invoices & Billing</h1>
-      <p class="subtitle">Manage patient billing, payments, and generated PDF invoices</p>
+  <div class="page-header-card">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>receipt_long</mat-icon>
+      </div>
+      <div>
+        <h1 class="page-title">Billing & Accounts Receivable</h1>
+        <p class="page-subtitle">Invoice management, payment tracking, and financial reconciliation</p>
+      </div>
     </div>
   </div>
 
-  <div class="table-card">
-    @if (isLoading()) {
-      <div class="loading-state">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Loading invoices...</p>
-      </div>
-    } @else {
+  <div class="metrics-cards-grid">
+    <div class="metric-widget">
+      <div class="widget-label">Total Paid Revenue</div>
+      <div class="widget-value positive">{{ totalRevenue() | currency }}</div>
+    </div>
+
+    <div class="metric-widget">
+      <div class="widget-label">Outstanding Balance</div>
+      <div class="widget-value warning">{{ outstandingBalance() | currency }}</div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="table-responsive">
       <table mat-table [dataSource]="invoices()" class="custom-table">
-        <ng-container matColumnDef="number">
+        <ng-container matColumnDef="invoiceNumber">
           <th mat-header-cell *matHeaderCellDef>Invoice #</th>
-          <td mat-cell *matCellDef="let inv"><span class="inv-badge">{{ inv.invoiceNumber }}</span></td>
+          <td mat-cell *matCellDef="let invoice">
+            <span class="id-tag">{{ invoice.invoiceNumber }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="patient">
-          <th mat-header-cell *matHeaderCellDef>Patient</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.patientName }}</td>
+          <th mat-header-cell *matHeaderCellDef>Patient Name</th>
+          <td mat-cell *matCellDef="let invoice">{{ invoice.patientName }}</td>
         </ng-container>
 
         <ng-container matColumnDef="date">
           <th mat-header-cell *matHeaderCellDef>Issue Date</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.issueDate | date:'mediumDate' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef>Total</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.totalAmount | currency }}</td>
+          <td mat-cell *matCellDef="let invoice">{{ invoice.issueDate | date:'mediumDate' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let inv">
-            <span class="status-badge" [ngClass]="inv.status?.toLowerCase()">{{ inv.status }}</span>
+          <td mat-cell *matCellDef="let invoice">
+            <span class="badge-pill" [class.success]="invoice.status === 'Paid'" [class.warning]="invoice.status === 'PartiallyPaid'" [class.danger]="invoice.status === 'Unpaid' || invoice.status === 'Overdue'">
+              {{ invoice.status }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="total">
+          <th mat-header-cell *matHeaderCellDef>Total Billed</th>
+          <td mat-cell *matCellDef="let invoice">
+            <strong>{{ invoice.totalAmount | currency }}</strong>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="balance">
+          <th mat-header-cell *matHeaderCellDef>Balance Due</th>
+          <td mat-cell *matCellDef="let invoice">
+            <span [style.color]="invoice.balanceDue > 0 ? '#ef4444' : '#10b981'">
+              {{ invoice.balanceDue | currency }}
+            </span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let inv">
-            <a mat-icon-button [href]="getDownloadUrl(inv.id)" target="_blank" title="Download PDF">
-              <mat-icon>picture_as_pdf</mat-icon>
-            </a>
+          <th mat-header-cell *matHeaderCellDef>Invoice PDF</th>
+          <td mat-cell *matCellDef="let invoice">
+            <button mat-stroked-button color="primary" (click)="downloadPdf(invoice.id)" matTooltip="Download PDF Receipt">
+              <mat-icon>download</mat-icon>
+              <span>PDF</span>
+            </button>
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
-    }
+    </div>
   </div>
 </div>

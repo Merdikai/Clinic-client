@@ -1,88 +1,132 @@
-﻿.login-wrapper {
+﻿.login-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 10% 20%, rgb(18, 24, 38) 0%, rgb(10, 13, 22) 90%);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  padding: 24px;
+  background: var(--auth-bg-gradient);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+
+  .theme-switch-floating {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+
+    button {
+      color: var(--text-primary);
+    }
+  }
 }
+
 .login-card {
   width: 100%;
   max-width: 440px;
-  background: rgba(26, 34, 52, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  padding: 40px 32px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  color: #fff;
-}
-.login-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-.logo-box {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
-}
-.logo-icon {
-  font-size: 32px;
-  color: #fff;
-}
-h1 {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: #f8fafc;
-}
-.subtitle {
-  font-size: 14px;
-  color: #94a3b8;
-  margin: 0;
-}
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.form-field {
-  width: 100%;
-}
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-}
-.submit-btn {
-  height: 48px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 15px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  margin-top: 8px;
-}
-.demo-hints {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: center;
-  font-size: 12px;
-  color: #64748b;
-}
-.demo-hints strong {
-  color: #93c5fd;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-xl) !important;
+  padding: 36px 30px;
+  box-shadow: var(--shadow-xl) !important;
+  z-index: 1;
+
+  .brand-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 28px;
+    text-align: center;
+
+    .brand-icon-wrapper {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+
+      mat-icon {
+        color: #ffffff !important;
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    p {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .full-width {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .submit-btn {
+    height: 48px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+
+  .extra-links {
+    margin-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+
+    a {
+      color: var(--primary-600);
+      text-decoration: none;
+      font-weight: 600;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .error-alert {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    border: 1px solid var(--danger-border);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+  }
 }

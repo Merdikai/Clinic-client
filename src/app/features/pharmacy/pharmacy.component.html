@@ -1,51 +1,76 @@
-﻿<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1>Pharmacy & Inventory</h1>
-      <p class="subtitle">Track stock quantities, expiry dates, and dispense medication</p>
-    </div>
+﻿<div class="container">
+  <div class="header">
+    <h2>Pharmacy Inventory</h2>
+    @if (lowStockMedicines().length > 0) {
+      <span class="alert-badge">
+        {{ lowStockMedicines().length }} low stock items
+      </span>
+    }
   </div>
 
-  <div class="table-card">
-    @if (isLoading()) {
-      <div class="loading-state">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Loading pharmacy inventory...</p>
-      </div>
-    } @else {
-      <table mat-table [dataSource]="medicines()" class="custom-table">
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search</mat-label>
+      <input matInput (input)="onSearch($event)" placeholder="Search by name or code">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="table-container mat-elevation-z1">
+      <table mat-table [dataSource]="medicines()" class="full-width">
         <ng-container matColumnDef="code">
           <th mat-header-cell *matHeaderCellDef>Code</th>
-          <td mat-cell *matCellDef="let m"><span class="code-badge">{{ m.code }}</span></td>
+          <td mat-cell *matCellDef="let medicine">{{ medicine.code }}</td>
         </ng-container>
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Medicine Name</th>
-          <td mat-cell *matCellDef="let m"><strong class="text-white">{{ m.name }}</strong></td>
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let medicine">{{ medicine.name }}</td>
         </ng-container>
 
         <ng-container matColumnDef="category">
           <th mat-header-cell *matHeaderCellDef>Category</th>
-          <td mat-cell *matCellDef="let m">{{ m.category }}</td>
+          <td mat-cell *matCellDef="let medicine">{{ medicine.category }}</td>
         </ng-container>
 
         <ng-container matColumnDef="stock">
           <th mat-header-cell *matHeaderCellDef>Stock</th>
-          <td mat-cell *matCellDef="let m">
-            <span [ngClass]="m.stockQuantity < 10 ? 'stock-low' : 'stock-ok'">
-              {{ m.stockQuantity }} units
+          <td mat-cell *matCellDef="let medicine">
+            <span [style.color]="getStockColor(medicine.stockQuantity)" class="stock-value">
+              {{ medicine.stockQuantity }}
             </span>
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="price">
+        <ng-container matColumnDef="unitPrice">
           <th mat-header-cell *matHeaderCellDef>Unit Price</th>
-          <td mat-cell *matCellDef="let m">{{ m.unitPrice | currency }}</td>
+          <td mat-cell *matCellDef="let medicine">{{ medicine.unitPrice | currency }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let medicine">
+            <button mat-icon-button color="primary" (click)="dispense(medicine.id)" matTooltip="Dispense 1 Unit" [disabled]="medicine.stockQuantity <= 0">
+              <mat-icon>local_pharmacy</mat-icon>
+            </button>
+          </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
-    }
-  </div>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageSize]="10"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)">
+      </mat-paginator>
+    </div>
+  }
 </div>

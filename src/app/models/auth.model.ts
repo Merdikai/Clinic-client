@@ -18,13 +18,13 @@ export interface AuthResponse {
   username: string;
   fullName: string;
   roles: string[];
+  expiresAt?: string;
 }
 
-export interface User {
-  id: string;
+export interface UserInfo {
   username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
+  email?: string;
+  fullName: string;
   roles: string[];
+  token?: string;
 }

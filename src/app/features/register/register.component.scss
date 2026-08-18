@@ -1,0 +1,55 @@
+﻿.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #6366f1 100%);
+  padding: 20px;
+}
+
+.register-card {
+  width: 520px;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.submit-btn {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.error-message {
+  color: #ef4444;
+  margin-bottom: 16px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #64748b;
+  
+  a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+  }
+}
