@@ -1,49 +1,69 @@
-﻿import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
-import { withEntities, setAllEntities, addEntity, removeEntity } from '@ngrx/signals/entities';
-import { inject } from '@angular/core';
-import { Patient, CreatePatientRequest } from '../models/patient.model';
-import { PatientService } from '../services/patient.service';
+﻿import { inject, computed } from '@angular/core';
+import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { PatientService } from '../services/patient.service';
+import { Patient, PagedResponse } from '../models/patient.model';
 
-export interface PatientState {
+interface PatientState {
+  patients: Patient[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  searchTerm: string;
   isLoading: boolean;
   error: string | null;
-  totalCount: number;
 }
 
 const initialState: PatientState = {
+  patients: [],
+  totalCount: 0,
+  currentPage: 1,
+  pageSize: 10,
+  searchTerm: '',
   isLoading: false,
-  error: null,
-  totalCount: 0
+  error: null
 };
 
 export const PatientStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
-  withEntities<Patient>(),
+  withComputed((state) => ({
+    totalPages: computed(() => Math.ceil(state.totalCount() / Math.max(state.pageSize(), 1))),
+    hasNext: computed(() => state.currentPage() < Math.ceil(state.totalCount() / Math.max(state.pageSize(), 1))),
+    hasPrevious: computed(() => state.currentPage() > 1)
+  })),
   withMethods((store, patientService = inject(PatientService)) => ({
-    loadPatients: rxMethod<{ page?: number; pageSize?: number; search?: string }>(
+    loadPatients: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
-        switchMap(({ page = 1, pageSize = 10, search }) =>
-          patientService.getAll(page, pageSize, search).pipe(
-            tap((response) => {
-              patchState(store, setAllEntities(response.items), {
-                totalCount: response.totalCount,
-                isLoading: false
-              });
+        switchMap(() =>
+          patientService.getAll(store.currentPage(), store.pageSize(), store.searchTerm()).pipe(
+            tap({
+              next: (response: PagedResponse<Patient>) => {
+                patchState(store, {
+                  patients: response.items || [],
+                  totalCount: response.totalCount || 0,
+                  isLoading: false
+                });
+              },
+              error: (error) => {
+                patchState(store, { isLoading: false, error: error.message || 'Failed to load patients' });
+              }
             }),
-            catchError((err) => {
-              patchState(store, { error: err.message || 'Failed to load patients', isLoading: false });
-              return of(null);
-            })
+            catchError(() => of(null))
           )
         )
       )
     ),
-    addPatientOptimistic(patient: Patient) {
-      patchState(store, addEntity(patient));
+    setSearchTerm(term: string) {
+      patchState(store, { searchTerm: term, currentPage: 1 });
+    },
+    setPage(page: number) {
+      patchState(store, { currentPage: page });
+    },
+    setPageSize(size: number) {
+      patchState(store, { pageSize: size, currentPage: 1 });
     }
   }))
 );

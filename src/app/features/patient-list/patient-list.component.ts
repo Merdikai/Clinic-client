@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -8,8 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { PatientService } from '../../services/patient.service';
-import { Patient } from '../../models/patient.model';
+import { PatientStore } from '../../store/patient.store';
 
 @Component({
   selector: 'app-patient-list',
@@ -29,37 +28,26 @@ import { Patient } from '../../models/patient.model';
   styleUrls: ['./patient-list.component.scss']
 })
 export class PatientListComponent implements OnInit {
-  private patientService = inject(PatientService);
+  private patientStore = inject(PatientStore);
 
-  patients = signal<Patient[]>([]);
-  totalCount = signal(0);
-  isLoading = signal(false);
+  patients = this.patientStore.patients;
+  totalCount = this.patientStore.totalCount;
+  isLoading = this.patientStore.isLoading;
   displayedColumns = ['mrn', 'name', 'gender', 'phone', 'bloodGroup'];
 
   ngOnInit() {
-    this.loadPatients();
-  }
-
-  loadPatients(page = 1, pageSize = 10, search?: string) {
-    this.isLoading.set(true);
-    this.patientService.getAll(page, pageSize, search).subscribe({
-      next: (response) => {
-        this.patients.set(response.items || []);
-        this.totalCount.set(response.totalCount || 0);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-      }
-    });
+    this.patientStore.loadPatients();
   }
 
   onSearch(event: Event) {
     const searchTerm = (event.target as HTMLInputElement).value;
-    this.loadPatients(1, 10, searchTerm);
+    this.patientStore.setSearchTerm(searchTerm);
+    this.patientStore.loadPatients();
   }
 
   onPageChange(event: PageEvent) {
-    this.loadPatients(event.pageIndex + 1, event.pageSize);
+    this.patientStore.setPage(event.pageIndex + 1);
+    this.patientStore.setPageSize(event.pageSize);
+    this.patientStore.loadPatients();
   }
 }

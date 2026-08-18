@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -6,9 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { AppointmentService } from '../../services/appointment.service';
+import { AppointmentStore } from '../../store/appointment.store';
 import { LiveSyncService } from '../../services/live-sync.service';
-import { Appointment } from '../../models/appointment.model';
 
 @Component({
   selector: 'app-appointment-list',
@@ -26,34 +25,22 @@ import { Appointment } from '../../models/appointment.model';
   styleUrls: ['./appointment-list.component.scss']
 })
 export class AppointmentListComponent implements OnInit {
-  private apptService = inject(AppointmentService);
+  apptStore = inject(AppointmentStore);
   private liveSync = inject(LiveSyncService);
 
-  appointments = signal<Appointment[]>([]);
-  isLoading = signal(false);
+  appointments = this.apptStore.appointments;
+  isLoading = this.apptStore.isLoading;
   displayedColumns = ['patient', 'doctor', 'dateTime', 'reason', 'status', 'actions'];
 
   ngOnInit() {
-    this.loadAppointments();
-    this.liveSync.appointmentUpdated$.subscribe(() => {
-      this.loadAppointments();
-    });
-  }
+    this.apptStore.loadAppointments();
 
-  loadAppointments() {
-    this.isLoading.set(true);
-    this.apptService.getAll().subscribe({
-      next: (res) => {
-        this.appointments.set(res.items || res || []);
-        this.isLoading.set(false);
-      },
-      error: () => this.isLoading.set(false)
+    this.liveSync.appointmentBooked$.subscribe(() => {
+      this.apptStore.loadAppointments();
     });
-  }
 
-  onCheckIn(id: string) {
-    this.apptService.checkIn(id).subscribe({
-      next: () => this.loadAppointments()
+    this.liveSync.patientCheckedIn$.subscribe(() => {
+      this.apptStore.loadAppointments();
     });
   }
 }

@@ -4,41 +4,81 @@
   </button>
 
   <div class="booking-card">
-    <h2>Schedule an Appointment</h2>
-    <p class="subtitle">Book a consultation with a certified doctor</p>
+    <div class="card-header">
+      <h2>Schedule Consultation</h2>
+      <p class="subtitle">Book a doctor appointment for a patient visit</p>
+    </div>
 
     <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()" class="booking-form">
       <mat-form-field appearance="outline" class="form-field">
-        <mat-label>Patient ID</mat-label>
-        <input matInput formControlName="patientId" placeholder="Patient UUID" />
+        <mat-label>Select Patient</mat-label>
+        <mat-select formControlName="patientId">
+          @for (p of patients(); track p.id) {
+            <mat-option [value]="p.id">{{ p.firstName }} {{ p.lastName }} ({{ p.medicalRecordNumber }})</mat-option>
+          }
+        </mat-select>
+        @if (bookingForm.get('patientId')?.hasError('required') && bookingForm.get('patientId')?.touched) {
+          <mat-error>Patient is required</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="form-field">
-        <mat-label>Doctor ID</mat-label>
-        <input matInput formControlName="doctorId" placeholder="Doctor UUID" />
+        <mat-label>Select Doctor</mat-label>
+        <mat-select formControlName="doctorId">
+          @for (d of doctors(); track d.id) {
+            <mat-option [value]="d.id">Dr. {{ d.firstName }} {{ d.lastName }} ({{ d.specialization || 'General' }})</mat-option>
+          }
+        </mat-select>
+        @if (bookingForm.get('doctorId')?.hasError('required') && bookingForm.get('doctorId')?.touched) {
+          <mat-error>Doctor is required</mat-error>
+        }
       </mat-form-field>
 
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Date</mat-label>
+          <input matInput type="date" formControlName="date" />
+          @if (bookingForm.get('date')?.hasError('required') && bookingForm.get('date')?.touched) {
+            <mat-error>Date is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Time</mat-label>
+          <input matInput type="time" formControlName="time" />
+          @if (bookingForm.get('time')?.hasError('required') && bookingForm.get('time')?.touched) {
+            <mat-error>Time is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
       <mat-form-field appearance="outline" class="form-field">
-        <mat-label>Scheduled Date & Time</mat-label>
-        <input matInput type="datetime-local" formControlName="scheduledDateTime" />
+        <mat-label>Duration (minutes)</mat-label>
+        <input matInput type="number" formControlName="durationMinutes" />
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="form-field">
         <mat-label>Reason for Visit</mat-label>
-        <textarea matInput formControlName="reasonForVisit" rows="3"></textarea>
+        <textarea matInput rows="3" formControlName="reasonForVisit" placeholder="Brief symptoms or visit reason"></textarea>
+        @if (bookingForm.get('reasonForVisit')?.hasError('required') && bookingForm.get('reasonForVisit')?.touched) {
+          <mat-error>Reason is required</mat-error>
+        }
       </mat-form-field>
 
       @if (errorMessage()) {
         <div class="error-banner">{{ errorMessage() }}</div>
       }
 
-      <button mat-flat-button color="primary" type="submit" [disabled]="bookingForm.invalid || isLoading()" class="submit-btn">
-        @if (isLoading()) {
-          <span>Confirming Booking...</span>
-        } @else {
-          <span>Confirm Appointment</span>
-        }
-      </button>
+      <div class="form-actions">
+        <button mat-button type="button" routerLink="/appointments">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="bookingForm.invalid || isSubmitting()" class="submit-btn">
+          @if (isSubmitting()) {
+            <span>Confirming...</span>
+          } @else {
+            <span>Schedule Appointment</span>
+          }
+        </button>
+      </div>
     </form>
   </div>
 </div>

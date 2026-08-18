@@ -1,0 +1,83 @@
+﻿<div class="shell-layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <mat-icon>local_hospital</mat-icon>
+      </div>
+      <span class="logo-text">Clinic MS</span>
+    </div>
+
+    <nav class="nav-menu">
+      @if (hasRole('Admin') || hasRole('Receptionist') || hasRole('Doctor') || hasRole('Nurse')) {
+        <a class="nav-link" routerLink="/patients" routerLinkActive="active">
+          <mat-icon>people</mat-icon>
+          <span>Patients</span>
+        </a>
+      }
+
+      @if (hasRole('Admin') || hasRole('Receptionist') || hasRole('Doctor')) {
+        <a class="nav-link" routerLink="/appointments" routerLinkActive="active">
+          <mat-icon>calendar_today</mat-icon>
+          <span>Appointments</span>
+        </a>
+      }
+
+      @if (hasRole('Admin') || hasRole('Pharmacist')) {
+        <a class="nav-link" routerLink="/pharmacy" routerLinkActive="active">
+          <mat-icon>medication</mat-icon>
+          <span>Pharmacy</span>
+        </a>
+      }
+
+      @if (hasRole('Admin') || hasRole('Accountant')) {
+        <a class="nav-link" routerLink="/billing" routerLinkActive="active">
+          <mat-icon>receipt</mat-icon>
+          <span>Billing</span>
+        </a>
+      }
+
+      @if (hasRole('Admin') || hasRole('Accountant') || hasRole('Receptionist')) {
+        <a class="nav-link" routerLink="/reports" routerLinkActive="active">
+          <mat-icon>analytics</mat-icon>
+          <span>Reports</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="live-pill">
+        <span class="pulse-dot" [ngClass]="liveSync.connectionState() === 'connected' ? 'online' : 'connecting'"></span>
+        <span>{{ liveSync.connectionState() === 'connected' ? 'Realtime Sync Active' : 'Sync: ' + liveSync.connectionState() }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-body">
+    <header class="topbar">
+      <h1 class="page-title">{{ pageTitle() }}</h1>
+      <div class="topbar-spacer"></div>
+
+      <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn">
+        <div class="avatar-sm">{{ currentUser()?.username?.[0]?.toUpperCase() }}</div>
+        <span class="username-label">{{ currentUser()?.username }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu">
+        <div class="user-dropdown-header">
+          <strong>{{ currentUser()?.username }}</strong>
+          <small>{{ currentUser()?.roles?.[0] || 'Staff' }}</small>
+        </div>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </header>
+
+    <main class="content-container">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

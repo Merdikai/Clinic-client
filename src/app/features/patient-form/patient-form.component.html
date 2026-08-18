@@ -1,0 +1,105 @@
+﻿<div class="page-container">
+  <button mat-button routerLink="/patients" class="back-btn">
+    <mat-icon>arrow_back</mat-icon> Back to Directory
+  </button>
+
+  <div class="form-card">
+    <div class="card-header">
+      <h2>Register New Patient</h2>
+      <p class="subtitle">Enter patient demographics and contact details</p>
+    </div>
+
+    <form [formGroup]="patientForm" (ngSubmit)="onSubmit()" class="form-body">
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>First Name</mat-label>
+          <input matInput formControlName="firstName" placeholder="First Name" />
+          @if (patientForm.get('firstName')?.hasError('required') && patientForm.get('firstName')?.touched) {
+            <mat-error>First name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Last Name</mat-label>
+          <input matInput formControlName="lastName" placeholder="Last Name" />
+          @if (patientForm.get('lastName')?.hasError('required') && patientForm.get('lastName')?.touched) {
+            <mat-error>Last name is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Date of Birth</mat-label>
+          <input matInput type="date" formControlName="dateOfBirth" />
+          @if (patientForm.get('dateOfBirth')?.hasError('required') && patientForm.get('dateOfBirth')?.touched) {
+            <mat-error>Date of birth is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Gender</mat-label>
+          <mat-select formControlName="gender">
+            @for (g of genders; track g) {
+              <mat-option [value]="g">{{ g }}</mat-option>
+            }
+          </mat-select>
+          @if (patientForm.get('gender')?.hasError('required') && patientForm.get('gender')?.touched) {
+            <mat-error>Gender is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Phone Number</mat-label>
+          <input matInput formControlName="phone" placeholder="+1 (555) 000-0000" />
+          @if (patientForm.get('phone')?.hasError('required') && patientForm.get('phone')?.touched) {
+            <mat-error>Phone is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Email Address</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="patient@example.com" />
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Blood Group</mat-label>
+          <mat-select formControlName="bloodGroup">
+            @for (bg of bloodGroups; track bg) {
+              <mat-option [value]="bg">{{ bg }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Emergency Contact</mat-label>
+          <input matInput formControlName="emergencyContact" placeholder="Name & Phone" />
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Residential Address</mat-label>
+        <textarea matInput rows="3" formControlName="address" placeholder="Full address"></textarea>
+      </mat-form-field>
+
+      @if (errorMessage()) {
+        <div class="error-banner">{{ errorMessage() }}</div>
+      }
+
+      <div class="form-actions">
+        <button mat-button type="button" routerLink="/patients">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="patientForm.invalid || isSubmitting()" class="submit-btn">
+          @if (isSubmitting()) {
+            <span>Registering...</span>
+          } @else {
+            <span>Create Patient Record</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
