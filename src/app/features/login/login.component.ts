@@ -1,7 +1,7 @@
-﻿import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { ToastService } from '../../ui/toast/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -32,6 +33,8 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private toast = inject(ToastService);
   themeService = inject(ThemeService);
 
   isSubmitting = signal(false);
@@ -48,6 +51,8 @@ export class LoginComponent {
     this.themeService.toggleTheme();
   }
 
+  
+
   onSubmit() {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -63,13 +68,17 @@ export class LoginComponent {
     };
 
     this.authService.login(credentials).subscribe({
-      next: () => {
+      next: (res) => {
         this.isSubmitting.set(false);
-        this.router.navigate(['/patients']);
+        this.toast.success(`Welcome back, ${res.fullName || res.username}!`);
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+        this.router.navigateByUrl(returnUrl);
       },
       error: (error) => {
         this.isSubmitting.set(false);
-        this.errorMessage.set(error.error?.detail || error.error?.title || 'Invalid username or password');
+        const msg = error.error?.detail || error.error?.title || 'Invalid username or password';
+        this.errorMessage.set(msg);
+        this.toast.error(msg);
       }
     });
   }

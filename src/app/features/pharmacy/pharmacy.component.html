@@ -1,76 +1,216 @@
-﻿<div class="container">
-  <div class="header">
-    <h2>Pharmacy Inventory</h2>
-    @if (lowStockMedicines().length > 0) {
-      <span class="alert-badge">
-        {{ lowStockMedicines().length }} low stock items
-      </span>
-    }
-  </div>
-
-  <div class="toolbar">
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Search</mat-label>
-      <input matInput (input)="onSearch($event)" placeholder="Search by name or code">
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
-  </div>
-
-  @if (isLoading()) {
-    <div class="loading-container">
-      <mat-spinner diameter="40"></mat-spinner>
+<div class="pharmacy-container">
+  <div class="pharmacy-header">
+    <div>
+      <h1 class="page-title">Pharmacy & Dispensary Control</h1>
+      <p class="page-subtitle">Manage medicine inventory, dispense doctor prescriptions, and generate invoices</p>
     </div>
-  } @else {
-    <div class="table-container mat-elevation-z1">
-      <table mat-table [dataSource]="medicines()" class="full-width">
-        <ng-container matColumnDef="code">
-          <th mat-header-cell *matHeaderCellDef>Code</th>
-          <td mat-cell *matCellDef="let medicine">{{ medicine.code }}</td>
-        </ng-container>
+    <button mat-flat-button color="primary" class="action-btn" (click)="showAddMedicine.set(!showAddMedicine())">
+      <mat-icon>{{ showAddMedicine() ? 'close' : 'add_circle' }}</mat-icon>
+      <span>{{ showAddMedicine() ? 'Close Form' : 'Add New Medicine' }}</span>
+    </button>
+  </div>
 
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let medicine">{{ medicine.name }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="category">
-          <th mat-header-cell *matHeaderCellDef>Category</th>
-          <td mat-cell *matCellDef="let medicine">{{ medicine.category }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="stock">
-          <th mat-header-cell *matHeaderCellDef>Stock</th>
-          <td mat-cell *matCellDef="let medicine">
-            <span [style.color]="getStockColor(medicine.stockQuantity)" class="stock-value">
-              {{ medicine.stockQuantity }}
-            </span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="unitPrice">
-          <th mat-header-cell *matHeaderCellDef>Unit Price</th>
-          <td mat-cell *matCellDef="let medicine">{{ medicine.unitPrice | currency }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let medicine">
-            <button mat-icon-button color="primary" (click)="dispense(medicine.id)" matTooltip="Dispense 1 Unit" [disabled]="medicine.stockQuantity <= 0">
-              <mat-icon>local_pharmacy</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-
-      <mat-paginator
-        [length]="totalCount()"
-        [pageSize]="10"
-        [pageSizeOptions]="[5, 10, 25, 50]"
-        (page)="onPageChange($event)">
-      </mat-paginator>
+  <!-- Add Medicine Inline Drawer -->
+  @if (showAddMedicine()) {
+    <div class="content-card inline-drawer mat-elevation-z4" style="margin-bottom: 24px; padding: 24px;">
+      <div class="drawer-header" style="margin-bottom: 16px;">
+        <h3><mat-icon>add_box</mat-icon> Register New Medicine in Catalog</h3>
+      </div>
+      <form [formGroup]="medicineForm" (ngSubmit)="submitNewMedicine()" class="drawer-form">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+          <mat-form-field appearance="outline">
+            <mat-label>Medicine Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. Amoxicillin 500mg">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Code / SKU</mat-label>
+            <input matInput formControlName="code" placeholder="e.g. MED-AMX-500">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Category</mat-label>
+            <input matInput formControlName="category" placeholder="Antibiotics, Analgesic, etc.">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Stock Quantity</mat-label>
+            <input matInput type="number" formControlName="stockQuantity" placeholder="100">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Unit Price ($)</mat-label>
+            <input matInput type="number" formControlName="unitPrice" placeholder="12.50">
+          </mat-form-field>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+          <button mat-button type="button" (click)="showAddMedicine.set(false)">Cancel</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="medicineForm.invalid || isProcessing">
+            <mat-icon>save</mat-icon> Save Medicine
+          </button>
+        </div>
+      </form>
     </div>
   }
+
+  <mat-tab-group class="modern-tabs" animationDuration="200ms">
+    <!-- TAB 1: PRESCRIPTION DISPENSARY QUEUE -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="custom-tab-label">
+          <mat-icon class="tab-icon" style="color: var(--primary-color);">local_pharmacy</mat-icon>
+          <span class="premium-tab-text">Doctor Prescriptions Queue</span>
+          <span class="premium-badge alert-badge">{{ prescriptions().length }}</span>
+        </div>
+      </ng-template>
+
+      <div class="tab-content">
+        <!-- Manual Quick Dispenser Lookup Bar -->
+        <div class="dispenser-card mat-elevation-z2" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <h3><mat-icon>qr_code_scanner</mat-icon> Quick Prescription Lookup by Code</h3>
+            <p>Scan barcode or enter Prescription ID for instant dispensing and invoicing.</p>
+          </div>
+
+          <div class="dispenser-form">
+            <mat-form-field appearance="outline" class="id-field">
+              <mat-label>Prescription ID / Code</mat-label>
+              <input matInput [(ngModel)]="prescriptionIdInput" placeholder="Enter Prescription GUID">
+              <mat-icon matPrefix>qr_code</mat-icon>
+            </mat-form-field>
+
+            <div class="form-actions">
+              <button mat-flat-button color="primary" [disabled]="!prescriptionIdInput || isProcessing" (click)="dispensePrescription()">
+                <mat-icon>check_circle</mat-icon> Dispense
+              </button>
+              <button mat-flat-button class="invoice-btn" [disabled]="!prescriptionIdInput || isProcessing" (click)="generatePrescriptionInvoice()">
+                <mat-icon>receipt</mat-icon> Generate Bill
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW PREMIUM PRESCRIPTIONS QUEUE GRID -->
+        <div class="premium-grid rx-queue-grid">
+          @for (rx of prescriptions(); track rx.id) {
+            <div class="premium-card rx-card" [class.dispensed-card]="rx.status === 'Dispensed'">
+              <div class="rx-card-header">
+                <div class="rx-badge" [class.dispensed-badge]="rx.status === 'Dispensed'">
+                  <mat-icon>{{ rx.status === 'Dispensed' ? 'check_circle' : 'pending_actions' }}</mat-icon>
+                </div>
+                <div class="rx-status-text">
+                  <span class="status-indicator" [class.pulse]="rx.status === 'Pending'"></span>
+                  {{ rx.status }}
+                </div>
+              </div>
+              
+              <div class="rx-card-body">
+                <div class="rx-info-row">
+                  <mat-icon class="sub-icon">person</mat-icon>
+                  <div class="info-details">
+                    <span class="info-label">Patient</span>
+                    <strong class="info-val">{{ rx.patientName }}</strong>
+                  </div>
+                </div>
+                <div class="rx-info-row">
+                  <mat-icon class="sub-icon">stethoscope</mat-icon>
+                  <div class="info-details">
+                    <span class="info-label">Prescribed By</span>
+                    <strong class="info-val">Dr. {{ rx.doctorName }}</strong>
+                  </div>
+                </div>
+                
+                <div class="rx-items-box">
+                  <div class="items-header">Medications List ({{ rx.items.length }})</div>
+                  <div class="items-list">
+                    @for (item of rx.items; track item.id) {
+                      <div class="mini-med-item">
+                        <span class="med-name-qty"><strong>{{ item.medicineName }}</strong> &times;{{ item.quantity }}</span>
+                        <span class="med-dose">{{ item.dosageInstructions }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+              
+              <div class="rx-card-footer">
+                @if (rx.status === 'Pending') {
+                  <button mat-flat-button color="primary" class="pro-action-btn dispense-action" (click)="dispensePrescriptionById(rx.id)">
+                    <mat-icon>done_all</mat-icon> Dispense
+                  </button>
+                }
+                <button mat-stroked-button class="pro-action-btn invoice-action" (click)="generatePrescriptionInvoiceById(rx.id)">
+                  <mat-icon>receipt_long</mat-icon> Invoice
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+        
+        @if (prescriptions().length === 0) {
+          <div class="empty-state" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+            <mat-icon style="font-size: 40px; width: 40px; height: 40px; opacity: 0.5;">check_circle</mat-icon>
+            <h3 style="margin: 8px 0; color: var(--text-primary);">All Prescriptions Dispensed</h3>
+            <p style="margin: 0;">No pending doctor prescriptions in the dispensary queue.</p>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- TAB 2: INVENTORY MANAGEMENT -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">inventory_2</mat-icon>
+        <span class="premium-tab-text">Medicine Catalog</span>
+        <span class="premium-badge">{{ filteredMedicines().length }}</span>
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="filter-bar">
+          <mat-form-field appearance="outline" class="search-input">
+            <mat-label>Search medicine catalog...</mat-label>
+            <input matInput [(ngModel)]="searchTerm" placeholder="Filter by medicine name, category, or code">
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- THE BREATHTAKING MEDICINE CATALOG GRID -->
+        <div class="premium-grid pharmacy-catalog-grid">
+          @for (item of filteredMedicines(); track item.id) {
+            <div class="premium-card breathtaking-card" [class.out-of-stock-card]="item.stockQuantity <= 0">
+              <div class="breathtaking-card-bg"></div>
+              
+              <div class="card-content-wrapper">
+                <div class="med-card-header">
+                  <div class="med-icon-box" [ngClass]="item.stockQuantity > 0 ? 'primary-glow' : 'bw-glow'">
+                    <mat-icon>medication_liquid</mat-icon>
+                  </div>
+                  <div class="med-status">
+                    <span class="modern-stock-badge" [class.low]="item.stockQuantity <= 15 && item.stockQuantity > 0" [class.out]="item.stockQuantity <= 0">
+                      <span class="status-dot"></span>
+                      {{ item.stockQuantity > 0 ? item.stockQuantity + ' in stock' : 'Out of Stock' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="med-card-body">
+                  <h3 class="med-name">{{ item.name }}</h3>
+                  <div class="category-tag">{{ item.category || 'General' }}</div>
+                  <div class="code-tag">ID: {{ item.code }}</div>
+                  <div class="price-row">
+                    <span class="price-label">Unit Price</span>
+                    <h2 class="med-price">{{ item.unitPrice | currency }}</h2>
+                  </div>
+                </div>
+                
+                <div class="med-card-footer">
+                  <button mat-flat-button color="primary" class="breathtaking-btn" (click)="quickDispense(item)" [disabled]="item.stockQuantity <= 0">
+                    <span>Quick Dispense</span>
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+      </div>
+    </mat-tab>
+  </mat-tab-group>
 </div>

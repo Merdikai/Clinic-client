@@ -1,4 +1,4 @@
-﻿import { Component, inject } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -25,16 +25,19 @@ import { ThemeService } from '../services/theme.service';
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss']
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit {
+  ngOnInit(): void {
+    this.liveSync.connect();
+  }
   authService = inject(AuthService);
   liveSync = inject(LiveSyncService);
   themeService = inject(ThemeService);
 
+  isCollapsed = signal<boolean>(false);
   currentUser = this.authService.currentUser;
-  isDarkMode = this.themeService.isDark;
 
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
+  toggleSidebar(): void {
+    this.isCollapsed.update(v => !v);
   }
 
   hasRole(role: string): boolean {

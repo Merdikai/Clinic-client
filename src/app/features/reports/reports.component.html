@@ -1,65 +1,133 @@
-﻿<div class="page-container">
-  <div class="page-header">
+<div class="reports-container premium-page">
+  <div class="reports-header">
     <div>
-      <h1>Clinic Analytics & Reports</h1>
-      <p class="subtitle">Operational metrics, revenue summary, and data exports</p>
+      <h1 class="page-title">Clinic Analytics & Audited Reports</h1>
+      <p class="page-subtitle">Export financial ledgers, analyze physician consultation metrics, and monitor pharmacy trends</p>
     </div>
-    <div class="export-actions">
-      <a mat-flat-button color="primary" [href]="exportPatientsUrl" target="_blank">
-        <mat-icon>download</mat-icon> Export Patients (CSV)
-      </a>
-      <a mat-flat-button color="accent" [href]="exportInvoicesUrl" target="_blank">
-        <mat-icon>download</mat-icon> Export Invoices (CSV)
-      </a>
+    <div class="header-actions">
+      <button mat-flat-button class="export-btn" (click)="exportPatientsCsv()">
+        <mat-icon>people</mat-icon> Export Patients CSV
+      </button>
+      <button mat-flat-button class="export-btn accent" (click)="exportInvoicesCsv()">
+        <mat-icon>receipt</mat-icon> Export Invoices CSV
+      </button>
     </div>
   </div>
 
-  @if (isLoading()) {
-    <div class="loading-state">
-      <mat-spinner diameter="40"></mat-spinner>
-      <p>Gathering analytics...</p>
-    </div>
-  } @else if (summary()) {
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon-box blue">
-          <span class="material-symbols-outlined">person</span>
-        </div>
-        <div>
-          <div class="kpi-label">Total Patients</div>
-          <div class="kpi-value">{{ summary()?.totalPatients }}</div>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon-box green">
-          <span class="material-symbols-outlined">event_available</span>
-        </div>
-        <div>
-          <div class="kpi-label">Today's Appointments</div>
-          <div class="kpi-value">{{ summary()?.todayAppointments }}</div>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon-box purple">
-          <span class="material-symbols-outlined">payments</span>
-        </div>
-        <div>
-          <div class="kpi-label">Total Revenue</div>
-          <div class="kpi-value">{{ summary()?.totalRevenue | currency }}</div>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon-box orange">
-          <span class="material-symbols-outlined">pending_actions</span>
-        </div>
-        <div>
-          <div class="kpi-label">Pending Invoices</div>
-          <div class="kpi-value">{{ summary()?.pendingInvoices }}</div>
-        </div>
+  <!-- Real-Time Metrics Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon rev-icon"><mat-icon>attach_money</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">Daily Revenue</span>
+        <h3 class="stat-value">{{ (dailyRevenue()?.totalRevenue ?? summary()?.dailyRevenue ?? 0) | currency }}</h3>
+        <span class="stat-trend positive"><mat-icon>check_circle</mat-icon> Settled ledger payments</span>
       </div>
     </div>
-  }
+
+    <div class="stat-card">
+      <div class="stat-icon pat-icon"><mat-icon>group_add</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Patients</span>
+        <h3 class="stat-value">{{ summary()?.totalPatients ?? 0 }}</h3>
+        <span class="stat-trend positive"><mat-icon>groups</mat-icon> Registered directory</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon appt-icon"><mat-icon>event_available</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">Today's Visits</span>
+        <h3 class="stat-value">{{ summary()?.totalAppointmentsToday ?? summary()?.todayAppointments ?? 0 }}</h3>
+        <span class="stat-trend neutral"><mat-icon>done_all</mat-icon> Consultations scheduled</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Two-Column Section -->
+  <div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    
+    <!-- Daily Revenue Date Picker & Calculator -->
+    <div class="report-panel premium-card" style="background: var(--bg-surface); padding: 24px; border-radius: 14px; border: 1px solid var(--border-color);">
+      <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);">
+          <mat-icon style="vertical-align: middle; color: var(--primary-color, #0284c7);">calendar_today</mat-icon> Daily Revenue Analysis
+        </h3>
+      </div>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Select Target Audit Date</mat-label>
+        <input matInput [matDatepicker]="picker" [value]="selectedDate" (dateChange)="onDateChange($event.value)">
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+
+      <div class="revenue-summary-box" style="background: var(--bg-card); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Date Audited:</span>
+          <strong>{{ (dailyRevenue()?.date || selectedDate) | date:'mediumDate' }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Total Consultations:</span>
+          <strong>{{ dailyRevenue()?.totalAppointments ?? 0 }} visits</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">New Registered Patients:</span>
+          <strong>{{ dailyRevenue()?.totalPatients ?? 0 }} patients</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 8px; font-size: 16px;">
+          <span style="color: var(--text-primary); font-weight: 600;">Net Revenue Collected:</span>
+          <strong style="color: #10b981;">{{ (dailyRevenue()?.totalRevenue ?? 0) | currency }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctor Consultation Volume -->
+    <div class="report-panel premium-card" style="background: var(--bg-surface); padding: 24px; border-radius: 14px; border: 1px solid var(--border-color);">
+      <div class="panel-header" style="margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);">
+          <mat-icon style="vertical-align: middle; color: var(--primary-color, #0284c7);">stethoscope</mat-icon> Physician Consultation Volume
+        </h3>
+      </div>
+
+      <div class="doc-counts-list" style="display: flex; flex-direction: column; gap: 12px;">
+        @for (doc of doctorAppointments(); track doc.doctorId) {
+          <div class="doc-count-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
+            <div>
+              <strong>Dr. {{ doc.doctorName }}</strong>
+              <div style="font-size: 12px; color: var(--text-secondary);">Specialist Physician</div>
+            </div>
+            <span style="background: rgba(2, 132, 199, 0.1); color: var(--primary-color, #0284c7); font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+              {{ doc.appointmentCount }} consultations
+            </span>
+          </div>
+        }
+
+        @if (doctorAppointments().length === 0) {
+          <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
+            <p style="margin: 0;">Consultation workload records synchronized.</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Section -->
+  <div class="export-section premium-card">
+    <div class="export-header-premium">
+      <div class="icon-glow-box primary-glow"><mat-icon>cloud_download</mat-icon></div>
+      <div>
+        <h3>Real-time Data Exports</h3>
+        <p>Generate precise CSV files streaming directly from the database engine.</p>
+      </div>
+    </div>
+    <div class="export-buttons-group">
+      <button mat-stroked-button color="primary" (click)="exportPatientsCsv()">
+        <mat-icon>file_download</mat-icon> Full Patient Registry (.CSV)
+      </button>
+      <button mat-stroked-button color="accent" (click)="exportInvoicesCsv()">
+        <mat-icon>file_download</mat-icon> Full Invoices & Ledger (.CSV)
+      </button>
+    </div>
+  </div>
 </div>

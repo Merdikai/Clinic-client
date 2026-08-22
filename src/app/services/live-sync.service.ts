@@ -1,4 +1,4 @@
-﻿import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
@@ -20,6 +20,33 @@ export class LiveSyncService {
   lowStockAlert$ = new Subject<any>();
   invoicePaid$ = new Subject<any>();
 
+  globalActivities = signal<Array<{ icon: string; title: string; time: string; type: string }>>([]);
+
+  constructor() {
+    this.loadActivitiesFromStorage();
+  }
+
+  private loadActivitiesFromStorage() {
+    try {
+      const cached = localStorage.getItem('global_activities');
+      if (cached) {
+        this.globalActivities.set(JSON.parse(cached));
+      }
+    } catch (e) {}
+  }
+
+  private addGlobalActivity(icon: string, title: string, subtitle: string, type: string) {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    this.globalActivities.update((events) => {
+      const newEvents = [
+        { icon, title: `${title}: ${subtitle}`, time, type },
+        ...events.slice(0, 9)
+      ];
+      localStorage.setItem('global_activities', JSON.stringify(newEvents));
+      return newEvents;
+    });
+  }
+
   connect() {
     if (this.hubConnection) return;
 
@@ -34,11 +61,13 @@ export class LiveSyncService {
 
     // Listen for server events
     this.hubConnection.on('AppointmentBooked', (data) => {
+      this.addGlobalActivity('event', 'New Appointment Booked', data?.patientName || 'Patient', 'info');
       this.appointmentBooked$.next(data);
       this.appointmentUpdated$.next(data);
     });
 
     this.hubConnection.on('PatientCheckedIn', (data) => {
+      this.addGlobalActivity('how_to_reg', 'Patient Checked In', data?.patientName || 'Patient', 'success');
       this.patientCheckedIn$.next(data);
       this.appointmentUpdated$.next(data);
     });
@@ -48,14 +77,17 @@ export class LiveSyncService {
     });
 
     this.hubConnection.on('PatientRegistered', (data) => {
+      this.addGlobalActivity('person_add', 'New Patient Registered', data?.name || 'Patient', 'primary');
       this.patientRegistered$.next(data);
     });
 
     this.hubConnection.on('LowStockAlert', (data) => {
+      this.addGlobalActivity('warning', 'Low Stock Alert', data?.medicineName || 'Medicine', 'warning');
       this.lowStockAlert$.next(data);
     });
 
     this.hubConnection.on('InvoicePaid', (data) => {
+      this.addGlobalActivity('payments', 'Invoice Paid', `Amount: $${data?.amountPaid || 0}`, 'success');
       this.invoicePaid$.next(data);
     });
 

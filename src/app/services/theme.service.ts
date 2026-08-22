@@ -1,4 +1,4 @@
-﻿import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, computed } from '@angular/core';
 
 export type AppTheme = 'light' | 'dark';
 
@@ -10,6 +10,7 @@ export class ThemeService {
   
   theme = signal<AppTheme>(this.getInitialTheme());
   isDark = signal<boolean>(this.theme() === 'dark');
+  isDarkMode = computed(() => this.theme() === 'dark');
 
   constructor() {
     effect(() => {
@@ -27,6 +28,10 @@ export class ThemeService {
 
   toggleTheme(): void {
     this.theme.update(t => t === 'light' ? 'dark' : 'light');
+  }
+
+  toggleDarkMode(): void {
+    this.toggleTheme();
   }
 
   setTheme(theme: AppTheme): void {

@@ -1,0 +1,753 @@
+<div class="dashboard-page">
+
+  <!-- ========================================== -->
+  <!-- 1. ROLE-AWARE WELCOME BANNER               -->
+  <!-- ========================================== -->
+  <div class="welcome-header-card">
+    <div class="welcome-main">
+      <div class="role-icon-circle">
+        @if (userRole() === 'Doctor') {
+          <mat-icon>stethoscope</mat-icon>
+        } @else if (userRole() === 'Nurse') {
+          <mat-icon>healing</mat-icon>
+        } @else if (userRole() === 'Pharmacist') {
+          <mat-icon>medication</mat-icon>
+        } @else if (userRole() === 'Accountant') {
+          <mat-icon>account_balance_wallet</mat-icon>
+        } @else if (userRole() === 'Receptionist') {
+          <mat-icon>support_agent</mat-icon>
+        } @else if (userRole() === 'Patient') {
+          <mat-icon>favorite</mat-icon>
+        } @else {
+          <mat-icon>admin_panel_settings</mat-icon>
+        }
+      </div>
+      <div class="welcome-text">
+        <div class="badge-row">
+          <span class="role-pill">{{ userRole() }} Portal</span>
+          <span class="live-pill"><span class="dot"></span> Live Sync</span>
+        </div>
+        <h1 class="portal-greeting">Welcome back, {{ authService.currentUser()?.fullName || authService.currentUser()?.username || 'Staff' }}!</h1>
+        <p class="portal-sub">
+          @if (userRole() === 'Doctor') {
+            Manage your daily consultations, write clinical prescriptions, and review patient charts.
+          } @else if (userRole() === 'Nurse') {
+            Record vital signs, triage waiting patients, and manage lab documentation.
+          } @else if (userRole() === 'Pharmacist') {
+            Dispense doctor prescriptions, maintain medicine stock, and process pharmacy invoices.
+          } @else if (userRole() === 'Accountant') {
+            Monitor daily revenues, collect outstanding balances, and export financial ledgers.
+          } @else if (userRole() === 'Receptionist') {
+            Welcome incoming patients, perform fast check-ins, and schedule consultations.
+          } @else if (userRole() === 'Patient') {
+            View your consultation schedule, access your medical files, and review prescriptions.
+          } @else {
+            Enterprise clinical overview, operational statistics, and system administration.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Action Launcher per Role -->
+    <div class="banner-quick-actions">
+      @if (userRole() === 'Doctor') {
+        <a mat-flat-button color="primary" routerLink="/appointments" class="header-btn">
+          <mat-icon>calendar_today</mat-icon> My Consultations
+        </a>
+        <a mat-stroked-button routerLink="/doctor-schedules" class="header-btn">
+          <mat-icon>schedule</mat-icon> My Shifts
+        </a>
+      } @else if (userRole() === 'Nurse') {
+        <a mat-flat-button color="primary" routerLink="/patients" class="header-btn">
+          <mat-icon>people</mat-icon> Patients Directory
+        </a>
+        <a mat-stroked-button routerLink="/appointments" class="header-btn">
+          <mat-icon>how_to_reg</mat-icon> Triage Queue
+        </a>
+      } @else if (userRole() === 'Pharmacist') {
+        <a mat-flat-button color="primary" routerLink="/pharmacy" class="header-btn">
+          <mat-icon>medication</mat-icon> Dispense Queue
+        </a>
+      } @else if (userRole() === 'Accountant') {
+        <a mat-flat-button color="primary" routerLink="/billing" class="header-btn">
+          <mat-icon>receipt_long</mat-icon> Invoices Ledger
+        </a>
+        <a mat-stroked-button routerLink="/reports" class="header-btn">
+          <mat-icon>assessment</mat-icon> Financial Analytics
+        </a>
+      } @else if (userRole() === 'Receptionist') {
+        <a mat-flat-button color="primary" routerLink="/patients/new" class="header-btn">
+          <mat-icon>person_add</mat-icon> New Patient Intake
+        </a>
+        <a mat-stroked-button routerLink="/appointments/book" class="header-btn">
+          <mat-icon>add_alarm</mat-icon> Book Consultation
+        </a>
+      } @else if (userRole() === 'Patient') {
+        <a mat-flat-button color="primary" routerLink="/appointments/book" class="header-btn">
+          <mat-icon>add_alarm</mat-icon> Book Appointment
+        </a>
+        <a mat-stroked-button routerLink="/patients" class="header-btn">
+          <mat-icon>folder_shared</mat-icon> My Medical File
+        </a>
+      } @else {
+        <a mat-flat-button color="primary" routerLink="/patients/new" class="header-btn">
+          <mat-icon>person_add</mat-icon> Register Patient
+        </a>
+        <a mat-stroked-button routerLink="/appointments/book" class="header-btn">
+          <mat-icon>add_alarm</mat-icon> Book Consultation
+        </a>
+      }
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. ADMIN DASHBOARD VIEW                    -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Admin') {
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>groups</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Patients</span>
+          <h2 class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</h2>
+          <span class="kpi-sub">Registered clinical records</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>event_available</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Today's Visits</span>
+          <h2 class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</h2>
+          <span class="kpi-sub">Scheduled consultations</span>
+        </div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>payments</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Daily Revenue</span>
+          <h2 class="kpi-val">{{ (summary()?.todayRevenue ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">Settled today</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>inventory_2</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Low Stock Items</span>
+          <h2 class="kpi-val">{{ summary()?.lowStockItemsCount ?? 0 }}</h2>
+          <span class="kpi-sub">Needs replenishment</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operations & Real-Time Grid -->
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>dashboard_customize</mat-icon>
+            <h3>Quick Administration Hub</h3>
+          </div>
+        </div>
+        <div class="admin-actions-grid">
+          <a routerLink="/patients" class="admin-tile">
+            <div class="tile-icon blue"><mat-icon>folder_shared</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Patients Directory</h4>
+              <p>View, search and manage medical charts</p>
+            </div>
+          </a>
+          <a routerLink="/appointments" class="admin-tile">
+            <div class="tile-icon green"><mat-icon>calendar_month</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Master Schedule</h4>
+              <p>Consultations and doctor shifts</p>
+            </div>
+          </a>
+          <a routerLink="/pharmacy" class="admin-tile">
+            <div class="tile-icon purple"><mat-icon>medication</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Pharmacy & Meds</h4>
+              <p>Stock catalog and dispensing queue</p>
+            </div>
+          </a>
+          <a routerLink="/billing" class="admin-tile">
+            <div class="tile-icon amber"><mat-icon>receipt_long</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Billing & Invoicing</h4>
+              <p>Process payments and balances</p>
+            </div>
+          </a>
+          <a routerLink="/reports" class="admin-tile">
+            <div class="tile-icon teal"><mat-icon>analytics</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Reports & Exports</h4>
+              <p>Revenue analysis and CSV downloads</p>
+            </div>
+          </a>
+          <a routerLink="/users" class="admin-tile">
+            <div class="tile-icon red"><mat-icon>manage_accounts</mat-icon></div>
+            <div class="tile-meta">
+              <h4>User & Role Access</h4>
+              <p>Manage staff accounts & RBAC</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Live Clinic Stream</h3>
+          </div>
+          <span class="live-tag">WebSocket Active</span>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>Listening for real-time appointments, patient check-ins, and payments...</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- 3. DOCTOR DASHBOARD VIEW                   -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Doctor') {
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>event_available</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Today's Appointments</span>
+          <h2 class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</h2>
+          <span class="kpi-sub">Assigned patients</span>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>groups</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Patients</span>
+          <h2 class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</h2>
+          <span class="kpi-sub">Under clinic care</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>medication</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Prescription Formulary</span>
+          <h2 class="kpi-val">Available</h2>
+          <span class="kpi-sub">Ready to prescribe</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>how_to_reg</mat-icon>
+            <h3>Clinical Consultation Desk</h3>
+          </div>
+        </div>
+        <div class="clinical-action-boxes">
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">calendar_month</mat-icon>
+            <div class="card-text">
+              <h4>Consultation Schedule & Check-ins</h4>
+              <p>View queued patients, mark visits as in-consultation, and document clinical notes.</p>
+            </div>
+            <a mat-flat-button color="primary" routerLink="/appointments">Open Consultations</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">history_edu</mat-icon>
+            <div class="card-text">
+              <h4>Patient Charts & Diagnostics</h4>
+              <p>Look up past diagnoses, allergies, vitals history, and uploaded lab scans.</p>
+            </div>
+            <a mat-flat-button color="primary" routerLink="/patients">Patient Directory</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">schedule</mat-icon>
+            <div class="card-text">
+              <h4>My Availability & Shifts</h4>
+              <p>Manage working hours, day-of-week slots, and maximum patient capacities.</p>
+            </div>
+            <a mat-stroked-button routerLink="/doctor-schedules">Manage Shifts</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Doctor Activity Feed</h3>
+          </div>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>No new real-time alerts. Ready for next consultation.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- 4. NURSE DASHBOARD VIEW                    -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Nurse') {
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>how_to_reg</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Today's Visits</span>
+          <h2 class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</h2>
+          <span class="kpi-sub">Patients for triage</span>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>groups</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Registered Patients</span>
+          <h2 class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</h2>
+          <span class="kpi-sub">Total database charts</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>favorite</mat-icon>
+            <h3>Nurse Care & Triage Station</h3>
+          </div>
+        </div>
+        <div class="clinical-action-boxes">
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">monitor_heart</mat-icon>
+            <div class="card-text">
+              <h4>Patient Vitals & Triage</h4>
+              <p>Select a patient from the directory to record blood pressure, heart rate, temperature, and BMI.</p>
+            </div>
+            <a mat-flat-button color="primary" routerLink="/patients">Patient Records</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">upload_file</mat-icon>
+            <div class="card-text">
+              <h4>Lab Reports & Document Uploads</h4>
+              <p>Attach imaging results, blood tests, and external consultation documents to patient files.</p>
+            </div>
+            <a mat-stroked-button routerLink="/patients">Attach Documents</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Triage Live Notifications</h3>
+          </div>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>Triage feed synchronized. Waiting for check-ins.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- 5. RECEPTIONIST DASHBOARD VIEW             -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Receptionist') {
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>person_add</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Registered Patients</span>
+          <h2 class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</h2>
+          <span class="kpi-sub">Clinic directory total</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>event_available</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Today's Visits</span>
+          <h2 class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</h2>
+          <span class="kpi-sub">Appointments scheduled</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>desk</mat-icon>
+            <h3>Front Desk Operations</h3>
+          </div>
+        </div>
+        <div class="admin-actions-grid">
+          <a routerLink="/patients/new" class="admin-tile">
+            <div class="tile-icon blue"><mat-icon>person_add</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Register New Patient</h4>
+              <p>Quick intake form and auto-generated MRN</p>
+            </div>
+          </a>
+          <a routerLink="/appointments/book" class="admin-tile">
+            <div class="tile-icon green"><mat-icon>add_alarm</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Book Consultation</h4>
+              <p>Select physician and assign time slot</p>
+            </div>
+          </a>
+          <a routerLink="/appointments" class="admin-tile">
+            <div class="tile-icon amber"><mat-icon>how_to_reg</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Check-In Queue</h4>
+              <p>Mark arriving patients as checked in</p>
+            </div>
+          </a>
+          <a routerLink="/doctor-schedules" class="admin-tile">
+            <div class="tile-icon purple"><mat-icon>schedule</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Doctor Availability</h4>
+              <p>View and manage doctor working shifts</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Reception Activity Feed</h3>
+          </div>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>Front desk live sync active.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- 6. PHARMACIST DASHBOARD VIEW               -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Pharmacist') {
+    <div class="kpi-grid">
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>warning_amber</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Low Stock Medicines</span>
+          <h2 class="kpi-val">{{ summary()?.lowStockItemsCount ?? 0 }}</h2>
+          <span class="kpi-sub">Restock recommended</span>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>medication</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Medicine Inventory</span>
+          <h2 class="kpi-val">Live</h2>
+          <span class="kpi-sub">Real-time stock catalog</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>local_pharmacy</mat-icon>
+            <h3>Dispensary Console</h3>
+          </div>
+        </div>
+        <div class="clinical-action-boxes">
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">medication_liquid</mat-icon>
+            <div class="card-text">
+              <h4>Doctor Prescription Dispense Queue</h4>
+              <p>Review doctor orders, dispense medications with stock auto-deduction, and generate billing invoices.</p>
+            </div>
+            <a mat-flat-button color="primary" routerLink="/pharmacy">Prescription Queue</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon">add_box</mat-icon>
+            <div class="card-text">
+              <h4>Add New Medicine to Catalog</h4>
+              <p>Register new pharmaceutical supplies, dosage forms, batch numbers, and unit prices.</p>
+            </div>
+            <a mat-stroked-button routerLink="/pharmacy">Inventory Catalog</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Pharmacy Event Feed</h3>
+          </div>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>Waiting for new doctor prescriptions...</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- 7. ACCOUNTANT DASHBOARD VIEW               -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Accountant') {
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>payments</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Today's Revenue</span>
+          <h2 class="kpi-val">{{ (summary()?.todayRevenue ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">Collections today</span>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>receipt_long</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Billing Invoices</span>
+          <h2 class="kpi-val">Active</h2>
+          <span class="kpi-sub">Ready for settlement</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>account_balance</mat-icon>
+            <h3>Financial Operations Desk</h3>
+          </div>
+        </div>
+        <div class="admin-actions-grid">
+          <a routerLink="/billing" class="admin-tile">
+            <div class="tile-icon green"><mat-icon>point_of_sale</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Process Invoice Payments</h4>
+              <p>Record cash, card, and insurance payments</p>
+            </div>
+          </a>
+          <a routerLink="/reports" class="admin-tile">
+            <div class="tile-icon teal"><mat-icon>analytics</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Financial Analytics</h4>
+              <p>Daily ledger summaries and breakdowns</p>
+            </div>
+          </a>
+          <a routerLink="/reports" class="admin-tile">
+            <div class="tile-icon blue"><mat-icon>file_download</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Export Invoices CSV</h4>
+              <p>Download full RFC 4180 audit ledger</p>
+            </div>
+          </a>
+          <a routerLink="/reports" class="admin-tile">
+            <div class="tile-icon amber"><mat-icon>people</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Export Patients CSV</h4>
+              <p>Download patient demographics roster</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Payment & Billing Stream</h3>
+          </div>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>Financial transaction listener active.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- 8. PATIENT DASHBOARD VIEW                  -->
+  <!-- ========================================== -->
+  @if (userRole() === 'Patient') {
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>favorite</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Health Status</span>
+          <h2 class="kpi-val">Active Care</h2>
+          <span class="kpi-sub">MedFlow ClinicOS Portal</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>event</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Consultations</span>
+          <h2 class="kpi-val">Book Online</h2>
+          <span class="kpi-sub">Available with our specialists</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>health_and_safety</mat-icon>
+            <h3>Patient Services</h3>
+          </div>
+        </div>
+        <div class="admin-actions-grid">
+          <a routerLink="/appointments/book" class="admin-tile">
+            <div class="tile-icon green"><mat-icon>add_alarm</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Book Doctor Consultation</h4>
+              <p>Select your specialist and schedule a convenient visit</p>
+            </div>
+          </a>
+          <a routerLink="/appointments" class="admin-tile">
+            <div class="tile-icon blue"><mat-icon>event_available</mat-icon></div>
+            <div class="tile-meta">
+              <h4>My Consultation History</h4>
+              <p>Review past appointments and upcoming schedules</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>info</mat-icon>
+            <h3>Clinic Information</h3>
+          </div>
+        </div>
+        <div class="clinic-info-content">
+          <p><strong>MedFlow Enterprise Clinic</strong></p>
+          <p>Emergency Line: +1 (555) 911-0000</p>
+          <p>Operating Hours: Mon - Fri (08:00 - 18:00)</p>
+          <p>Location: Scranton Medical Center, Suite 400</p>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

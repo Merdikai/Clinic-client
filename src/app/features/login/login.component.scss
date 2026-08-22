@@ -1,4 +1,4 @@
-﻿.login-container {
+.login-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -26,7 +26,7 @@
 
 .login-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: var(--radius-xl) !important;
@@ -38,19 +38,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     text-align: center;
 
     .brand-icon-wrapper {
       width: 56px;
       height: 56px;
       border-radius: 16px;
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 14px;
-      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
 
       mat-icon {
         color: #ffffff !important;
@@ -75,6 +75,58 @@
     }
   }
 
+  .demo-access-panel {
+    background: rgba(2, 132, 199, 0.08);
+    border: 1px dashed rgba(2, 132, 199, 0.35);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 20px;
+
+    .demo-title {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0284c7;
+      margin-bottom: 8px;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .demo-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      .demo-pill {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #f0f9ff;
+          border-color: #0284c7;
+          color: #0284c7;
+          transform: translateY(-1px);
+        }
+
+        &.admin-pill { color: #0f172a; }
+        &.doc-pill { color: #047857; }
+      }
+    }
+  }
+
   .login-form {
     display: flex;
     flex-direction: column;
@@ -91,6 +143,8 @@
     font-size: 15px;
     font-weight: 700;
     margin-top: 8px;
+    background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+    color: #ffffff !important;
   }
 
   .extra-links {

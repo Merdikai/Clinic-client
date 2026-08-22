@@ -1,4 +1,4 @@
-﻿<div class="page-container">
+<div class="page-container premium-page">
   <div class="page-header-card">
     <div class="header-left">
       <div class="header-icon-box">
@@ -6,81 +6,214 @@
       </div>
       <div>
         <h1 class="page-title">Billing & Accounts Receivable</h1>
-        <p class="page-subtitle">Invoice management, payment tracking, and financial reconciliation</p>
+        <p class="page-subtitle">Patient ledger management, payment collections, and RFC 4180 financial auditing</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" class="create-btn" (click)="showNewInvoiceModal.set(!showNewInvoiceModal())">
+        <mat-icon>{{ showNewInvoiceModal() ? 'close' : 'add_card' }}</mat-icon>
+        <span>{{ showNewInvoiceModal() ? 'Close Form' : 'Issue New Invoice' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- New Invoice Inline Drawer -->
+  @if (showNewInvoiceModal()) {
+    <div class="premium-card breathtaking-drawer">
+      <div class="breathtaking-drawer-bg"></div>
+      
+      <div class="drawer-content-wrapper">
+        <div class="drawer-header-pro">
+          <div class="drawer-icon-box giant-glow-box accent-glow">
+            <mat-icon>post_add</mat-icon>
+          </div>
+          <div class="drawer-title-group">
+            <h3 class="gradient-text">Issue Clinical Bill / Invoice</h3>
+            <p>Manually generate an invoice for consultations or clinical services not linked to automated prescriptions.</p>
+          </div>
+        </div>
+
+        <form [formGroup]="invoiceForm" (ngSubmit)="submitInvoice()" class="drawer-form-pro">
+          <div class="form-grid-three">
+            <mat-form-field appearance="outline" class="pro-field">
+              <mat-label>Select Patient</mat-label>
+              <mat-select formControlName="patientId">
+                @for (p of patients(); track p.id) {
+                  <mat-option [value]="p.id">
+                    {{ p.firstName }} {{ p.lastName }} ({{ p.medicalRecordNumber || 'PAT' }})
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="pro-field">
+              <mat-label>Total Invoice Amount ($)</mat-label>
+              <mat-icon matPrefix>attach_money</mat-icon>
+              <input matInput type="number" formControlName="amount" placeholder="150.00" min="1" step="0.01">
+            </mat-form-field>
+            
+            <div class="payment-method-box">
+               <span class="box-label">Preferred Settlement</span>
+               <div class="box-val">Standard Payment Cycle</div>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Invoice Description / Services Rendered</mat-label>
+            <input matInput formControlName="description" placeholder="e.g. Physician Consultation & Routine Screening">
+          </mat-form-field>
+
+          <div class="drawer-footer-pro">
+            <button mat-stroked-button type="button" class="cancel-btn-pro" (click)="showNewInvoiceModal.set(false)">
+              <mat-icon>close</mat-icon> Cancel
+            </button>
+            <button mat-flat-button color="primary" type="submit" class="submit-btn-pro" [disabled]="invoiceForm.invalid || isProcessing()">
+              <mat-icon>receipt_long</mat-icon> 
+              <span>Issue & Save Invoice</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Payment Modal -->
+  @if (selectedInvoiceForPay()) {
+    <div class="content-card inline-drawer pay-drawer mat-elevation-z4">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <mat-icon>payments</mat-icon>
+          <h3>Settle Invoice #{{ selectedInvoiceForPay()?.invoiceNumber }}</h3>
+        </div>
+        <p>Record payment collection against the outstanding patient balance.</p>
+      </div>
+      <div class="pay-body">
+        <div class="balance-callout">
+          <span>Outstanding Balance Due:</span>
+          <strong>{{ selectedInvoiceForPay()?.balanceDue | currency }}</strong>
+        </div>
+
+        <div class="form-grid-two">
+          <mat-form-field appearance="outline">
+            <mat-label>Payment Amount ($)</mat-label>
+            <input matInput type="number" [(ngModel)]="paymentAmountInput" placeholder="Enter amount to pay" min="1">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Payment Method</mat-label>
+            <mat-select [(ngModel)]="paymentMethodInput">
+              <mat-option value="Cash">Cash Collection</mat-option>
+              <mat-option value="CreditCard">Credit Card (POS)</mat-option>
+              <mat-option value="DebitCard">Debit Card</mat-option>
+              <mat-option value="Insurance">Insurance Provider Claim</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="drawer-footer">
+          <button mat-stroked-button (click)="selectedInvoiceForPay.set(null)">Cancel</button>
+          <button mat-flat-button color="primary" (click)="submitPayment()" [disabled]="!paymentAmountInput || isProcessing()">
+            <mat-icon>verified</mat-icon> Confirm & Settle Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Metrics Overview Cards -->
+  <div class="metrics-cards-grid">
+    <div class="metric-widget green">
+      <div class="widget-icon-box"><mat-icon>payments</mat-icon></div>
+      <div>
+        <div class="widget-label">Total Collected Revenue</div>
+        <div class="widget-value">{{ totalRevenue() | currency }}</div>
+        <div class="widget-subtext">Settled & confirmed payments</div>
+      </div>
+    </div>
+
+    <div class="metric-widget amber">
+      <div class="widget-icon-box"><mat-icon>account_balance_wallet</mat-icon></div>
+      <div>
+        <div class="widget-label">Outstanding Balances</div>
+        <div class="widget-value">{{ outstandingBalance() | currency }}</div>
+        <div class="widget-subtext">Accounts receivable</div>
       </div>
     </div>
   </div>
 
-  <div class="metrics-cards-grid">
-    <div class="metric-widget">
-      <div class="widget-label">Total Paid Revenue</div>
-      <div class="widget-value positive">{{ totalRevenue() | currency }}</div>
-    </div>
-
-    <div class="metric-widget">
-      <div class="widget-label">Outstanding Balance</div>
-      <div class="widget-value warning">{{ outstandingBalance() | currency }}</div>
-    </div>
-  </div>
-
+  <!-- Invoices Table Card -->
   <div class="content-card">
     <div class="table-responsive">
       <table mat-table [dataSource]="invoices()" class="custom-table">
         <ng-container matColumnDef="invoiceNumber">
-          <th mat-header-cell *matHeaderCellDef>Invoice #</th>
-          <td mat-cell *matCellDef="let invoice">
-            <span class="id-tag">{{ invoice.invoiceNumber }}</span>
+          <th mat-header-cell *matHeaderCellDef> Invoice # </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="invoice-num-badge">{{ row.invoiceNumber }}</span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="patient">
-          <th mat-header-cell *matHeaderCellDef>Patient Name</th>
-          <td mat-cell *matCellDef="let invoice">{{ invoice.patientName }}</td>
+          <th mat-header-cell *matHeaderCellDef> Patient Name </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="person-name">{{ row.patientName || 'Patient' }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Issue Date</th>
-          <td mat-cell *matCellDef="let invoice">{{ invoice.issueDate | date:'mediumDate' }}</td>
+          <th mat-header-cell *matHeaderCellDef> Issue Date </th>
+          <td mat-cell *matCellDef="let row"> {{ row.issuedDate | date:'mediumDate' }} </td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let invoice">
-            <span class="badge-pill" [class.success]="invoice.status === 'Paid'" [class.warning]="invoice.status === 'PartiallyPaid'" [class.danger]="invoice.status === 'Unpaid' || invoice.status === 'Overdue'">
-              {{ invoice.status }}
+          <th mat-header-cell *matHeaderCellDef> Payment Status </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge-pill" [class.success]="row.status === 'Paid'" [class.danger]="row.status === 'Unpaid'" [class.warning]="row.status === 'Partial'">
+              {{ row.status }}
             </span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef>Total Billed</th>
-          <td mat-cell *matCellDef="let invoice">
-            <strong>{{ invoice.totalAmount | currency }}</strong>
+          <th mat-header-cell *matHeaderCellDef> Total Invoiced </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="total-val">{{ row.totalAmount | currency }}</span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="balance">
-          <th mat-header-cell *matHeaderCellDef>Balance Due</th>
-          <td mat-cell *matCellDef="let invoice">
-            <span [style.color]="invoice.balanceDue > 0 ? '#ef4444' : '#10b981'">
-              {{ invoice.balanceDue | currency }}
-            </span>
+          <th mat-header-cell *matHeaderCellDef> Balance Due </th>
+          <td mat-cell *matCellDef="let row">
+            <strong [class.has-balance]="row.balanceDue > 0">{{ row.balanceDue | currency }}</strong>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Invoice PDF</th>
-          <td mat-cell *matCellDef="let invoice">
-            <button mat-stroked-button color="primary" (click)="downloadPdf(invoice.id)" matTooltip="Download PDF Receipt">
-              <mat-icon>download</mat-icon>
-              <span>PDF</span>
-            </button>
+          <th mat-header-cell *matHeaderCellDef> Financial Actions </th>
+          <td mat-cell *matCellDef="let row">
+            <div class="actions-group">
+              @if (row.balanceDue > 0) {
+                <button mat-flat-button color="primary" class="pay-btn" (click)="openPaymentDialog(row)">
+                  <mat-icon>payments</mat-icon> Settle Pay
+                </button>
+              }
+              <button mat-stroked-button (click)="downloadPdf(row.id)" title="Download RFC 4180 Invoice PDF">
+                <mat-icon>picture_as_pdf</mat-icon> PDF
+              </button>
+            </div>
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
+
+      @if (invoices().length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">receipt</mat-icon>
+          <h3>No Invoices Issued Yet</h3>
+          <p>Click 'Issue New Invoice' above or dispense a doctor prescription to create an invoice.</p>
+        </div>
+      }
     </div>
   </div>
 </div>

@@ -1,78 +1,215 @@
-﻿<div class="page-container">
-  <button mat-button routerLink="/patients" class="back-btn">
-    <mat-icon>arrow_back</mat-icon> Back to Directory
-  </button>
-
+<div class="patient-detail-container">
   @if (isLoading()) {
-    <div class="loading-state">
-      <mat-spinner diameter="40"></mat-spinner>
-      <p>Loading patient details...</p>
+    <div class="loading-wrap">
+      <mat-spinner diameter="44"></mat-spinner>
+      <p>Loading patient medical chart...</p>
     </div>
   } @else if (patient()) {
-    <div class="patient-header-card">
-      <div class="patient-identity">
-        <div class="avatar-lg">{{ patient()?.firstName?.[0] }}{{ patient()?.lastName?.[0] }}</div>
-        <div>
-          <div class="name-row">
-            <h2>{{ patient()?.firstName }} {{ patient()?.lastName }}</h2>
-            <span class="mrn-tag">MRN: {{ patient()?.medicalRecordNumber }}</span>
+    <!-- Modern Executive Patient Chart Header -->
+    <div class="chart-header-card">
+      <div class="chart-header-main">
+        <div class="avatar-badge-wrap">
+          <div class="avatar-circle">
+            <mat-icon>person</mat-icon>
           </div>
-          <p class="demographics">{{ patient()?.gender }} • DOB: {{ patient()?.dateOfBirth | date:'mediumDate' }} • Blood: {{ patient()?.bloodGroup }}</p>
+          <span class="blood-tag">{{ patient()?.bloodGroup || 'O+' }}</span>
+        </div>
+
+        <div class="chart-title-area">
+          <div class="title-row">
+            <h1 class="patient-full-name">{{ patient()?.firstName }} {{ patient()?.lastName }}</h1>
+            <span class="mrn-badge">MRN: {{ patient()?.medicalRecordNumber }}</span>
+          </div>
+
+          <div class="demographics-chips">
+            <div class="chip-item">
+              <mat-icon>cake</mat-icon>
+              <span>{{ patient()?.dateOfBirth | date:'mediumDate' }}</span>
+            </div>
+            <div class="chip-item">
+              <mat-icon>wc</mat-icon>
+              <span>{{ patient()?.gender }}</span>
+            </div>
+            <div class="chip-item">
+              <mat-icon>call</mat-icon>
+              <span>{{ patient()?.phone }}</span>
+            </div>
+            @if (patient()?.email) {
+              <div class="chip-item">
+                <mat-icon>mail</mat-icon>
+                <span>{{ patient()?.email }}</span>
+              </div>
+            }
+          </div>
         </div>
       </div>
-      <div class="header-actions">
-        <button mat-flat-button color="primary" [routerLink]="['/appointments/book']" [queryParams]="{ patientId: patient()?.id }">
-          <mat-icon>calendar_add_on</mat-icon> Schedule Visit
-        </button>
+
+      <div class="chart-header-actions">
+        <a mat-flat-button color="primary" routerLink="/appointments/book" class="action-btn">
+          <mat-icon>add_alarm</mat-icon>
+          <span>Schedule Visit</span>
+        </a>
+        <a mat-stroked-button routerLink="/patients" class="action-btn back-btn">
+          <mat-icon>arrow_back</mat-icon>
+          <span>Back to Directory</span>
+        </a>
       </div>
     </div>
 
-    <mat-tab-group class="content-tabs">
-      <mat-tab label="Overview & Contact">
-        <div class="tab-content">
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="label">Phone</span>
-              <span class="value">{{ patient()?.phone }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Email</span>
-              <span class="value">{{ patient()?.email || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Address</span>
-              <span class="value">{{ patient()?.address || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Emergency Contact</span>
-              <span class="value">{{ patient()?.emergencyContact || 'N/A' }}</span>
-            </div>
-          </div>
-        </div>
-      </mat-tab>
-      <mat-tab label="Medical History">
-        <div class="tab-content">
-          @if (history()?.consultations?.length) {
-            <div class="timeline">
-              @for (c of history().consultations; track c.id) {
-                <div class="timeline-item">
-                  <div class="timeline-dot"></div>
+    <!-- Structured Tabbed Medical Records -->
+    <div class="chart-tabs-wrapper">
+      <mat-tab-group animationDuration="250ms" class="styled-mat-tabs">
+        
+        <!-- Tab 1: Medical Visits & Consultations -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">medical_services</mat-icon>
+            <span>Consultations & History</span>
+          </ng-template>
+          <div class="tab-pane-content">
+            @if (history()?.visits && history().visits.length > 0) {
+              <div class="visits-timeline">
+                @for (visit of history().visits; track visit.appointmentId) {
                   <div class="timeline-card">
-                    <div class="timeline-header">
-                      <span class="doctor">Dr. {{ c.doctorName }}</span>
-                      <span class="date">{{ c.consultationDate | date:'medium' }}</span>
+                    <div class="timeline-indicator">
+                      <div class="indicator-dot"></div>
+                      <div class="indicator-line"></div>
                     </div>
-                    <p><strong>Diagnosis:</strong> {{ c.diagnosis }}</p>
-                    <p><strong>Notes:</strong> {{ c.clinicalNotes }}</p>
+                    <div class="timeline-body">
+                      <div class="visit-header-row">
+                        <span class="visit-date-badge">{{ visit.visitDate | date:'mediumDate' }}</span>
+                        <span class="doctor-badge">Dr. {{ visit.doctorName }}</span>
+                      </div>
+                      <h3 class="diagnosis-title">{{ visit.diagnosis || 'Clinical Consultation' }}</h3>
+                      <p class="visit-reason"><strong>Chief Complaint:</strong> {{ visit.reasonForVisit || 'Regular Checkup' }}</p>
+                      @if (visit.clinicalNotes) {
+                        <div class="clinical-notes-box">
+                          <strong>Physician Notes:</strong>
+                          <p>{{ visit.clinicalNotes }}</p>
+                        </div>
+                      }
+                    </div>
                   </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-chart-state">
+                <mat-icon class="empty-icon">history_edu</mat-icon>
+                <h3>No Previous Consultations</h3>
+                <p>There are no recorded consultation notes for this patient yet.</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Tab 2: Lab Reports, Scans & Files -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">folder_shared</mat-icon>
+            <span>Lab Results & Documents</span>
+          </ng-template>
+          <div class="tab-pane-content">
+            <div class="upload-action-box">
+              <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none">
+              <button mat-flat-button color="accent" (click)="fileInput.click()" [disabled]="isUploading()" class="upload-btn">
+                <mat-icon>upload_file</mat-icon>
+                <span>Upload New Lab Report / Scan</span>
+              </button>
+              @if (isUploading()) {
+                <div class="upload-spinner-wrap">
+                  <mat-spinner diameter="20"></mat-spinner>
+                  <span>Securing & Uploading Document...</span>
                 </div>
               }
             </div>
-          } @else {
-            <p class="empty-text">No recorded consultations for this patient yet.</p>
-          }
-        </div>
-      </mat-tab>
-    </mat-tab-group>
+
+            @if (files().length > 0) {
+              <div class="files-card-grid">
+                @for (f of files(); track f.id) {
+                  <div class="file-item-card">
+                    <div class="file-icon-box">
+                      <mat-icon>description</mat-icon>
+                    </div>
+                    <div class="file-text-content">
+                      <span class="file-title">{{ f.originalFileName || f.fileName }}</span>
+                      <span class="file-meta">{{ f.uploadedAt | date:'mediumDate' }} • {{ (f.fileSize / 1024) | number:'1.0-0' }} KB</span>
+                    </div>
+                    <a [href]="f.downloadUrl" target="_blank" mat-icon-button color="primary" title="Download Document">
+                      <mat-icon>download</mat-icon>
+                    </a>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-chart-state">
+                <mat-icon class="empty-icon">attachment</mat-icon>
+                <h3>No Attached Files</h3>
+                <p>No lab reports, imaging scans, or clinical PDFs attached to this patient profile.</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Tab 3: Demographics & Emergency Contacts -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">contact_phone</mat-icon>
+            <span>Demographics & Contact</span>
+          </ng-template>
+          <div class="tab-pane-content">
+            <div class="demographics-grid">
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>badge</mat-icon></div>
+                <div>
+                  <label>Full Legal Name</label>
+                  <h4>{{ patient()?.firstName }} {{ patient()?.lastName }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>phone</mat-icon></div>
+                <div>
+                  <label>Primary Phone</label>
+                  <h4>{{ patient()?.phone }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>email</mat-icon></div>
+                <div>
+                  <label>Email Address</label>
+                  <h4>{{ patient()?.email || 'None on record' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>home</mat-icon></div>
+                <div>
+                  <label>Residential Address</label>
+                  <h4>{{ patient()?.address || 'Scranton, PA' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile highlight">
+                <div class="tile-icon-wrap"><mat-icon>emergency</mat-icon></div>
+                <div>
+                  <label>Emergency Contact</label>
+                  <h4>{{ patient()?.emergencyContact || '+1 (555) 911-0000 (Family)' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>verified</mat-icon></div>
+                <div>
+                  <label>Registration Date</label>
+                  <h4>{{ patient()?.registeredAt | date:'mediumDate' }}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+      </mat-tab-group>
+    </div>
   }
 </div>

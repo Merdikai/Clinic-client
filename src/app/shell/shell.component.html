@@ -1,98 +1,130 @@
-﻿<mat-sidenav-container class="sidenav-container">
-  <mat-sidenav mode="side" opened class="sidebar">
-    <div class="sidebar-header">
-      <div class="brand">
-        <div class="brand-logo">
-          <mat-icon class="brand-icon">health_and_safety</mat-icon>
+<div class="shell-container" [class.dark-mode]="themeService.isDarkMode()">
+  <aside class="sidebar" [class.collapsed]="isCollapsed()">
+    <div class="brand-header">
+      <div class="brand-logo">
+        <div class="logo-icon">
+          <mat-icon>local_hospital</mat-icon>
         </div>
-        <div class="brand-text">
-          <span class="brand-title">MedFlow</span>
-          <span class="brand-sub">Clinic Cloud</span>
-        </div>
+        @if (!isCollapsed()) {
+          <span class="brand-title">MedFlow OS</span>
+        }
       </div>
-      <div class="header-actions">
-        <button mat-icon-button (click)="toggleTheme()" [matTooltip]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'" class="theme-toggle-btn">
-          <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      <button mat-icon-button (click)="toggleSidebar()" class="collapse-btn" [matTooltip]="isCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'">
+        <mat-icon>{{ isCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
+    </div>
+
+    <nav class="nav-menu">
+      <!-- Dashboard (All Roles) -->
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" matTooltip="Clinic Control Center" [matTooltipDisabled]="!isCollapsed()">
+        <mat-icon>dashboard</mat-icon>
+        @if (!isCollapsed()) { <span>Dashboard</span> }
+      </a>
+
+      <!-- Patients -->
+      @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist'])) {
+        <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>groups</mat-icon>
+          @if (!isCollapsed()) { <span>Patients</span> }
+        </a>
+      }
+
+      <!-- Appointments -->
+      @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Patient'])) {
+        <a routerLink="/appointments" routerLinkActive="active" class="nav-item" matTooltip="Appointments Schedule" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>event_available</mat-icon>
+          @if (!isCollapsed()) { <span>Appointments</span> }
+        </a>
+      }
+
+      <!-- Doctor Schedules -->
+      @if (hasAnyRole(['Admin', 'Doctor', 'Receptionist'])) {
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Doctor Shifts & Availability" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>schedule</mat-icon>
+          @if (!isCollapsed()) { <span>Doctor Schedules</span> }
+        </a>
+      }
+
+      <!-- Pharmacy -->
+      @if (hasAnyRole(['Admin', 'Pharmacist', 'Doctor'])) {
+        <a routerLink="/pharmacy" routerLinkActive="active" class="nav-item" matTooltip="Pharmacy & Inventory" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>medication</mat-icon>
+          @if (!isCollapsed()) { <span>Pharmacy</span> }
+        </a>
+      }
+
+      <!-- Billing -->
+      @if (hasAnyRole(['Admin', 'Accountant', 'Receptionist'])) {
+        <a routerLink="/billing" routerLinkActive="active" class="nav-item" matTooltip="Billing & Accounts Receivable" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>receipt_long</mat-icon>
+          @if (!isCollapsed()) { <span>Billing</span> }
+        </a>
+      }
+
+      <!-- Reports (Admin, Accountant) -->
+      @if (hasAnyRole(['Admin', 'Accountant'])) {
+        <a routerLink="/reports" routerLinkActive="active" class="nav-item" matTooltip="Analytics & Reports" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>analytics</mat-icon>
+          @if (!isCollapsed()) { <span>Reports</span> }
+        </a>
+      }
+
+      <!-- User & Roles (Admin Only) -->
+      @if (hasRole('Admin')) {
+        <a routerLink="/users" routerLinkActive="active" class="nav-item" matTooltip="User & Role Management" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>admin_panel_settings</mat-icon>
+          @if (!isCollapsed()) { <span>Users & Roles</span> }
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="user-avatar">{{ (currentUser()?.username || 'U').slice(0, 1).toUpperCase() }}</div>
+        @if (!isCollapsed()) {
+          <div class="user-details">
+            <span class="user-name">{{ currentUser()?.fullName || currentUser()?.username || 'System User' }}</span>
+            <span class="user-role">{{ (currentUser()?.roles?.[0] || 'Staff') }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="footer-actions">
+        <button mat-icon-button (click)="themeService.toggleDarkMode()" [title]="themeService.isDarkMode() ? 'Light Mode' : 'Dark Mode'">
+          <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+        <button mat-icon-button (click)="logout()" title="Sign Out">
+          <mat-icon>logout</mat-icon>
         </button>
       </div>
     </div>
+  </aside>
 
-    <div class="sync-banner" [class.connected]="liveSync.isConnected()">
-      <span class="status-dot"></span>
-      <span class="status-label">{{ liveSync.isConnected() ? 'SignalR Live Sync Active' : 'Connecting Real-time...' }}</span>
-    </div>
-
-    <mat-nav-list class="nav-list">
-      <div class="nav-section-title">CLINICAL OPS</div>
-      <a mat-list-item routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon matListItemIcon>groups</mat-icon>
-        <span matListItemTitle>Patients Directory</span>
-      </a>
-
-      <a mat-list-item routerLink="/patients/new" routerLinkActive="active">
-        <mat-icon matListItemIcon>person_add</mat-icon>
-        <span matListItemTitle>Register Patient</span>
-      </a>
-
-      <a mat-list-item routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon matListItemIcon>event_note</mat-icon>
-        <span matListItemTitle>Appointments</span>
-      </a>
-
-      <a mat-list-item routerLink="/appointments/book" routerLinkActive="active">
-        <mat-icon matListItemIcon>add_alarm</mat-icon>
-        <span matListItemTitle>Book Consultation</span>
-      </a>
-
-      <div class="nav-section-title">SERVICES & FINANCE</div>
-      @if (hasAnyRole(['Admin', 'Pharmacist', 'Doctor'])) {
-        <a mat-list-item routerLink="/pharmacy" routerLinkActive="active">
-          <mat-icon matListItemIcon>medication</mat-icon>
-          <span matListItemTitle>Pharmacy & Inventory</span>
-        </a>
-      }
-
-      @if (hasAnyRole(['Admin', 'Accountant', 'Receptionist'])) {
-        <a mat-list-item routerLink="/billing" routerLinkActive="active">
-          <mat-icon matListItemIcon>receipt_long</mat-icon>
-          <span matListItemTitle>Billing & Invoices</span>
-        </a>
-      }
-
-      @if (hasAnyRole(['Admin', 'Doctor', 'Accountant'])) {
-        <a mat-list-item routerLink="/reports" routerLinkActive="active">
-          <mat-icon matListItemIcon>insights</mat-icon>
-          <span matListItemTitle>Analytics & Reports</span>
-        </a>
-      }
-
-      @if (hasRole('Admin')) {
-        <div class="nav-section-title">ADMINISTRATION</div>
-        <a mat-list-item routerLink="/users" routerLinkActive="active">
-          <mat-icon matListItemIcon>admin_panel_settings</mat-icon>
-          <span matListItemTitle>User Management</span>
-        </a>
-      }
-    </mat-nav-list>
-
-    <div class="sidebar-footer">
-      <div class="user-profile-card">
-        <div class="avatar-badge">{{ (currentUser()?.fullName || 'U')[0] }}</div>
-        <div class="user-info-text">
-          <div class="user-display-name">{{ currentUser()?.fullName || currentUser()?.username }}</div>
-          <div class="user-role-tag">{{ currentUser()?.roles?.join(', ') || 'Medical Staff' }}</div>
+  <main class="main-viewport">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="live-badge">
+          <span class="pulse-dot"></span>
+          <span>LIVE CLINIC SYNC</span>
         </div>
       </div>
-      <button mat-flat-button color="warn" class="logout-btn" (click)="logout()">
-        <mat-icon>logout</mat-icon>
-        <span>Logout</span>
-      </button>
-    </div>
-  </mat-sidenav>
 
-  <mat-sidenav-content class="main-viewport">
-    <div class="content-wrapper">
+      <div class="topbar-right">
+        @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Patient'])) {
+          <button mat-stroked-button class="quick-action-btn" routerLink="/appointments/book">
+            <mat-icon>add</mat-icon> Quick Book
+          </button>
+        }
+        @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist'])) {
+          <button mat-flat-button color="primary" class="quick-patient-btn" routerLink="/patients/new">
+            <mat-icon>person_add</mat-icon> New Patient
+          </button>
+        }
+      </div>
+    </header>
+
+    <section class="content-scroller">
       <router-outlet></router-outlet>
-    </div>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+    </section>
+  </main>
+</div>

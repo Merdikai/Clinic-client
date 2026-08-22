@@ -1,54 +1,517 @@
-﻿.container {
-  padding: 24px;
-}
 
-.header {
+.pharmacy-container {
+  padding: 1.75rem;
+  max-width: 1440px;
+  margin: 0 auto;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  flex-direction: column;
+  gap: 1.5rem;
 
-  h2 {
-    margin: 0;
-    font-size: 24px;
+  .pharmacy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* removed hero-gradient to allow premium-hero-card to shine */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+    gap: 1.25rem;
+
+    .header-info {
+      .page-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.85rem;
+        background: var(--info-bg);
+        border: 1px solid var(--info-border);
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--info-text);
+        margin-bottom: 0.5rem;
+      }
+
+      .page-title {
+        font-size: 1.85rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+        letter-spacing: -0.02em;
+      }
+
+      .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .action-btn {
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      background: var(--primary-gradient) !important;
+      color: #ffffff !important;
+      padding: 0.65rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  .modern-tabs {
+    background: var(--bg-surface);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+
+    .tab-icon {
+      margin-right: 0.5rem;
+    }
+
+    .tab-content {
+      padding: 1.5rem 0;
+    }
+  }
+
+  .dispenser-card {
+    background: var(--bg-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+
+      mat-icon {
+        color: var(--primary-color);
+      }
+
+      h3 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+      }
+    }
+
+    .dispense-form {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+
+      .full-width {
+        flex: 1;
+        min-width: 280px;
+      }
+
+      .action-group {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 22px;
+
+        button {
+          height: 56px;
+          border-radius: var(--radius-md);
+          font-weight: 700;
+        }
+
+        .dispense-btn {
+          background: var(--primary-gradient) !important;
+          color: #ffffff !important;
+        }
+
+        .bill-btn {
+          background: var(--secondary-gradient) !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+  }
+
+  .section-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    margin-top: 1rem;
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+
+      h3 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+      }
+    }
+
+    .modern-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th {
+        background: var(--bg-subtle);
+        color: var(--text-secondary);
+        font-size: 0.785rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      td {
+        padding: 0.95rem 1rem;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+    }
+  }
+
+  .rx-code-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--info-bg);
+    border: 1px solid var(--info-border);
+    color: var(--info-text);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-sm);
+    font-family: monospace;
     font-weight: 700;
-    color: #1e293b;
+    font-size: 0.8125rem;
   }
 }
 
-.alert-badge {
-  background: #ef4444;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
+  
+
+/* Breathtaking Medicine Catalog Cards */
+.pharmacy-catalog-grid {
+  gap: 28px;
+  padding: 10px;
 }
 
-.toolbar {
-  margin-bottom: 20px;
-}
-
-.search-field {
-  width: 320px;
-}
-
-.table-container {
-  background: white;
-  border-radius: 12px;
+.breathtaking-card {
+  position: relative;
   overflow: hidden;
-}
-
-.full-width {
-  width: 100%;
-}
-
-.loading-container {
+  padding: 0 !important;
+  border-radius: 24px !important;
   display: flex;
-  justify-content: center;
-  padding: 60px;
+  flex-direction: column;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-color) !important;
 }
 
-.stock-value {
-  font-weight: 700;
+.breathtaking-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -12px rgba(2, 132, 199, 0.25) !important;
+  border-color: rgba(2, 132, 199, 0.4) !important;
+}
+
+.breathtaking-card-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 100px;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.1), transparent);
+  border-bottom-left-radius: 50%;
+  border-bottom-right-radius: 50%;
+  transform: scaleX(1.5);
+  z-index: 0;
+}
+
+.card-content-wrapper {
+  position: relative;
+  z-index: 1;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.out-of-stock-card {
+  opacity: 0.8;
+  filter: grayscale(85%);
+  .breathtaking-card-bg { background: linear-gradient(135deg, rgba(100, 116, 139, 0.1), transparent); }
+}
+
+.med-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.med-icon-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.primary-glow {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.5);
+}
+
+.bw-glow {
+  background: #64748b;
+  box-shadow: 0 10px 20px -5px rgba(100, 116, 139, 0.4);
+}
+
+.modern-stock-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--success-bg);
+  color: var(--success-text);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border: 1px solid var(--success-border);
+  
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+  
+  &.low {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border-color: var(--warning-border);
+  }
+  
+  &.out {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+  }
+}
+
+.med-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  
+  .med-name {
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+  }
+  
+  .category-tag {
+    display: inline-block;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    background: rgba(2, 132, 199, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    align-self: flex-start;
+    margin-bottom: 0.25rem;
+  }
+  
+  .code-tag {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  
+  .price-row {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    
+    .price-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+    }
+    
+    .med-price {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.2;
+    }
+  }
+}
+
+.med-card-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+.breathtaking-btn {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  font-size: 1rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 0 20px !important;
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+}
+
+.breathtaking-btn:hover:not([disabled]) {
+  transform: scale(1.02);
+  box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.4) !important;
+}
+
+.breathtaking-btn[disabled] {
+  background: var(--bg-subtle) !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+}
+
+/* Premium Rx Queue Cards */
+.rx-queue-grid {
+  gap: 24px;
+}
+.rx-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  border-radius: 20px !important;
+  border-top: 4px solid var(--warning-text) !important;
+}
+.dispensed-card {
+  border-top-color: var(--success-text) !important;
+  opacity: 0.85;
+}
+.rx-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rx-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  mat-icon { font-size: 24px; width: 24px; height: 24px; }
+}
+.dispensed-badge {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.rx-status-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  padding: 4px 10px;
+  border-radius: 20px;
+  
+  .status-indicator {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);
+    &.pulse { background: var(--warning-text); box-shadow: 0 0 8px var(--warning-text); }
+  }
+}
+.rx-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.rx-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  .sub-icon { color: var(--primary-color); opacity: 0.8; }
+  .info-details {
+    display: flex;
+    flex-direction: column;
+    .info-label { font-size: 0.7rem; text-transform: uppercase; font-weight: 800; color: var(--text-secondary); }
+    .info-val { font-size: 1rem; color: var(--text-primary); margin: 0; }
+  }
+}
+.rx-items-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  
+  .items-header {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--border-subtle);
+  }
+  .items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .mini-med-item {
+    display: flex;
+    flex-direction: column;
+    .med-name-qty { font-size: 0.9rem; color: var(--text-primary); }
+    .med-dose { font-size: 0.75rem; color: var(--text-muted); }
+  }
+}
+.rx-card-footer {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+.pro-action-btn {
+  flex: 1;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+.dispense-action {
+  background: var(--success-text) !important;
+  color: #111 !important;
+}
+.invoice-action {
+  color: var(--info-text) !important;
+  border-color: var(--info-border) !important;
 }

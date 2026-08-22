@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -9,26 +9,30 @@ import { Invoice, CreateInvoiceRequest, PaymentRequest } from '../models/billing
 })
 export class BillingService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/invoices`;
+  private apiUrl = `${environment.apiUrl}/billing`;
 
   getInvoices(): Observable<Invoice[]> {
-    return this.http.get<Invoice[]>(this.apiUrl);
+    return this.http.get<Invoice[]>(`${this.apiUrl}/invoices`);
   }
 
   getInvoice(id: string): Observable<Invoice> {
-    return this.http.get<Invoice>(`${this.apiUrl}/${id}`);
+    return this.http.get<Invoice>(`${this.apiUrl}/invoices/${id}`);
+  }
+
+  getInvoicesByPatient(patientId: string): Observable<Invoice[]> {
+    return this.http.get<Invoice[]>(`${this.apiUrl}/invoices/patient/${patientId}`);
   }
 
   createInvoice(request: CreateInvoiceRequest): Observable<Invoice> {
-    return this.http.post<Invoice>(this.apiUrl, request);
+    return this.http.post<Invoice>(`${this.apiUrl}/invoices`, request);
   }
 
-  processPayment(request: PaymentRequest): Observable<Invoice> {
-    return this.http.post<Invoice>(`${this.apiUrl}/${request.invoiceId}/payments`, request);
+  processPayment(request: PaymentRequest): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/payments`, request);
   }
 
   downloadPdf(invoiceId: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/${invoiceId}/pdf`, {
+    return this.http.get(`${this.apiUrl}/invoices/${invoiceId}/pdf`, {
       responseType: 'blob'
     });
   }

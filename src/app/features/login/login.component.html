@@ -1,4 +1,4 @@
-﻿<div class="login-container">
+<div class="login-container">
   <div class="theme-switch-floating">
     <button mat-icon-button (click)="toggleTheme()" [matTooltip]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
       <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -13,6 +13,8 @@
       <h1>MedFlow Clinical OS</h1>
       <p>Sign in to your healthcare provider workspace</p>
     </div>
+
+    
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <mat-form-field appearance="outline" class="full-width">

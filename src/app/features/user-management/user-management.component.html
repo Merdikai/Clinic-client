@@ -1,66 +1,188 @@
-﻿<div class="page-container">
-  <div class="page-header-card">
-    <div class="header-left">
-      <div class="header-icon-box">
-        <mat-icon>admin_panel_settings</mat-icon>
+<div class="page-container premium-page">
+
+  <!-- HERO HEADER -->
+  <div class="hero-card premium-hero-card">
+    <div class="hero-content">
+      <div class="security-badge">
+        <mat-icon>security</mat-icon>
+        <span>RBAC Security & Access Control Suite</span>
       </div>
-      <div>
-        <h1 class="page-title">User & Role Management</h1>
-        <p class="page-subtitle">Configure system security, assign medical roles, and manage permissions</p>
+      <h1 class="hero-title">Staff Credentials & Role Governance</h1>
+      <p class="hero-subtitle">Grant and revoke clinical permissions, assign specialized staff designations, and audit authenticated user access</p>
+    </div>
+    <div class="hero-stats-row">
+      <div class="hero-stat-pill">
+        <span class="dot green"></span>
+        <span>{{ users().length }} Active Users</span>
+      </div>
+      <div class="hero-stat-pill">
+        <span class="dot blue"></span>
+        <span>{{ doctorCount() }} Doctors</span>
+      </div>
+      <div class="hero-stat-pill">
+        <span class="dot purple"></span>
+        <span>{{ pharmaCount() }} Pharmacists</span>
       </div>
     </div>
   </div>
 
-  <div class="content-card">
-    <div class="table-responsive">
-      <table mat-table [dataSource]="users()" class="custom-table">
-        <ng-container matColumnDef="username">
-          <th mat-header-cell *matHeaderCellDef>Username</th>
-          <td mat-cell *matCellDef="let user">
-            <span class="id-tag">{{ user.username }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="fullName">
-          <th mat-header-cell *matHeaderCellDef>Staff Name</th>
-          <td mat-cell *matCellDef="let user">
-            <span class="staff-name">{{ user.fullName || user.username }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="roles">
-          <th mat-header-cell *matHeaderCellDef>Assigned Roles (Click ✕ to revoke)</th>
-          <td mat-cell *matCellDef="let user">
-            <div class="roles-wrapper">
-              @for (role of user.roles; track role) {
-                <span class="role-chip" (click)="removeRole(user.userId, role)" title="Click to remove {{ role }}">
-                  <span>{{ role }}</span>
-                  <mat-icon class="remove-icon">close</mat-icon>
-                </span>
-              }
-            </div>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Grant Role</th>
-          <td mat-cell *matCellDef="let user">
-            <mat-form-field appearance="outline" class="role-select-box">
-              <mat-label>Add Role</mat-label>
-              <mat-select (selectionChange)="assignRole(user.userId, $event.value)">
-                @for (role of availableRoles; track role) {
-                  @if (!hasRole(user, role)) {
-                    <mat-option [value]="role">{{ role }}</mat-option>
-                  }
-                }
-              </mat-select>
-            </mat-form-field>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
+  <!-- ROLE METRIC SUMMARY CARDS -->
+  <div class="metrics-grid">
+    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'ALL'" (click)="selectedRoleFilter.set('ALL')">
+      <div class="icon-wrap all-wrap"><mat-icon>people</mat-icon></div>
+      <div class="metric-info">
+        <span class="metric-title">All Staff</span>
+        <h3 class="metric-count">{{ users().length }}</h3>
+      </div>
     </div>
+
+    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Admin'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Admin' ? 'ALL' : 'Admin')">
+      <div class="icon-wrap admin-wrap"><mat-icon>admin_panel_settings</mat-icon></div>
+      <div class="metric-info">
+        <span class="metric-title">Administrators</span>
+        <h3 class="metric-count">{{ adminCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Doctor'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Doctor' ? 'ALL' : 'Doctor')">
+      <div class="icon-wrap doctor-wrap"><mat-icon>stethoscope</mat-icon></div>
+      <div class="metric-info">
+        <span class="metric-title">Physicians</span>
+        <h3 class="metric-count">{{ doctorCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Pharmacist'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Pharmacist' ? 'ALL' : 'Pharmacist')">
+      <div class="icon-wrap pharma-wrap"><mat-icon>medication</mat-icon></div>
+      <div class="metric-info">
+        <span class="metric-title">Pharmacists</span>
+        <h3 class="metric-count">{{ pharmaCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Accountant'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Accountant' ? 'ALL' : 'Accountant')">
+      <div class="icon-wrap account-wrap"><mat-icon>account_balance_wallet</mat-icon></div>
+      <div class="metric-info">
+        <span class="metric-title">Accountants</span>
+        <h3 class="metric-count">{{ accountantCount() }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE CONTAINER -->
+  <div class="content-glass-card premium-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search by username, full name, or assigned role..." class="search-input">
+      </div>
+
+      <div class="filter-chips">
+        <button class="filter-btn" [class.active]="selectedRoleFilter() === 'ALL'" (click)="selectedRoleFilter.set('ALL')">
+          All Users
+        </button>
+        @for (role of availableRoles; track role) {
+          <button class="filter-btn" [class.active]="selectedRoleFilter() === role" (click)="selectedRoleFilter.set(role)">
+            {{ role }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="44"></mat-spinner>
+        <p>Syncing staff permissions from database...</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table mat-table [dataSource]="filteredUsers()" class="user-table">
+
+          <!-- Avatar Column -->
+          <ng-container matColumnDef="avatar">
+            <th mat-header-cell *matHeaderCellDef>User</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="user-avatar-circle" [class.admin-av]="user.roles?.includes('Admin')" [class.doc-av]="user.roles?.includes('Doctor')">
+                {{ getInitials(user.fullName || user.username) }}
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Username Column -->
+          <ng-container matColumnDef="username">
+            <th mat-header-cell *matHeaderCellDef>Username / ID</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="username-badge">
+                <mat-icon class="user-icon">account_circle</mat-icon>
+                <span>{{ user.username }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Full Name -->
+          <ng-container matColumnDef="fullName">
+            <th mat-header-cell *matHeaderCellDef>Full Name & Designation</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="name-block">
+                <span class="user-real-name">{{ user.fullName || user.username }}</span>
+                <span class="user-status-text">
+                  <span class="status-live-dot"></span>
+                  <span>Active Credential</span>
+                </span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Assigned Roles Chips -->
+          <ng-container matColumnDef="roles">
+            <th mat-header-cell *matHeaderCellDef>Assigned Permissions & Roles (Click ✕ to Revoke)</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="roles-flow-box">
+                @if (user.roles && user.roles.length > 0) {
+                  @for (role of user.roles; track role) {
+                    <span class="role-chip" [ngClass]="getRoleClass(role)" (click)="removeRole(user.userId, role)" [matTooltip]="'Click to revoke ' + role + ' access'">
+                      <span class="role-label">{{ role }}</span>
+                      <mat-icon class="revoke-icon">close</mat-icon>
+                    </span>
+                  }
+                } @else {
+                  <span class="no-role-chip">No Assigned Roles</span>
+                }
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Grant Role Action -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Grant Specialized Role</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="grant-role-box">
+                <mat-form-field appearance="outline" class="role-picker">
+                  <mat-label>Assign Role</mat-label>
+                  <mat-select (selectionChange)="assignRole(user.userId, $event.value)">
+                    @for (role of availableRoles; track role) {
+                      @if (!hasRole(user, role)) {
+                        <mat-option [value]="role">+ {{ role }}</mat-option>
+                      }
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="user-row"></tr>
+        </table>
+
+        @if (filteredUsers().length === 0) {
+          <div class="empty-state">
+            <mat-icon class="empty-icon">person_off</mat-icon>
+            <h3>No Users Found</h3>
+            <p>No user accounts matched your search criteria.</p>
+          </div>
+        }
+      </div>
+    }
   </div>
 </div>

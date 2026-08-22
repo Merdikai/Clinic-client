@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { CreateMedicineRequest, Medicine } from '../models/medicine.model';
@@ -23,6 +23,6 @@ export class MedicineService {
   }
 
   dispense(id: string, quantity: number) {
-    return this.http.patch(`${this.apiUrl}/${id}/dispense`, quantity);
+    return this.http.patch(`${this.apiUrl}/${id}/dispense`, { quantity });
   }
 }

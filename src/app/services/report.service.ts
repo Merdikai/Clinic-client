@@ -1,33 +1,41 @@
-﻿import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class ReportService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/reports`;
 
-  getDashboardSummary(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/dashboard`);
+  getRevenueReport(startDate?: string, endDate?: string): Observable<any> {
+    const params: any = {};
+    if (startDate) params.date = startDate;
+    return this.http.get<any>(`${this.apiUrl}/daily-revenue`, { params });
   }
 
-  getDailyRevenue(date: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/daily-revenue?date=${date}`);
+  getDashboardSummary(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/dashboard`);
   }
 
   getTopMedicines(count = 5): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/top-medicines?count=${count}`);
   }
 
-  exportPatients(): Observable<Blob> {
+  getDoctorAppointments(startDate?: string, endDate?: string): Observable<any> {
+    const params: any = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    return this.http.get<any>(`${this.apiUrl}/doctor-appointments`, { params });
+  }
+
+  exportPatientsCsv(): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/export/patients`, { responseType: 'blob' });
   }
 
-  exportInvoices(startDate?: string, endDate?: string): Observable<Blob> {
-    let url = `${this.apiUrl}/export/invoices`;
-    if (startDate) url += `?startDate=${startDate}`;
-    if (endDate) url += `&endDate=${endDate}`;
-    return this.http.get(url, { responseType: 'blob' });
+  exportInvoicesCsv(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export/invoices`, { responseType: 'blob' });
   }
 }

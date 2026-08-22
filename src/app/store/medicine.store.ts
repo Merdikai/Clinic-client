@@ -1,13 +1,13 @@
-﻿import { inject } from '@angular/core';
+import { inject, computed } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
+import { setAllEntities, updateEntity, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { computed } from '@angular/core';
-import { pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { MedicineService } from '../services/medicine.service';
 import { Medicine } from '../models/medicine.model';
+import { ToastService } from '../ui/toast/toast.service';
 
-interface MedicineState {
-  medicines: Medicine[];
+interface MedicineMetadataState {
   totalCount: number;
   currentPage: number;
   pageSize: number;
@@ -16,8 +16,7 @@ interface MedicineState {
   error: string | null;
 }
 
-const initialState: MedicineState = {
-  medicines: [],
+const initialMetadataState: MedicineMetadataState = {
   totalCount: 0,
   currentPage: 1,
   pageSize: 10,
@@ -28,19 +27,18 @@ const initialState: MedicineState = {
 
 export const MedicineStore = signalStore(
   { providedIn: 'root' },
-
-  withState(initialState),
-
+  withEntities<Medicine>(),
+  withState(initialMetadataState),
   withComputed((state) => ({
+    medicines: computed(() => state.entities()),
     lowStockMedicines: computed(() =>
-      state.medicines().filter(m => m.stockQuantity < 10)
+      state.entities().filter(m => m.stockQuantity < 10)
     ),
     outOfStockMedicines: computed(() =>
-      state.medicines().filter(m => m.stockQuantity === 0)
+      state.entities().filter(m => m.stockQuantity === 0)
     )
   })),
-
-  withMethods((store, medicineService = inject(MedicineService)) => ({
+  withMethods((store, medicineService = inject(MedicineService), toast = inject(ToastService)) => ({
     loadMedicines: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
@@ -52,16 +50,20 @@ export const MedicineStore = signalStore(
           ).pipe(
             tap({
               next: (response: any) => {
-                patchState(store, {
-                  medicines: response.items || [],
-                  totalCount: response.totalCount || 0,
-                  isLoading: false
-                });
+                patchState(
+                  store,
+                  setAllEntities(response.items || []),
+                  {
+                    totalCount: response.totalCount || 0,
+                    isLoading: false
+                  }
+                );
               },
               error: (error) => {
                 patchState(store, { isLoading: false, error: error.message || 'Failed to load medicines' });
               }
-            })
+            }),
+            catchError(() => of(null))
           )
         )
       )
@@ -72,19 +74,25 @@ export const MedicineStore = signalStore(
     },
 
     setPage(page: number, pageSize: number) {
-      patchState(store, { currentPage: page, pageSize: pageSize });
+      patchState(store, { currentPage: page, pageSize });
     },
 
+    // TMS Pattern: Optimistic Dispense with rollback
     dispenseMedicine(medicineId: string, quantity: number) {
+      const original = store.entities().find(m => m.id === medicineId);
+      if (!original) return;
+
+      const newStock = Math.max(0, original.stockQuantity - quantity);
+      patchState(store, updateEntity({ id: medicineId, changes: { stockQuantity: newStock } }));
+
       medicineService.dispense(medicineId, quantity).subscribe({
         next: () => {
-          patchState(store, {
-            medicines: store.medicines().map(m =>
-              m.id === medicineId
-                ? { ...m, stockQuantity: m.stockQuantity - quantity }
-                : m
-            )
-          });
+          toast.success(`Dispensed ${quantity} units of ${original.name}`);
+        },
+        error: (err) => {
+          // Rollback on failure
+          patchState(store, updateEntity({ id: medicineId, changes: { stockQuantity: original.stockQuantity } }));
+          toast.error(`Failed to dispense: ${err.message || 'Server error'}`);
         }
       });
     }

@@ -1,75 +1,158 @@
-﻿<div class="page-container">
-  <div class="page-header-card">
-    <div class="header-left">
-      <div class="header-icon-box">
-        <mat-icon>event_available</mat-icon>
+<div class="page-container">
+
+  <!-- HERO BANNER -->
+  <div class="hero-card">
+    <div class="hero-content">
+      <div class="schedule-badge">
+        <span class="pulse-dot"></span>
+        <span>Real-Time Clinical Workflow Suite</span>
       </div>
-      <div>
-        <h1 class="page-title">Appointment Master Schedule</h1>
-        <p class="page-subtitle">Real-time consultation queues, patient check-ins, and doctor timings</p>
-      </div>
+      <h1 class="hero-title">Appointment Master Schedule</h1>
+      <p class="hero-subtitle">Real-time consultation queues, live patient triage check-ins, and physician clinical suite</p>
     </div>
-    <div class="header-actions">
-      <a mat-raised-button color="primary" routerLink="/appointments/book" class="create-btn">
+    <div class="hero-actions">
+      <a mat-raised-button color="primary" routerLink="/appointments/book" class="book-hero-btn">
         <mat-icon>add_alarm</mat-icon>
-        <span>Book Appointment</span>
+        <span>Schedule Consultation</span>
       </a>
     </div>
   </div>
 
-  <div class="content-card">
+  <!-- STATS OVERVIEW CARDS -->
+  <div class="stats-grid">
+    <div class="stat-card" [class.active]="selectedStatusFilter() === 'ALL'" (click)="selectedStatusFilter.set('ALL')">
+      <div class="icon-wrap all-icon"><mat-icon>event_note</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-label">Total Appointments</span>
+        <h3 class="stat-value">{{ appointments().length }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active]="selectedStatusFilter() === 'CheckedIn'" (click)="selectedStatusFilter.set(selectedStatusFilter() === 'CheckedIn' ? 'ALL' : 'CheckedIn')">
+      <div class="icon-wrap waiting-icon"><mat-icon>hourglass_top</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-label">Waiting in Queue</span>
+        <h3 class="stat-value">{{ checkedInCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active]="selectedStatusFilter() === 'Scheduled'" (click)="selectedStatusFilter.set(selectedStatusFilter() === 'Scheduled' ? 'ALL' : 'Scheduled')">
+      <div class="icon-wrap sched-icon"><mat-icon>schedule</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-label">Upcoming / Scheduled</span>
+        <h3 class="stat-value">{{ scheduledCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.active]="selectedStatusFilter() === 'Completed'" (click)="selectedStatusFilter.set(selectedStatusFilter() === 'Completed' ? 'ALL' : 'Completed')">
+      <div class="icon-wrap done-icon"><mat-icon>verified</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-label">Consultations Completed</span>
+        <h3 class="stat-value">{{ completedCount() }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE CONTAINER -->
+  <div class="content-glass-card">
     <div class="table-toolbar">
-      <mat-form-field appearance="outline" class="date-field">
-        <mat-label>Filter By Consultation Date</mat-label>
-        <input matInput [matDatepicker]="picker" (dateChange)="onDateChange($event.value)" placeholder="Choose a date">
-        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-      </mat-form-field>
+      <div class="date-filter-box">
+        <mat-form-field appearance="outline" class="date-picker-input">
+          <mat-label>Filter By Date</mat-label>
+          <input matInput [matDatepicker]="picker" (dateChange)="onDateChange($event.value)" placeholder="Choose consultation date">
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="filter-chips">
+        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'ALL'" (click)="selectedStatusFilter.set('ALL')">
+          All ({{ appointments().length }})
+        </button>
+        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'CheckedIn'" (click)="selectedStatusFilter.set('CheckedIn')">
+          Waiting Queue ({{ checkedInCount() }})
+        </button>
+        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'Scheduled'" (click)="selectedStatusFilter.set('Scheduled')">
+          Scheduled ({{ scheduledCount() }})
+        </button>
+        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'Completed'" (click)="selectedStatusFilter.set('Completed')">
+          Completed ({{ completedCount() }})
+        </button>
+      </div>
     </div>
 
     @if (isLoading()) {
       <div class="loading-state">
         <mat-spinner diameter="44"></mat-spinner>
-        <p>Syncing schedule records...</p>
+        <p>Syncing live appointment queues...</p>
       </div>
     } @else {
       <div class="table-responsive">
-        <table mat-table [dataSource]="appointments()" class="custom-table">
+        <table mat-table [dataSource]="filteredAppointments()" class="custom-table">
+
+          <!-- Date & Time Column -->
           <ng-container matColumnDef="date">
-            <th mat-header-cell *matHeaderCellDef>Date & Time</th>
+            <th mat-header-cell *matHeaderCellDef>Scheduled Timing</th>
             <td mat-cell *matCellDef="let a">
-              <div class="date-cell">
-                <span class="date-main">{{ (a.date || a.scheduledAt || a.startTime) | date:'mediumDate' }}</span>
-                <span class="time-sub">{{ (a.date || a.scheduledAt || a.startTime) | date:'shortTime' }}</span>
+              <div class="date-badge-box">
+                <div class="date-primary">
+                  <mat-icon class="inline-icon">calendar_today</mat-icon>
+                  <span>{{ (a.scheduledDateTime || a.date || a.scheduledAt) | date:'mediumDate' }}</span>
+                </div>
+                <div class="time-secondary">
+                  <mat-icon class="inline-icon">schedule</mat-icon>
+                  <span>{{ (a.scheduledDateTime || a.date || a.scheduledAt) | date:'shortTime' }}</span>
+                </div>
               </div>
             </td>
           </ng-container>
 
+          <!-- Patient Profile -->
           <ng-container matColumnDef="patient">
-            <th mat-header-cell *matHeaderCellDef>Patient</th>
+            <th mat-header-cell *matHeaderCellDef>Patient Profile</th>
             <td mat-cell *matCellDef="let a">
-              <span class="person-name">{{ a.patientName || a.patient?.fullName }}</span>
+              <div class="patient-cell">
+                <div class="patient-avatar-mini">
+                  {{ getInitials(a.patientName || a.patient?.fullName || 'PT') }}
+                </div>
+                <div class="patient-text">
+                  <span class="person-name">{{ a.patientName || a.patient?.fullName || 'Patient' }}</span>
+                  @if (a.patientId) {
+                    <a [routerLink]="['/patients', a.patientId]" class="patient-sub-link">
+                      <mat-icon class="tiny-icon">open_in_new</mat-icon>
+                      <span>Medical Chart</span>
+                    </a>
+                  }
+                </div>
+              </div>
             </td>
           </ng-container>
 
+          <!-- Assigned Doctor -->
           <ng-container matColumnDef="doctor">
-            <th mat-header-cell *matHeaderCellDef>Physician</th>
+            <th mat-header-cell *matHeaderCellDef>Attending Physician</th>
             <td mat-cell *matCellDef="let a">
-              <span class="doctor-badge">Dr. {{ a.doctorName || a.doctor?.fullName || 'Physician' }}</span>
+              <div class="doctor-badge-box">
+                <mat-icon class="doc-icon">stethoscope</mat-icon>
+                <span>Dr. {{ a.doctorName || a.doctor?.fullName || 'Physician' }}</span>
+              </div>
             </td>
           </ng-container>
 
+          <!-- Status -->
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let a">
-              <span class="badge-pill" [class.info]="a.status === 'Scheduled'" [class.warning]="a.status === 'CheckedIn'" [class.success]="a.status === 'Completed'" [class.danger]="a.status === 'Cancelled'">
-                {{ a.status }}
+              <span class="status-pill" [class.info]="a.status === 'Scheduled'" [class.warning]="a.status === 'CheckedIn'" [class.success]="a.status === 'Completed'" [class.danger]="a.status === 'Cancelled'">
+                <span class="pill-dot"></span>
+                <span>{{ a.status }}</span>
               </span>
             </td>
           </ng-container>
 
+          <!-- Actions Column -->
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Operations</th>
+            <th mat-header-cell *matHeaderCellDef>Clinical Operations</th>
             <td mat-cell *matCellDef="let a">
               <div class="actions-group">
                 @if (a.status === 'Scheduled') {
@@ -77,27 +160,203 @@
                     <mat-icon>how_to_reg</mat-icon>
                     <span>Check In</span>
                   </button>
-                  <button mat-stroked-button color="warn" class="cancel-btn" (click)="cancel(a.id)">
+                  <button mat-stroked-button color="warn" class="cancel-btn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
                     <mat-icon>close</mat-icon>
-                    <span>Cancel</span>
                   </button>
+                } @else if (a.status === 'CheckedIn') {
+                  <button mat-flat-button class="prescribe-btn" (click)="openConsultationModal(a)">
+                    <mat-icon>medical_services</mat-icon>
+                    <span>Doctor Consult & Prescribe</span>
+                  </button>
+                } @else {
+                  <div class="completed-badge">
+                    <mat-icon>verified</mat-icon>
+                    <span>Consulted & Prescribed</span>
+                  </div>
                 }
               </div>
             </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="appt-row"></tr>
         </table>
 
-        @if (appointments().length === 0) {
+        @if (filteredAppointments().length === 0) {
           <div class="empty-state">
             <mat-icon class="empty-icon">event_busy</mat-icon>
-            <h3>No Appointments Scheduled</h3>
-            <p>No appointments match the selected date filter.</p>
+            <h3>No Appointments Found</h3>
+            <p>No appointments match the selected filter criteria.</p>
           </div>
         }
       </div>
     }
   </div>
 </div>
+
+<!-- ================= DOCTOR CONSULTATION & PRESCRIPTION MODAL ================= -->
+@if (isConsultationModalOpen()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+
+      <!-- MODAL HEADER -->
+      <div class="modal-header">
+        <div class="modal-title-box premium-modal-title">
+          <div class="modal-icon-badge giant-glow-box primary-glow">
+            <mat-icon>stethoscope</mat-icon>
+          </div>
+          <div>
+            <h2 class="gradient-text">Clinical Consultation Suite</h2>
+            <p>Patient: <strong>{{ activeAppointment()?.patientName || 'Patient' }}</strong> &nbsp;|&nbsp; Attending: <strong>Dr. {{ activeAppointment()?.doctorName || 'Physician' }}</strong></p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeConsultationModal()" class="close-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- MODAL BODY: 2-COLUMN SUITE -->
+      <div class="modal-body">
+        <div class="suite-grid pro-suite-grid">
+          <!-- LEFT COLUMN: CLINICAL ASSESSMENT -->
+          <div class="suite-column">
+            <div class="column-header">
+              <mat-icon class="col-icon">rate_review</mat-icon>
+              <h3>1. Clinical Assessment & Diagnosis</h3>
+            </div>
+
+            <!-- Pre-set symptom chips -->
+            <div class="symptom-chips-bar">
+              <span class="chips-label">Quick Symptoms:</span>
+              <div class="chips-scroll">
+                @for (chip of symptomChips; track chip) {
+                  <button type="button" class="symptom-tag" (click)="appendSymptom(chip)">
+                    + {{ chip }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="form-fields-group">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Presenting Symptoms</mat-label>
+                <textarea matInput rows="3" [ngModel]="symptoms()" (ngModelChange)="symptoms.set($event)" placeholder="Describe symptoms, duration, temperature, vital signs..."></textarea>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Primary Diagnosis *</mat-label>
+                <input matInput [ngModel]="diagnosis()" (ngModelChange)="diagnosis.set($event)" placeholder="e.g. Acute Pharyngitis / Viral URTI" required>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Clinical Notes, Plan & Advice</mat-label>
+                <textarea matInput rows="3" [ngModel]="clinicalNotes()" (ngModelChange)="clinicalNotes.set($event)" placeholder="e.g. Complete antibiotic course, stay hydrated, follow-up in 5 days if unresolved..."></textarea>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: RX PRESCRIPTION BUILDER -->
+          <div class="suite-column rx-column">
+            <div class="column-header">
+              <mat-icon class="col-icon rx-glow">medication</mat-icon>
+              <h3>2. Prescribe Medications (Pharmacy Dispatch)</h3>
+            </div>
+
+            <!-- Rx Item Builder Box -->
+            <div class="rx-builder-box">
+              <div class="rx-input-row">
+                <mat-form-field appearance="outline" class="med-select-field">
+                  <mat-label>Select Medicine from Catalog</mat-label>
+                  <mat-select [ngModel]="selectedMedicineId()" (ngModelChange)="selectedMedicineId.set($event)">
+                    @for (med of availableMedicines(); track med.id) {
+                      <mat-option [value]="med.id">
+                        {{ med.name }} &nbsp;(Stock: {{ med.stockQuantity }} | ${{ med.unitPrice | number:'1.2-2' }})
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="qty-field">
+                  <mat-label>Qty</mat-label>
+                  <input matInput type="number" min="1" [ngModel]="prescribeQuantity()" (ngModelChange)="prescribeQuantity.set($event)">
+                </mat-form-field>
+              </div>
+
+              <div class="rx-input-row">
+                <mat-form-field appearance="outline" class="dosage-field">
+                  <mat-label>Dosage & Regimen Instructions</mat-label>
+                  <input matInput [ngModel]="dosageInstructions()" (ngModelChange)="dosageInstructions.set($event)" placeholder="e.g. 1 tablet twice daily after meals for 7 days">
+                </mat-form-field>
+
+                <button mat-raised-button color="primary" type="button" class="add-rx-item-btn" (click)="addMedicineToPrescription()">
+                  <mat-icon>add</mat-icon>
+                  <span>Attach</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Prescribed Medications Live List -->
+            <div class="rx-items-container">
+              <div class="rx-list-header">
+                <span>Prescribed Medications ({{ prescriptionItems().length }})</span>
+                <span class="est-total">Subtotal: ${{ rxTotalEstimatedCost() | number:'1.2-2' }}</span>
+              </div>
+
+              @if (prescriptionItems().length > 0) {
+                <div class="rx-list-scroll">
+                  @for (item of prescriptionItems(); track $index) {
+                    <div class="rx-item-card premium-card mini-rx-card">
+       <div class="item-left">
+         <div class="pill-icon-box giant-glow-box accent-glow" style="width: 40px; height: 40px; border-radius: 10px;">
+           <mat-icon style="font-size: 20px; width: 20px; height: 20px;">medication</mat-icon>
+         </div>
+         <div class="item-details">
+           <div class="item-name-row">
+             <strong class="rx-name">{{ item.medicineName }}</strong>
+             <span class="qty-tag">×{{ item.quantity }}</span>
+           </div>
+           <span class="item-dosage">{{ item.dosageInstructions }}</span>
+         </div>
+       </div>
+       <div class="item-right">
+         <div class="price-chip">${{ item.unitPrice * item.quantity | number:'1.2-2' }}</div>
+         <button mat-icon-button class="del-btn-pro" (click)="removePrescriptionItem($index)">
+           <mat-icon>delete_outline</mat-icon>
+         </button>
+       </div>
+     </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-rx-box">
+                  <mat-icon>medication_liquid</mat-icon>
+                  <span>No medications added yet. Select a medicine above to dispatch an electronic prescription to the pharmacy queue.</span>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MODAL FOOTER -->
+      <div class="modal-footer">
+        <button mat-stroked-button (click)="closeConsultationModal()" [disabled]="isSubmitting()" class="cancel-modal-btn">
+          Discard
+        </button>
+
+        <button mat-raised-button color="primary" class="complete-consult-btn" (click)="submitConsultation()" [disabled]="isSubmitting()">
+          <ng-container *ngIf="isSubmitting(); else readyState">
+            <mat-spinner diameter="20"></mat-spinner>
+            <span>Saving Consultation & Prescription...</span>
+          </ng-container>
+          <ng-template #readyState>
+            <mat-icon>send</mat-icon>
+            <span>Complete Consultation & Send to Pharmacy</span>
+          </ng-template>
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

@@ -1,0 +1,141 @@
+<div class="page-container premium-page">
+  <div class="page-header-card premium-hero-card">
+    <div class="header-left premium-hero-content">
+      <div class="header-icon-box giant-glow-box">
+        <mat-icon>schedule</mat-icon>
+      </div>
+      <div>
+        <h1 class="page-title hero-title">Doctor Availability & Shifts</h1>
+        <p class="page-subtitle hero-subtitle">Configure practice hours, intervals, and recurring weekly shifts.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" class="create-btn" (click)="showAddForm.set(!showAddForm())">
+        <mat-icon>{{ showAddForm() ? 'close' : 'add_alarm' }}</mat-icon>
+        <span>{{ showAddForm() ? 'Close Form' : 'Add Shift Schedule' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="content-card doctor-selector-card">
+    <div class="doctor-filter-row">
+      <mat-form-field appearance="outline" class="doctor-dropdown">
+        <mat-label>Select Practicing Physician</mat-label>
+        <mat-select [value]="selectedDoctorId()" (selectionChange)="onDoctorChange($event.value)">
+          @for (doc of doctors(); track doc.id) {
+            <mat-option [value]="doc.id">
+              Dr. {{ doc.firstName }} {{ doc.lastName }} ({{ doc.email }})
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Add Schedule Shift Drawer -->
+  @if (showAddForm()) {
+    <div class="content-card inline-drawer mat-elevation-z4">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <mat-icon>add_alarm</mat-icon>
+          <h3>Add Doctor Working Shift</h3>
+        </div>
+        <p>Set the day of the week, working hours, and consultation duration per patient slot.</p>
+      </div>
+
+      <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="drawer-form">
+        <div class="form-grid-three">
+          <mat-form-field appearance="outline">
+            <mat-label>Day of Week</mat-label>
+            <mat-select formControlName="dayOfWeek">
+              @for (d of days; track d.value) {
+                <mat-option [value]="d.value">{{ d.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Shift Start Time</mat-label>
+            <input matInput type="time" formControlName="startTime">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Shift End Time</mat-label>
+            <input matInput type="time" formControlName="endTime">
+          </mat-form-field>
+        </div>
+
+        <div class="form-grid-two">
+          <mat-form-field appearance="outline">
+            <mat-label>Slot Duration (Minutes)</mat-label>
+            <input matInput type="number" formControlName="slotDurationMinutes" min="5" step="5" placeholder="30">
+          </mat-form-field>
+        </div>
+
+        <div class="drawer-footer">
+          <button mat-stroked-button type="button" (click)="showAddForm.set(false)">Cancel</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="scheduleForm.invalid || isSaving()">
+            <mat-icon>save</mat-icon> Save Shift Schedule
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Shifts Grid -->
+  <div class="shifts-card-grid premium-grid">
+    @for (s of schedules(); track s.id) {
+      <div class="shift-card premium-card" [class.inactive-shift]="!s.isActive">
+        <div class="shift-card-header">
+          <div class="day-badge-pro giant-glow-box accent-glow">
+            <span>{{ getDayName(s.dayOfWeek).substring(0, 3).toUpperCase() }}</span>
+          </div>
+          <div class="shift-status">
+            <span class="status-indicator" [class.pulse]="s.isActive"></span>
+            <span class="status-text">{{ s.isActive ? 'Active Shift' : 'Offline' }}</span>
+          </div>
+        </div>
+
+        <div class="shift-timing-body">
+          <div class="time-block">
+            <mat-icon>login</mat-icon>
+            <div class="time-details">
+              <span class="time-label">Starts</span>
+              <h4 class="time-val">{{ s.startTime }}</h4>
+            </div>
+          </div>
+          <div class="time-divider"></div>
+          <div class="time-block">
+            <mat-icon>logout</mat-icon>
+            <div class="time-details">
+              <span class="time-label">Ends</span>
+              <h4 class="time-val">{{ s.endTime }}</h4>
+            </div>
+          </div>
+        </div>
+        
+        <div class="slot-info-pill">
+          <mat-icon>timer</mat-icon> {{ s.slotDurationMinutes || 30 }}m Consultation Slots
+        </div>
+
+        <div class="shift-card-footer">
+          <button mat-flat-button [color]="s.isActive ? 'warn' : 'primary'" (click)="toggleSchedule(s.id)" class="pro-toggle-btn">
+            <mat-icon>{{ s.isActive ? 'pause' : 'play_arrow' }}</mat-icon>
+            <span>{{ s.isActive ? 'Suspend' : 'Activate' }}</span>
+          </button>
+          <button mat-icon-button class="pro-delete-btn" (click)="deleteSchedule(s.id)" title="Remove Shift">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (schedules().length === 0) {
+    <div class="content-card empty-state">
+      <mat-icon class="empty-icon">event_busy</mat-icon>
+      <h3>No Active Working Shifts</h3>
+      <p>Click 'Add Shift Schedule' above to configure operating hours for this physician.</p>
+    </div>
+  }
+</div>
