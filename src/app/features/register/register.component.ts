@@ -42,8 +42,52 @@ export class RegisterComponent {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [
       Validators.required,
-      Validators.minLength(8),
-      Validators.pattern('^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$')
+      Validators.minLength(12),
+      Validators.pattern('^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).+
+    ]],
+    confirmPassword: ['', Validators.required],
+    firstName: ['', [Validators.required, Validators.maxLength(100)]],
+    lastName: ['', [Validators.required, Validators.maxLength(100)]],
+    phoneNumber: ['', [Validators.required, Validators.maxLength(20)]]
+  });
+
+  onSubmit() {
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
+    }
+
+    if (this.registerForm.value.password !== this.registerForm.value.confirmPassword) {
+      this.errorMessage.set('Passwords do not match');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set('');
+
+    const request = {
+      username: this.registerForm.value.username!,
+      email: this.registerForm.value.email!,
+      password: this.registerForm.value.password!,
+      firstName: this.registerForm.value.firstName!,
+      lastName: this.registerForm.value.lastName!,
+      phoneNumber: this.registerForm.value.phoneNumber!
+    };
+
+    this.authService.register(request).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.snackBar.open('Registration successful! Please login.', 'Close', { duration: 5000 });
+        this.router.navigate(['/login']);
+      },
+      error: (error) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(error.error?.detail || error.error?.title || 'Registration failed');
+      }
+    });
+  }
+}
+)
     ]],
     confirmPassword: ['', Validators.required],
     firstName: ['', [Validators.required, Validators.maxLength(100)]],
