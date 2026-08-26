@@ -1,6 +1,6 @@
 import { inject, computed } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { setAllEntities, updateEntity, withEntities } from '@ngrx/signals/entities';
+import { setAllEntities, setEntity, removeEntity, updateEntity, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { MedicineService } from '../services/medicine.service';
@@ -19,7 +19,7 @@ interface MedicineMetadataState {
 const initialMetadataState: MedicineMetadataState = {
   totalCount: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 100,
   searchTerm: '',
   isLoading: false,
   error: null
@@ -68,6 +68,14 @@ export const MedicineStore = signalStore(
         )
       )
     ),
+
+    upsertMedicineEntity(medicine: Medicine) {
+      patchState(store, setEntity(medicine));
+    },
+
+    removeMedicineEntity(id: string) {
+      patchState(store, removeEntity(id));
+    },
 
     setSearchTerm(term: string) {
       patchState(store, { searchTerm: term, currentPage: 1 });

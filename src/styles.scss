@@ -387,3 +387,36 @@ body.dark-theme .premium-card, body.dark-theme .premium-drawer, body.dark-theme 
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-color) !important;
 }
+
+
+/* ADDITIONAL PREMIUM EFFECTS */
+button.mat-mdc-button-base, button.mat-mdc-raised-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 8px !important;
+}
+button.mat-mdc-button-base:hover, button.mat-mdc-raised-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3), 0 4px 6px -2px rgba(2, 132, 199, 0.15) !important;
+}
+.mat-mdc-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.mat-mdc-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+input.mat-mdc-input-element {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+input.mat-mdc-input-element:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+}
+/* Glassmorphism Backgrounds */
+.premium-card, .dashboard-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85)) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
+}

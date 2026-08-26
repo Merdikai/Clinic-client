@@ -129,7 +129,7 @@ export class AppointmentListComponent implements OnInit {
 
   loadMedicines() {
     this.medicineService.getAll().subscribe({
-      next: (res) => this.availableMedicines.set(res.items ? res.items : res),
+      next: (res) => { const items = res.items || res.data || (Array.isArray(res) ? res : []); this.availableMedicines.set(items); },
       error: () => {}
     });
   }

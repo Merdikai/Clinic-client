@@ -105,4 +105,9 @@ export class AuthService {
     localStorage.removeItem(this.USER_KEY);
     this.currentUser.set(null);
   }
+
+  getMe() {
+    return this.http.get<any>(`${environment.apiUrl}/auth/me`);
+  }
+
 }

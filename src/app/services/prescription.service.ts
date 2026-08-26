@@ -21,4 +21,9 @@ export class PrescriptionService {
   generateInvoice(prescriptionId: string) {
     return this.http.post<Invoice>(`${this.apiUrl}/${prescriptionId}/invoice`, {});
   }
+
+  getById(id: string) {
+    return this.http.get<any>(`${this.apiUrl}/${id}`);
+  }
+
 }

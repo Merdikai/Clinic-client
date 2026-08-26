@@ -9,6 +9,7 @@
   email: string;
   address?: string;
   bloodGroup: string;
+  bloodType?: string;
   emergencyContact?: string;
   registeredAt?: string;
 }

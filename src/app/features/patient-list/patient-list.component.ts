@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +12,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PatientStore } from '../../store/patient.store';
+import { PatientService } from '../../services/patient.service';
+import { ToastService } from '../../ui/toast/toast.service';
 
 @Component({
   selector: 'app-patient-list',
@@ -35,6 +37,9 @@ import { PatientStore } from '../../store/patient.store';
 })
 export class PatientListComponent implements OnInit {
   patientStore = inject(PatientStore);
+  patientService = inject(PatientService);
+  toast = inject(ToastService);
+  router = inject(Router);
 
   patients = this.patientStore.patients;
   isLoading = this.patientStore.isLoading;
@@ -83,4 +88,21 @@ export class PatientListComponent implements OnInit {
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return name.substring(0, 2).toUpperCase();
   }
+
+  editPatient(patient: any) {
+      this.router.navigate(['/patients/edit', patient.id]);
+    }
+
+    deletePatient(id: string) {
+    if (confirm('Are you sure you want to delete this patient record completely? This action cannot be undone.')) {
+      this.patientService.delete(id).subscribe({
+        next: () => {
+          this.toast.success('Patient deleted successfully');
+          this.patientStore.loadPatients();
+        },
+        error: (err: any) => this.toast.error('Error deleting patient')
+      });
+    }
+  }
+
 }

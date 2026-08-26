@@ -515,3 +515,76 @@
   color: var(--info-text) !important;
   border-color: var(--info-border) !important;
 }
+
+  .editing-pill {
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .med-dispense-btn {
+    flex: 1;
+    height: 40px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 0.875rem !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+    &:hover:not([disabled]) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4) !important;
+    }
+  }
+
+  .med-icon-btn {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &.edit-med-btn {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+
+      &:hover {
+        background: #6366f1;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      }
+    }
+
+    &.delete-med-btn {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+
+      &:hover {
+        background: #ef4444;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+      }
+    }
+  }

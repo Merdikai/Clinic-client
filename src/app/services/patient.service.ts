@@ -35,4 +35,13 @@ export class PatientService {
   getMedicalHistory(patientId: string) {
     return this.http.get<any>(`${this.apiUrl}/${patientId}/medical-history`);
   }
+
+  update(id: string, request: any) {
+    return this.http.put<any>(`${this.apiUrl}/${id}`, request);
+  }
+
+  delete(id: string) {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
 }

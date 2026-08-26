@@ -25,4 +25,17 @@ export class MedicineService {
   dispense(id: string, quantity: number) {
     return this.http.patch(`${this.apiUrl}/${id}/dispense`, { quantity });
   }
+
+  getById(id: string) {
+    return this.http.get<any>(`${this.apiUrl}/${id}`);
+  }
+
+  update(id: string, request: any) {
+    return this.http.put<any>(`${this.apiUrl}/${id}`, request);
+  }
+
+  delete(id: string) {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
 }

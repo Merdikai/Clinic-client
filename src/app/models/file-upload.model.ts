@@ -1,10 +1,9 @@
 export interface FileUploadResponse {
   id: string;
-  patientId: string;
-  fileName: string;
-  originalFileName: string;
+  fileName: string;          // disk filename (GUID__originalName)
+  originalFileName: string;  // human-readable name for display
   contentType: string;
-  fileSize: number;
+  fileSizeBytes: number;
   uploadedAt: string;
-  downloadUrl: string;
+  downloadUrl?: string;
 }

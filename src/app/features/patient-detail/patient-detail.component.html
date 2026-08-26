@@ -82,10 +82,56 @@
                       </div>
                       <h3 class="diagnosis-title">{{ visit.diagnosis || 'Clinical Consultation' }}</h3>
                       <p class="visit-reason"><strong>Chief Complaint:</strong> {{ visit.reasonForVisit || 'Regular Checkup' }}</p>
+                      
+                      @if (visit.symptoms) {
+                        <div class="symptoms-row">
+                          <span class="symptoms-label">Symptoms:</span>
+                          <span class="symptoms-text">{{ visit.symptoms }}</span>
+                        </div>
+                      }
+
                       @if (visit.clinicalNotes) {
                         <div class="clinical-notes-box">
                           <strong>Physician Notes:</strong>
                           <p>{{ visit.clinicalNotes }}</p>
+                        </div>
+                      }
+
+                      @if (visit.prescription) {
+                        <div class="prescription-box">
+                          <div class="rx-header">
+                            <div class="rx-title">
+                              <mat-icon>local_pharmacy</mat-icon>
+                              <span>Doctor Prescription Record</span>
+                            </div>
+                            <div class="rx-code-badge" (click)="copyPrescriptionId(visit.prescription.id)" title="Click to copy Prescription Code">
+                              <span class="rx-code-label">ID:</span>
+                              <code>{{ visit.prescription.id }}</code>
+                              <mat-icon class="copy-icon">content_copy</mat-icon>
+                            </div>
+                          </div>
+
+                          @if (visit.prescription.notes) {
+                            <p class="rx-notes"><strong>Notes:</strong> {{ visit.prescription.notes }}</p>
+                          }
+
+                          @if (visit.prescription.items && visit.prescription.items.length > 0) {
+                            <div class="rx-items-grid">
+                              @for (item of visit.prescription.items; track item.id || item.medicineName) {
+                                <div class="rx-item-tag">
+                                  <mat-icon>medication</mat-icon>
+                                  <div class="rx-item-info">
+                                    <span class="rx-item-name">{{ item.medicineName }} <strong>&times;{{ item.quantity }}</strong></span>
+                                    <span class="rx-item-dose">{{ item.dosageInstructions }}</span>
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          } @else {
+                            <div class="rx-empty-items">
+                              <span>Prescription record issued on {{ visit.prescription.issuedAt | date:'mediumDate' }}</span>
+                            </div>
+                          }
                         </div>
                       }
                     </div>
@@ -132,11 +178,11 @@
                     </div>
                     <div class="file-text-content">
                       <span class="file-title">{{ f.originalFileName || f.fileName }}</span>
-                      <span class="file-meta">{{ f.uploadedAt | date:'mediumDate' }} • {{ (f.fileSize / 1024) | number:'1.0-0' }} KB</span>
+                      <span class="file-meta">{{ f.uploadedAt | date:'mediumDate' }} • {{ (f.fileSizeBytes / 1024) | number:'1.0-0' }} KB</span>
                     </div>
-                    <a [href]="f.downloadUrl" target="_blank" mat-icon-button color="primary" title="Download Document">
+                    <button (click)="downloadFile(f)" mat-icon-button color="primary" title="Download Document">
                       <mat-icon>download</mat-icon>
-                    </a>
+                    </button>
                   </div>
                 }
               </div>
@@ -167,6 +213,30 @@
               </div>
 
               <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>fingerprint</mat-icon></div>
+                <div>
+                  <label>Medical Record Number</label>
+                  <h4>{{ patient()?.medicalRecordNumber || 'N/A' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>cake</mat-icon></div>
+                <div>
+                  <label>Date of Birth</label>
+                  <h4>{{ patient()?.dateOfBirth | date:'mediumDate' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>people</mat-icon></div>
+                <div>
+                  <label>Gender</label>
+                  <h4>{{ patient()?.gender }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
                 <div class="tile-icon-wrap"><mat-icon>phone</mat-icon></div>
                 <div>
                   <label>Primary Phone</label>
@@ -178,7 +248,7 @@
                 <div class="tile-icon-wrap"><mat-icon>email</mat-icon></div>
                 <div>
                   <label>Email Address</label>
-                  <h4>{{ patient()?.email || 'None on record' }}</h4>
+                  <h4>{{ patient()?.email || 'Not Provided' }}</h4>
                 </div>
               </div>
 
@@ -186,15 +256,31 @@
                 <div class="tile-icon-wrap"><mat-icon>home</mat-icon></div>
                 <div>
                   <label>Residential Address</label>
-                  <h4>{{ patient()?.address || 'Scranton, PA' }}</h4>
+                  <h4>{{ patient()?.address || 'Not Provided' }}</h4>
                 </div>
               </div>
 
               <div class="info-tile highlight">
-                <div class="tile-icon-wrap"><mat-icon>emergency</mat-icon></div>
+                <div class="tile-icon-wrap"><mat-icon>bloodtype</mat-icon></div>
                 <div>
-                  <label>Emergency Contact</label>
-                  <h4>{{ patient()?.emergencyContact || '+1 (555) 911-0000 (Family)' }}</h4>
+                  <label>Blood Type</label>
+                  <h4>{{ (patient()?.bloodGroup || patient()?.bloodType) || 'Unknown' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile" style="border-left: 3px solid #f59e0b;">
+                <div class="tile-icon-wrap" style="color: #f59e0b;"><mat-icon>contact_emergency</mat-icon></div>
+                <div>
+                  <label>Emergency Contact Name</label>
+                  <h4>{{ emergencyContactName() }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile" style="border-left: 3px solid #f59e0b;">
+                <div class="tile-icon-wrap" style="color: #f59e0b;"><mat-icon>ring_volume</mat-icon></div>
+                <div>
+                  <label>Emergency Contact Phone</label>
+                  <h4>{{ emergencyContactPhone() }}</h4>
                 </div>
               </div>
 
