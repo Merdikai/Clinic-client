@@ -1,0 +1,583 @@
+﻿<div class="lab-workspace">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-group">
+        <div class="icon-badge">
+          <mat-icon>biotech</mat-icon>
+        </div>
+        <div>
+          <h1 class="page-title">Laboratory & Diagnostics</h1>
+          <p class="page-subtitle">Manage lab orders, sample tracking, test results, and diagnostic reports</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button mat-flat-button color="primary" class="new-order-btn" (click)="openCreateOrderModal()">
+          <mat-icon>add_circle</mat-icon>
+          <span>New Lab Order</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Metrics Overview -->
+    <div class="metrics-grid">
+      <div class="metric-card card-pending">
+        <div class="metric-icon-wrap">
+          <mat-icon>hourglass_empty</mat-icon>
+        </div>
+        <div class="metric-details">
+          <span class="metric-value">{{ labStore.metrics()?.pendingOrders ?? 0 }}</span>
+          <span class="metric-label">Pending Orders</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-samples">
+        <div class="metric-icon-wrap">
+          <mat-icon>science</mat-icon>
+        </div>
+        <div class="metric-details">
+          <span class="metric-value">{{ labStore.metrics()?.samplesCollected ?? 0 }}</span>
+          <span class="metric-label">Samples In Lab</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-progress">
+        <div class="metric-icon-wrap">
+          <mat-icon>autorenew</mat-icon>
+        </div>
+        <div class="metric-details">
+          <span class="metric-value">{{ labStore.metrics()?.inProgress ?? 0 }}</span>
+          <span class="metric-label">Testing In Progress</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-completed">
+        <div class="metric-icon-wrap">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="metric-details">
+          <span class="metric-value">{{ labStore.metrics()?.completedToday ?? 0 }}</span>
+          <span class="metric-label">Completed Today</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Card -->
+  <mat-card class="content-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          placeholder="Search by order #, patient name, MRN..."
+          (input)="onSearchChange($event)"
+        />
+      </div>
+
+      <div class="filter-group">
+        <mat-form-field appearance="outline" density="compact" class="compact-select">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="labStore.statusFilter()" (selectionChange)="onStatusFilter($event.value)">
+            <mat-option value="ALL">All Statuses</mat-option>
+            <mat-option value="Ordered">Ordered</mat-option>
+            <mat-option value="SampleCollected">Sample Collected</mat-option>
+            <mat-option value="InProgress">In Progress</mat-option>
+            <mat-option value="Completed">Completed</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" density="compact" class="compact-select">
+          <mat-label>Priority</mat-label>
+          <mat-select [value]="labStore.priorityFilter()" (selectionChange)="onPriorityFilter($event.value)">
+            <mat-option value="ALL">All Priorities</mat-option>
+            <mat-option value="Routine">Routine</mat-option>
+            <mat-option value="Urgent">Urgent</mat-option>
+            <mat-option value="Stat">Stat (Emergency)</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+    <mat-tab-group animationDuration="200ms" class="custom-tab-group">
+      <mat-tab label="Clinical Orders Queue">
+        <div class="tab-content">
+          <div *ngIf="labStore.isLoading()" class="loading-spinner-wrap">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span>Loading laboratory orders...</span>
+          </div>
+
+          <div *ngIf="!labStore.isLoading() && labStore.filteredOrders().length === 0" class="empty-state">
+            <mat-icon>science_off</mat-icon>
+            <h3>No laboratory orders found</h3>
+            <p>Create a new order to begin specimen collection and test analysis.</p>
+            <button mat-stroked-button color="primary" (click)="openCreateOrderModal()">Create Order</button>
+          </div>
+
+          <div class="table-container" *ngIf="!labStore.isLoading() && labStore.filteredOrders().length > 0">
+            <table mat-table [dataSource]="labStore.filteredOrders()" class="lab-table">
+              
+              <ng-container matColumnDef="orderNumber">
+                <th mat-header-cell *matHeaderCellDef>Order #</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="order-num-cell">
+                    <span class="order-id">{{ order.orderNumber }}</span>
+                    <span class="doctor-sub">Dr. {{ order.doctorName }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="patient">
+                <th mat-header-cell *matHeaderCellDef>Patient</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="patient-cell">
+                    <span class="patient-name">{{ order.patientName }}</span>
+                    <span class="patient-mrn">MRN: {{ order.patientMedicalRecordNumber }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="tests">
+                <th mat-header-cell *matHeaderCellDef>Tests & Specimens</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="test-badges-list">
+                    <div *ngFor="let item of order.items" class="test-item-chip" [class.has-result]="!!item.result">
+                      <span class="test-code">{{ item.testCode }}</span>
+                      <span class="test-name">{{ item.testName }}</span>
+                      <span *ngIf="item.result?.hasAbnormalFlag" class="abnormal-indicator" matTooltip="Abnormal Values Detected">⚠️</span>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="orderDate">
+                <th mat-header-cell *matHeaderCellDef>Ordered At</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="date-cell">{{ order.orderDate | date:'mediumDate' }}</span>
+                  <span class="time-sub">{{ order.orderDate | date:'shortTime' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="priority">
+                <th mat-header-cell *matHeaderCellDef>Priority</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">
+                    {{ order.priority }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+                    {{ order.status }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="totalCost">
+                <th mat-header-cell *matHeaderCellDef>Cost</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="cost-cell">{{ order.totalCost | currency:'USD' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="actions-cell">
+                    <button
+                      *ngIf="order.status === 'Ordered'"
+                      mat-stroked-button
+                      color="accent"
+                      class="btn-action"
+                      (click)="updateStatus(order, 'SampleCollected')"
+                      matTooltip="Mark specimen as collected"
+                    >
+                      <mat-icon>bloodtype</mat-icon>
+                      <span>Collect</span>
+                    </button>
+
+                    <button
+                      *ngIf="order.status === 'SampleCollected'"
+                      mat-stroked-button
+                      color="primary"
+                      class="btn-action"
+                      (click)="updateStatus(order, 'InProgress')"
+                      matTooltip="Begin laboratory analysis"
+                    >
+                      <mat-icon>biotech</mat-icon>
+                      <span>Analyze</span>
+                    </button>
+
+                    <div *ngIf="order.status === 'InProgress' || order.status === 'Completed'" class="result-actions-group">
+                      <button
+                        *ngFor="let item of order.items"
+                        mat-flat-button
+                        [color]="item.result ? 'accent' : 'primary'"
+                        class="btn-result-entry"
+                        (click)="openResultModal(order, item)"
+                      >
+                        <mat-icon>{{ item.result ? 'edit_note' : 'add_task' }}</mat-icon>
+                        <span>{{ item.testCode }}</span>
+                      </button>
+                    </div>
+
+                    <button
+                      mat-icon-button
+                      class="btn-report-view"
+                      (click)="openReportModal(order)"
+                      matTooltip="View & Print Diagnostic Slip"
+                    >
+                      <mat-icon>receipt_long</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="order-row"></tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Diagnostic Test Catalog">
+        <div class="tab-content catalog-tab">
+          <div class="catalog-header">
+            <div>
+              <h3>Standard Laboratory Test Profiles</h3>
+              <p>Pre-configured clinical test panels with validated biological reference intervals</p>
+            </div>
+          </div>
+
+          <div class="catalog-grid">
+            <div *ngFor="let test of labStore.templates()" class="test-card">
+              <div class="card-top">
+                <span class="category-badge">{{ test.category }}</span>
+                <span class="test-price">{{ test.price | currency:'USD' }}</span>
+              </div>
+              <h4 class="card-title">{{ test.testName }}</h4>
+              <p class="card-desc">{{ test.description }}</p>
+              
+              <div class="card-meta">
+                <div class="meta-item">
+                  <mat-icon>colorize</mat-icon>
+                  <span>Sample: <strong>{{ test.sampleType }}</strong></span>
+                </div>
+                <div class="meta-item">
+                  <mat-icon>schedule</mat-icon>
+                  <span>TAT: <strong>{{ test.turnaroundTimeHours }} hrs</strong></span>
+                </div>
+              </div>
+
+              <div class="parameter-preview">
+                <span class="param-header">Parameters Analyzed:</span>
+                <div class="param-chips">
+                  <span *ngFor="let p of getParsedParameters(test.parametersJson)" class="p-chip">
+                    {{ p.name }} <small>({{ p.normalText || (p.minRef + ' - ' + p.maxRef + ' ' + p.unit) }})</small>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+
+  <!-- MODAL 1: CREATE NEW LAB ORDER -->
+  <div class="custom-modal-overlay" *ngIf="isCreatingOrder()">
+    <div class="custom-modal-dialog order-modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon>add_circle</mat-icon>
+          <h3>Place Laboratory Order</h3>
+        </div>
+        <button mat-icon-button (click)="closeCreateOrderModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="orderForm" (ngSubmit)="submitOrder()" class="modal-body">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select Patient</mat-label>
+            <mat-select formControlName="patientId" placeholder="Choose a patient">
+              <mat-option *ngFor="let p of patients()" [value]="p.id">
+                {{ p.firstName }} {{ p.lastName }} (MRN: {{ p.medicalRecordNumber }})
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="orderForm.get('patientId')?.hasError('required')">Patient is required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-col">
+          <mat-form-field appearance="outline">
+            <mat-label>Order Priority</mat-label>
+            <mat-select formControlName="priority">
+              <mat-option value="Routine">Routine</mat-option>
+              <mat-option value="Urgent">Urgent</mat-option>
+              <mat-option value="Stat">Stat (Emergency)</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Clinical Notes / Indications</mat-label>
+            <input matInput formControlName="clinicalNotes" placeholder="e.g. Fasting 12h, Suspected anemia" />
+          </mat-form-field>
+        </div>
+
+        <div class="test-selection-section">
+          <label class="section-label">Select Laboratory Tests & Panels</label>
+          <div class="test-selection-grid">
+            <div
+              *ngFor="let template of labStore.templates()"
+              class="test-select-card"
+              [class.selected]="isTestSelected(template.id)"
+              (click)="toggleTestSelection(template.id)"
+            >
+              <div class="checkbox-col">
+                <mat-checkbox
+                  [checked]="isTestSelected(template.id)"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleTestSelection(template.id)"
+                ></mat-checkbox>
+              </div>
+              <div class="test-info">
+                <div class="top-row">
+                  <span class="code">{{ template.testCode }}</span>
+                  <span class="price">{{ template.price | currency:'USD' }}</span>
+                </div>
+                <span class="name">{{ template.testName }}</span>
+                <span class="sample">Specimen: {{ template.sampleType }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-summary-bar">
+          <div class="summary-item">
+            <span>Selected Tests:</span>
+            <strong>{{ (orderForm.get('selectedTests')?.value || []).length }}</strong>
+          </div>
+          <div class="summary-item">
+            <span>Estimated Total:</span>
+            <strong class="total-price">{{ calculateOrderTotal() | currency:'USD' }}</strong>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" mat-stroked-button (click)="closeCreateOrderModal()">Cancel</button>
+          <button
+            type="submit"
+            mat-flat-button
+            color="primary"
+            [disabled]="orderForm.invalid || isSubmitting()"
+          >
+            <mat-spinner *ngIf="isSubmitting()" diameter="20"></mat-spinner>
+            <span *ngIf="!isSubmitting()">Create Lab Order</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: RESULT ENTRY & PARAMETER VALIDATION -->
+  <div class="custom-modal-overlay" *ngIf="isEnteringResults()">
+    <div class="custom-modal-dialog results-modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon>science</mat-icon>
+          <div>
+            <h3>Enter Results: {{ selectedOrderItem()?.testName }}</h3>
+            <p class="modal-sub">Patient: {{ selectedOrder()?.patientName }} | Order: {{ selectedOrder()?.orderNumber }}</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeResultModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="instruction-text">
+          Enter numerical or quantitative readings for each parameter below. Flags are automatically calculated based on normal clinical reference ranges.
+        </p>
+
+        <div class="parameter-table-wrap">
+          <table class="param-entry-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Measured Value</th>
+                <th>Unit</th>
+                <th>Reference Range</th>
+                <th>Flag Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of resultParameters()">
+                <td class="param-name-cell">
+                  <strong>{{ p.name }}</strong>
+                </td>
+                <td class="input-cell">
+                  <input
+                    type="text"
+                    [(ngModel)]="p.value"
+                    (input)="evaluateParamFlag(p)"
+                    placeholder="Enter value"
+                    class="param-input"
+                  />
+                </td>
+                <td class="unit-cell">{{ p.unit }}</td>
+                <td class="ref-cell">{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</td>
+                <td class="flag-cell">
+                  <span class="flag-badge" [ngClass]="getFlagClass(p.flag)">
+                    {{ p.flag }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width remarks-field">
+          <mat-label>Pathologist / Technician Clinical Remarks</mat-label>
+          <textarea
+            matInput
+            rows="3"
+            [(ngModel)]="resultRemarks"
+            placeholder="e.g. Normal parameters within healthy biological range."
+          ></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button mat-stroked-button (click)="closeResultModal()">Cancel</button>
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="submitResults()"
+            [disabled]="isSubmitting()"
+          >
+            <mat-spinner *ngIf="isSubmitting()" diameter="20"></mat-spinner>
+            <span *ngIf="!isSubmitting()">Save & Complete Test</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: DIAGNOSTIC REPORT PRINT / SLIP -->
+  <div class="custom-modal-overlay" *ngIf="isViewingReport()">
+    <div class="custom-modal-dialog report-modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon>description</mat-icon>
+          <h3>Diagnostic Laboratory Report</h3>
+        </div>
+        <div class="header-btns">
+          <button mat-flat-button color="primary" (click)="printReport()">
+            <mat-icon>print</mat-icon>
+            <span>Print Report</span>
+          </button>
+          <button mat-icon-button (click)="closeReportModal()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="report-paper printable-area" *ngIf="selectedOrder()">
+        <div class="report-clinic-header">
+          <div class="brand-left">
+            <h2>🏥 APEX CLINICAL LABORATORIES</h2>
+            <p>100 Healthcare Boulevard, Medical District</p>
+            <p>Tel: +1 (555) 019-2834 | Lic: CLIA-99A01234</p>
+          </div>
+          <div class="report-badge-right">
+            <span class="report-type-badge">OFFICIAL DIAGNOSTIC REPORT</span>
+            <span class="order-ref">Order Ref: {{ selectedOrder()?.orderNumber }}</span>
+          </div>
+        </div>
+
+        <div class="report-divider"></div>
+
+        <div class="demographics-grid">
+          <div class="demo-col">
+            <p><strong>Patient Name:</strong> {{ selectedOrder()?.patientName }}</p>
+            <p><strong>MRN:</strong> {{ selectedOrder()?.patientMedicalRecordNumber }}</p>
+          </div>
+          <div class="demo-col">
+            <p><strong>Referring Doctor:</strong> Dr. {{ selectedOrder()?.doctorName }}</p>
+            <p><strong>Order Priority:</strong> {{ selectedOrder()?.priority }}</p>
+          </div>
+          <div class="demo-col">
+            <p><strong>Ordered Date:</strong> {{ selectedOrder()?.orderDate | date:'medium' }}</p>
+            <p><strong>Report Status:</strong> {{ selectedOrder()?.status }}</p>
+          </div>
+        </div>
+
+        <div class="report-divider"></div>
+
+        <div class="report-test-results">
+          <div *ngFor="let item of selectedOrder()?.items" class="test-report-block">
+            <div class="test-block-header">
+              <h4>{{ item.testName }} ({{ item.testCode }})</h4>
+              <span class="specimen-badge">Specimen: {{ item.sampleType }}</span>
+            </div>
+
+            <div *ngIf="item.result" class="results-table-wrap">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Result Value</th>
+                    <th>Reference Range</th>
+                    <th>Units</th>
+                    <th>Flag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of getParsedParameters(item.result.parameterResultsJson)">
+                    <td><strong>{{ r.name || r.parameterName }}</strong></td>
+                    <td class="res-val" [class.abnormal]="r.flag !== 'Normal'">
+                      {{ r.value }}
+                    </td>
+                    <td>{{ r.normalText || (r.minRef + ' - ' + r.maxRef) }}</td>
+                    <td>{{ r.unit }}</td>
+                    <td>
+                      <span class="flag-badge" [ngClass]="getFlagClass(r.flag)">
+                        {{ r.flag }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div *ngIf="item.result.remarks" class="result-remarks-box">
+                <strong>Technician / Pathologist Notes:</strong>
+                <p>{{ item.result.remarks }}</p>
+              </div>
+            </div>
+
+            <div *ngIf="!item.result" class="pending-result-note">
+              <em>Analysis in progress. Specimen collected and undergoing laboratory processing.</em>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-signature-footer">
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <p>Medical Technologist</p>
+            <small>Specimen Authenticated</small>
+          </div>
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <p>Consultant Pathologist</p>
+            <small>Electronically Verified</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

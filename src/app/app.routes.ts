@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { ShellComponent } from './shell/shell.component';
@@ -78,6 +78,11 @@ export const routes: Routes = [
           .then(m => m.DoctorSchedulesComponent)
       },
       {
+        path: 'laboratory',
+        loadComponent: () => import('./features/laboratory/laboratory.component')
+          .then(m => m.LaboratoryComponent)
+      },
+      {
         path: 'pharmacy',
         canActivate: [roleGuard(['Admin', 'Pharmacist', 'Doctor'])],
         loadComponent: () => import('./features/pharmacy/pharmacy.component')
@@ -113,3 +118,4 @@ export const routes: Routes = [
     redirectTo: 'login'
   }
 ];
+

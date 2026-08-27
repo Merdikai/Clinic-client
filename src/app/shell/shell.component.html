@@ -1,4 +1,4 @@
-<div class="shell-container" [class.dark-mode]="themeService.isDarkMode()">
+﻿<div class="shell-container" [class.dark-mode]="themeService.isDarkMode()">
   <aside class="sidebar" [class.collapsed]="isCollapsed()">
     <div class="brand-header">
       <div class="brand-logo">
@@ -52,6 +52,13 @@
           @if (!isCollapsed()) { <span>Pharmacy</span> }
         </a>
       }
+
+      <!-- Laboratory & Diagnostics -->
+      <!-- Laboratory & Diagnostics -->
+      <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Laboratory & Diagnostics" [matTooltipDisabled]="!isCollapsed()">
+        <mat-icon>biotech</mat-icon>
+        @if (!isCollapsed()) { <span>Laboratory</span> }
+      </a>
 
       <!-- Billing -->
       @if (hasAnyRole(['Admin', 'Accountant', 'Receptionist'])) {
@@ -128,3 +135,4 @@
     </section>
   </main>
 </div>
+

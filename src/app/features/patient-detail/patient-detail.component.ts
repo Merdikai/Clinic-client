@@ -19,6 +19,8 @@ import { FileUploadService } from '../../services/file-upload.service';
 import { Patient } from '../../models/patient.model';
 import { FileUploadResponse } from '../../models/file-upload.model';
 import { ToastService } from '../../ui/toast/toast.service';
+import { LabService } from '../../services/lab.service';
+import { LabOrder } from '../../models/lab.model';
 
 @Component({
   selector: 'app-patient-detail',
@@ -47,6 +49,8 @@ export class PatientDetailComponent implements OnInit {
   private fileService   = inject(FileUploadService);
   private toast         = inject(ToastService);
   private billingService = inject(BillingService);
+  private labService = inject(LabService);
+  patientLabOrders = signal<LabOrder[]>([]);
 
   patient   = signal<Patient | null>(null);
   history   = signal<any>(null);
@@ -107,6 +111,7 @@ export class PatientDetailComponent implements OnInit {
 
     // Load patient invoices
     this.loadInvoices();
+    this.loadLabOrders();
   }
 
   loadFiles() {
@@ -214,6 +219,7 @@ export class PatientDetailComponent implements OnInit {
         this.isPaymentModalOpen.set(false);
         this.toast.success(`Payment of ${this.paymentAmount()} processed successfully!`);
         this.loadInvoices();
+    this.loadLabOrders();
       },
       error: (err: any) => {
         this.isProcessingPayment.set(false);
@@ -245,5 +251,22 @@ export class PatientDetailComponent implements OnInit {
         this.toast.error(msg);
       }
     });
+  }
+
+  loadLabOrders() {
+    const patientId = this.id();
+    if (!patientId) return;
+    this.labService.getOrdersByPatient(patientId).subscribe({
+      next: (orders) => this.patientLabOrders.set(orders),
+      error: () => this.patientLabOrders.set([])
+    });
+  }
+
+  getParsedLabResults(json: string): any[] {
+    try {
+      return JSON.parse(json);
+    } catch {
+      return [];
+    }
   }
 }

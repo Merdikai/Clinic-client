@@ -395,10 +395,96 @@
 
           </div>
         </mat-tab>
+        <!-- TAB 5: LAB & DIAGNOSTICS -->
+        <mat-tab label="Lab & Diagnostics">
+          <div class="tab-body">
+            <div class="section-header-row">
+              <h3>Diagnostic Laboratory Orders & Results</h3>
+              <a mat-stroked-button color="primary" routerLink="/laboratory">
+                <mat-icon>science</mat-icon> Open Laboratory Workspace
+              </a>
+            </div>
+
+            @if (patientLabOrders().length === 0) {
+              <div class="empty-state">
+                <mat-icon>biotech</mat-icon>
+                <p>No laboratory orders found for this patient.</p>
+                <a mat-flat-button color="primary" routerLink="/laboratory">Order Tests in Lab Module</a>
+              </div>
+            } @else {
+              <div class="lab-orders-list">
+                @for (order of patientLabOrders(); track order.id) {
+                  <div class="patient-lab-card">
+                    <div class="card-head">
+                      <div class="title-group">
+                        <span class="order-number">{{ order.orderNumber }}</span>
+                        <span class="order-date">{{ order.orderDate | date:'mediumDate' }}</span>
+                      </div>
+                      <div class="status-group">
+                        <span class="priority-pill" [class.urgent]="order.priority !== 'Routine'">{{ order.priority }}</span>
+                        <span class="status-pill">{{ order.status }}</span>
+                      </div>
+                    </div>
+
+                    <div class="tests-breakdown">
+                      @for (item of order.items; track item.id) {
+                        <div class="test-item-row">
+                          <div class="test-title">
+                            <strong>{{ item.testName }} ({{ item.testCode }})</strong>
+                            <span class="sample-tag">Specimen: {{ item.sampleType }}</span>
+                          </div>
+
+                          @if (item.result) {
+                            <div class="results-table-mini">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>Parameter</th>
+                                    <th>Measured Value</th>
+                                    <th>Normal Range</th>
+                                    <th>Flag</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (r of getParsedLabResults(item.result.parameterResultsJson); track r.name) {
+                                    <tr>
+                                      <td>{{ r.name }}</td>
+                                      <td><strong>{{ r.value }} {{ r.unit }}</strong></td>
+                                      <td>{{ r.normalText || (r.minRef + ' - ' + r.maxRef) }}</td>
+                                      <td>
+                                        <span class="result-flag" [class.abnormal]="r.flag !== 'Normal'">
+                                          {{ r.flag }}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  }
+                                </tbody>
+                              </table>
+                              @if (item.result.remarks) {
+                                <div class="lab-remarks">
+                                  <em>Notes: {{ item.result.remarks }}</em>
+                                </div>
+                              }
+                            </div>
+                          } @else {
+                            <div class="pending-test-badge">
+                              <span>⏳ Test pending laboratory processing</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </mat-tab>
       </mat-tab-group>
     </div>
   }
 </div>
+
 
 
 

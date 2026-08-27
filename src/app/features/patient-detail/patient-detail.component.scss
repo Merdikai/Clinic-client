@@ -1214,3 +1214,147 @@
     }
   }
 }
+
+  // Lab Tab Styles
+  .lab-orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .patient-lab-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 0.75rem;
+
+        .title-group {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+
+          .order-number {
+            font-weight: 700;
+            color: #0284c7;
+            font-size: 1rem;
+          }
+
+          .order-date {
+            font-size: 0.8125rem;
+            color: #64748b;
+          }
+        }
+
+        .status-group {
+          display: flex;
+          gap: 0.5rem;
+
+          .priority-pill {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #475569;
+
+            &.urgent {
+              background: #fee2e2;
+              color: #b91c1c;
+            }
+          }
+
+          .status-pill {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #e0f2fe;
+            color: #0369a1;
+          }
+        }
+      }
+
+      .tests-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+
+        .test-item-row {
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 1rem;
+          border: 1px solid #f1f5f9;
+
+          .test-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+
+            strong {
+              color: #0f172a;
+              font-size: 0.9rem;
+            }
+
+            .sample-tag {
+              font-size: 0.75rem;
+              color: #64748b;
+            }
+          }
+
+          .results-table-mini {
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 0.8125rem;
+
+              th {
+                text-align: left;
+                padding: 0.4rem 0.6rem;
+                color: #64748b;
+                border-bottom: 1px solid #e2e8f0;
+              }
+
+              td {
+                padding: 0.4rem 0.6rem;
+                border-bottom: 1px solid #f1f5f9;
+              }
+            }
+
+            .result-flag {
+              padding: 0.15rem 0.4rem;
+              border-radius: 4px;
+              font-size: 0.75rem;
+              font-weight: 600;
+              background: #dcfce7;
+              color: #15803d;
+
+              &.abnormal {
+                background: #fee2e2;
+                color: #b91c1c;
+              }
+            }
+
+            .lab-remarks {
+              margin-top: 0.5rem;
+              font-size: 0.8125rem;
+              color: #475569;
+            }
+          }
+
+          .pending-test-badge {
+            font-size: 0.8125rem;
+            color: #d97706;
+          }
+        }
+      }
+    }
+  }
