@@ -1,0 +1,475 @@
+++ b/src/app/features/patient-detail/patient-detail.component.html
+    <div class="loading-state">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p>Loading patient clinical record...</p>
+    
+    <!-- Top Hero Card -->
+    <div class="patient-hero-card">
+      <div class="hero-bg-gradient"></div>
+      
+      <div class="hero-content">
+        <div class="avatar-col">
+          <div class="patient-avatar-large">
+            {{ patient()?.firstName?.[0] }}{{ patient()?.lastName?.[0] }}
+          </div>
+          <span class="mrn-pill">
+            <mat-icon>tag</mat-icon> {{ patient()?.medicalRecordNumber }}
+          </span>
+        <div class="info-col">
+            <h1 class="patient-name">{{ patient()?.firstName }} {{ patient()?.lastName }}</h1>
+            <span class="gender-tag" [ngClass]="patient()?.gender?.toLowerCase()">
+              {{ patient()?.gender }}
+            </span>
+          <div class="meta-row">
+            <div class="meta-item">
+            <div class="meta-item">
+              <mat-icon>bloodtype</mat-icon>
+              <span>{{ patient()?.bloodGroup || 'Blood Group: Unknown' }}</span>
+            <div class="meta-item">
+              <mat-icon>phone</mat-icon>
+        <div class="actions-col">
+          <button mat-flat-button class="hero-action-btn vitals-hero-btn" (click)="openVitalsModal()" matTooltip="Record or update patient vital signs">
+            <mat-icon>monitor_heart</mat-icon>
+            <span>Record Vitals</span>
+          </button>
+          <a [routerLink]="['/appointments/book']" [queryParams]="{ patientId: patient()?.id }" mat-flat-button color="primary" class="hero-action-btn">
+            <mat-icon>calendar_today</mat-icon>
+            <span>Book Visit</span>
+          </a>
+          <a [routerLink]="['/patients', patient()?.id, 'edit']" mat-stroked-button class="hero-action-btn edit-btn">
+            <mat-icon>edit</mat-icon>
+            <span>Edit Profile</span>
+          </a>
+        </div>
+    <!-- Navigation Tabs Section -->
+    <div class="records-tabs-wrapper">
+      <mat-tab-group animationDuration="250ms" class="styled-mat-tabs" [(selectedIndex)]="activeTabIndex">
+            <span class="tab-count-badge" style="margin-left: 8px;">{{ history()?.visits?.length || 0 }}</span>
+                      
+                      @if (visit.symptoms) {
+                        <div class="symptoms-box">
+                          <strong>Reported Symptoms:</strong> {{ visit.symptoms }}
+                        </div>
+                      }
+
+                      @if (visit.vitalSigns) {
+                        <div class="vitals-pill-grid">
+                          <div class="vital-pill">
+                            <mat-icon>favorite</mat-icon>
+                            <span>BP: {{ visit.vitalSigns.systolicBP }}/{{ visit.vitalSigns.diastolicBP }} mmHg</span>
+                          </div>
+                          <div class="vital-pill">
+                            <mat-icon>timeline</mat-icon>
+                            <span>HR: {{ visit.vitalSigns.heartRateBpm }} bpm</span>
+                          </div>
+                          <div class="vital-pill">
+                            <mat-icon>thermostat</mat-icon>
+                            <span>Temp: {{ visit.vitalSigns.temperatureC }} &deg;C</span>
+                          </div>
+                          <div class="vital-pill">
+                            <mat-icon>scale</mat-icon>
+                            <span>BMI: {{ visit.vitalSigns.bmi }}</span>
+                          </div>
+                        </div>
+                      }
+
+                      @if (visit.prescription) {
+                        <div class="prescription-record-card">
+                          <div class="rx-header">
+                            <div class="rx-badge"><mat-icon>local_pharmacy</mat-icon> Doctor Prescription Record</div>
+                            <button mat-button class="copy-rx-btn" (click)="copyPrescriptionId(visit.prescription.id)" matTooltip="Click to Copy Prescription ID to Clipboard">
+                              <mat-icon>content_copy</mat-icon>
+                              <span>Rx Code: {{ visit.prescription.id | slice:0:8 }}...</span>
+                            </button>
+                          </div>
+                          <div class="rx-meds-list">
+                            @for (item of visit.prescription.items; track item.id) {
+                              <div class="rx-med-chip">
+                                <mat-icon>medication</mat-icon>
+                                <span class="rx-med-name">{{ item.medicineName }} &times;{{ item.quantity }}</span>
+                                <span class="rx-med-dose">{{ item.dosageInstructions }}</span>
+                              </div>
+                            }
+                          </div>
+              <div class="empty-state-card">
+                <mat-icon>history_edu</mat-icon>
+                <h3>No Clinical Consultations Yet</h3>
+                <p>Book a visit or register an appointment to begin clinical tracking for this patient.</p>
+            <span class="tab-count-badge" style="margin-left: 8px;">{{ files().length }}</span>
+                @for (file of files(); track file.id) {
+                    <div class="file-icon-wrap">
+                    <div class="file-info-body">
+                      <h4 class="file-name" [title]="file.originalFileName || file.fileName">
+                        {{ file.originalFileName || file.fileName }}
+                      </h4>
+                      <div class="file-meta">
+                        <span>{{ (file.fileSizeBytes / 1024) | number:'1.0-1' }} KB</span>
+                        <span class="meta-dot">&bull;</span>
+                        <span>{{ file.uploadedAt | date:'mediumDate' }}</span>
+                      </div>
+                    <button mat-icon-button class="download-btn" (click)="downloadFile(file)" matTooltip="Download Attachment">
+                    </button>
+              <div class="empty-state-card">
+                <mat-icon>cloud_upload</mat-icon>
+                <h3>No Uploaded Lab Documents</h3>
+                <p>Attach diagnostic lab reports, clinical scans, or insurance documents securely.</p>
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>fingerprint</mat-icon></div>
+                <div>
+                  <label>Medical Record Number</label>
+                  <h4>{{ patient()?.medicalRecordNumber || 'N/A' }}</h4>
+                </div>
+              </div>
+
+                  <label>Phone Number</label>
+                  <h4>{{ patient()?.email || 'Not Provided' }}</h4>
+                  <h4>{{ patient()?.address || 'Not Provided' }}</h4>
+                </div>
+              </div>
+
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>contact_emergency</mat-icon></div>
+                <div>
+                  <label>Emergency Contact Name</label>
+                  <h4>{{ emergencyContactName() }}</h4>
+              <div class="info-tile">
+                <div class="tile-icon-wrap"><mat-icon>phone_forwarded</mat-icon></div>
+                  <label>Emergency Contact Phone</label>
+                  <h4>{{ emergencyContactPhone() }}</h4>
+                <div class="tile-icon-wrap"><mat-icon>event</mat-icon></div>
+                  <label>Initial Registration Date</label>
+        <!-- Tab 4: Invoices & Patient Billing -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">receipt_long</mat-icon>
+            <span>Invoices & Billing</span>
+            <span class="tab-count-badge" style="margin-left: 8px;">{{ patientInvoices().length }}</span>
+          </ng-template>
+          <div class="tab-pane-content">
+            <!-- Billing Summary KPIs -->
+            <div class="billing-kpis-grid">
+              <div class="billing-kpi-card">
+                <div class="kpi-icon-box total-box"><mat-icon>request_quote</mat-icon></div>
+                <div class="kpi-details">
+                  <span class="kpi-label">Total Invoiced</span>
+                  <h3 class="kpi-val">{{ totalBilledAmount() | currency }}</h3>
+                </div>
+              </div>
+
+              <div class="billing-kpi-card">
+                <div class="kpi-icon-box paid-box"><mat-icon>check_circle</mat-icon></div>
+                <div class="kpi-details">
+                  <span class="kpi-label">Total Paid</span>
+                  <h3 class="kpi-val text-success">{{ totalPaidAmount() | currency }}</h3>
+                </div>
+              </div>
+
+              <div class="billing-kpi-card">
+                <div class="kpi-icon-box balance-box"><mat-icon>pending_actions</mat-icon></div>
+                <div class="kpi-details">
+                  <span class="kpi-label">Outstanding Balance</span>
+                  <h3 class="kpi-val" [class.text-danger]="totalOutstandingBalance() > 0">{{ totalOutstandingBalance() | currency }}</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Invoices List -->
+            @if (patientInvoices().length > 0) {
+              <div class="patient-invoices-list">
+                @for (inv of patientInvoices(); track inv.id) {
+                  <div class="patient-invoice-card" [class.paid-card]="inv.status === 'Paid'">
+                    <div class="invoice-card-header">
+                      <div class="inv-title-box">
+                        <mat-icon class="inv-icon">receipt</mat-icon>
+                        <div>
+                          <h4 class="inv-number">{{ inv.invoiceNumber }}</h4>
+                          <span class="inv-date">Issued: {{ inv.issueDate | date:'mediumDate' }}</span>
+                        </div>
+                      </div>
+
+                      <div class="inv-status-tag" [ngClass]="inv.status.toLowerCase()">
+                        <span class="status-dot"></span>
+                        {{ inv.status }}
+                      </div>
+                    </div>
+
+                    @if (inv.items && inv.items.length > 0) {
+                      <div class="invoice-items-box">
+                        <div class="items-heading">Billed Services & Items</div>
+                        @for (item of inv.items; track $index) {
+                          <div class="invoice-line-item">
+                            <span>{{ item.description }} &times;{{ item.quantity }}</span>
+                            <strong>{{ (item.lineTotal || item.totalPrice || (item.quantity * item.unitPrice)) | currency }}</strong>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <div class="invoice-card-footer">
+                      <div class="amounts-summary">
+                        <div class="amt-row"><span>Total:</span> <strong>{{ inv.totalAmount | currency }}</strong></div>
+                        <div class="amt-row"><span>Paid:</span> <strong class="text-success">{{ inv.paidAmount | currency }}</strong></div>
+                        @if (inv.balanceDue > 0) {
+                          <div class="amt-row due-row"><span>Balance Due:</span> <strong class="text-danger">{{ inv.balanceDue | currency }}</strong></div>
+                        }
+                      </div>
+
+                      <div class="inv-action-buttons">
+                        <button mat-stroked-button class="pdf-btn" (click)="downloadInvoicePdf(inv)" matTooltip="Download Official PDF Invoice">
+                          <mat-icon>picture_as_pdf</mat-icon>
+                          <span>PDF Receipt</span>
+                        </button>
+                        @if (inv.status !== 'Paid') {
+                          <button mat-flat-button color="primary" class="pay-btn" (click)="openPaymentModal(inv)">
+                            <mat-icon>payment</mat-icon>
+                            <span>Pay Balance</span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state-card">
+                <mat-icon>receipt_long</mat-icon>
+                <h3>No Invoices on File</h3>
+                <p>Invoices generated from consultations or dispensary prescriptions will appear here.</p>
+                <button mat-flat-button color="primary" class="empty-invoice-btn" (click)="openCreateInvoiceModal()" style="margin-top: 16px;">
+                  <mat-icon>add</mat-icon>
+                  <span>Generate Patient Invoice</span>
+                </button>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+
+    <!-- PAYMENT PROCESSING MODAL -->
+    @if (isPaymentModalOpen()) {
+      <div class="modal-backdrop fade-in" (click)="closePaymentModal()">
+        <div class="modal-dialog payment-modal mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
+          <div class="modal-header gradient-header-payment">
+            <div class="header-info">
+              <div class="header-icon-box">
+                <mat-icon>credit_card</mat-icon>
+              </div>
+              <div>
+                <h2 class="modal-title">Process Patient Payment</h2>
+                <p class="modal-subtitle">Invoice <strong>#{{ selectedInvoice()?.invoiceNumber }}</strong></p>
+              </div>
+            </div>
+            <button mat-icon-button (click)="closePaymentModal()" class="close-btn" matTooltip="Close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="payment-amount-box">
+              <span class="label">Amount to Pay ($)</span>
+              <mat-form-field appearance="outline" class="full-width">
+                <input matInput type="number" step="0.01" [ngModel]="paymentAmount()" (ngModelChange)="paymentAmount.set($event)" min="0.01">
+                <mat-icon matPrefix>attach_money</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div class="payment-method-box">
+              <span class="label">Payment Method</span>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
+                  <mat-option value="Cash">Cash</mat-option>
+                  <mat-option value="CreditCard">Credit / Debit Card</mat-option>
+                  <mat-option value="BankTransfer">Bank Transfer</mat-option>
+                  <mat-option value="Insurance">Health Insurance Claim</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>account_balance_wallet</mat-icon>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button mat-stroked-button (click)="closePaymentModal()" [disabled]="isProcessingPayment()">Cancel</button>
+            <button mat-flat-button color="primary" class="confirm-pay-btn" (click)="submitPayment()" [disabled]="isProcessingPayment() || paymentAmount() <= 0">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ isProcessingPayment() ? 'Processing...' : 'Confirm & Collect Payment' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+
+    <!-- VITALS RECORDING MODAL -->
+    @if (isVitalsModalOpen()) {
+      <div class="modal-backdrop fade-in" (click)="closeVitalsModal()">
+        <div class="modal-dialog vitals-modal mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
+          <div class="modal-header gradient-header-vitals">
+            <div class="header-info">
+              <div class="header-icon-box">
+                <mat-icon class="pulse-icon">monitor_heart</mat-icon>
+              </div>
+              <div>
+                <h2 class="modal-title">Record Patient Vital Signs</h2>
+                <p class="modal-subtitle">Patient: <strong>{{ patient()?.firstName }} {{ patient()?.lastName }}</strong> (MRN: {{ patient()?.medicalRecordNumber }})</p>
+              </div>
+            </div>
+            <button mat-icon-button (click)="closeVitalsModal()" class="close-btn" matTooltip="Close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Real-Time Health Gauges Bar -->
+            <div class="vitals-kpi-bar">
+              <div class="vitals-indicator-chip" [ngClass]="bpCategory().class">
+                <mat-icon>favorite</mat-icon>
+                <span>{{ bpCategory().label }} ({{ vitalsSystolic() }}/{{ vitalsDiastolic() }} mmHg)</span>
+              </div>
+              <div class="vitals-indicator-chip" [ngClass]="bmiCategory().class">
+                <mat-icon>accessibility_new</mat-icon>
+                <span>BMI {{ computedBmi() }} &bull; {{ bmiCategory().label }}</span>
+              </div>
+              <div class="vitals-indicator-chip" [class.fever]="vitalsTemp() >= 38.0">
+                <mat-icon>thermostat</mat-icon>
+                <span>{{ vitalsTemp() }} &deg;C {{ vitalsTemp() >= 38.0 ? '(Fever)' : '(Normal Temp)' }}</span>
+              </div>
+            </div>
+
+            <!-- Vitals Input Grid -->
+            <div class="vitals-form-grid">
+              <div class="vitals-input-card">
+                <label class="vitals-label"><mat-icon>speed</mat-icon> Blood Pressure (mmHg)</label>
+                <div class="bp-inputs">
+                  <mat-form-field appearance="outline" class="inline-field">
+                    <mat-label>Systolic</mat-label>
+                    <input matInput type="number" [ngModel]="vitalsSystolic()" (ngModelChange)="vitalsSystolic.set($event)" min="50" max="260">
+                  </mat-form-field>
+                  <span class="bp-sep">/</span>
+                  <mat-form-field appearance="outline" class="inline-field">
+                    <mat-label>Diastolic</mat-label>
+                    <input matInput type="number" [ngModel]="vitalsDiastolic()" (ngModelChange)="vitalsDiastolic.set($event)" min="30" max="150">
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <div class="vitals-input-card">
+                <label class="vitals-label"><mat-icon>favorite_border</mat-icon> Heart Rate (BPM)</label>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" [ngModel]="vitalsHeartRate()" (ngModelChange)="vitalsHeartRate.set($event)" min="30" max="220">
+                  <mat-icon matSuffix>timeline</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="vitals-input-card">
+                <label class="vitals-label"><mat-icon>thermostat</mat-icon> Temperature (&deg;C)</label>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" step="0.1" [ngModel]="vitalsTemp()" (ngModelChange)="vitalsTemp.set($event)" min="32" max="43">
+                  <mat-icon matSuffix>device_thermostat</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="vitals-input-card">
+                <label class="vitals-label"><mat-icon>air</mat-icon> Respiratory Rate (bpm)</label>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" [ngModel]="vitalsRespiratory()" (ngModelChange)="vitalsRespiratory.set($event)" min="8" max="60">
+                  <mat-icon matSuffix>waves</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="vitals-input-card">
+                <label class="vitals-label"><mat-icon>fitness_center</mat-icon> Weight (kg)</label>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" step="0.1" [ngModel]="vitalsWeight()" (ngModelChange)="vitalsWeight.set($event)" min="1" max="300">
+                  <mat-icon matSuffix>scale</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="vitals-input-card">
+                <label class="vitals-label"><mat-icon>height</mat-icon> Height (cm)</label>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" [ngModel]="vitalsHeight()" (ngModelChange)="vitalsHeight.set($event)" min="30" max="250">
+                  <mat-icon matSuffix>straighten</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button mat-button (click)="closeVitalsModal()" class="cancel-btn">Cancel</button>
+            <button mat-flat-button color="primary" class="save-vitals-btn" [disabled]="isSubmittingVitals()" (click)="submitVitals()">
+              @if (isSubmittingVitals()) {
+                <mat-spinner diameter="20" class="spinner-inline"></mat-spinner>
+                <span>Saving Vitals...</span>
+              } @else {
+                <mat-icon>save</mat-icon>
+                <span>Save Vital Signs</span>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- CREATE INVOICE MODAL -->
+    @if (isCreateInvoiceModalOpen()) {
+      <div class="modal-backdrop fade-in" (click)="closeCreateInvoiceModal()">
+        <div class="modal-dialog payment-modal mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
+          <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important; color: white !important;">
+            <div class="header-info">
+              <div class="header-icon-box">
+                <mat-icon>receipt</mat-icon>
+              </div>
+              <div>
+                <h2 class="modal-title">Generate Patient Invoice</h2>
+                <p class="modal-subtitle">Patient: <strong>{{ patient()?.firstName }} {{ patient()?.lastName }}</strong></p>
+              </div>
+            </div>
+            <button mat-icon-button (click)="closeCreateInvoiceModal()" class="close-btn" matTooltip="Close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="payment-amount-box">
+              <span class="label">Service / Treatment Description</span>
+              <mat-form-field appearance="outline" class="full-width">
+                <input matInput [ngModel]="newInvoiceDesc()" (ngModelChange)="newInvoiceDesc.set($event)" placeholder="e.g. Follow-up consultation, ECG, Lab work">
+                <mat-icon matPrefix>medical_services</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="payment-amount-box">
+                <span class="label">Quantity</span>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" min="1" [ngModel]="newInvoiceQuantity()" (ngModelChange)="newInvoiceQuantity.set($event)">
+                  <mat-icon matPrefix>numbers</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="payment-amount-box">
+                <span class="label">Unit Price ($)</span>
+                <mat-form-field appearance="outline" class="full-width">
+                  <input matInput type="number" min="1" step="0.01" [ngModel]="newInvoiceAmount()" (ngModelChange)="newInvoiceAmount.set($event)">
+                  <mat-icon matPrefix>attach_money</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button mat-button (click)="closeCreateInvoiceModal()" class="cancel-btn">Cancel</button>
+            <button mat-flat-button color="primary" class="confirm-pay-btn" [disabled]="isCreatingInvoice()" (click)="submitCreateInvoice()">
+              @if (isCreatingInvoice()) {
+                <mat-spinner diameter="20" class="spinner-inline"></mat-spinner>
+                <span>Generating Invoice...</span>
+              } @else {
+                <mat-icon>check_circle</mat-icon>
+                <span>Create Invoice</span>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
