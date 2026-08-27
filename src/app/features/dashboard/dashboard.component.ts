@@ -9,17 +9,27 @@ import { RouterLink } from '@angular/router';
 import { DashboardService, DashboardSummary } from '../../services/dashboard.service';
 import { LiveSyncService } from '../../services/live-sync.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
+import { ToastService } from '../../ui/toast/toast.service';
+import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
     MatProgressBarModule,
     MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTooltipModule,
     RouterLink
   ],
   templateUrl: './dashboard.component.html',
@@ -39,6 +49,40 @@ export class DashboardComponent implements OnInit {
     if (roles && roles.length > 0) return roles[0];
     return 'Admin';
   });
+
+  
+  private notifService = inject(NotificationService);
+  private toast = inject(ToastService);
+
+  isAlertModalOpen = signal(false);
+  isSendingAlert = signal(false);
+  alertMessage = signal('All medical personnel please be advised: Routine server sync scheduled for tonight.');
+
+  openBroadcastModal() {
+    this.isAlertModalOpen.set(true);
+  }
+
+  closeBroadcastModal() {
+    this.isAlertModalOpen.set(false);
+  }
+
+  sendBroadcastAlert() {
+    const msg = this.alertMessage().trim();
+    if (!msg) return;
+
+    this.isSendingAlert.set(true);
+    this.notifService.sendTestNotification(msg).subscribe({
+      next: () => {
+        this.isSendingAlert.set(false);
+        this.isAlertModalOpen.set(false);
+        this.toast.success('Announcement broadcast to all staff: ' + msg);
+      },
+      error: () => {
+        this.isSendingAlert.set(false);
+        this.toast.error('Failed to broadcast alert notification');
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadData();

@@ -1,4 +1,4 @@
-<div class="patient-detail-container">
+﻿<div class="patient-detail-container">
   @if (isLoading()) {
     <div class="loading-wrap">
       <mat-spinner diameter="44"></mat-spinner>
@@ -295,7 +295,111 @@
           </div>
         </mat-tab>
 
+
+        <!-- Tab 4: Patient Invoices & Billing -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">receipt_long</mat-icon>
+            <span>Invoices & Billing</span>
+          </ng-template>
+          <div class="tab-pane-content">
+
+            @if (patientInvoices().length > 0) {
+              <div class="invoices-list">
+                @for (inv of patientInvoices(); track inv.id) {
+                  <div class="invoice-row-card">
+                    <div class="inv-left">
+                      <span class="inv-num-badge">{{ inv.invoiceNumber }}</span>
+                      <div class="inv-meta">
+                        <span class="inv-date">{{ inv.issueDate | date:'mediumDate' }}</span>
+                        <span class="inv-desc">{{ inv.items?.[0]?.description || 'Medical Service' }}</span>
+                      </div>
+                    </div>
+                    <div class="inv-center">
+                      <span class="inv-status-badge"
+                        [class.paid]="inv.status === 'Paid'"
+                        [class.unpaid]="inv.status === 'Unpaid' || inv.status === 'Overdue'"
+                        [class.partial]="inv.status === 'PartiallyPaid' || inv.status === 'Issued' || inv.status === 'Draft'">
+                        {{ inv.status }}
+                      </span>
+                    </div>
+                    <div class="inv-right">
+                      <div class="inv-amounts">
+                        <span class="inv-total">{{ inv.totalAmount | currency }}</span>
+                        @if (inv.balanceDue > 0) {
+                          <span class="inv-balance">Due: {{ inv.balanceDue | currency }}</span>
+                        }
+                      </div>
+                      <div class="inv-actions">
+                        @if (inv.balanceDue > 0) {
+                          <button mat-flat-button color="primary" class="inv-pay-btn" (click)="openPaymentModal(inv)">
+                            <mat-icon>payments</mat-icon> Pay
+                          </button>
+                        }
+                        <button mat-icon-button color="primary" (click)="downloadInvoicePdf(inv)" matTooltip="Download PDF">
+                          <mat-icon>picture_as_pdf</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-chart-state">
+                <mat-icon class="empty-icon">receipt</mat-icon>
+                <h3>No Invoices Found</h3>
+                <p>There are no billing records associated with this patient yet.</p>
+              </div>
+            }
+
+            <!-- Inline Payment Modal -->
+            @if (isPaymentModalOpen()) {
+              <div class="payment-overlay">
+                <div class="payment-modal-card">
+                  <div class="payment-modal-header">
+                    <mat-icon>payments</mat-icon>
+                    <h3>Settle Invoice #{{ selectedInvoice()?.invoiceNumber }}</h3>
+                    <button mat-icon-button (click)="closePaymentModal()" class="close-modal-btn">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                  <div class="payment-modal-body">
+                    <div class="balance-info-box">
+                      <span>Outstanding Balance:</span>
+                      <strong>{{ selectedInvoice()?.balanceDue | currency }}</strong>
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Payment Amount ($)</mat-label>
+                      <input matInput type="number" [ngModel]="paymentAmount()" (ngModelChange)="paymentAmount.set($event)" min="1">
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Payment Method</mat-label>
+                      <mat-select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
+                        <mat-option value="Cash">Cash</mat-option>
+                        <mat-option value="CreditCard">Credit Card</mat-option>
+                        <mat-option value="DebitCard">Debit Card</mat-option>
+                        <mat-option value="Insurance">Insurance</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                  <div class="payment-modal-footer">
+                    <button mat-stroked-button (click)="closePaymentModal()">Cancel</button>
+                    <button mat-flat-button color="primary" (click)="submitPayment()" [disabled]="isProcessingPayment() || paymentAmount() <= 0">
+                      <mat-icon>verified</mat-icon>
+                      @if (isProcessingPayment()) { Processing... } @else { Confirm Payment }
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+          </div>
+        </mat-tab>
       </mat-tab-group>
     </div>
   }
 </div>
+
+
+
+

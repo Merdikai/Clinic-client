@@ -1,4 +1,4 @@
-﻿export interface LoginRequest {
+export interface LoginRequest {
   username: string;
   password: string;
 }
@@ -13,6 +13,8 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
+  id?: string;
+  userId?: string;
   token: string;
   refreshToken?: string;
   username: string;
@@ -22,6 +24,8 @@ export interface AuthResponse {
 }
 
 export interface UserInfo {
+  id?: string;
+  userId?: string;
   username: string;
   email?: string;
   fullName: string;

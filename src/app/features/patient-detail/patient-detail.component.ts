@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, input } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -7,6 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { FormsModule } from '@angular/forms';
+import { BillingService } from '../../services/billing.service';
+import { Invoice } from '../../models/billing.model';
 import { PatientService } from '../../services/patient.service';
 import { FileUploadService } from '../../services/file-upload.service';
 import { Patient } from '../../models/patient.model';
@@ -24,7 +31,12 @@ import { ToastService } from '../../ui/toast/toast.service';
     MatIconModule,
     MatTabsModule,
     MatProgressSpinnerModule,
-    MatChipsModule
+    MatChipsModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatTooltipModule
   ],
   templateUrl: './patient-detail.component.html',
   styleUrls: ['./patient-detail.component.scss']
@@ -34,12 +46,21 @@ export class PatientDetailComponent implements OnInit {
   private patientService = inject(PatientService);
   private fileService   = inject(FileUploadService);
   private toast         = inject(ToastService);
+  private billingService = inject(BillingService);
 
   patient   = signal<Patient | null>(null);
   history   = signal<any>(null);
   files     = signal<FileUploadResponse[]>([]);
   isLoading   = signal(false);
   isUploading = signal(false);
+
+  // Billing / Invoice signals
+  patientInvoices      = signal<Invoice[]>([]);
+  selectedInvoice      = signal<Invoice | null>(null);
+  paymentAmount        = signal<number>(0);
+  paymentMethod        = signal<string>('Cash');
+  isPaymentModalOpen   = signal(false);
+  isProcessingPayment  = signal(false);
 
   emergencyContactName = computed(() => {
     const raw = this.patient()?.emergencyContact || (this.patient() as any)?.emergencyContactName || '';
@@ -83,6 +104,9 @@ export class PatientDetailComponent implements OnInit {
 
     // Load files
     this.loadFiles();
+
+    // Load patient invoices
+    this.loadInvoices();
   }
 
   loadFiles() {
@@ -99,6 +123,16 @@ export class PatientDetailComponent implements OnInit {
     });
   }
 
+  loadInvoices() {
+    this.billingService.getInvoicesByPatient(this.id()).subscribe({
+      next: (res: any) => {
+        const list: Invoice[] = Array.isArray(res) ? res : res?.items || [];
+        this.patientInvoices.set(list);
+      },
+      error: () => this.patientInvoices.set([])
+    });
+  }
+
   copyPrescriptionId(id: string) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(id).then(() => {
@@ -109,7 +143,7 @@ export class PatientDetailComponent implements OnInit {
     }
   }
 
-    downloadFile(file: FileUploadResponse) {
+  downloadFile(file: FileUploadResponse) {
     this.toast.info('Downloading ' + (file.originalFileName || file.fileName) + '...');
     this.fileService.downloadPatientFile(this.id(), file.fileName).subscribe({
       next: (blob: Blob) => {
@@ -123,8 +157,68 @@ export class PatientDetailComponent implements OnInit {
         window.URL.revokeObjectURL(url);
         this.toast.success('Download complete!');
       },
-      error: (err) => {
+      error: () => {
         this.toast.error('Failed to download file');
+      }
+    });
+  }
+
+  downloadInvoicePdf(invoice: Invoice) {
+    this.billingService.downloadPdf(invoice.id).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Invoice_${invoice.invoiceNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.toast.success('Invoice PDF downloaded successfully!');
+      },
+      error: () => {
+        this.toast.error('Failed to download invoice PDF');
+      }
+    });
+  }
+
+  openPaymentModal(invoice: Invoice) {
+    this.selectedInvoice.set(invoice);
+    this.paymentAmount.set(invoice.balanceDue || invoice.totalAmount || 0);
+    this.paymentMethod.set('Cash');
+    this.isPaymentModalOpen.set(true);
+  }
+
+  closePaymentModal() {
+    this.isPaymentModalOpen.set(false);
+    this.selectedInvoice.set(null);
+  }
+
+  submitPayment() {
+    const inv = this.selectedInvoice();
+    if (!inv) return;
+
+    if (this.paymentAmount() <= 0) {
+      this.toast.error('Payment amount must be greater than zero');
+      return;
+    }
+
+    this.isProcessingPayment.set(true);
+    this.billingService.processPayment({
+      invoiceId: inv.id,
+      amountPaid: Number(this.paymentAmount()),
+      paymentMethod: this.paymentMethod()
+    }).subscribe({
+      next: () => {
+        this.isProcessingPayment.set(false);
+        this.isPaymentModalOpen.set(false);
+        this.toast.success(`Payment of ${this.paymentAmount()} processed successfully!`);
+        this.loadInvoices();
+      },
+      error: (err: any) => {
+        this.isProcessingPayment.set(false);
+        const msg = err.error?.detail || err.error?.title || 'Payment processing failed';
+        this.toast.error(msg);
       }
     });
   }

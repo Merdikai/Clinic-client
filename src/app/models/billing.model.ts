@@ -1,4 +1,4 @@
-﻿export interface Invoice {
+export interface Invoice {
   id: string;
   invoiceNumber: string;
   patientId: string;
@@ -10,20 +10,24 @@
   balanceDue: number;
   status: 'Draft' | 'Issued' | 'Paid' | 'PartiallyPaid' | 'Unpaid' | 'Overdue' | 'Cancelled';
   items?: InvoiceItem[];
+  lineItems?: InvoiceItem[];
 }
 
 export interface InvoiceItem {
-  id: string;
+  id?: string;
   description: string;
   quantity: number;
   unitPrice: number;
-  totalPrice: number;
+  totalPrice?: number;
+  lineTotal?: number;
 }
 
 export interface CreateInvoiceRequest {
   patientId: string;
   appointmentId?: string;
   dueDate?: string;
+  taxAmount?: number;
+  discountAmount?: number;
   items: {
     description: string;
     quantity: number;

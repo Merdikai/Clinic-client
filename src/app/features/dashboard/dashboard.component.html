@@ -96,6 +96,9 @@
         <a mat-stroked-button routerLink="/appointments/book" class="header-btn">
           <mat-icon>add_alarm</mat-icon> Book Consultation
         </a>
+        <button mat-flat-button type="button" (click)="openBroadcastModal()" class="header-btn broadcast-trigger-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 14px rgba(245,158,11,0.35);">
+          <mat-icon>campaign</mat-icon> Broadcast Alert
+        </button>
       }
     </div>
   </div>
@@ -751,3 +754,41 @@
   }
 
 </div>
+
+  <!-- BROADCAST ALERT MODAL -->
+  @if (isAlertModalOpen()) {
+    <div class="modal-backdrop fade-in" (click)="closeBroadcastModal()">
+      <div class="modal-dialog mat-elevation-z24 scale-in" (click)="$event.stopPropagation()" style="max-width: 520px; border-radius: 20px; overflow: hidden; background: var(--bg-surface);">
+        <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+              <mat-icon>campaign</mat-icon>
+            </div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">Broadcast Clinic Alert</h2>
+              <p style="margin: 2px 0 0 0; font-size: 0.825rem; opacity: 0.9;">Real-time SignalR broadcast to all active staff</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeBroadcastModal()" style="color: white;">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" style="padding: 24px;">
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Announcement Message</mat-label>
+            <textarea matInput rows="4" [ngModel]="alertMessage()" (ngModelChange)="alertMessage.set($event)" placeholder="Enter announcement text to broadcast..."></textarea>
+            <mat-icon matPrefix>announcement</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 24px; background: var(--bg-subtle, rgba(0,0,0,0.02)); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px;">
+          <button mat-stroked-button (click)="closeBroadcastModal()" [disabled]="isSendingAlert()">Cancel</button>
+          <button mat-flat-button (click)="sendBroadcastAlert()" [disabled]="isSendingAlert() || !alertMessage().trim()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; font-weight: 700; border-radius: 10px;">
+            <mat-icon>send</mat-icon>
+            <span>{{ isSendingAlert() ? 'Broadcasting...' : 'Broadcast to All Staff' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }

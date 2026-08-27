@@ -691,3 +691,119 @@
   border-radius: 8px !important;
   margin-left: 8px;
 }
+
+.vitals-btn {
+  background: rgba(14, 165, 233, 0.08) !important;
+  color: #0284c7 !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  &:hover {
+    background: #0284c7 !important;
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+  }
+}
+
+.gradient-header-vitals {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: white !important;
+}
+
+.vitals-kpi-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--bg-subtle, rgba(0,0,0,0.03));
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+}
+
+.vitals-indicator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.825rem;
+  font-weight: 700;
+
+  &.bp-normal, &.bmi-normal {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  &.bp-elevated, &.bmi-under {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  &.bp-stage1, &.bp-stage2, &.bmi-over, &.bmi-obese, &.fever {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+}
+
+.vitals-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.vitals-input-card {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  padding: 16px;
+
+  .vitals-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    margin-bottom: 10px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #0284c7;
+    }
+  }
+
+  .bp-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .inline-field {
+      flex: 1;
+    }
+    .bp-slash {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-muted, #94a3b8);
+    }
+  }
+}
+
+.pulse-icon {
+  animation: heartPulse 1.5s infinite;
+}
+
+@keyframes heartPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}

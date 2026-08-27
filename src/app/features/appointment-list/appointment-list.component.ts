@@ -17,7 +17,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AppointmentStore } from '../../store/appointment.store';
 import { LiveSyncService } from '../../services/live-sync.service';
 import { ConsultationService } from '../../services/consultation.service';
+import { VitalSignsService } from '../../services/vital-signs.service';
+import { ToastService } from '../../ui/toast/toast.service';
 import { MedicineService } from '../../services/medicine.service';
+import { AuthService } from '../../services/auth.service';
 import { Medicine } from '../../models/medicine.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -242,6 +245,180 @@ export class AppointmentListComponent implements OnInit {
     });
   }
 
+  
+  public authService = inject(AuthService);
+  private vitalSignsService = inject(VitalSignsService);
+  private toast = inject(ToastService);
+
+  // Vital Signs Modal State
+  isVitalsModalOpen = signal(false);
+  activeVitalsAppointment = signal<any>(null);
+  isSubmittingVitals = signal(false);
+
+  vitalsSystolic = signal<number>(120);
+  vitalsDiastolic = signal<number>(80);
+  vitalsHeartRate = signal<number>(72);
+  vitalsTemp = signal<number>(36.8);
+  vitalsRespiratory = signal<number>(16);
+  vitalsWeight = signal<number>(70);
+  vitalsHeight = signal<number>(170);
+
+  // Computed Live Health Indicators
+  computedBmi = computed(() => {
+    const hM = (this.vitalsHeight() || 170) / 100;
+    const wKg = this.vitalsWeight() || 70;
+    if (hM <= 0) return 0;
+    return parseFloat((wKg / (hM * hM)).toFixed(1));
+  });
+
+  bmiCategory = computed(() => {
+    const bmi = this.computedBmi();
+    if (bmi < 18.5) return { label: 'Underweight', class: 'bmi-under' };
+    if (bmi < 25) return { label: 'Normal Weight', class: 'bmi-normal' };
+    if (bmi < 30) return { label: 'Overweight', class: 'bmi-over' };
+    return { label: 'Obese', class: 'bmi-obese' };
+  });
+
+  bpCategory = computed(() => {
+    const sys = this.vitalsSystolic() || 120;
+    const dia = this.vitalsDiastolic() || 80;
+    if (sys < 120 && dia < 80) return { label: 'Normal BP', class: 'bp-normal' };
+    if (sys <= 129 && dia < 80) return { label: 'Elevated BP', class: 'bp-elevated' };
+    if (sys <= 139 || dia <= 89) return { label: 'Stage 1 HTN', class: 'bp-stage1' };
+    return { label: 'Stage 2 HTN', class: 'bp-stage2' };
+  });
+
+    openVitalsModal(appointment: any) {
+    this.activeVitalsAppointment.set(appointment);
+
+    // If local appointment already has vital signs, populate immediately
+    if (appointment.vitalSigns) {
+      this.populateVitals(appointment.vitalSigns);
+    } else {
+      this.resetVitalsToDefault();
+    }
+
+    // Always fetch latest authoritative record from backend
+    this.vitalSignsService.getByAppointment(appointment.id).subscribe({
+      next: (res: any) => {
+        const v = res?.value || res;
+        if (v && (v.systolicBP != null || v.systolicBp != null || v.SystolicBP != null)) {
+          const sys = v.systolicBP ?? v.systolicBp ?? v.SystolicBP;
+          const dia = v.diastolicBP ?? v.diastolicBp ?? v.DiastolicBP;
+          const hr = v.heartRateBpm ?? v.heartRate ?? v.HeartRateBpm;
+          const temp = v.temperatureC ?? v.temperature ?? v.TemperatureC;
+          const resp = v.respiratoryRate ?? v.RespiratoryRate;
+          const wt = v.weightKg ?? v.WeightKg;
+          const ht = v.heightCm ?? v.HeightCm;
+
+          const freshVitals = {
+            ...v,
+            systolicBP: Number(sys),
+            diastolicBP: Number(dia),
+            heartRateBpm: Number(hr),
+            temperatureC: Number(temp),
+            respiratoryRate: Number(resp),
+            weightKg: Number(wt),
+            heightCm: Number(ht)
+          };
+
+          appointment.vitalSigns = freshVitals;
+          this.activeVitalsAppointment.set({ ...appointment });
+          this.populateVitals(freshVitals);
+          this.appointmentStore.updateAppointmentVitals(appointment.id, freshVitals);
+        }
+      },
+      error: () => {
+        // Not yet recorded on server, keep default/form values
+      }
+    });
+
+    this.isVitalsModalOpen.set(true);
+  }
+
+  private populateVitals(v: any) {
+    if (!v) return;
+    const sys = v.systolicBP ?? v.systolicBp ?? v.SystolicBP;
+    const dia = v.diastolicBP ?? v.diastolicBp ?? v.DiastolicBP;
+    const hr = v.heartRateBpm ?? v.heartRate ?? v.HeartRateBpm;
+    const temp = v.temperatureC ?? v.temperature ?? v.TemperatureC;
+    const resp = v.respiratoryRate ?? v.RespiratoryRate;
+    const wt = v.weightKg ?? v.WeightKg;
+    const ht = v.heightCm ?? v.HeightCm;
+
+    if (sys != null && !isNaN(Number(sys))) this.vitalsSystolic.set(Number(sys));
+    if (dia != null && !isNaN(Number(dia))) this.vitalsDiastolic.set(Number(dia));
+    if (hr != null && !isNaN(Number(hr))) this.vitalsHeartRate.set(Number(hr));
+    if (temp != null && !isNaN(Number(temp))) this.vitalsTemp.set(Number(temp));
+    if (resp != null && !isNaN(Number(resp))) this.vitalsRespiratory.set(Number(resp));
+    if (wt != null && !isNaN(Number(wt))) this.vitalsWeight.set(Number(wt));
+    if (ht != null && !isNaN(Number(ht))) this.vitalsHeight.set(Number(ht));
+  }
+
+  private resetVitalsToDefault() {
+    this.vitalsSystolic.set(120);
+    this.vitalsDiastolic.set(80);
+    this.vitalsHeartRate.set(72);
+    this.vitalsTemp.set(36.8);
+    this.vitalsRespiratory.set(16);
+    this.vitalsWeight.set(70);
+    this.vitalsHeight.set(170);
+  }
+
+  closeVitalsModal() {
+    this.isVitalsModalOpen.set(false);
+    this.activeVitalsAppointment.set(null);
+  }
+
+  submitVitals() {
+    const appt = this.activeVitalsAppointment();
+    if (!appt) return;
+
+    this.isSubmittingVitals.set(true);
+    const payload = {
+      appointmentId: appt.id,
+      systolicBP: Number(this.vitalsSystolic()),
+      diastolicBP: Number(this.vitalsDiastolic()),
+      heartRateBpm: Number(this.vitalsHeartRate()),
+      temperatureC: Number(this.vitalsTemp()),
+      respiratoryRate: Number(this.vitalsRespiratory()),
+      weightKg: Number(this.vitalsWeight()),
+      heightCm: Number(this.vitalsHeight())
+    };
+
+    const currentUser = this.authService.currentUser();
+    const staffId = currentUser?.id || (appt.doctorId !== '00000000-0000-0000-0000-000000000000' ? appt.doctorId : undefined);
+    this.vitalSignsService.record(payload, staffId).subscribe({
+      next: (res: any) => {
+        const savedData = res?.value || res || payload;
+        const freshVitals = {
+          ...savedData,
+          systolicBP: payload.systolicBP,
+          diastolicBP: payload.diastolicBP,
+          heartRateBpm: payload.heartRateBpm,
+          temperatureC: payload.temperatureC,
+          respiratoryRate: payload.respiratoryRate,
+          weightKg: payload.weightKg,
+          heightCm: payload.heightCm
+        };
+
+        // Update in-memory objects immediately
+        appt.vitalSigns = freshVitals;
+        this.activeVitalsAppointment.set({ ...appt });
+        this.appointmentStore.updateAppointmentVitals(appt.id, freshVitals);
+
+        this.isSubmittingVitals.set(false);
+        this.isVitalsModalOpen.set(false);
+        this.toast.success(`Vital signs recorded successfully for ${appt.patientName || 'patient'}!`);
+        this.appointmentStore.loadAppointments();
+      },
+      error: (err: any) => {
+        this.isSubmittingVitals.set(false);
+        this.toast.error(err.error?.detail || err.error?.title || 'Failed to record vital signs');
+      }
+    });
+  }
+
   getInitials(name: string): string {
     if (!name) return 'PT';
     const parts = name.trim().split(' ');
@@ -249,3 +426,4 @@ export class AppointmentListComponent implements OnInit {
     return name.substring(0, 2).toUpperCase();
   }
 }
+

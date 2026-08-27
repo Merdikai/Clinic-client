@@ -154,24 +154,38 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Clinical Operations</th>
             <td mat-cell *matCellDef="let a">
-              <div class="actions-group">
+              <div class="actions-group" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <!-- Record Vitals Action Button -->
+                <button mat-flat-button class="vitals-btn" (click)="openVitalsModal(a)" matTooltip="Record or Edit Patient Vital Signs" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; border-radius: 10px; font-weight: 600;">
+                  <mat-icon style="font-size: 18px; width: 18px; height: 18px;">monitor_heart</mat-icon>
+                  <span>{{ a.vitalSigns ? 'Edit Vitals' : 'Record Vitals' }}</span>
+                </button>
+                @if (a.vitalSigns) {
+                  <span class="vitals-badge-pill" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(14, 165, 233, 0.1); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.2);">
+                    🩺 {{ a.vitalSigns.systolicBP }}/{{ a.vitalSigns.diastolicBP }}
+                  </span>
+                }
+
                 @if (a.status === 'Scheduled') {
-                  <button mat-flat-button color="primary" class="checkin-btn" (click)="checkIn(a.id)">
-                    <mat-icon>how_to_reg</mat-icon>
+                  <button mat-flat-button color="primary" class="checkin-btn" (click)="checkIn(a.id)" style="border-radius: 10px; font-weight: 600;">
+                    <mat-icon style="font-size: 18px; width: 18px; height: 18px;">how_to_reg</mat-icon>
                     <span>Check In</span>
                   </button>
-                  <button mat-stroked-button color="warn" class="cancel-btn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
+                  <button mat-icon-button color="warn" class="cancel-btn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
                     <mat-icon>close</mat-icon>
                   </button>
                 } @else if (a.status === 'CheckedIn') {
-                  <button mat-flat-button class="prescribe-btn" (click)="openConsultationModal(a)">
-                    <mat-icon>medical_services</mat-icon>
-                    <span>Doctor Consult & Prescribe</span>
+                  <button mat-flat-button class="prescribe-btn" (click)="openConsultationModal(a)" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 10px; font-weight: 600;">
+                    <mat-icon style="font-size: 18px; width: 18px; height: 18px;">medical_services</mat-icon>
+                    <span>Consult & Prescribe</span>
+                  </button>
+                  <button mat-icon-button color="warn" class="cancel-btn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
+                    <mat-icon>close</mat-icon>
                   </button>
                 } @else {
-                  <div class="completed-badge">
-                    <mat-icon>verified</mat-icon>
-                    <span>Consulted & Prescribed</span>
+                  <div class="completed-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 600; font-size: 0.85rem;">
+                    <mat-icon style="font-size: 18px; width: 18px; height: 18px;">verified</mat-icon>
+                    <span>Completed</span>
                   </div>
                 }
               </div>
@@ -360,3 +374,111 @@
     </div>
   </div>
 }
+
+  <!-- VITAL SIGNS RECORDING MODAL -->
+  @if (isVitalsModalOpen()) {
+    <div class="modal-backdrop fade-in" (click)="closeVitalsModal()">
+      <div class="modal-dialog vitals-modal mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
+        <div class="modal-header gradient-header-vitals">
+          <div class="header-info">
+            <div class="header-icon-box">
+              <mat-icon class="pulse-icon">monitor_heart</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Record Patient Vital Signs</h2>
+              <p class="modal-subtitle">Appointment with <strong>{{ activeVitalsAppointment()?.patientName }}</strong></p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeVitalsModal()" class="close-btn" matTooltip="Close">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Real-Time Health Gauges Bar -->
+          <div class="vitals-kpi-bar">
+            <div class="vitals-indicator-chip" [ngClass]="bpCategory().class">
+              <mat-icon>favorite</mat-icon>
+              <span>{{ bpCategory().label }} ({{ vitalsSystolic() }}/{{ vitalsDiastolic() }} mmHg)</span>
+            </div>
+            <div class="vitals-indicator-chip" [ngClass]="bmiCategory().class">
+              <mat-icon>accessibility_new</mat-icon>
+              <span>BMI {{ computedBmi() }} &bull; {{ bmiCategory().label }}</span>
+            </div>
+            <div class="vitals-indicator-chip" [class.fever]="vitalsTemp() >= 38.0">
+              <mat-icon>thermostat</mat-icon>
+              <span>{{ vitalsTemp() }} &deg;C {{ vitalsTemp() >= 38.0 ? '(Fever)' : '(Normal Temp)' }}</span>
+            </div>
+          </div>
+
+          <!-- Vitals Input Grid -->
+          <div class="vitals-form-grid">
+            <div class="vitals-input-card">
+              <label class="vitals-label"><mat-icon>speed</mat-icon> Blood Pressure (mmHg)</label>
+              <div class="bp-inputs">
+                <mat-form-field appearance="outline" class="inline-field">
+                  <mat-label>Systolic</mat-label>
+                  <input matInput type="number" [ngModel]="vitalsSystolic()" (ngModelChange)="vitalsSystolic.set($event)" min="50" max="250">
+                </mat-form-field>
+                <span class="bp-slash">/</span>
+                <mat-form-field appearance="outline" class="inline-field">
+                  <mat-label>Diastolic</mat-label>
+                  <input matInput type="number" [ngModel]="vitalsDiastolic()" (ngModelChange)="vitalsDiastolic.set($event)" min="30" max="150">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="vitals-input-card">
+              <label class="vitals-label"><mat-icon>favorite</mat-icon> Heart Rate (BPM)</label>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Beats per minute</mat-label>
+                <input matInput type="number" [ngModel]="vitalsHeartRate()" (ngModelChange)="vitalsHeartRate.set($event)" min="30" max="220">
+                <mat-icon matSuffix>timeline</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div class="vitals-input-card">
+              <label class="vitals-label"><mat-icon>device_thermostat</mat-icon> Body Temperature (&deg;C)</label>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Celsius</mat-label>
+                <input matInput type="number" step="0.1" [ngModel]="vitalsTemp()" (ngModelChange)="vitalsTemp.set($event)" min="30" max="45">
+                <mat-icon matSuffix>thermostat</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div class="vitals-input-card">
+              <label class="vitals-label"><mat-icon>air</mat-icon> Respiratory Rate</label>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Breaths / min</mat-label>
+                <input matInput type="number" [ngModel]="vitalsRespiratory()" (ngModelChange)="vitalsRespiratory.set($event)" min="5" max="60">
+              </mat-form-field>
+            </div>
+
+            <div class="vitals-input-card">
+              <label class="vitals-label"><mat-icon>height</mat-icon> Height (cm)</label>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Centimeters</mat-label>
+                <input matInput type="number" [ngModel]="vitalsHeight()" (ngModelChange)="vitalsHeight.set($event)" min="30" max="250">
+              </mat-form-field>
+            </div>
+
+            <div class="vitals-input-card">
+              <label class="vitals-label"><mat-icon>scale</mat-icon> Weight (kg)</label>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Kilograms</mat-label>
+                <input matInput type="number" step="0.5" [ngModel]="vitalsWeight()" (ngModelChange)="vitalsWeight.set($event)" min="2" max="300">
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-stroked-button (click)="closeVitalsModal()" [disabled]="isSubmittingVitals()">Cancel</button>
+          <button mat-flat-button color="primary" class="save-vitals-btn" (click)="submitVitals()" [disabled]="isSubmittingVitals()">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ isSubmittingVitals() ? 'Saving Vitals...' : 'Save & Record Vitals' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }

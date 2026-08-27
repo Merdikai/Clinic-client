@@ -121,12 +121,17 @@ export class BillingComponent implements OnInit {
   }
 
   submitInvoice() {
-    if (this.invoiceForm.invalid) return;
+    if (this.invoiceForm.invalid) {
+      this.invoiceForm.markAllAsTouched();
+      return;
+    }
     this.isProcessing.set(true);
 
     const val = this.invoiceForm.value;
     this.billingStore.createInvoice({
       patientId: val.patientId!,
+      taxAmount: 0,
+      discountAmount: 0,
       items: [
         { description: val.description!, quantity: 1, unitPrice: Number(val.amount!) }
       ]
@@ -135,6 +140,7 @@ export class BillingComponent implements OnInit {
     this.isProcessing.set(false);
     this.showNewInvoiceModal.set(false);
     this.invoiceForm.reset({ amount: 50, description: 'General Medical Consultation' });
+    this.billingStore.loadInvoices();
   }
 
   downloadPdf(invoiceId: string) {

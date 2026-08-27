@@ -50,6 +50,10 @@ export const AppointmentStore = signalStore(
       )
     ),
 
+    updateAppointmentVitals(appointmentId: string, vitalSigns: any) {
+      patchState(store, updateEntity({ id: appointmentId, changes: { vitalSigns } }));
+    },
+
     setSelectedDate(date: Date | null) {
       patchState(store, { selectedDate: date });
     },

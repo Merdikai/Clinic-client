@@ -2,11 +2,13 @@ import { Injectable, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
+import { ToastService } from '../ui/toast/toast.service';
 import { Subject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class LiveSyncService {
   private authService = inject(AuthService);
+  private toast = inject(ToastService);
   private hubConnection: signalR.HubConnection | null = null;
 
   connectionState = signal<'disconnected' | 'connecting' | 'connected'>('disconnected');
@@ -61,7 +63,14 @@ export class LiveSyncService {
 
     // Listen for server events
     this.hubConnection.on('AppointmentBooked', (data) => {
-      this.addGlobalActivity('event', 'New Appointment Booked', data?.patientName || 'Patient', 'info');
+      const msg = data?.patientName || data?.message || 'Patient';
+      const isBroadcast = msg.includes('alert') || msg.includes('Broadcast') || msg.includes('staff') || msg.includes('All staff') || msg.includes('meeting') || msg.length > 25;
+      if (isBroadcast) {
+        this.addGlobalActivity('campaign', '📢 Staff Broadcast Announcement', msg, 'warning');
+        this.toast.warning(String(msg));
+      } else {
+        this.addGlobalActivity('event', 'New Appointment Booked', msg, 'info');
+      }
       this.appointmentBooked$.next(data);
       this.appointmentUpdated$.next(data);
     });

@@ -8,6 +8,7 @@
   durationMinutes: number;
   status: string;
   reasonForVisit: string;
+  vitalSigns?: any;
 }
 
 export interface CreateAppointmentRequest {
