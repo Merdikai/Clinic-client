@@ -72,7 +72,7 @@ export class AuthService {
   }
 
   hasRole(role: string): boolean {
-    return this.userRoles().includes(role);
+    return (this.userRoles() || []).some(r => r?.toLowerCase() === role?.toLowerCase());
   }
 
   hasAnyRole(roles: string[]): boolean {

@@ -1,4 +1,4 @@
-<div class="dashboard-page">
+﻿<div class="dashboard-page">
 
   <!-- ========================================== -->
   <!-- 1. ROLE-AWARE WELCOME BANNER               -->
@@ -16,6 +16,8 @@
           <mat-icon>account_balance_wallet</mat-icon>
         } @else if (userRole() === 'Receptionist') {
           <mat-icon>support_agent</mat-icon>
+        } @else if (userRole() === 'LabTechnician') {
+          <mat-icon>biotech</mat-icon>
         } @else if (userRole() === 'Patient') {
           <mat-icon>favorite</mat-icon>
         } @else {
@@ -39,6 +41,8 @@
             Monitor daily revenues, collect outstanding balances, and export financial ledgers.
           } @else if (userRole() === 'Receptionist') {
             Welcome incoming patients, perform fast check-ins, and schedule consultations.
+          } @else if (userRole() === 'LabTechnician') {
+            Process specimen collection, run diagnostic panels, and record verified lab findings.
           } @else if (userRole() === 'Patient') {
             View your consultation schedule, access your medical files, and review prescriptions.
           } @else {
@@ -82,6 +86,13 @@
         <a mat-stroked-button routerLink="/appointments/book" class="header-btn">
           <mat-icon>add_alarm</mat-icon> Book Consultation
         </a>
+      } @else if (userRole() === 'LabTechnician') {
+        <a mat-flat-button color="primary" routerLink="/laboratory" class="header-btn">
+          <mat-icon>biotech</mat-icon> Laboratory Worklist
+        </a>
+        <a mat-stroked-button routerLink="/patients" class="header-btn">
+          <mat-icon>people</mat-icon> Patients Directory
+        </a>
       } @else if (userRole() === 'Patient') {
         <a mat-flat-button color="primary" routerLink="/appointments/book" class="header-btn">
           <mat-icon>add_alarm</mat-icon> Book Appointment
@@ -90,6 +101,7 @@
           <mat-icon>folder_shared</mat-icon> My Medical File
         </a>
       } @else {
+        <!-- ONLY ADMIN -->
         <a mat-flat-button color="primary" routerLink="/patients/new" class="header-btn">
           <mat-icon>person_add</mat-icon> Register Patient
         </a>
@@ -103,8 +115,7 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 2. ADMIN DASHBOARD VIEW                    -->
+  <!-- <!-- 2. ADMIN DASHBOARD VIEW                    -->
   <!-- ========================================== -->
   @if (userRole() === 'Admin') {
     <div class="kpi-grid">
@@ -762,8 +773,156 @@
 
 </div>
 
-  <!-- BROADCAST ALERT MODAL -->
-  @if (isAlertModalOpen()) {
+  
+  
+  <!-- ========================================== -->
+  <!-- 9. LAB TECHNICIAN DASHBOARD VIEW           -->
+  <!-- ========================================== -->
+  @if (userRole() === 'LabTechnician') {
+    <!-- Live Lab KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>hourglass_top</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Pending Specimen Orders</span>
+          <h2 class="kpi-val">{{ labStore.metrics()?.pendingOrders ?? 0 }}</h2>
+          <span class="kpi-sub">Awaiting phlebotomy collection</span>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-icon-box"><mat-icon>science</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Samples in Laboratory</span>
+          <h2 class="kpi-val">{{ labStore.metrics()?.samplesCollected ?? 0 }}</h2>
+          <span class="kpi-sub">Ready on analyzer bench</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>biotech</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Testing In Progress</span>
+          <h2 class="kpi-val">{{ labStore.metrics()?.inProgress ?? 0 }}</h2>
+          <span class="kpi-sub">Active analyzer machine runs</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>task_alt</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Completed Today</span>
+          <h2 class="kpi-val">{{ labStore.metrics()?.completedToday ?? 0 }}</h2>
+          <span class="kpi-sub">Results finalized & reported</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operations & Active Worklist -->
+    <div class="dash-two-col">
+      <!-- Left Column: Active Lab Worklist -->
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>assignment</mat-icon>
+            <h3>Active Specimen & Diagnostic Queue</h3>
+          </div>
+          <a routerLink="/laboratory" mat-button color="primary">
+            Open Laboratory <mat-icon>arrow_forward</mat-icon>
+          </a>
+        </div>
+
+        @if (labStore.activeOrders().length > 0) {
+          <div class="lab-orders-list">
+            @for (order of labStore.activeOrders().slice(0, 5); track order.id) {
+              <div class="lab-order-item-card">
+                <div class="order-head">
+                  <span class="order-num">{{ order.orderNumber }}</span>
+                  <span class="priority-badge" [class.urgent]="order.priority === 'Urgent'" [class.stat]="order.priority === 'Stat'">
+                    {{ order.priority }}
+                  </span>
+                </div>
+                <div class="patient-meta">
+                  <strong>{{ order.patientName }}</strong>
+                  <span class="mrn">MRN: {{ order.patientMedicalRecordNumber }}</span>
+                </div>
+                <div class="tests-tags">
+                  @for (item of order.items; track item.id) {
+                    <span class="test-chip">{{ item.testName }}</span>
+                  }
+                </div>
+                <div class="order-footer">
+                  <span class="status-pill status-{{ order.status.toLowerCase() }}">{{ order.status }}</span>
+                  <a routerLink="/laboratory" mat-stroked-button class="action-btn">
+                    <mat-icon>play_circle</mat-icon> Process
+                  </a>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state-box">
+            <mat-icon>check_circle</mat-icon>
+            <h4>All Clear in the Laboratory</h4>
+            <p>No active specimen orders waiting in queue. Ready for incoming doctor orders.</p>
+            <a routerLink="/laboratory" mat-flat-button color="primary">Go to Laboratory Desk</a>
+          </div>
+        }
+      </div>
+
+      <!-- Right Column: Test Catalog Reference & Live Clinical Stream -->
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>menu_book</mat-icon>
+            <h3>Diagnostic Test Profiles ({{ labStore.templates().length }})</h3>
+          </div>
+        </div>
+
+        <div class="catalog-grid-quick">
+          @for (tmpl of labStore.templates().slice(0, 6); track tmpl.id) {
+            <div class="catalog-quick-card">
+              <div class="catalog-badge">{{ tmpl.testCode }}</div>
+              <div class="catalog-info">
+                <h4>{{ tmpl.testName }}</h4>
+                <p>{{ tmpl.category }} • {{ tmpl.turnaroundTimeHours }}h TAT</p>
+              </div>
+              <span class="catalog-price">${{ tmpl.price | number:'1.2-2' }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="panel-header" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color, #e2e8f0);">
+          <div class="panel-title-wrap">
+            <mat-icon>sensors</mat-icon>
+            <h3>Live Clinic & Diagnostic Stream</h3>
+          </div>
+        </div>
+        <div class="live-feed-list">
+          @if (recentEvents().length > 0) {
+            @for (ev of recentEvents(); track $index) {
+              <div class="live-event-item">
+                <div class="event-dot"></div>
+                <div class="event-body">
+                  <span class="event-type">{{ ev.type }}</span>
+                  <p class="event-detail">{{ ev.title }}</p>
+                </div>
+                <span class="event-time">{{ ev.time }}</span>
+              </div>
+            }
+          } @else {
+            <div class="empty-feed">
+              <mat-icon>stream</mat-icon>
+              <p>Live SignalR diagnostic events feed active.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- BROADCAST ALERT MODAL (Admin Only) -->
+  @if (userRole() === 'Admin' && isAlertModalOpen()) {
     <div class="modal-backdrop fade-in" (click)="closeBroadcastModal()">
       <div class="modal-dialog mat-elevation-z24 scale-in" (click)="$event.stopPropagation()" style="max-width: 520px; border-radius: 20px; overflow: hidden; background: var(--bg-surface);">
         <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">

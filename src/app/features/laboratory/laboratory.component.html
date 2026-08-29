@@ -242,42 +242,120 @@
         </div>
       </mat-tab>
 
+            <!-- ========================================== -->
+      <!-- TAB 2: DIAGNOSTIC TEST CATALOG EXPLORER   -->
+      <!-- ========================================== -->
       <mat-tab label="Diagnostic Test Catalog">
-        <div class="tab-content catalog-tab">
-          <div class="catalog-header">
-            <div>
-              <h3>Standard Laboratory Test Profiles</h3>
-              <p>Pre-configured clinical test panels with validated biological reference intervals</p>
+        <div class="tab-content catalog-tab-wrapper">
+          <!-- Catalog Filter Header -->
+          <div class="catalog-control-bar">
+            <div class="catalog-search-wrap">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                placeholder="Search test name, code, or clinical description..."
+                [ngModel]="catalogSearchQuery()"
+                (ngModelChange)="catalogSearchQuery.set($event)"
+              />
+              <button *ngIf="catalogSearchQuery()" mat-icon-button class="clear-search-btn" (click)="catalogSearchQuery.set('')">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+
+            <div class="category-pills-row">
+              <button
+                *ngFor="let cat of catalogCategories()"
+                type="button"
+                class="category-pill-btn"
+                [class.active]="catalogCategoryFilter() === cat"
+                (click)="catalogCategoryFilter.set(cat)"
+              >
+                {{ cat === 'ALL' ? 'All Profiles (' + labStore.templates().length + ')' : cat }}
+              </button>
             </div>
           </div>
 
-          <div class="catalog-grid">
-            <div *ngFor="let test of labStore.templates()" class="test-card">
-              <div class="card-top">
-                <span class="category-badge">{{ test.category }}</span>
-                <span class="test-price">{{ test.price | currency:'USD' }}</span>
-              </div>
-              <h4 class="card-title">{{ test.testName }}</h4>
-              <p class="card-desc">{{ test.description }}</p>
+          <!-- Empty State if no tests match filter -->
+          <div *ngIf="filteredCatalogTemplates().length === 0" class="empty-state">
+            <mat-icon>search_off</mat-icon>
+            <h3>No Diagnostic Profiles Match Filter</h3>
+            <p>Try resetting the search keyword or selecting "All Profiles".</p>
+            <button mat-stroked-button color="primary" (click)="catalogSearchQuery.set(''); catalogCategoryFilter.set('ALL')">
+              Reset Filters
+            </button>
+          </div>
+
+          <!-- Beautiful Diagnostic Cards Grid -->
+          <div class="pro-catalog-grid" *ngIf="filteredCatalogTemplates().length > 0">
+            <div *ngFor="let test of filteredCatalogTemplates()" class="pro-test-card">
+              <div class="card-glow-edge" [style.background]="getCategoryGradient(test.category)"></div>
               
-              <div class="card-meta">
-                <div class="meta-item">
-                  <mat-icon>colorize</mat-icon>
-                  <span>Sample: <strong>{{ test.sampleType }}</strong></span>
+              <!-- Card Header -->
+              <div class="pro-card-header">
+                <div class="category-meta-left">
+                  <div class="category-icon-bubble" [style.background]="getCategoryGradient(test.category)">
+                    <mat-icon>{{ getCategoryIcon(test.category) }}</mat-icon>
+                  </div>
+                  <div class="category-titles">
+                    <span class="category-name">{{ test.category }}</span>
+                    <span class="code-badge">{{ test.testCode }}</span>
+                  </div>
                 </div>
-                <div class="meta-item">
-                  <mat-icon>schedule</mat-icon>
-                  <span>TAT: <strong>{{ test.turnaroundTimeHours }} hrs</strong></span>
+
+                <div class="price-chip-wrap">
+                  <span class="price-val">{{ test.price | currency:'USD' }}</span>
                 </div>
               </div>
 
-              <div class="parameter-preview">
-                <span class="param-header">Parameters Analyzed:</span>
-                <div class="param-chips">
-                  <span *ngFor="let p of getParsedParameters(test.parametersJson)" class="p-chip">
-                    {{ p.name }} <small>({{ p.normalText || (p.minRef + ' - ' + p.maxRef + ' ' + p.unit) }})</small>
-                  </span>
+              <!-- Card Body -->
+              <div class="pro-card-body">
+                <h3 class="test-name-title">{{ test.testName }}</h3>
+                <p class="test-description-text">{{ test.description }}</p>
+
+                <!-- Specimen & TAT specs -->
+                <div class="test-specs-row">
+                  <div class="spec-tag">
+                    <mat-icon>colorize</mat-icon>
+                    <span>Specimen: <strong>{{ test.sampleType }}</strong></span>
+                  </div>
+                  <div class="spec-tag">
+                    <mat-icon>schedule</mat-icon>
+                    <span>TAT: <strong>{{ test.turnaroundTimeHours }} hrs</strong></span>
+                  </div>
                 </div>
+
+                <!-- Parameters Reference Table -->
+                <div class="parameters-section">
+                  <div class="params-header-row">
+                    <span class="params-title">
+                      <mat-icon>fact_check</mat-icon>
+                      Biological Reference Intervals ({{ getParsedParameters(test.parametersJson).length }})
+                    </span>
+                  </div>
+
+                  <div class="params-table-mini">
+                    <div *ngFor="let p of getParsedParameters(test.parametersJson)" class="param-row-mini">
+                      <span class="p-name">{{ p.name }}</span>
+                      <div class="p-range-wrap">
+                        <span class="p-ref">{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</span>
+                        <span class="p-unit">{{ p.unit }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card Footer Action -->
+              <div class="pro-card-footer">
+                <button
+                  mat-flat-button
+                  color="primary"
+                  class="order-now-btn"
+                  (click)="openCreateOrderModal(test.id)"
+                >
+                  <mat-icon>add_circle_outline</mat-icon>
+                  <span>Order {{ test.testCode }}</span>
+                </button>
               </div>
             </div>
           </div>

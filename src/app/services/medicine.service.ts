@@ -23,7 +23,7 @@ export class MedicineService {
   }
 
   dispense(id: string, quantity: number) {
-    return this.http.patch(`${this.apiUrl}/${id}/dispense`, { quantity });
+    return this.http.post<Medicine>(`${this.apiUrl}/${id}/dispense`, { quantity });
   }
 
   getById(id: string) {

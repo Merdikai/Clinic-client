@@ -79,6 +79,7 @@ export const routes: Routes = [
       },
       {
         path: 'laboratory',
+        canActivate: [roleGuard(['Admin', 'Doctor', 'LabTechnician'])],
         loadComponent: () => import('./features/laboratory/laboratory.component')
           .then(m => m.LaboratoryComponent)
       },

@@ -41,7 +41,7 @@ export class UserManagementComponent {
   selectedRoleFilter = signal<string>('ALL');
 
   displayedColumns = ['avatar', 'username', 'fullName', 'roles', 'actions'];
-  availableRoles = ['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'Accountant', 'Patient'];
+  availableRoles = ['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'Accountant', 'Patient', 'LabTechnician'];
 
   filteredUsers = computed(() => {
     let list = this.users() || [];
@@ -69,6 +69,7 @@ export class UserManagementComponent {
   nurseCount = computed(() => (this.users() || []).filter(u => u.roles?.includes('Nurse')).length);
   pharmaCount = computed(() => (this.users() || []).filter(u => u.roles?.includes('Pharmacist')).length);
   accountantCount = computed(() => (this.users() || []).filter(u => u.roles?.includes('Accountant')).length);
+  labTechCount = computed(() => (this.users() || []).filter(u => u.roles?.includes('LabTechnician')).length);
 
   constructor() {
     this.loadUsers();
@@ -133,6 +134,7 @@ export class UserManagementComponent {
       case 'accountant': return 'role-accountant';
       case 'receptionist': return 'role-reception';
       case 'patient': return 'role-patient';
+      case 'labtechnician': return 'role-labtech';
       default: return 'role-default';
     }
   }

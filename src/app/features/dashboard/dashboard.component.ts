@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { RouterLink } from '@angular/router';
 import { DashboardService, DashboardSummary } from '../../services/dashboard.service';
+import { LabStore } from '../../store/lab.store';
 import { LiveSyncService } from '../../services/live-sync.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
@@ -39,6 +40,7 @@ export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private liveSync = inject(LiveSyncService);
   public authService = inject(AuthService);
+  public labStore = inject(LabStore);
 
   summary = signal<DashboardSummary | null>(null);
   isLoading = signal(true);
@@ -86,6 +88,9 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    this.labStore.loadMetrics();
+    this.labStore.loadOrders();
+    this.labStore.loadTemplates();
     this.setupRealtimeListeners();
   }
 

@@ -91,6 +91,58 @@ export class LaboratoryComponent implements OnInit {
 
   // Active Tab Filter
   selectedTab = signal<number>(0);
+  // Catalog Filter State
+  catalogCategoryFilter = signal<string>('ALL');
+  catalogSearchQuery = signal<string>('');
+
+  catalogCategories = computed(() => {
+    const list = this.labStore.templates();
+    const categories = Array.from(new Set(list.map(t => t.category).filter(Boolean)));
+    return ['ALL', ...categories];
+  });
+
+  filteredCatalogTemplates = computed(() => {
+    let list = this.labStore.templates();
+    const cat = this.catalogCategoryFilter();
+    const q = this.catalogSearchQuery().toLowerCase().trim();
+
+    if (cat !== 'ALL') {
+      list = list.filter(t => t.category === cat);
+    }
+    if (q) {
+      list = list.filter(t =>
+        t.testName.toLowerCase().includes(q) ||
+        t.testCode.toLowerCase().includes(q) ||
+        (t.description && t.description.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  });
+
+  getCategoryIcon(category: string): string {
+    const c = (category || '').toLowerCase();
+    if (c.includes('hemat')) return 'bloodtype';
+    if (c.includes('biochem') || c.includes('chem')) return 'science';
+    if (c.includes('lipid')) return 'favorite';
+    if (c.includes('renal') || c.includes('metabol')) return 'health_and_safety';
+    if (c.includes('liver') || c.includes('hepat')) return 'medication_liquid';
+    if (c.includes('urin')) return 'water_drop';
+    if (c.includes('thyroid') || c.includes('endo')) return 'biotech';
+    return 'assignment';
+  }
+
+  getCategoryGradient(category: string): string {
+    const c = (category || '').toLowerCase();
+    if (c.includes('hemat')) return 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+    if (c.includes('biochem') || c.includes('chem')) return 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)';
+    if (c.includes('lipid')) return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+    if (c.includes('renal') || c.includes('metabol')) return 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)';
+    if (c.includes('liver') || c.includes('hepat')) return 'linear-gradient(135deg, #10b981 0%, #047857 100%)';
+    if (c.includes('urin')) return 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)';
+    if (c.includes('thyroid') || c.includes('endo')) return 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)';
+    return 'linear-gradient(135deg, #64748b 0%, #334155 100%)';
+  }
+
 
   displayedColumns = ['orderNumber', 'patient', 'tests', 'orderDate', 'priority', 'status', 'totalCost', 'actions'];
   catalogColumns = ['testCode', 'testName', 'category', 'sampleType', 'turnaround', 'price', 'parameters'];
@@ -125,12 +177,12 @@ export class LaboratoryComponent implements OnInit {
   }
 
   // --- Order Creation Modal ---
-  openCreateOrderModal() {
+  openCreateOrderModal(preselectedTestId?: string) {
     this.orderForm.reset({
       patientId: '',
       priority: 'Routine',
       clinicalNotes: '',
-      selectedTests: []
+      selectedTests: preselectedTestId ? [preselectedTestId] : []
     });
     this.isCreatingOrder.set(true);
   }

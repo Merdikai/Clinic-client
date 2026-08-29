@@ -55,10 +55,12 @@
 
       <!-- Laboratory & Diagnostics -->
       <!-- Laboratory & Diagnostics -->
-      <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Laboratory & Diagnostics" [matTooltipDisabled]="!isCollapsed()">
-        <mat-icon>biotech</mat-icon>
-        @if (!isCollapsed()) { <span>Laboratory</span> }
-      </a>
+      @if (hasAnyRole(['Admin', 'Doctor', 'LabTechnician'])) {
+        <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Laboratory & Diagnostics" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>biotech</mat-icon>
+          @if (!isCollapsed()) { <span>Laboratory</span> }
+        </a>
+      }
 
       <!-- Billing -->
       @if (hasAnyRole(['Admin', 'Accountant', 'Receptionist'])) {

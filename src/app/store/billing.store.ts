@@ -65,8 +65,10 @@ export const BillingStore = signalStore(
                 patchState(store, addEntity(invoice), { isLoading: false });
                 toast.success(`Invoice ${invoice.invoiceNumber || ''} created successfully!`);
               },
-              error: (error) => {
-                patchState(store, { isLoading: false, error: error.message || 'Failed to create invoice' });
+              error: (error: any) => {
+                const msg = error?.error?.detail || error?.message || 'Failed to create invoice';
+                patchState(store, { isLoading: false, error: msg });
+                toast.error(msg);
               }
             }),
             catchError(() => of(null))
