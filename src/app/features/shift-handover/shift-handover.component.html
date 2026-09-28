@@ -1,0 +1,190 @@
+<div class="handover-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon class="header-icon">swap_horizontal_circle</mat-icon>
+      </div>
+      <div>
+        <h1 class="page-title">SBAR Clinical Shift Handover</h1>
+        <p class="page-subtitle">Structured nursing continuity of care (Situation &bull; Background &bull; Assessment &bull; Recommendation)</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" class="template-btn" (click)="fillTemplate()">
+        <mat-icon>auto_fix_high</mat-icon>
+        <span>Insert Clinical Template</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="handover-layout">
+    <!-- LEFT: SBAR Interactive Form -->
+    <div class="form-column">
+      <div class="sbar-form-card mat-elevation-z2">
+        <div class="card-header">
+          <div class="shift-meta-row">
+            <mat-form-field appearance="outline" class="shift-select">
+              <mat-label>Clinical Shift</mat-label>
+              <mat-select [ngModel]="formShiftType()" (ngModelChange)="formShiftType.set($event)">
+                @for (s of shiftOptions; track s) {
+                  <mat-option [value]="s">{{ s }}</mat-option>
+                }
+              </mat-select>
+              <mat-icon matSuffix>schedule</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="count-input">
+              <mat-label>Active Patients</mat-label>
+              <input matInput type="number" [ngModel]="formActivePatientCount()" (ngModelChange)="formActivePatientCount.set($event)" min="0">
+              <mat-icon matSuffix>people</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="count-input alert-count">
+              <mat-label>Critical Alerts</mat-label>
+              <input matInput type="number" [ngModel]="formCriticalAlertsCount()" (ngModelChange)="formCriticalAlertsCount.set($event)" min="0">
+              <mat-icon matSuffix>warning</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="sbar-sections">
+          <!-- (S) Situation -->
+          <div class="sbar-box s-box">
+            <div class="sbar-badge s-badge">
+              <span class="letter">S</span>
+              <span class="label">Situation</span>
+            </div>
+            <p class="sbar-hint">Current unit status, patient load, emergencies, staffing levels</p>
+            <mat-form-field appearance="outline" class="full-width">
+              <textarea matInput rows="3" [ngModel]="formSituation()" (ngModelChange)="formSituation.set($event)" placeholder="e.g. Unit currently at 80% occupancy. 6 active patients under observation. 1 urgent triage in Bay A pending physician review."></textarea>
+            </mat-form-field>
+          </div>
+
+          <!-- (B) Background -->
+          <div class="sbar-box b-box">
+            <div class="sbar-badge b-badge">
+              <span class="letter">B</span>
+              <span class="label">Background</span>
+            </div>
+            <p class="sbar-hint">Patient clinical history, recent procedures performed, allergies, medication changes</p>
+            <mat-form-field appearance="outline" class="full-width">
+              <textarea matInput rows="3" [ngModel]="formBackground()" (ngModelChange)="formBackground.set($event)" placeholder="e.g. Bay A: 54yo male with acute chest tightness, troponin pending. Room 2: Post-wound debridement, dry dressing intact, tolerating well."></textarea>
+            </mat-form-field>
+          </div>
+
+          <!-- (A) Assessment -->
+          <div class="sbar-box a-box">
+            <div class="sbar-badge a-badge">
+              <span class="letter">A</span>
+              <span class="label">Assessment</span>
+            </div>
+            <p class="sbar-hint">Current vital signs, abnormal lab findings, pain scores, fall risk, changes in patient condition</p>
+            <mat-form-field appearance="outline" class="full-width">
+              <textarea matInput rows="3" [ngModel]="formAssessment()" (ngModelChange)="formAssessment.set($event)" placeholder="e.g. Vital signs within acceptable ranges except Bay A (BP 150/95, SpO2 96%). Pain scores recorded <= 3. High fall precaution applied to Exam Bed 3."></textarea>
+            </mat-form-field>
+          </div>
+
+          <!-- (R) Recommendation -->
+          <div class="sbar-box r-box">
+            <div class="sbar-badge r-badge">
+              <span class="letter">R</span>
+              <span class="label">Recommendation</span>
+            </div>
+            <p class="sbar-hint">Tasks for incoming shift nurses, pending physician orders, labs to follow-up, scheduled medications</p>
+            <mat-form-field appearance="outline" class="full-width">
+              <textarea matInput rows="3" [ngModel]="formRecommendation()" (ngModelChange)="formRecommendation.set($event)" placeholder="e.g. Repeat vitals on Bay A at 16:00. Verify CBC/Lipid panel results in LIMS for Room 1. Administer scheduled IV antibiotics at 18:00."></textarea>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <div class="author-info">
+            <mat-icon>verified_user</mat-icon>
+            <span>Signing Nurse: <strong>{{ currentUser()?.fullName || currentUser()?.username || 'Staff Nurse' }}</strong></span>
+          </div>
+
+          <button mat-flat-button color="primary" class="submit-handover-btn" (click)="submitHandover()" [disabled]="isSubmitting()">
+            <mat-icon>fact_check</mat-icon>
+            <span>{{ isSubmitting() ? 'Submitting SBAR...' : 'Sign & Submit Handover' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Shift History & Handover Log -->
+    <div class="history-column">
+      <div class="history-header">
+        <h2>Recent Shift Handovers</h2>
+        <span class="badge-count">{{ handovers().length }} Logs</span>
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-state">
+          <mat-spinner diameter="36"></mat-spinner>
+          <span>Loading handover logs...</span>
+        </div>
+      } @else if (handovers().length === 0) {
+        <div class="empty-history mat-elevation-z1">
+          <mat-icon>history_edu</mat-icon>
+          <h3>No Shift Handovers Recorded</h3>
+          <p>Fill in the SBAR form on the left and submit to establish shift continuity for the oncoming nursing staff.</p>
+        </div>
+      } @else {
+        <div class="handover-cards-list">
+          @for (h of handovers(); track h.id) {
+            <div class="handover-log-card mat-elevation-z2">
+              <div class="log-top">
+                <div class="shift-pill">
+                  <mat-icon>schedule</mat-icon>
+                  <span>{{ h.shiftType }}</span>
+                </div>
+                <div class="log-time">
+                  {{ h.handoverTimestamp | date:'medium' }}
+                </div>
+              </div>
+
+              <div class="log-nurse">
+                <mat-icon>account_circle</mat-icon>
+                <span>Handed over by <strong>{{ h.nurseUserName || 'Clinical Nurse' }}</strong></span>
+              </div>
+
+              <div class="log-metrics-row">
+                <span class="log-chip"><mat-icon>people</mat-icon> {{ h.activePatientCount }} Patients</span>
+                <span class="log-chip" [class.alert]="h.criticalAlertsCount > 0">
+                  <mat-icon>{{ h.criticalAlertsCount > 0 ? 'warning' : 'check_circle' }}</mat-icon>
+                  {{ h.criticalAlertsCount }} Critical Alerts
+                </span>
+              </div>
+
+              <div class="log-sbar-grid">
+                <div class="sbar-entry">
+                  <span class="sbar-tag tag-s">S</span>
+                  <p>{{ h.situation }}</p>
+                </div>
+                @if (h.background) {
+                  <div class="sbar-entry">
+                    <span class="sbar-tag tag-b">B</span>
+                    <p>{{ h.background }}</p>
+                  </div>
+                }
+                @if (h.assessment) {
+                  <div class="sbar-entry">
+                    <span class="sbar-tag tag-a">A</span>
+                    <p>{{ h.assessment }}</p>
+                  </div>
+                }
+                @if (h.recommendation) {
+                  <div class="sbar-entry">
+                    <span class="sbar-tag tag-r">R</span>
+                    <p>{{ h.recommendation }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

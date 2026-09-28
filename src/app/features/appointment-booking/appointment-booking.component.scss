@@ -1,8 +1,21 @@
 .appointment-booking-page {
   padding: 32px 24px;
   min-height: calc(100vh - 80px);
-  background: radial-gradient(circle at 10% 10%, rgba(2, 132, 199, 0.05) 0%, transparent 60%),
-              radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.04) 0%, transparent 60%);
+  background: var(--bg-app);
+  position: relative;
+
+  // Subtle ambient gradient overlays (theme-aware via opacity)
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 10% 10%, rgba(2, 132, 199, 0.06) 0%, transparent 60%),
+                radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  > * { position: relative; z-index: 1; }
 
   .booking-wrapper {
     max-width: 860px;
@@ -98,6 +111,76 @@
       @media (max-width: 640px) { grid-template-columns: 1fr; }
     }
 
+    .patient-identity-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 18px;
+      background: var(--bg-subtle, #f8fafc);
+      border: 1.5px solid var(--border-color, #e2e8f0);
+      border-radius: 12px;
+      margin-bottom: 22px;
+      transition: all 0.2s ease;
+
+      .patient-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(2, 132, 199, 0.12);
+        color: var(--primary-color, #0284c7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        mat-icon { font-size: 28px; width: 28px; height: 28px; }
+      }
+
+      .patient-meta-wrap {
+        flex: 1;
+        min-width: 0;
+
+        .patient-role-badge {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--primary-color, #0284c7);
+          margin-bottom: 2px;
+        }
+
+        .patient-name {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text-primary, #0f172a);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .patient-sub-info {
+          margin: 2px 0 0 0;
+          font-size: 12px;
+          color: var(--text-secondary, #64748b);
+        }
+      }
+
+      .patient-status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+        mat-icon { font-size: 16px; width: 16px; height: 16px; }
+      }
+    }
+
     .three-col-row {
       display: grid;
       grid-template-columns: 1.2fr 1fr 1fr;
@@ -176,3 +259,48 @@
     }
   }
 }
+
+/* ── Dark mode overrides for appointment booking ── */
+:host-context(html.dark-theme) {
+  .appointment-booking-page {
+    &::before {
+      opacity: 0.5;
+    }
+  }
+
+  .booking-card {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .patient-identity-card {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-color) !important;
+
+    .patient-name { color: var(--text-primary) !important; }
+    .patient-sub-info { color: var(--text-secondary) !important; }
+    .patient-role-badge { color: var(--primary-color) !important; }
+
+    .patient-status-chip {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #34d399 !important;
+    }
+  }
+
+  .form-section-title {
+    color: var(--primary-color) !important;
+  }
+
+  .option-row {
+    .mrn-badge {
+      background: rgba(2, 132, 199, 0.15) !important;
+      color: var(--primary-color) !important;
+    }
+    .spec-badge {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #34d399 !important;
+    }
+  }
+}
+

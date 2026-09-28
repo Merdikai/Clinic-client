@@ -40,6 +40,20 @@
   --border-subtle: #f1f5f9;
   --border-focus: #0284c7;
 
+  /* Universal Component Aliases */
+  --bg-main: var(--bg-app);
+  --bg-body: var(--bg-app);
+  --bg-hover: #f1f5f9;
+  --bg-card: var(--bg-surface);
+  --surface-card: #ffffff;
+  --card-bg: #ffffff;
+  --surface-input: #ffffff;
+  --surface-ground: #f1f5f9;
+  --surface-border: #e2e8f0;
+  --surface-secondary: var(--bg-subtle);
+  --text-main: #0f172a;
+  --text-heading: #0f172a;
+
   /* Gradients */
   --primary-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   --secondary-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -106,6 +120,20 @@ html.dark-theme, [data-theme='dark'], .dark-mode, body.dark-theme {
   --border-color: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.04);
   --border-focus: #38bdf8;
+
+  /* Universal Component Aliases - Dark Mode */
+  --bg-main: var(--bg-app);
+  --bg-body: var(--bg-app);
+  --bg-hover: var(--bg-subtle);
+  --bg-card: var(--bg-surface);
+  --surface-card: var(--bg-surface-card);
+  --card-bg: var(--bg-surface-card);
+  --surface-input: var(--bg-input);
+  --surface-ground: var(--bg-app);
+  --surface-border: var(--border-color);
+  --surface-secondary: var(--bg-subtle);
+  --text-main: var(--text-primary);
+  --text-heading: var(--text-primary);
 
   /* Gradients */
   --hero-gradient: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.75));
@@ -415,8 +443,632 @@ input.mat-mdc-input-element:focus {
   border-color: var(--primary-color) !important;
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
 }
-/* Glassmorphism Backgrounds */
-.premium-card, .dashboard-card {
-  background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85)) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
+/* Glassmorphism Backgrounds - Light Theme Only */
+html:not(.dark-theme) body:not(.dark-theme) {
+  .premium-card, .dashboard-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85)) !important;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
+  }
 }
+
+/* ==========================================================================
+   GLOBAL DARK THEME SURFACE & SECTION ADAPTATION (UN-ENCAPSULATED)
+   ========================================================================== */
+html.dark-theme, [data-theme='dark'], .dark-mode, body.dark-theme {
+  background-color: var(--bg-app, #090d16) !important;
+  color: var(--text-primary, #f8fafc) !important;
+
+  /* Universal Cards, Cockpits, Containers */
+  .premium-card,
+  .dashboard-card,
+  .mat-mdc-card,
+  .metric-card,
+  .cockpit-card,
+  .recent-studies-card,
+  .search-filter-card,
+  .table-container,
+  .radiology-nav-tabs,
+  .filters-card,
+  .stat-card,
+  .filter-card,
+  .duty-roster-card,
+  .schedule-card,
+  .hero-card,
+  .empty-state-card {
+    background: #131d31 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+  }
+
+  /* Universal Modals & Popups */
+  .modal-dialog,
+  .modal-card,
+  .modal-container,
+  .modal-content,
+  .nurse-report-modal,
+  .payment-modal-card,
+  .edit-patient-card,
+  .form-modal,
+  .custom-modal-dialog,
+  .duty-modal,
+  .mat-mdc-dialog-surface {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+
+    .modal-header, .edit-modal-header, .payment-modal-header, .duty-modal-header {
+      background: #131d31 !important;
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      h1, h2, h3, h4 { color: #f8fafc !important; }
+      p, .subtext, .modal-subtitle { color: #94a3b8 !important; }
+    }
+
+    .modal-body, .edit-modal-body, .nurse-modal-body, .payment-modal-body, .duty-modal-body {
+      background: #090d16 !important;
+      color: #f8fafc !important;
+    }
+
+    .modal-footer, .edit-modal-footer, .nurse-modal-footer, .payment-modal-footer, .duty-modal-footer {
+      background: #131d31 !important;
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+
+  /* CDK Overlays, Menus, Popups, Dialogs */
+  .cdk-overlay-backdrop {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+  }
+  .cdk-overlay-pane {
+    .mat-mdc-menu-panel,
+    .mat-mdc-select-panel,
+    .mat-mdc-autocomplete-panel,
+    .mat-datepicker-content {
+      background-color: #0f172a !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      color: #f8fafc !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
+
+      .mat-mdc-option {
+        color: #f8fafc !important;
+        &:hover:not(.mdc-list-item--disabled),
+        &.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+          background-color: #172238 !important;
+        }
+        .mdc-list-item__primary-text {
+          color: #f8fafc !important;
+        }
+      }
+    }
+  }
+
+  /* Universal Buttons Darkening */
+  button.refresh-btn,
+  button.mini-btn,
+  button.dept-tab,
+  button.page-btn,
+  button.action-link-btn,
+  button.template-btn,
+  button.modal-cancel-btn,
+  .close-x,
+  .close-btn,
+  button.mat-mdc-outlined-button,
+  button.mat-mdc-stroked-button:not(.action-btn):not([color='primary']):not([color='accent']):not([color='warn']) {
+    background-color: #172238 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #cbd5e1 !important;
+
+    mat-icon {
+      color: #94a3b8 !important;
+    }
+
+    &:hover {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+      border-color: rgba(255, 255, 255, 0.22) !important;
+    }
+  }
+
+  /* Sub-Boxes, Detail Cards & Tiles */
+  .order-notes-box p,
+  .section-content-box,
+  .indication-box,
+  .findings-box,
+  .findings-text,
+  .physician-status-card,
+  .dosi-tile,
+  .suite-card,
+  .suite-metrics-row,
+  .wday-pill,
+  .my-shift-card,
+  .readonly-roster-badge,
+  .active-patient-box,
+  .s-metric,
+  .pt-field,
+  .prep-item,
+  .mod-tile,
+  .suite-mini-item,
+  .order-summary-card,
+  .nurse-summary-pod,
+  .patient-card,
+  .catalog-card,
+  .preset-pill,
+  .queued-order-item,
+  .vital-tile,
+  .vitals-entry-form,
+  .rx-table,
+  .order-section-block,
+  .order-test-card,
+  .format-note-box,
+  .search-bar {
+    background-color: #131d31 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #cbd5e1 !important;
+
+    h1, h2, h3, h4, strong, .mod-name, .s-info strong, .proc-title, .pt-field strong, .m-val, .card-title {
+      color: #f8fafc !important;
+    }
+    p, span, label, .mod-count, .s-mod, .care-tip, .status-lbl, .pt-field span, .pt-field label, .m-lbl {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .section-content-box.impression-box {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    border-left: 4px solid #10b981 !important;
+    .impression-text { color: #6ee7b7 !important; }
+  }
+
+  .sig-stamp-container {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+    .sig-details {
+      .sig-title { color: #6ee7b7 !important; }
+      strong { color: #a7f3d0 !important; }
+      .sig-date { color: #34d399 !important; }
+    }
+  }
+
+  .nurse-governance-banner {
+    background-color: rgba(30, 64, 175, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    color: #93c5fd !important;
+    span, strong { color: #bfdbfe !important; }
+  }
+
+  .wday-pill.has-shift {
+    background-color: rgba(124, 58, 237, 0.2) !important;
+    border-color: rgba(124, 58, 237, 0.4) !important;
+    .wday-label { color: #c4b5fd !important; }
+    .wday-time { color: #ddd6fe !important; }
+  }
+
+  .wday-pill.active-shift {
+    background-color: rgba(124, 58, 237, 0.35) !important;
+    border-color: #8b5cf6 !important;
+    .wday-label, .wday-time { color: #f5f3ff !important; }
+  }
+
+  /* Universal Tables & Grids */
+  .table-container, .table-responsive, .roster-table-wrap {
+    background-color: #131d31 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+
+    table, .clinical-table, .proc-table, .recent-table, .patient-table, .appointments-table, mat-table {
+      background: transparent !important;
+
+      th, .mat-mdc-header-cell {
+        background-color: #172238 !important;
+        color: #94a3b8 !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      td, .mat-mdc-cell {
+        background-color: transparent !important;
+        color: #cbd5e1 !important;
+        border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+        strong, .patient-name, .proc-name { color: #f8fafc !important; }
+        span, .dr-sub, .body-site, .m-lbl { color: #94a3b8 !important; }
+      }
+
+      tr:hover, .proc-row:hover, .clinical-row:hover {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+      }
+    }
+
+    .table-pagination {
+      background-color: #131d31 !important;
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+      color: #94a3b8 !important;
+    }
+  }
+
+  /* Universal Form Controls & Text Inputs */
+  input,
+  select,
+  textarea,
+  .form-control,
+  .clinical-textarea,
+  .standard-input,
+  .search-input-wrap input,
+  .search-box input,
+  .filter-select,
+  .custom-select,
+  input.mat-mdc-input-element,
+  textarea.mat-mdc-input-element {
+    background-color: #172238 !important;
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    caret-color: #38bdf8 !important;
+
+    &::placeholder {
+      color: #64748b !important;
+    }
+
+    &:focus {
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+    }
+
+    option {
+      background-color: #172238 !important;
+      color: #f8fafc !important;
+    }
+  }
+
+  /* Angular Material MDC Form Fields & Containers */
+  .mat-mdc-form-field {
+    --mdc-filled-text-field-container-color: #172238 !important;
+    --mdc-filled-text-field-input-text-color: #f8fafc !important;
+    --mdc-filled-text-field-label-text-color: #94a3b8 !important;
+    --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, 0.15) !important;
+    --mdc-outlined-text-field-input-text-color: #f8fafc !important;
+    --mdc-outlined-text-field-label-text-color: #94a3b8 !important;
+    --mat-form-field-focus-select-arrow-color: #38bdf8 !important;
+
+    .mat-mdc-text-field-wrapper {
+      background-color: #172238 !important;
+      color: #f8fafc !important;
+    }
+
+    .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+      background-color: #172238 !important;
+    }
+
+    .mat-mdc-form-field-focus-overlay {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+    }
+
+    .mdc-floating-label,
+    .mat-mdc-floating-label,
+    .mat-mdc-select-placeholder,
+    .mdc-text-field__input::placeholder {
+      color: #94a3b8 !important;
+    }
+
+    .mat-mdc-select-value,
+    .mat-mdc-select-value-text {
+      color: #f8fafc !important;
+    }
+
+    .mat-mdc-select-arrow {
+      color: #94a3b8 !important;
+    }
+
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+  }
+
+  /* Additional Sub-Boxes & Grids */
+  .reporting-queue-pane,
+  .desk-card,
+  .desk-header-card,
+  .safety-tracking-subpanel,
+  .safety-card,
+  .safety-toolbar-card,
+  .contrast-fieldset,
+  .order-summary-box,
+  .select-prompt-card,
+  .empty-state,
+  .critical-alert-config-box {
+    background-color: #131d31 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #cbd5e1 !important;
+
+    h1, h2, h3, h4, strong { color: #f8fafc !important; }
+    p, span, label { color: #94a3b8 !important; }
+  }
+
+  .mod-btn,
+  .suite-btn,
+  .tmpl-chip {
+    background-color: #172238 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #cbd5e1 !important;
+
+    &:hover {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+    }
+
+    &.selected, &.active {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #38bdf8 !important;
+    }
+  }
+
+  /* Critical Alert Banner & Items */
+  .critical-alert-banner {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+
+    .alert-item {
+      background-color: #1e131d !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+
+      .crit-patient { color: #f8fafc !important; }
+      .crit-proc { color: #94a3b8 !important; }
+      .crit-diag {
+        background-color: rgba(239, 68, 68, 0.15) !important;
+        color: #fca5a5 !important;
+      }
+      .crit-btn {
+        background-color: #2a151b !important;
+        color: #f87171 !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+      }
+    }
+  }
+
+  /* Badges & Chips */
+  .tab-badge,
+  .suite-badge,
+  .suite-room-num,
+  .mrn-badge,
+  .view-only-badge,
+  .tab-badge.neutral,
+  .tolerance-chip.pending,
+  .order-chip.pending {
+    background-color: #1e293b !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .nav-tab-btn {
+    color: #94a3b8 !important;
+    &:hover { background-color: #172238 !important; color: #f8fafc !important; }
+    &.active { background-color: #0284c7 !important; color: #ffffff !important; }
+  }
+}
+
+/* ==========================================================================
+   DARK THEME — Dashboard Cards, Radiology Worklist, Lab Bench, Appointments
+   ========================================================================== */
+html.dark-theme,
+html.dark-mode,
+body.dark-theme {
+
+  /* ── Dashboard patient list and date cards ── */
+  .patient-list-card {
+    background: var(--bg-surface-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .appt-date-box {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+    .day { color: #f8fafc !important; }
+  }
+  .mpi-match-card {
+    background: var(--bg-surface-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* ── Dashboard pending-rx-card ── */
+  .pending-rx-card {
+    background: var(--bg-surface-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* ── Dashboard table headers ── */
+  .custom-table th,
+  table.mat-mdc-table th.mat-mdc-header-cell {
+    background: rgba(255, 255, 255, 0.03) !important;
+    color: #94a3b8 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+  }
+
+  /* ── Radiology RIS Worklist ── */
+  .accession-code {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+  }
+  .priority-badge[data-priority="Routine"] {
+    background: rgba(71, 85, 105, 0.25) !important;
+    color: #94a3b8 !important;
+  }
+  .priority-badge[data-priority="Urgent"] {
+    background: rgba(180, 83, 9, 0.2) !important;
+    color: #fbbf24 !important;
+  }
+  .suite-badge {
+    background: rgba(14, 165, 233, 0.12) !important;
+    border-color: rgba(14, 165, 233, 0.25) !important;
+    color: #38bdf8 !important;
+  }
+
+  /* ── Radiology modality filter pills (tab bar) ── */
+  .modality-filter-btn,
+  .filter-pill,
+  .tab-filter-pill {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    &.active, &[class*="active"] {
+      background: rgba(2, 132, 199, 0.2) !important;
+      border-color: rgba(56, 189, 248, 0.4) !important;
+      color: #38bdf8 !important;
+    }
+  }
+
+  /* ── Laboratory specimen bench ── */
+  .barcode-pill {
+    background: var(--bg-subtle) !important;
+    color: var(--text-primary) !important;
+    border-color: rgba(148, 163, 184, 0.4) !important;
+  }
+  .uncollected-pill {
+    background: rgba(194, 65, 12, 0.12) !important;
+    border-color: rgba(194, 65, 12, 0.3) !important;
+  }
+  .rejection-pill {
+    background: rgba(185, 28, 28, 0.12) !important;
+    border-color: rgba(185, 28, 28, 0.3) !important;
+  }
+  .lot-badge, .qty-badge {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  /* ── Appointment clinical status chips ── */
+  .room-assignment-chip {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+  }
+  .visit-type-badge {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  /* ── Shell duty-summary-card ── */
+  .duty-summary-card {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* ── SBAR preview card on dashboard ── */
+  .sbar-preview-card {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* ── Generic dashboard panel sub-boxes ── */
+  .panel-box,
+  .section-box,
+  .info-summary-row {
+    background: var(--bg-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* ── Duty Roster / Staff Schedules ── */
+  .schedules-page {
+    .page-header,
+    .toolbar-card,
+    .shift-card,
+    .empty-state-card {
+      background: var(--bg-surface-card) !important;
+      border-color: var(--border-color) !important;
+    }
+    .my-shifts-section {
+      background: var(--bg-surface-card) !important;
+      border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    .my-week-day,
+    .my-shift-card,
+    .timing-box,
+    .notes-box,
+    .search-box {
+      background: var(--bg-subtle) !important;
+      border-color: var(--border-color) !important;
+    }
+    .my-card-topbar {
+      background: rgba(0, 0, 0, 0.2) !important;
+      border-bottom-color: var(--border-color) !important;
+    }
+    .day-badge {
+      background: var(--bg-subtle) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-primary) !important;
+    }
+    .dept-tab {
+      background: var(--bg-subtle) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-secondary) !important;
+      &:hover {
+        background: var(--bg-hover) !important;
+        color: var(--text-primary) !important;
+      }
+    }
+    .custom-select {
+      background: var(--bg-subtle) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-primary) !important;
+      option {
+        background: #172238 !important;
+        color: #f8fafc !important;
+      }
+    }
+  }
+
+  /* ── Doctor Portal (Consultations, InBasket, Patient Panel) ── */
+  .consultations-workspace,
+  .inbasket-container,
+  .patients-panel-container {
+    color: #f8fafc !important;
+
+    .metric-card,
+    .filter-bar,
+    .appt-card,
+    .inbasket-header,
+    .inbasket-tabs,
+    .inbasket-card,
+    .patient-card,
+    .soap-card,
+    .encounter-header,
+    .encounter-footer {
+      background-color: var(--bg-surface-card) !important;
+      border-color: var(--border-color) !important;
+      color: #f8fafc !important;
+    }
+
+    .triage-vitals-cockpit {
+      background-color: #112638 !important;
+      border-color: #1e3a5f !important;
+    }
+
+    .vital-tile,
+    .rx-table,
+    .catalog-card,
+    .preset-pill,
+    .queued-order-item,
+    .vitals-row,
+    .sub-filter-row {
+      background-color: var(--bg-subtle) !important;
+      border-color: var(--border-color) !important;
+    }
+
+    .search-box,
+    .search-bar {
+      background-color: var(--bg-input) !important;
+      border-color: var(--border-color) !important;
+      input {
+        color: #f8fafc !important;
+        &::placeholder { color: #64748b !important; }
+      }
+    }
+  }
+
+  .modal-container.encounter-modal,
+  .preview-modal {
+    background-color: var(--bg-surface) !important;
+    border-color: var(--border-color) !important;
+  }
+}
+
+

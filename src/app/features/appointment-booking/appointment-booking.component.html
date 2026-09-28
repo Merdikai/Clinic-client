@@ -3,8 +3,8 @@
     
     <!-- Top Action Bar -->
     <div class="booking-top-bar">
-      <button mat-button routerLink="/appointments" class="back-link-btn">
-        <mat-icon>arrow_back</mat-icon> Back to Master Schedule
+      <button mat-button (click)="goBack()" class="back-link-btn">
+        <mat-icon>arrow_back</mat-icon> {{ isDoctor() ? 'Back to Consultations' : (isPatient() ? 'Back to My Appointments' : 'Back to Master Schedule') }}
       </button>
       <span class="step-badge"><span class="dot"></span> Online Consultation Intake</span>
     </div>
@@ -30,23 +30,42 @@
         </div>
 
         <div class="two-col-row">
-          <mat-form-field appearance="outline" class="glass-field">
-            <mat-label>Select Patient</mat-label>
-            <mat-select formControlName="patientId">
-              @for (p of patients(); track p.id) {
-                <mat-option [value]="p.id">
-                  <div class="option-row">
-                    <strong>{{ p.firstName }} {{ p.lastName }}</strong>
-                    <span class="mrn-badge">MRN: {{ p.medicalRecordNumber }}</span>
-                  </div>
-                </mat-option>
+          @if (isPatient()) {
+            <div class="patient-identity-card">
+              <div class="patient-avatar">
+                <mat-icon>account_circle</mat-icon>
+              </div>
+              <div class="patient-meta-wrap">
+                <span class="patient-role-badge">Verified Patient</span>
+                <h4 class="patient-name">{{ currentPatient()?.firstName }} {{ currentPatient()?.lastName }}</h4>
+                <p class="patient-sub-info">
+                  <span><strong>MRN:</strong> {{ currentPatient()?.medicalRecordNumber || 'PAT-ALICE-001' }}</span>
+                  <span *ngIf="currentPatient()?.email"> · {{ currentPatient()?.email }}</span>
+                </p>
+              </div>
+              <div class="patient-status-chip">
+                <mat-icon>verified</mat-icon> Verified
+              </div>
+            </div>
+          } @else {
+            <mat-form-field appearance="outline" class="glass-field">
+              <mat-label>Select Patient</mat-label>
+              <mat-select formControlName="patientId">
+                @for (p of patients(); track p.id) {
+                  <mat-option [value]="p.id">
+                    <div class="option-row">
+                      <strong>{{ p.firstName }} {{ p.lastName }}</strong>
+                      <span class="mrn-badge">MRN: {{ p.medicalRecordNumber }}</span>
+                    </div>
+                  </mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix>person</mat-icon>
+              @if (bookingForm.get('patientId')?.hasError('required') && bookingForm.get('patientId')?.touched) {
+                <mat-error>Please select a patient</mat-error>
               }
-            </mat-select>
-            <mat-icon matPrefix>person</mat-icon>
-            @if (bookingForm.get('patientId')?.hasError('required') && bookingForm.get('patientId')?.touched) {
-              <mat-error>Please select a patient</mat-error>
-            }
-          </mat-form-field>
+            </mat-form-field>
+          }
 
           <mat-form-field appearance="outline" class="glass-field">
             <mat-label>Select Specialist Doctor</mat-label>

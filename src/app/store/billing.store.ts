@@ -78,7 +78,7 @@ export const BillingStore = signalStore(
     ),
 
     // TMS Pattern: Optimistic Payment with rollback
-    processPayment(invoiceId: string, amountPaid: number, method: string) {
+    processPayment(invoiceId: string, amountPaid: number, method: string, transactionReference: string = '') {
       const original = store.entities().find(i => i.id === invoiceId);
       if (!original) return;
 
@@ -94,10 +94,16 @@ export const BillingStore = signalStore(
         invoiceId,
         amountPaid,
         paymentMethod: method,
-        transactionReference: ''
+        transactionReference: transactionReference || undefined
       }).subscribe({
         next: () => {
           toast.success(`Payment of $${amountPaid} processed successfully!`);
+          billingService.getInvoices().subscribe({
+            next: (res: any) => {
+              const items = Array.isArray(res) ? res : (res.items || []);
+              patchState(store, setAllEntities(items));
+            }
+          });
         },
         error: (err) => {
           // Rollback on error
@@ -110,16 +116,17 @@ export const BillingStore = signalStore(
       });
     },
 
-    downloadInvoicePdf(invoiceId: string) {
-      billingService.downloadPdf(invoiceId).subscribe({
+    downloadInvoicePdf(invoiceId: string, design: string = 'ExecutiveNavy') {
+      toast.info(`Generating ${design} designer invoice PDF...`);
+      billingService.downloadPdf(invoiceId, design).subscribe({
         next: (blob) => {
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `invoice-${invoiceId}.pdf`;
+          link.download = `invoice-${invoiceId}-${design.toLowerCase()}.pdf`;
           link.click();
           window.URL.revokeObjectURL(url);
-          toast.info('Downloading invoice PDF...');
+          toast.success('Invoice PDF downloaded successfully!');
         },
         error: () => toast.error('Failed to download invoice PDF')
       });

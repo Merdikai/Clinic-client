@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -8,7 +8,19 @@ import {
   CreateLabOrderRequest,
   RecordLabResultRequest,
   LabResult,
-  LabMetrics
+  LabMetrics,
+  SpecimenIntakeRequest,
+  SpecimenRejectRequest,
+  LabReagent,
+  CreateLabReagentRequest,
+  UpdateReagentStockRequest,
+  LabStockRequisition,
+  CreateLabRequisitionRequest,
+  ReviewLabRequisitionRequest,
+  LabEquipmentLog,
+  CreateLabEquipmentLogRequest,
+  CreateLabTestTemplateRequest,
+  UpdateLabTestTemplateRequest
 } from '../models/lab.model';
 
 @Injectable({
@@ -22,6 +34,18 @@ export class LabService {
     let params = new HttpParams();
     if (category) params = params.set('category', category);
     return this.http.get<LabTestTemplate[]>(`${this.apiUrl}/lab-tests`, { params });
+  }
+
+  createTemplate(request: CreateLabTestTemplateRequest): Observable<LabTestTemplate> {
+    return this.http.post<LabTestTemplate>(`${this.apiUrl}/lab-tests`, request);
+  }
+
+  updateTemplate(id: string, request: UpdateLabTestTemplateRequest): Observable<LabTestTemplate> {
+    return this.http.put<LabTestTemplate>(`${this.apiUrl}/lab-tests/${id}`, request);
+  }
+
+  deleteTemplate(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/lab-tests/${id}`);
   }
 
   getOrders(page = 1, pageSize = 10, search = '', status = '', priority = '', patientId = ''): Observable<any> {
@@ -55,7 +79,73 @@ export class LabService {
     });
   }
 
+  specimenIntake(orderId: string, request: SpecimenIntakeRequest): Observable<LabOrder> {
+    return this.http.post<LabOrder>(`${this.apiUrl}/lab-orders/${orderId}/specimen-intake`, request);
+  }
+
+  specimenReject(orderId: string, request: SpecimenRejectRequest): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/lab-orders/${orderId}/specimen-reject`, request);
+  }
+
   recordResult(request: RecordLabResultRequest): Observable<LabResult> {
     return this.http.post<LabResult>(`${this.apiUrl}/lab-orders/results`, request);
   }
+
+  verifyResult(orderItemId: string): Observable<LabResult> {
+    return this.http.post<LabResult>(`${this.apiUrl}/lab-orders/items/${orderItemId}/verify`, {});
+  }
+
+  // Inventory & Reagents
+  getReagents(category?: string, status?: string, lowStockOnly = false): Observable<LabReagent[]> {
+    let params = new HttpParams();
+    if (category && category !== 'ALL') params = params.set('category', category);
+    if (status && status !== 'ALL') params = params.set('status', status);
+    if (lowStockOnly) params = params.set('lowStockOnly', 'true');
+    return this.http.get<LabReagent[]>(`${this.apiUrl}/lab-inventory/reagents`, { params });
+  }
+
+  createReagent(request: CreateLabReagentRequest): Observable<LabReagent> {
+    return this.http.post<LabReagent>(`${this.apiUrl}/lab-inventory/reagents`, request);
+  }
+
+  adjustReagentStock(id: string, request: UpdateReagentStockRequest): Observable<LabReagent> {
+    return this.http.post<LabReagent>(`${this.apiUrl}/lab-inventory/reagents/${id}/adjust`, request);
+  }
+
+  // Requisitions
+  getRequisitions(status?: string, urgency?: string): Observable<LabStockRequisition[]> {
+    let params = new HttpParams();
+    if (status && status !== 'ALL') params = params.set('status', status);
+    if (urgency && urgency !== 'ALL') params = params.set('urgency', urgency);
+    return this.http.get<LabStockRequisition[]>(`${this.apiUrl}/lab-inventory/requisitions`, { params });
+  }
+
+  createRequisition(request: CreateLabRequisitionRequest): Observable<LabStockRequisition> {
+    return this.http.post<LabStockRequisition>(`${this.apiUrl}/lab-inventory/requisitions`, request);
+  }
+
+  reviewRequisition(id: string, request: ReviewLabRequisitionRequest): Observable<LabStockRequisition> {
+    return this.http.put<LabStockRequisition>(`${this.apiUrl}/lab-inventory/requisitions/${id}/review`, request);
+  }
+
+  // Equipment & QC
+  getEquipmentLogs(equipmentName?: string, logType?: string): Observable<LabEquipmentLog[]> {
+    let params = new HttpParams();
+    if (equipmentName) params = params.set('equipmentName', equipmentName);
+    if (logType && logType !== 'ALL') params = params.set('logType', logType);
+    return this.http.get<LabEquipmentLog[]>(`${this.apiUrl}/lab-equipment/logs`, { params });
+  }
+
+  createEquipmentLog(request: CreateLabEquipmentLogRequest): Observable<LabEquipmentLog> {
+    return this.http.post<LabEquipmentLog>(`${this.apiUrl}/lab-equipment/logs`, request);
+  }
+
+  doctorSignOff(orderId: string, notes?: string): Observable<LabOrder> {
+    return this.http.post<LabOrder>(`${this.apiUrl}/lab-orders/${orderId}/doctor-signoff`, { notes });
+  }
+
+  generateInvoice(orderId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/lab-orders/${orderId}/invoice`, {});
+  }
 }
+

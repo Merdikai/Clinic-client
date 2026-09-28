@@ -14,15 +14,48 @@
       <p>Sign in to your healthcare provider workspace</p>
     </div>
 
-    
+    <!-- Quick Demo Accounts for All Clinical Roles -->
+    <div class="demo-section-label">Quick Demo Profiles (Click to Auto-Fill):</div>
+    <div class="quick-demo-roles">
+      <button type="button" class="demo-chip chip-doctor" (click)="fillCredentials('dr.smith', 'Doctor@12345!')" matTooltip="Dr. John Smith (Attending Physician A)">
+        🩺 Dr. Smith (MD)
+      </button>
+      <button type="button" class="demo-chip chip-doctor-b" (click)="fillCredentials('dr.james', 'Doctor@12345!')" matTooltip="Dr. Sarah James (Isolated Attending Physician B)">
+        🩺 Dr. James (MD)
+      </button>
+      <button type="button" class="demo-chip chip-nurse" (click)="fillCredentials('nurse.joy', 'Nurse@123456!')" matTooltip="Nurse Joy (Triage & Procedures)">
+        🩹 Nurse Joy
+      </button>
+      <button type="button" class="demo-chip chip-rad" (click)="fillCredentials('radiologist.ray', 'Radiology@123!')" matTooltip="Ray Radiologist (PACS & Imaging)">
+        🩻 Dr. Ray (Rad)
+      </button>
+      <button type="button" class="demo-chip chip-lab" (click)="fillCredentials('lab.tech', 'LabTech@123!')" matTooltip="Leo Technician (Pathology & Lab)">
+        🔬 Leo (Lab)
+      </button>
+      <button type="button" class="demo-chip chip-pharma" (click)="fillCredentials('pharmacist.sam', 'Pharmacist@1!')" matTooltip="Sam Pharmacist (Dispensary & Formulary)">
+        💊 Sam (Pharma)
+      </button>
+      <button type="button" class="demo-chip chip-finance" (click)="fillCredentials('accountant.dave', 'Accountant@1!')" matTooltip="Dave Accountant (Revenue & Billing)">
+        💵 Dave (Finance)
+      </button>
+      <button type="button" class="demo-chip chip-reception" (click)="fillCredentials('receptionist.clara', 'Receptionist@12!')" matTooltip="Clara Receptionist (Front Desk)">
+        📋 Clara (Front Desk)
+      </button>
+      <button type="button" class="demo-chip chip-admin" (click)="fillCredentials('admin', 'Admin@123456!')" matTooltip="Enterprise Administrator (IAM & Governance)">
+        ⚡ Admin
+      </button>
+      <button type="button" class="demo-chip chip-patient" (click)="fillCredentials('patient.alice', 'Patient@1234!')" matTooltip="Alice Patient (Patient Portal)">
+        👤 Patient Alice
+      </button>
+    </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Username or Staff ID</mat-label>
-        <input matInput formControlName="username" placeholder="e.g. admin or dr.smith" autocomplete="username">
+        <mat-label>Username or Email</mat-label>
+        <input matInput formControlName="username" placeholder="e.g. admin or dr.smith@clinic.com" autocomplete="username">
         <mat-icon matPrefix>badge</mat-icon>
         @if (loginForm.get('username')?.hasError('required') && loginForm.get('username')?.touched) {
-          <mat-error>Username is required</mat-error>
+          <mat-error>Username or Email is required</mat-error>
         }
       </mat-form-field>
 

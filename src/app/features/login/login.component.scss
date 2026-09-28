@@ -75,54 +75,88 @@
     }
   }
 
-  .demo-access-panel {
-    background: rgba(2, 132, 199, 0.08);
-    border: 1px dashed rgba(2, 132, 199, 0.35);
-    border-radius: 12px;
-    padding: 12px;
+  .demo-section-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .quick-demo-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-bottom: 20px;
+    justify-content: center;
 
-    .demo-title {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
+    .demo-chip {
+      border: 1px solid transparent;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.74rem;
       font-weight: 700;
-      color: #0284c7;
-      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--bg-hover);
+      color: var(--text-primary);
 
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
       }
-    }
 
-    .demo-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-
-      .demo-pill {
-        background: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        padding: 6px 10px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        text-align: left;
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: #f0f9ff;
-          border-color: #0284c7;
-          color: #0284c7;
-          transform: translateY(-1px);
-        }
-
-        &.admin-pill { color: #0f172a; }
-        &.doc-pill { color: #047857; }
+      &.chip-doctor {
+        background: rgba(2, 132, 199, 0.12);
+        border-color: rgba(2, 132, 199, 0.35);
+        color: #0284c7;
+      }
+      &.chip-doctor-b {
+        background: rgba(168, 85, 247, 0.12);
+        border-color: rgba(168, 85, 247, 0.35);
+        color: #9333ea;
+      }
+      &.chip-nurse {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.35);
+        color: #059669;
+      }
+      &.chip-rad {
+        background: rgba(14, 165, 233, 0.12);
+        border-color: rgba(14, 165, 233, 0.35);
+        color: #0284c7;
+      }
+      &.chip-lab {
+        background: rgba(13, 148, 136, 0.12);
+        border-color: rgba(13, 148, 136, 0.35);
+        color: #0d9488;
+      }
+      &.chip-pharma {
+        background: rgba(245, 158, 11, 0.12);
+        border-color: rgba(245, 158, 11, 0.35);
+        color: #d97706;
+      }
+      &.chip-finance {
+        background: rgba(99, 102, 241, 0.12);
+        border-color: rgba(99, 102, 241, 0.35);
+        color: #6366f1;
+      }
+      &.chip-reception {
+        background: rgba(236, 72, 153, 0.12);
+        border-color: rgba(236, 72, 153, 0.35);
+        color: #db2777;
+      }
+      &.chip-admin {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.35);
+        color: #dc2626;
+      }
+      &.chip-patient {
+        background: rgba(100, 116, 139, 0.12);
+        border-color: rgba(100, 116, 139, 0.35);
+        color: #64748b;
       }
     }
   }

@@ -1,188 +1,764 @@
-<div class="page-container premium-page">
-
-  <!-- HERO HEADER -->
-  <div class="hero-card premium-hero-card">
-    <div class="hero-content">
-      <div class="security-badge">
-        <mat-icon>security</mat-icon>
-        <span>RBAC Security & Access Control Suite</span>
+<div class="user-management-page animate-fade-in">
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>admin_panel_settings</mat-icon>
       </div>
-      <h1 class="hero-title">Staff Credentials & Role Governance</h1>
-      <p class="hero-subtitle">Grant and revoke clinical permissions, assign specialized staff designations, and audit authenticated user access</p>
-    </div>
-    <div class="hero-stats-row">
-      <div class="hero-stat-pill">
-        <span class="dot green"></span>
-        <span>{{ users().length }} Active Users</span>
-      </div>
-      <div class="hero-stat-pill">
-        <span class="dot blue"></span>
-        <span>{{ doctorCount() }} Doctors</span>
-      </div>
-      <div class="hero-stat-pill">
-        <span class="dot purple"></span>
-        <span>{{ pharmaCount() }} Pharmacists</span>
+      <div>
+        <h1 class="page-title">User &amp; Role Governance</h1>
+        <p class="page-subtitle">Clinical PBAC Permission Matrix · Staff Directory · HIPAA Security Audit Trail · Active Duty Roster</p>
       </div>
     </div>
-  </div>
-
-  <!-- ROLE METRIC SUMMARY CARDS -->
-  <div class="metrics-grid">
-    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'ALL'" (click)="selectedRoleFilter.set('ALL')">
-      <div class="icon-wrap all-wrap"><mat-icon>people</mat-icon></div>
-      <div class="metric-info">
-        <span class="metric-title">All Staff</span>
-        <h3 class="metric-count">{{ users().length }}</h3>
-      </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" class="primary-action-btn" (click)="openCreateUserModal()" *ngIf="activeTab() === 'directory'">
+        <mat-icon>person_add</mat-icon> Provision Staff Member
+      </button>
+      <button mat-stroked-button class="export-btn" (click)="exportAuditCsv()" *ngIf="activeTab() === 'audit'">
+        <mat-icon>download</mat-icon> Export HIPAA CSV
+      </button>
     </div>
+  </header>
 
-    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Admin'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Admin' ? 'ALL' : 'Admin')">
-      <div class="icon-wrap admin-wrap"><mat-icon>admin_panel_settings</mat-icon></div>
-      <div class="metric-info">
-        <span class="metric-title">Administrators</span>
-        <h3 class="metric-count">{{ adminCount() }}</h3>
-      </div>
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi-tile" *ngIf="activeTab() === 'directory'">
+      <div class="kpi-icon teal"><mat-icon>people</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ users().length }}</span><span class="kpi-lbl">Total Staff</span></div>
     </div>
-
-    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Doctor'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Doctor' ? 'ALL' : 'Doctor')">
-      <div class="icon-wrap doctor-wrap"><mat-icon>stethoscope</mat-icon></div>
-      <div class="metric-info">
-        <span class="metric-title">Physicians</span>
-        <h3 class="metric-count">{{ doctorCount() }}</h3>
-      </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'directory'">
+      <div class="kpi-icon green"><mat-icon>verified_user</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ activeUserCount() }}</span><span class="kpi-lbl">Active</span></div>
     </div>
-
-    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Pharmacist'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Pharmacist' ? 'ALL' : 'Pharmacist')">
-      <div class="icon-wrap pharma-wrap"><mat-icon>medication</mat-icon></div>
-      <div class="metric-info">
-        <span class="metric-title">Pharmacists</span>
-        <h3 class="metric-count">{{ pharmaCount() }}</h3>
-      </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'directory'">
+      <div class="kpi-icon amber"><mat-icon>block</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ inactiveUserCount() }}</span><span class="kpi-lbl">Deactivated</span></div>
     </div>
-
-    <div class="metric-card premium-card" [class.active]="selectedRoleFilter() === 'Accountant'" (click)="selectedRoleFilter.set(selectedRoleFilter() === 'Accountant' ? 'ALL' : 'Accountant')">
-      <div class="icon-wrap account-wrap"><mat-icon>account_balance_wallet</mat-icon></div>
-      <div class="metric-info">
-        <span class="metric-title">Accountants</span>
-        <h3 class="metric-count">{{ accountantCount() }}</h3>
-      </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'audit'">
+      <div class="kpi-icon blue"><mat-icon>history_edu</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ totalAuditEvents() }}</span><span class="kpi-lbl">Total Events</span></div>
+    </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'audit'">
+      <div class="kpi-icon red"><mat-icon>emergency</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ breakGlassCount() }}</span><span class="kpi-lbl">Break-Glass</span></div>
+    </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'audit'">
+      <div class="kpi-icon green"><mat-icon>check_circle</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ standardViewCount() }}</span><span class="kpi-lbl">Standard Views</span></div>
+    </div>
+    <!-- Roster KPIs -->
+    <div class="kpi-tile" *ngIf="activeTab() === 'roster'">
+      <div class="kpi-icon green"><mat-icon>work</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ activeStaffList().length }}</span><span class="kpi-lbl">On Duty Now</span></div>
+    </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'roster'">
+      <div class="kpi-icon indigo"><mat-icon>swap_horiz</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">{{ activeDelegationsList().length }}</span><span class="kpi-lbl">Active Delegations</span></div>
+    </div>
+    <div class="kpi-tile" *ngIf="activeTab() === 'roster'">
+      <div class="kpi-icon teal"><mat-icon>schedule</mat-icon></div>
+      <div class="kpi-body"><span class="kpi-val">24/7</span><span class="kpi-lbl">Shift Coverage</span></div>
     </div>
   </div>
 
-  <!-- MAIN TABLE CONTAINER -->
-  <div class="content-glass-card premium-card">
-    <div class="table-toolbar">
+  <!-- WORKSPACE TABS -->
+  <div class="nav-tabs-bar">
+    <button class="nav-tab-btn" [class.active]="activeTab() === 'directory'" (click)="setTab('directory')">
+      <mat-icon>badge</mat-icon>
+      <span>Staff Directory</span>
+      <span class="tab-counter" *ngIf="users().length">{{ users().length }}</span>
+    </button>
+    <button class="nav-tab-btn" [class.active]="activeTab() === 'pbac'" (click)="setTab('pbac')">
+      <mat-icon>lock_person</mat-icon>
+      <span>PBAC Permission Matrix</span>
+    </button>
+    <button class="nav-tab-btn" [class.active]="activeTab() === 'audit'" (click)="setTab('audit')">
+      <mat-icon>history_edu</mat-icon>
+      <span>HIPAA Audit Trail</span>
+      <span class="tab-counter danger" *ngIf="breakGlassCount() > 0">{{ breakGlassCount() }} 🚨</span>
+    </button>
+    <button class="nav-tab-btn" [class.active]="activeTab() === 'roster'" (click)="setTab('roster')">
+      <mat-icon>medical_services</mat-icon>
+      <span>Active Duty &amp; Delegations</span>
+      <span class="tab-counter" *ngIf="activeStaffList().length">{{ activeStaffList().length }}</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: STAFF DIRECTORY                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-content" *ngIf="activeTab() === 'directory'">
+    <!-- FILTERS & TOOLBAR -->
+    <div class="toolbar-glass-card">
       <div class="search-box">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search by username, full name, or assigned role..." class="search-input">
+        <mat-icon>search</mat-icon>
+        <input type="text" [ngModel]="userSearch()" (ngModelChange)="userSearch.set($event)" placeholder="Search staff by name, username, or email..." />
+        <button *ngIf="userSearch()" class="clear-btn" (click)="userSearch.set('')">✕</button>
       </div>
 
-      <div class="filter-chips">
-        <button class="filter-btn" [class.active]="selectedRoleFilter() === 'ALL'" (click)="selectedRoleFilter.set('ALL')">
-          All Users
-        </button>
-        @for (role of availableRoles; track role) {
-          <button class="filter-btn" [class.active]="selectedRoleFilter() === role" (click)="selectedRoleFilter.set(role)">
+      <div class="filters-group">
+        <div class="role-pills">
+          <button class="filter-pill" [class.active]="selectedRoleFilter() === 'ALL'" (click)="selectedRoleFilter.set('ALL')">All Roles</button>
+          <button *ngFor="let role of availableRoles" class="filter-pill" [class.active]="selectedRoleFilter() === role" (click)="selectedRoleFilter.set(role)" [attr.data-role]="role">
             {{ role }}
           </button>
-        }
+        </div>
+        <select class="status-select" [ngModel]="selectedStatusFilter()" (ngModelChange)="selectedStatusFilter.set($event)">
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active Only</option>
+          <option value="INACTIVE">Inactive Only</option>
+        </select>
       </div>
     </div>
 
-    @if (isLoading()) {
-      <div class="loading-state">
-        <mat-spinner diameter="44"></mat-spinner>
-        <p>Syncing staff permissions from database...</p>
-      </div>
-    } @else {
-      <div class="table-responsive">
-        <table mat-table [dataSource]="filteredUsers()" class="user-table">
-
-          <!-- Avatar Column -->
-          <ng-container matColumnDef="avatar">
-            <th mat-header-cell *matHeaderCellDef>User</th>
-            <td mat-cell *matCellDef="let user">
-              <div class="user-avatar-circle" [class.admin-av]="user.roles?.includes('Admin')" [class.doc-av]="user.roles?.includes('Doctor')">
-                {{ getInitials(user.fullName || user.username) }}
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Username Column -->
-          <ng-container matColumnDef="username">
-            <th mat-header-cell *matHeaderCellDef>Username / ID</th>
-            <td mat-cell *matCellDef="let user">
-              <div class="username-badge">
-                <mat-icon class="user-icon">account_circle</mat-icon>
-                <span>{{ user.username }}</span>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Full Name -->
-          <ng-container matColumnDef="fullName">
-            <th mat-header-cell *matHeaderCellDef>Full Name & Designation</th>
-            <td mat-cell *matCellDef="let user">
-              <div class="name-block">
-                <span class="user-real-name">{{ user.fullName || user.username }}</span>
-                <span class="user-status-text">
-                  <span class="status-live-dot"></span>
-                  <span>Active Credential</span>
-                </span>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Assigned Roles Chips -->
-          <ng-container matColumnDef="roles">
-            <th mat-header-cell *matHeaderCellDef>Assigned Permissions & Roles (Click ✕ to Revoke)</th>
-            <td mat-cell *matCellDef="let user">
-              <div class="roles-flow-box">
-                @if (user.roles && user.roles.length > 0) {
-                  @for (role of user.roles; track role) {
-                    <span class="role-chip" [ngClass]="getRoleClass(role)" (click)="removeRole(user.userId, role)" [matTooltip]="'Click to revoke ' + role + ' access'">
-                      <span class="role-label">{{ role }}</span>
-                      <mat-icon class="revoke-icon">close</mat-icon>
-                    </span>
-                  }
-                } @else {
-                  <span class="no-role-chip">No Assigned Roles</span>
-                }
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Grant Role Action -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Grant Specialized Role</th>
-            <td mat-cell *matCellDef="let user">
-              <div class="grant-role-box">
-                <mat-form-field appearance="outline" class="role-picker">
-                  <mat-label>Assign Role</mat-label>
-                  <mat-select (selectionChange)="assignRole(user.userId, $event.value)">
-                    @for (role of availableRoles; track role) {
-                      @if (!hasRole(user, role)) {
-                        <mat-option [value]="role">+ {{ role }}</mat-option>
-                      }
-                    }
-                  </mat-select>
-                </mat-form-field>
-              </div>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="user-row"></tr>
-        </table>
-
-        @if (filteredUsers().length === 0) {
-          <div class="empty-state">
-            <mat-icon class="empty-icon">person_off</mat-icon>
-            <h3>No Users Found</h3>
-            <p>No user accounts matched your search criteria.</p>
+    <!-- USERS GRID -->
+    <div class="users-grid" *ngIf="!loadingUsers(); else loadingTpl">
+      <div class="user-card" *ngFor="let user of filteredUsers()" [class.inactive-card]="!user.isActive">
+        <!-- CARD HEADER -->
+        <div class="card-top">
+          <div class="avatar-box" [attr.data-role]="getPrimaryRole(user)">{{ getUserInitials(user) }}</div>
+          <div class="user-main-info">
+            <h3 class="user-display-name">{{ user.fullName || user.firstName + ' ' + user.lastName || user.userName }}</h3>
+            <span class="user-username">&#64;{{ user.userName }}</span>
           </div>
-        }
+          <div class="status-indicator" [class.active]="user.isActive" [class.inactive]="!user.isActive">
+            <span class="status-dot"></span>
+            <span>{{ user.isActive ? 'Active' : 'Deactivated' }}</span>
+          </div>
+        </div>
+
+        <!-- CARD DETAILS -->
+        <div class="card-details">
+          <div class="detail-row" *ngIf="user.email">
+            <mat-icon>email</mat-icon>
+            <span class="val text-truncate">{{ user.email }}</span>
+          </div>
+          <div class="detail-row" *ngIf="user.phoneNumber">
+            <mat-icon>phone</mat-icon>
+            <span class="val">{{ user.phoneNumber }}</span>
+          </div>
+          <!-- ROLE TAGS WITH REMOVE BUTTON -->
+          <div class="roles-tags">
+            <span class="role-tag" *ngFor="let r of (user.roles || [])" [attr.data-role]="r">
+              {{ r }}
+              <button class="role-remove-btn" (click)="removeRoleFromUser(user, r)" title="Remove role {{ r }}">×</button>
+            </span>
+            <span class="role-tag empty" *ngIf="!user.roles || user.roles.length === 0">No Role Assigned</span>
+          </div>
+          <div class="member-since" *ngIf="user.createdAt">
+            <mat-icon>calendar_today</mat-icon>
+            <span>Member since {{ user.createdAt | date:'MMM yyyy' }}</span>
+          </div>
+        </div>
+
+        <!-- CARD ACTIONS -->
+        <div class="card-actions">
+          <button mat-stroked-button class="action-btn" (click)="openRoleModal(user)" title="Assign additional role">
+            <mat-icon>manage_accounts</mat-icon> Assign Role
+          </button>
+          <button mat-stroked-button class="action-btn accent" (click)="openResetPasswordModal(user)" title="Admin reset password">
+            <mat-icon>lock_reset</mat-icon> Reset Password
+          </button>
+          <button mat-stroked-button class="action-btn toggle-btn" [class.danger]="user.isActive" (click)="toggleUserActive(user)">
+            <mat-icon>{{ user.isActive ? 'person_off' : 'person' }}</mat-icon>
+            {{ user.isActive ? 'Deactivate' : 'Activate' }}
+          </button>
+        </div>
       </div>
-    }
+
+      <div class="empty-state" *ngIf="filteredUsers().length === 0">
+        <mat-icon>group_off</mat-icon>
+        <h3>No Staff Members Found</h3>
+        <p>No user accounts matched your search or filter criteria.</p>
+        <button mat-flat-button color="primary" (click)="openCreateUserModal()">
+          <mat-icon>person_add</mat-icon> Provision First Staff Member
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: PBAC MATRIX                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-content" *ngIf="activeTab() === 'pbac'">
+    <!-- ROLE SELECTOR BAR -->
+    <div class="role-selector-bar">
+      <div class="selector-left">
+        <label class="section-label">Select Clinical Persona / Role:</label>
+        <div class="role-buttons">
+          <button *ngFor="let role of availableRoles"
+                  class="role-select-btn"
+                  [class.active]="selectedMatrixRole() === role"
+                  [attr.data-role]="role"
+                  (click)="onMatrixRoleChange(role)">
+            <span class="role-name">{{ role }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="selector-right">
+        <button mat-stroked-button class="preset-btn" (click)="applyStandardDefaults()">
+          <mat-icon>auto_fix_high</mat-icon> Reset to Role Standard
+        </button>
+        <button mat-flat-button color="primary" class="save-btn" (click)="saveRolePermissions()" [disabled]="isSavingMatrix()">
+          <mat-icon>save</mat-icon>
+          <span *ngIf="!isSavingMatrix()">Save Policy Matrix</span>
+          <span *ngIf="isSavingMatrix()">Saving…</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTER & MODULE TOOLBAR -->
+    <div class="toolbar-glass-card mt-3">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input type="text" [ngModel]="matrixSearch()" (ngModelChange)="matrixSearch.set($event)" placeholder="Filter permissions by keyword or claim key..." />
+        <button *ngIf="matrixSearch()" class="clear-btn" (click)="matrixSearch.set('')">✕</button>
+      </div>
+
+      <div class="module-pills">
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'ALL'" (click)="selectedModuleFilter.set('ALL')">All Modules</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Clinical'" (click)="selectedModuleFilter.set('Clinical')">Clinical</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Appointments'" (click)="selectedModuleFilter.set('Appointments')">Appointments</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Pharmacy'" (click)="selectedModuleFilter.set('Pharmacy')">Pharmacy</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Laboratory'" (click)="selectedModuleFilter.set('Laboratory')">Laboratory</button>
+        <button class="filter-pill radiology" [class.active]="selectedModuleFilter() === 'Radiology'" (click)="selectedModuleFilter.set('Radiology')">Radiology</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Billing'" (click)="selectedModuleFilter.set('Billing')">Billing</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Governance'" (click)="selectedModuleFilter.set('Governance')">Governance</button>
+        <button class="filter-pill" [class.active]="selectedModuleFilter() === 'Security'" (click)="selectedModuleFilter.set('Security')">Security</button>
+      </div>
+    </div>
+
+    <!-- PERMISSIONS MATRIX GRID -->
+    <div class="matrix-grid-container" *ngIf="!loadingMatrix(); else loadingTpl">
+      <div class="matrix-summary-banner">
+        <div class="summary-info">
+          <span class="role-badge" [attr.data-role]="selectedMatrixRole()">{{ selectedMatrixRole() }}</span>
+          <span class="summary-text">Granting <strong>{{ grantedPermissionsCount() }}</strong> of {{ filteredPermissions().length }} visible permissions &nbsp;·&nbsp; <strong>{{ matrixPermissions().length }}</strong> total granted</span>
+        </div>
+        <div class="summary-tip">
+          <mat-icon>info</mat-icon>
+          <span>Healthcare separation-of-duties: only clinically justified permissions are enabled by default.</span>
+        </div>
+      </div>
+
+      <div class="permissions-grid">
+        <div class="perm-card"
+             *ngFor="let perm of filteredPermissions()"
+             [class.checked]="isPermissionChecked(perm.key)"
+             (click)="togglePermission(perm.key)">
+          <div class="perm-checkbox-box">
+            <input type="checkbox" [checked]="isPermissionChecked(perm.key)" (click)="$event.stopPropagation()" (change)="togglePermission(perm.key)" />
+          </div>
+          <div class="perm-info">
+            <div class="perm-header">
+              <span class="perm-module-tag" [attr.data-module]="perm.module">{{ perm.module }}</span>
+              <h4 class="perm-name">{{ perm.name }}</h4>
+            </div>
+            <p class="perm-desc">{{ perm.description }}</p>
+            <span class="perm-key-code"><code>{{ perm.key }}</code></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: HIPAA EMR AUDIT TRAIL                                           -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-content" *ngIf="activeTab() === 'audit'">
+    <!-- AUDIT TOOLBAR -->
+    <div class="toolbar-glass-card">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input type="text" [ngModel]="auditSearch()" (ngModelChange)="auditSearch.set($event)" placeholder="Search by patient, clinician, role, or access type..." />
+        <button *ngIf="auditSearch()" class="clear-btn" (click)="auditSearch.set('')">✕</button>
+      </div>
+
+      <div class="audit-actions">
+        <button class="emergency-toggle-btn" [class.active]="emergencyOnlyFilter()" (click)="toggleEmergencyFilter()">
+          <span class="alert-icon">🚨</span>
+          <span>{{ emergencyOnlyFilter() ? 'Showing Break-Glass Only' : 'Filter Emergency Break-Glass' }}</span>
+        </button>
+        <button mat-stroked-button (click)="loadAuditLogs()" class="refresh-btn">
+          <mat-icon>refresh</mat-icon> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- AUDIT TABLE -->
+    <div class="audit-table-card" *ngIf="!loadingAudit(); else loadingTpl">
+      <table class="clinical-data-table" *ngIf="filteredAuditLogs().length > 0">
+        <thead>
+          <tr>
+            <th>Timestamp (UTC)</th>
+            <th>Clinician / Staff</th>
+            <th>Role</th>
+            <th>Patient Record</th>
+            <th>Access Event</th>
+            <th>Security Status</th>
+            <th>Clinical Justification</th>
+            <th>Inspect</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of filteredAuditLogs()" [class.emergency-row]="log.isEmergencyOverride">
+            <td class="time-col">
+              <span class="time-date">{{ log.accessedAtUtc | date:'yyyy-MM-dd' }}</span>
+              <span class="time-hour">{{ log.accessedAtUtc | date:'HH:mm:ss' }} UTC</span>
+            </td>
+            <td class="user-col">
+              <div class="user-avatar-mini">{{ (log.accessedByUserName ? log.accessedByUserName[0] : 'U').toUpperCase() }}</div>
+              <span class="user-name-text">{{ log.accessedByUserName }}</span>
+            </td>
+            <td>
+              <span class="role-tag-mini" [attr.data-role]="log.accessedByRole">{{ log.accessedByRole }}</span>
+            </td>
+            <td class="patient-col font-medium">{{ log.patientName || 'Medical Record' }}</td>
+            <td>
+              <span class="access-type-pill" [class.break-glass-pill]="log.isEmergencyOverride">{{ formatAccessType(log.accessType) }}</span>
+            </td>
+            <td>
+              <span class="security-badge" [class.emergency]="log.isEmergencyOverride" [class.standard]="!log.isEmergencyOverride">
+                {{ log.isEmergencyOverride ? '🚨 BREAK-GLASS' : '✓ Standard' }}
+              </span>
+            </td>
+            <td class="notes-col text-truncate" [title]="log.breakGlassRationale || log.actionDetail || 'Routine chart review'">
+              {{ log.breakGlassRationale || log.actionDetail || 'Routine chart review' }}
+            </td>
+            <td>
+              <button mat-icon-button (click)="viewAuditDetail(log)" title="Inspect Audit Record">
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- TABLE FOOTER: Count Info -->
+      <div class="audit-table-footer" *ngIf="filteredAuditLogs().length > 0">
+        <span class="footer-count">
+          Showing <strong>{{ filteredAuditLogs().length }}</strong> of <strong>{{ totalAuditEvents() }}</strong> audit records
+          <span *ngIf="emergencyOnlyFilter()" class="footer-filter-badge">🚨 Filtered: Break-Glass Only</span>
+          <span *ngIf="auditSearch()" class="footer-filter-badge">🔍 Search Active</span>
+        </span>
+        <span class="footer-compliance-note">HIPAA §164.312(b) compliant · Immutable logs</span>
+      </div>
+
+      <div class="empty-state" *ngIf="filteredAuditLogs().length === 0">
+        <mat-icon>verified_user</mat-icon>
+        <h3>No HIPAA Audit Records Found</h3>
+        <p>No medical record access logs match your current filter criteria.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 4: ACTIVE DUTY & DELEGATIONS                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-content" *ngIf="activeTab() === 'roster'">
+
+    <!-- MY ACTIVE SHIFT STATUS BANNER -->
+    <div class="my-shift-banner" *ngIf="dutyService.currentDuty$ | async as myShift; else offDutyBanner">
+      <div class="shift-status-icon on-duty"><mat-icon>work</mat-icon></div>
+      <div class="shift-status-body">
+        <div class="shift-status-title">
+          <span class="shift-on-label">● ON DUTY</span>
+          <span class="shift-dept-tag">{{ myShift.department }}</span>
+          <span class="shift-type-tag">{{ myShift.shiftType }}</span>
+        </div>
+        <div class="shift-status-meta">
+          Clocked in at <strong>{{ myShift.clockInTimeUtc | date:'HH:mm, MMM d' }}</strong>
+          &nbsp;·&nbsp; Role: <strong>{{ myShift.role }}</strong>
+        </div>
+      </div>
+      <div class="shift-status-actions">
+        <button mat-stroked-button class="clock-out-mini-btn" (click)="loadDutyRoster()">
+          <mat-icon>refresh</mat-icon> Refresh Roster
+        </button>
+      </div>
+    </div>
+
+    <ng-template #offDutyBanner>
+      <div class="my-shift-banner off-duty-banner">
+        <div class="shift-status-icon off-duty"><mat-icon>work_off</mat-icon></div>
+        <div class="shift-status-body">
+          <div class="shift-status-title">
+            <span class="shift-off-label">● OFF DUTY</span>
+          </div>
+          <div class="shift-status-meta">
+            You are not currently clocked in to an active shift. Use the sidebar button or clock in from below.
+          </div>
+        </div>
+        <div class="shift-status-actions">
+          <button mat-stroked-button (click)="loadDutyRoster()">
+            <mat-icon>refresh</mat-icon> Refresh
+          </button>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="roster-grid">
+      <!-- Left: Active Clocked In Staff -->
+      <div class="roster-card">
+        <div class="roster-header">
+          <div class="title-with-badge">
+            <mat-icon class="section-icon" style="color: var(--um-emerald-text)">people</mat-icon>
+            <h3>Active On-Duty Staff</h3>
+            <span class="counter-badge">{{ activeStaffList().length }} Active</span>
+          </div>
+          <button mat-stroked-button (click)="loadDutyRoster()" title="Refresh roster">
+            <mat-icon>refresh</mat-icon> Refresh
+          </button>
+        </div>
+
+        <div class="active-staff-list" *ngIf="!loadingRoster(); else loadingTpl">
+          <div class="staff-duty-item" *ngFor="let staff of activeStaffList()">
+            <div class="duty-avatar" [attr.data-role]="staff.role">{{ (staff.userName ? staff.userName[0] : 'S').toUpperCase() }}</div>
+            <div class="duty-details">
+              <div class="duty-title-row">
+                <span class="duty-name">{{ staff.userName }}</span>
+                <span class="duty-role-badge" [attr.data-role]="staff.role">{{ staff.role }}</span>
+              </div>
+              <div class="duty-meta">
+                <mat-icon>access_time</mat-icon>
+                <span>Clock-in: {{ staff.clockInTimeUtc | date:'HH:mm' }}</span>
+                <span class="duty-dept">· {{ staff.department || 'General Practice' }}</span>
+              </div>
+              <div class="duty-shift-type" *ngIf="staff.shiftType">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ staff.shiftType }}</span>
+              </div>
+            </div>
+            <div class="duty-online-indicator"></div>
+          </div>
+
+          <div class="empty-state compact" *ngIf="activeStaffList().length === 0">
+            <mat-icon>no_accounts</mat-icon>
+            <p>No staff currently clocked in</p>
+            <span class="empty-hint">Staff can clock in using the sidebar button</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Doctor Delegations -->
+      <div class="roster-card">
+        <div class="roster-header">
+          <div class="title-with-badge">
+            <mat-icon class="section-icon" style="color: var(--um-indigo-text)">swap_horiz</mat-icon>
+            <h3>Coverage Delegations</h3>
+            <span class="counter-badge indigo-badge">{{ activeDelegationsList().length }} Active</span>
+          </div>
+          <button mat-flat-button color="primary" (click)="openDelegationModal()" title="Authorize new physician coverage delegation">
+            <mat-icon>add</mat-icon> Authorize Delegation
+          </button>
+        </div>
+
+        <div class="delegations-list" *ngIf="!loadingRoster(); else loadingTpl">
+          <div class="delegation-item" *ngFor="let del of activeDelegationsList()">
+            <div class="delegation-header-row">
+              <div class="delegation-icon"><mat-icon>swap_horiz</mat-icon></div>
+              <div class="delegation-details">
+                <div class="delegation-doctor-flow">
+                  <span class="delegation-delegating">{{ del.delegatingDoctorName || 'Attending Doctor' }}</span>
+                  <mat-icon style="font-size:14px; color: var(--um-text-muted)">arrow_forward</mat-icon>
+                  <span class="delegation-covering">{{ del.coveringDoctorName }}</span>
+                </div>
+                <span class="delegation-reason">{{ del.reason }}</span>
+              </div>
+              <button mat-icon-button class="revoke-btn" (click)="revokeDelegation(del.id)" title="Revoke Delegation">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </div>
+            <div class="delegation-validity">
+              <mat-icon>date_range</mat-icon>
+              <span>{{ del.startDateUtc | date:'MMM d, yyyy' }} → {{ del.endDateUtc | date:'MMM d, yyyy' }}</span>
+            </div>
+            <p class="delegation-notes" *ngIf="del.notes">{{ del.notes }}</p>
+          </div>
+
+          <div class="empty-state compact" *ngIf="activeDelegationsList().length === 0">
+            <mat-icon>assignment_ind</mat-icon>
+            <p>No active delegations</p>
+            <span class="empty-hint">Doctors can authorize coverage delegations for leave or on-call rotations</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- LOADING TEMPLATE                                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <ng-template #loadingTpl>
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <span>Loading data…</span>
+    </div>
+  </ng-template>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: CREATE STAFF MEMBER                                             -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showCreateModal()" (click)="closeCreateUserModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-icon"><mat-icon>person_add</mat-icon></div>
+        <div>
+          <h2 class="modal-title">Provision New Staff Member</h2>
+          <p class="modal-subtitle">Creates account and assigns clinical role atomically</p>
+        </div>
+        <button mat-icon-button class="modal-close" (click)="closeCreateUserModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>First Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="newUser.firstName" placeholder="e.g. John" />
+          </div>
+          <div class="form-group">
+            <label>Last Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="newUser.lastName" placeholder="e.g. Smith" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Username <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="newUser.userName" placeholder="e.g. dr.smith" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" [(ngModel)]="newUser.email" placeholder="staff@clinic.com" />
+        </div>
+        <div class="form-group">
+          <label>Temporary Password <span class="req">*</span></label>
+          <input type="password" [(ngModel)]="newUser.password" placeholder="Min. 8 characters" autocomplete="new-password" />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Assigned Role <span class="req">*</span></label>
+            <select [(ngModel)]="newUser.role">
+              <option *ngFor="let role of availableRoles" [value]="role">{{ role }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" [(ngModel)]="newUser.phoneNumber" placeholder="+1 (555) 000-0000" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button mat-stroked-button (click)="closeCreateUserModal()">Cancel</button>
+        <button mat-flat-button color="primary" (click)="submitCreateUser()">
+          <mat-icon>person_add</mat-icon> Provision Staff Member
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: ASSIGN ROLE                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showRoleModal()" (click)="closeRoleModal()">
+    <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-icon purple"><mat-icon>manage_accounts</mat-icon></div>
+        <div>
+          <h2 class="modal-title">Assign Additional Role</h2>
+          <p class="modal-subtitle" *ngIf="selectedUserForRole()">{{ selectedUserForRole()?.userName }}</p>
+        </div>
+        <button mat-icon-button class="modal-close" (click)="closeRoleModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Select Role to Assign</label>
+          <select [ngModel]="newRoleToAssign()" (ngModelChange)="newRoleToAssign.set($event)">
+            <option *ngFor="let role of availableRoles" [value]="role">{{ role }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button mat-stroked-button (click)="closeRoleModal()">Cancel</button>
+        <button mat-flat-button color="primary" (click)="assignRoleToUser()">
+          <mat-icon>add</mat-icon> Assign Role
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: ADMIN RESET PASSWORD                                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showResetPasswordModal()" (click)="closeResetPasswordModal()">
+    <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-icon amber"><mat-icon>lock_reset</mat-icon></div>
+        <div>
+          <h2 class="modal-title">Admin Password Reset</h2>
+          <p class="modal-subtitle" *ngIf="selectedUserForReset()">
+            Resetting credentials for: <strong>{{ selectedUserForReset()?.userName }}</strong>
+          </p>
+        </div>
+        <button mat-icon-button class="modal-close" (click)="closeResetPasswordModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="security-notice">
+          <mat-icon>security</mat-icon>
+          <span>This action bypasses email reset flow. The new password is set immediately. Ensure staff is notified securely.</span>
+        </div>
+        <div class="form-group mt-3">
+          <label>New Password <span class="req">*</span></label>
+          <input type="password" [ngModel]="newPasswordValue()" (ngModelChange)="newPasswordValue.set($event)" placeholder="Min. 8 characters" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password <span class="req">*</span></label>
+          <input type="password" [ngModel]="confirmPasswordValue()" (ngModelChange)="confirmPasswordValue.set($event)" placeholder="Re-enter new password" />
+        </div>
+        <div class="password-strength-hint" *ngIf="newPasswordValue().length > 0">
+          <span [class.weak]="newPasswordValue().length < 8" [class.good]="newPasswordValue().length >= 8 && newPasswordValue().length < 12" [class.strong]="newPasswordValue().length >= 12">
+            {{ newPasswordValue().length < 8 ? '⚠ Too short' : newPasswordValue().length < 12 ? '✓ Acceptable' : '✓✓ Strong' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button mat-stroked-button (click)="closeResetPasswordModal()">Cancel</button>
+        <button mat-flat-button color="warn" (click)="submitResetPassword()" [disabled]="isResettingPassword()">
+          <mat-icon>lock_reset</mat-icon>
+          <span *ngIf="!isResettingPassword()">Reset Password</span>
+          <span *ngIf="isResettingPassword()">Resetting…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: HIPAA AUDIT DETAIL                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showAuditDetailModal()" (click)="closeAuditDetailModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-icon" [class.emergency]="selectedAuditRecord()?.isEmergencyOverride">
+          <mat-icon>{{ selectedAuditRecord()?.isEmergencyOverride ? 'emergency' : 'history_edu' }}</mat-icon>
+        </div>
+        <div>
+          <h2 class="modal-title">HIPAA Audit Record Detail</h2>
+          <p class="modal-subtitle">Immutable access event log · For compliance & regulatory use only</p>
+        </div>
+        <button mat-icon-button class="modal-close" (click)="closeAuditDetailModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedAuditRecord() as record">
+        <div class="audit-detail-grid">
+          <div class="audit-field">
+            <label>Timestamp (UTC)</label>
+            <span class="audit-value">{{ record.accessedAtUtc | date:'yyyy-MM-dd HH:mm:ss' }} UTC</span>
+          </div>
+          <div class="audit-field">
+            <label>Clinician</label>
+            <span class="audit-value">{{ record.accessedByUserName }}</span>
+          </div>
+          <div class="audit-field">
+            <label>Role</label>
+            <span class="audit-value"><span class="role-tag-mini" [attr.data-role]="record.accessedByRole">{{ record.accessedByRole }}</span></span>
+          </div>
+          <div class="audit-field">
+            <label>Patient Record</label>
+            <span class="audit-value">{{ record.patientName || 'N/A' }}</span>
+          </div>
+          <div class="audit-field">
+            <label>Access Type</label>
+            <span class="audit-value"><span class="access-type-pill">{{ record.accessType }}</span></span>
+          </div>
+          <div class="audit-field">
+            <label>Security Classification</label>
+            <span class="audit-value">
+              <span class="security-badge" [class.emergency]="record.isEmergencyOverride" [class.standard]="!record.isEmergencyOverride">
+                {{ record.isEmergencyOverride ? '🚨 EMERGENCY BREAK-GLASS OVERRIDE' : '✓ Standard Authorized Chart View' }}
+              </span>
+            </span>
+          </div>
+          <div class="audit-field full-width" *ngIf="record.breakGlassRationale">
+            <label>Break-Glass Emergency Rationale</label>
+            <span class="audit-value rationale-text">{{ record.breakGlassRationale }}</span>
+          </div>
+          <div class="audit-field full-width" *ngIf="record.actionDetail">
+            <label>Action Details</label>
+            <span class="audit-value rationale-text">{{ record.actionDetail }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button mat-flat-button color="primary" (click)="closeAuditDetailModal()">Close Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: AUTHORIZE DELEGATION                                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showDelegationModal()" (click)="closeDelegationModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-icon green"><mat-icon>swap_horiz</mat-icon></div>
+        <div>
+          <h2 class="modal-title">Authorize Coverage Delegation</h2>
+          <p class="modal-subtitle">Delegate physician coverage for leave or on-call rotation</p>
+        </div>
+        <button mat-icon-button class="modal-close" (click)="closeDelegationModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Delegating Physician (Doctor on Leave) <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="newDelegation.delegatingDoctorName" placeholder="e.g. Dr. John Smith" list="doctorOptions" />
+        </div>
+        <div class="form-group">
+          <label>Covering Physician Name <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="newDelegation.coveringDoctorName" placeholder="e.g. Dr. Sarah James" list="doctorOptions" />
+          <datalist id="doctorOptions">
+            <option *ngFor="let doc of availableDoctors()" [value]="doc.fullName ? 'Dr. ' + doc.fullName : doc.userName">
+              {{ doc.fullName || doc.userName }}
+            </option>
+          </datalist>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Coverage Start</label>
+            <input type="datetime-local" [(ngModel)]="newDelegation.startDateUtc" />
+          </div>
+          <div class="form-group">
+            <label>Coverage End</label>
+            <input type="datetime-local" [(ngModel)]="newDelegation.endDateUtc" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Reason / Clinical Justification <span class="req">*</span></label>
+          <select [(ngModel)]="newDelegation.reason">
+            <option value="Clinical Coverage / On-Call Rotation">Clinical Coverage / On-Call Rotation</option>
+            <option value="Maternity / Paternity Leave">Maternity / Paternity Leave</option>
+            <option value="Medical Leave of Absence">Medical Leave of Absence</option>
+            <option value="Conference / CME Training">Conference / CME Training</option>
+            <option value="Emergency Coverage">Emergency Coverage</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Handover Notes</label>
+          <textarea [(ngModel)]="newDelegation.notes" placeholder="Any specific patient caseload notes for the covering physician…" rows="3"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button mat-stroked-button (click)="closeDelegationModal()">Cancel</button>
+        <button mat-flat-button color="primary" (click)="submitDelegation()">
+          <mat-icon>check_circle</mat-icon> Authorize Delegation
+        </button>
+      </div>
+    </div>
   </div>
 </div>

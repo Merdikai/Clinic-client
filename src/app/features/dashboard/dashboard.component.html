@@ -1,4 +1,4 @@
-﻿<div class="dashboard-page">
+<div class="dashboard-page">
 
   <!-- ========================================== -->
   <!-- 1. ROLE-AWARE WELCOME BANNER               -->
@@ -8,6 +8,8 @@
       <div class="role-icon-circle">
         @if (userRole() === 'Doctor') {
           <mat-icon>stethoscope</mat-icon>
+        } @else if (userRole() === 'Radiologist') {
+          <mat-icon>camera</mat-icon>
         } @else if (userRole() === 'Nurse') {
           <mat-icon>healing</mat-icon>
         } @else if (userRole() === 'Pharmacist') {
@@ -33,6 +35,8 @@
         <p class="portal-sub">
           @if (userRole() === 'Doctor') {
             Manage your daily consultations, write clinical prescriptions, and review patient charts.
+          } @else if (userRole() === 'Radiologist') {
+            Review RIS modality worklists, interpret Web PACS DICOM examinations, and sign diagnostic structured reports.
           } @else if (userRole() === 'Nurse') {
             Record vital signs, triage waiting patients, and manage lab documentation.
           } @else if (userRole() === 'Pharmacist') {
@@ -55,11 +59,17 @@
     <!-- Quick Action Launcher per Role -->
     <div class="banner-quick-actions">
       @if (userRole() === 'Doctor') {
-        <a mat-flat-button color="primary" routerLink="/appointments" class="header-btn">
-          <mat-icon>calendar_today</mat-icon> My Consultations
+        <a mat-flat-button color="primary" routerLink="/my-consultations" class="header-btn">
+          <mat-icon>calendar_today</mat-icon> My Consultations Queue
         </a>
-        <a mat-stroked-button routerLink="/doctor-schedules" class="header-btn">
-          <mat-icon>schedule</mat-icon> My Shifts
+        <a mat-flat-button routerLink="/doctor-inbasket" class="header-btn inbasket-glow-btn" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; font-weight: 600;">
+          <mat-icon>inbox</mat-icon> Physician InBasket
+        </a>
+        <a mat-stroked-button routerLink="/my-patients" class="header-btn">
+          <mat-icon>groups</mat-icon> My Patient Panel
+        </a>
+        <a mat-stroked-button routerLink="/schedules" class="header-btn">
+          <mat-icon>schedule</mat-icon> Shifts & Roster
         </a>
       } @else if (userRole() === 'Nurse') {
         <a mat-flat-button color="primary" routerLink="/patients" class="header-btn">
@@ -69,15 +79,30 @@
           <mat-icon>how_to_reg</mat-icon> Triage Queue
         </a>
       } @else if (userRole() === 'Pharmacist') {
-        <a mat-flat-button color="primary" routerLink="/pharmacy" class="header-btn">
-          <mat-icon>medication</mat-icon> Dispense Queue
+        <a mat-flat-button color="primary" routerLink="/pharmacy/prescriptions" class="header-btn">
+          <mat-icon>medication</mat-icon> E-Prescriptions
+        </a>
+        <a mat-stroked-button routerLink="/pharmacy/pos" class="header-btn">
+          <mat-icon>point_of_sale</mat-icon> Counter POS
+        </a>
+        <a mat-stroked-button routerLink="/pharmacy/formulary" class="header-btn">
+          <mat-icon>inventory_2</mat-icon> Drug Formulary
+        </a>
+        <a mat-stroked-button routerLink="/pharmacy/audit" class="header-btn">
+          <mat-icon>security</mat-icon> Controlled Safe
         </a>
       } @else if (userRole() === 'Accountant') {
         <a mat-flat-button color="primary" routerLink="/billing" class="header-btn">
-          <mat-icon>receipt_long</mat-icon> Invoices Ledger
+          <mat-icon>account_balance</mat-icon> Financial Control Center
+        </a>
+        <a mat-stroked-button routerLink="/billing" [queryParams]="{tab: 'claims'}" class="header-btn">
+          <mat-icon>verified</mat-icon> TPA Claims
+        </a>
+        <a mat-stroked-button routerLink="/billing" [queryParams]="{tab: 'reconciliations'}" class="header-btn">
+          <mat-icon>point_of_sale</mat-icon> Drawer Audits
         </a>
         <a mat-stroked-button routerLink="/reports" class="header-btn">
-          <mat-icon>assessment</mat-icon> Financial Analytics
+          <mat-icon>assessment</mat-icon> Financial Reports
         </a>
       } @else if (userRole() === 'Receptionist') {
         <a mat-flat-button color="primary" routerLink="/patients/new" class="header-btn">
@@ -86,6 +111,21 @@
         <a mat-stroked-button routerLink="/appointments/book" class="header-btn">
           <mat-icon>add_alarm</mat-icon> Book Consultation
         </a>
+        <a mat-stroked-button routerLink="/appointments" class="header-btn">
+          <mat-icon>how_to_reg</mat-icon> Arrivals & Queue Desk
+        </a>
+        <a mat-stroked-button routerLink="/schedules" class="header-btn">
+          <mat-icon>calendar_month</mat-icon> Doctor Availability
+        </a>
+        <a mat-stroked-button routerLink="/billing" class="header-btn">
+          <mat-icon>point_of_sale</mat-icon> Cashier Desk
+        </a>
+        <button mat-flat-button class="header-btn" (click)="openDrawerModal()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 600;">
+          <mat-icon>lock_clock</mat-icon> Cash Drawer
+        </button>
+        <button mat-flat-button class="header-btn" (click)="openInquiryModal()" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; font-weight: 600;">
+          <mat-icon>support_agent</mat-icon> Log Inquiry
+        </button>
       } @else if (userRole() === 'LabTechnician') {
         <a mat-flat-button color="primary" routerLink="/laboratory" class="header-btn">
           <mat-icon>biotech</mat-icon> Laboratory Worklist
@@ -93,11 +133,27 @@
         <a mat-stroked-button routerLink="/patients" class="header-btn">
           <mat-icon>people</mat-icon> Patients Directory
         </a>
+      } @else if (isRadiologistView()) {
+        <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'viewer'}" class="header-btn" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color: white; font-weight: 700;">
+          <mat-icon>center_focus_strong</mat-icon> Web PACS DICOM Viewer
+        </a>
+        <a mat-flat-button routerLink="/radiology" [queryParams]="{tab: 'worklist'}" class="header-btn" style="background: #1e1b4b; color: #a5b4fc; border: 1px solid rgba(165,180,252,0.3); font-weight: 600;">
+          <mat-icon>view_list</mat-icon> RIS Modality Worklist
+        </a>
+        <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'reports'}" class="header-btn">
+          <mat-icon>assignment_turned_in</mat-icon> Structured Reporting
+        </a>
+        <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'safety'}" class="header-btn">
+          <mat-icon>shield</mat-icon> Radiation & Contrast Log
+        </a>
+        <a mat-stroked-button routerLink="/schedules" class="header-btn">
+          <mat-icon>calendar_month</mat-icon> Modality Shifts
+        </a>
       } @else if (userRole() === 'Patient') {
         <a mat-flat-button color="primary" routerLink="/appointments/book" class="header-btn">
           <mat-icon>add_alarm</mat-icon> Book Appointment
         </a>
-        <a mat-stroked-button routerLink="/patients" class="header-btn">
+        <a mat-stroked-button routerLink="/my-medical-file" class="header-btn">
           <mat-icon>folder_shared</mat-icon> My Medical File
         </a>
       } @else {
@@ -208,6 +264,13 @@
               <p>Revenue analysis and CSV downloads</p>
             </div>
           </a>
+          <a routerLink="/reports" class="admin-tile">
+            <div class="tile-icon green"><mat-icon>point_of_sale</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Cash Drawer & Shift Audits</h4>
+              <p>Front desk reconciliations & variances</p>
+            </div>
+          </a>
           <a routerLink="/users" class="admin-tile">
             <div class="tile-icon red"><mat-icon>manage_accounts</mat-icon></div>
             <div class="tile-meta">
@@ -292,30 +355,39 @@
         </div>
         <div class="clinical-action-boxes">
           <div class="action-card-wide">
-            <mat-icon class="card-icon">calendar_month</mat-icon>
+            <mat-icon class="card-icon" style="color: #0284c7;">event_available</mat-icon>
             <div class="card-text">
-              <h4>Consultation Schedule & Check-ins</h4>
-              <p>View queued patients, mark visits as in-consultation, and document clinical notes.</p>
+              <h4>My Consultations & Telehealth Desk</h4>
+              <p>Review appointments assigned to you, approve booking requests, start consults, and write SOAP notes.</p>
             </div>
-            <a mat-flat-button color="primary" routerLink="/appointments">Open Consultations</a>
+            <a mat-flat-button color="primary" routerLink="/my-consultations">Open My Queue</a>
           </div>
 
           <div class="action-card-wide">
-            <mat-icon class="card-icon">history_edu</mat-icon>
+            <mat-icon class="card-icon" style="color: #6366f1;">inbox</mat-icon>
             <div class="card-text">
-              <h4>Patient Charts & Diagnostics</h4>
-              <p>Look up past diagnoses, allergies, vitals history, and uploaded lab scans.</p>
+              <h4>Physician InBasket (Critical Labs & Rx Approvals)</h4>
+              <p>Sign off on abnormal diagnostic results, approve electronic refills, and acknowledge triage flags.</p>
             </div>
-            <a mat-flat-button color="primary" routerLink="/patients">Patient Directory</a>
+            <a mat-flat-button style="background: #4f46e5; color: white;" routerLink="/doctor-inbasket">Open InBasket</a>
           </div>
 
           <div class="action-card-wide">
-            <mat-icon class="card-icon">schedule</mat-icon>
+            <mat-icon class="card-icon" style="color: #10b981;">groups</mat-icon>
             <div class="card-text">
-              <h4>My Availability & Shifts</h4>
-              <p>Manage working hours, day-of-week slots, and maximum patient capacities.</p>
+              <h4>My Patient Panel & Chronic Care</h4>
+              <p>Track your ongoing assigned patients, clinical diagnoses, vitals risk badges, and care plans.</p>
             </div>
-            <a mat-stroked-button routerLink="/doctor-schedules">Manage Shifts</a>
+            <a mat-flat-button color="accent" routerLink="/my-patients">View My Panel</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon" style="color: #f59e0b;">calendar_month</mat-icon>
+            <div class="card-text">
+              <h4>Working Hours & On-Call Coverage</h4>
+              <p>Review OPD schedule, set booking slots, or arrange duty handover with colleagues.</p>
+            </div>
+            <a mat-stroked-button routerLink="/schedules">My Shifts & Roster</a>
           </div>
         </div>
       </div>
@@ -353,81 +425,211 @@
   <!-- ========================================== -->
   <!-- 4. NURSE DASHBOARD VIEW                    -->
   <!-- ========================================== -->
+  <!-- ========================================== -->
+  <!-- 4. NURSE DASHBOARD VIEW                    -->
+  <!-- ========================================== -->
   @if (userRole() === 'Nurse') {
+    <!-- Clinical Nurse KPI Bar -->
     <div class="kpi-grid">
-      <div class="kpi-card green">
-        <div class="kpi-icon-box"><mat-icon>how_to_reg</mat-icon></div>
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>hourglass_top</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Today's Visits</span>
-          <h2 class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</h2>
-          <span class="kpi-sub">Patients for triage</span>
+          <span class="kpi-label">Awaiting Triage</span>
+          <h2 class="kpi-val">{{ awaitingTriageCount() }}</h2>
+          <span class="kpi-sub">Needs vitals & intake</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>verified</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Triaged & In Queue</span>
+          <h2 class="kpi-val">{{ triagedWaitingCount() }}</h2>
+          <span class="kpi-sub">Ready for physician</span>
         </div>
       </div>
 
       <div class="kpi-card blue">
-        <div class="kpi-icon-box"><mat-icon>groups</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>meeting_room</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Registered Patients</span>
-          <h2 class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</h2>
-          <span class="kpi-sub">Total database charts</span>
+          <span class="kpi-label">Active Bays Occupied</span>
+          <h2 class="kpi-val">{{ activeBaysOccupancyCount() }}</h2>
+          <span class="kpi-sub">Exam & triage beds</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>healing</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Procedures Logged</span>
+          <h2 class="kpi-val">{{ nurseProceduresTodayCount() }}</h2>
+          <span class="kpi-sub">Wound care, IVs & inj.</span>
         </div>
       </div>
     </div>
 
     <div class="dash-two-col">
+      <!-- LEFT: Live Patient Triage & Flow Queue -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>favorite</mat-icon>
-            <h3>Nurse Care & Triage Station</h3>
+            <mat-icon>fact_check</mat-icon>
+            <h3>Patient Triage & Flow Board</h3>
           </div>
+          <a mat-button color="primary" routerLink="/appointments" style="font-size: 0.82rem; font-weight: 600;">
+            View Full Board <mat-icon style="font-size: 16px; width: 16px; height: 16px;">arrow_forward</mat-icon>
+          </a>
         </div>
-        <div class="clinical-action-boxes">
-          <div class="action-card-wide">
-            <mat-icon class="card-icon">monitor_heart</mat-icon>
-            <div class="card-text">
-              <h4>Patient Vitals & Triage</h4>
-              <p>Select a patient from the directory to record blood pressure, heart rate, temperature, and BMI.</p>
-            </div>
-            <a mat-flat-button color="primary" routerLink="/patients">Patient Records</a>
-          </div>
 
-          <div class="action-card-wide">
-            <mat-icon class="card-icon">upload_file</mat-icon>
-            <div class="card-text">
-              <h4>Lab Reports & Document Uploads</h4>
-              <p>Attach imaging results, blood tests, and external consultation documents to patient files.</p>
+        <div class="nurse-flow-table-box">
+          @if (nurseLoading()) {
+            <div style="padding: 40px; text-align: center; color: #64748b;">
+              <mat-icon class="pulse-icon">hourglass_empty</mat-icon>
+              <p>Refreshing clinical queue...</p>
             </div>
-            <a mat-stroked-button routerLink="/patients">Attach Documents</a>
-          </div>
+          } @else if (nurseAppointments().length === 0) {
+            <div style="padding: 40px; text-align: center; color: #64748b;">
+              <mat-icon style="font-size: 42px; width: 42px; height: 42px; color: #cbd5e1;">event_available</mat-icon>
+              <p style="margin-top: 8px; font-weight: 500;">No appointments in today's intake queue.</p>
+            </div>
+          } @else {
+            <div class="nurse-patient-cards">
+              @for (a of nurseAppointments().slice(0, 7); track a.id) {
+                <div class="nurse-queue-row">
+                  <div class="queue-left">
+                    <div class="patient-avatar-box">
+                      <mat-icon>person</mat-icon>
+                    </div>
+                    <div class="queue-patient-meta">
+                      <span class="q-name">{{ a.patientName || 'Patient' }}</span>
+                      <span class="q-sub">
+                        {{ a.scheduledDateTime | date:'shortTime' }} &bull; Dr. {{ a.doctorName || 'Assigned Physician' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="queue-center">
+                    <!-- Urgency Pill -->
+                    @if (a.triageUrgency === 'Emergency') {
+                      <span class="urgency-tag emergency">🚨 Emergency</span>
+                    } @else if (a.triageUrgency === 'Urgent') {
+                      <span class="urgency-tag urgent">⚠️ Urgent</span>
+                    } @else {
+                      <span class="urgency-tag routine">Routine</span>
+                    }
+
+                    <!-- Room Assignment -->
+                    <span class="room-tag">
+                      <mat-icon style="font-size: 13px; width: 13px; height: 13px;">meeting_room</mat-icon>
+                      {{ a.roomAssignment || 'No Bed Assigned' }}
+                    </span>
+                  </div>
+
+                  <div class="queue-right">
+                    @if (a.vitalSigns) {
+                      <span class="vitals-recorded-badge" matTooltip="Vitals recorded">
+                        🩺 {{ a.vitalSigns.systolicBP }}/{{ a.vitalSigns.diastolicBP }}
+                      </span>
+                    }
+
+                    <button mat-flat-button color="primary" class="triage-action-btn" (click)="openNurseTriageModal(a)">
+                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">monitor_heart</mat-icon>
+                      <span>{{ a.vitalSigns ? 'Update Triage' : 'Triage Patient' }}</span>
+                    </button>
+
+                    @if (a.status === 'ReadyForDischarge') {
+                      <button mat-flat-button color="accent" (click)="quickDischarge(a.id)" style="border-radius: 8px; font-weight: 600;">
+                        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon>
+                        <span>Discharge</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
 
+      <!-- RIGHT: Clinical Procedures & Shift Handover Overview -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>sensors</mat-icon>
-            <h3>Triage Live Notifications</h3>
+            <mat-icon>swap_horizontal_circle</mat-icon>
+            <h3>Latest SBAR Shift Handover</h3>
+          </div>
+          <a mat-button color="primary" routerLink="/nurse/handover" style="font-size: 0.82rem; font-weight: 600;">
+            Log SBAR <mat-icon style="font-size: 16px; width: 16px; height: 16px;">edit</mat-icon>
+          </a>
+        </div>
+
+        @if (latestShiftHandover(); as h) {
+          <div class="sbar-preview-card">
+            <div class="sbar-meta-head">
+              <span class="shift-badge">{{ h.shiftType }}</span>
+              <span class="timestamp">{{ h.handoverTimestamp | date:'medium' }}</span>
+            </div>
+            <p class="nurse-byline">Signed by: <strong>{{ h.nurseUserName || 'Shift Nurse' }}</strong></p>
+
+            <div class="sbar-snippets">
+              <div class="sbar-row">
+                <span class="tag-letter s">S</span>
+                <span class="text">{{ h.situation }}</span>
+              </div>
+              <div class="sbar-row">
+                <span class="tag-letter a">A</span>
+                <span class="text">{{ h.assessment || 'Patient vital signs within normal parameters.' }}</span>
+              </div>
+              <div class="sbar-row">
+                <span class="tag-letter r">R</span>
+                <span class="text">{{ h.recommendation || 'Continue routine vital checks and observation.' }}</span>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div style="padding: 24px; text-align: center; color: var(--text-secondary, #64748b); background: var(--bg-subtle, #f8fafc); border-radius: 12px; margin-bottom: 16px;">
+            <mat-icon style="font-size: 36px; width: 36px; height: 36px; color: #cbd5e1;">history_edu</mat-icon>
+            <p style="margin: 6px 0 0 0; font-size: 0.85rem;">No handover signed yet for the current shift.</p>
+            <a mat-flat-button color="primary" routerLink="/nurse/handover" style="margin-top: 10px; border-radius: 8px;">Submit Shift Handover</a>
+          </div>
+        }
+
+        <!-- Nurse Quick Clinical Tools -->
+        <div class="panel-header" style="margin-top: 16px;">
+          <div class="panel-title-wrap">
+            <mat-icon>medical_services</mat-icon>
+            <h3>Nursing Clinical Actions</h3>
           </div>
         </div>
-        <div class="live-feed-list">
-          @if (recentEvents().length > 0) {
-            @for (ev of recentEvents(); track $index) {
-              <div class="live-event-item">
-                <div class="event-dot"></div>
-                <div class="event-body">
-                  <span class="event-type">{{ ev.type }}</span>
-                  <p class="event-detail">{{ ev.title }}</p>
-                </div>
-                <span class="event-time">{{ ev.time }}</span>
-              </div>
-            }
-          } @else {
-            <div class="empty-feed">
-              <mat-icon>stream</mat-icon>
-              <p>Triage feed synchronized. Waiting for check-ins.</p>
+        <div class="admin-actions-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+          <a routerLink="/nurse/procedures" class="admin-tile">
+            <div class="tile-icon blue"><mat-icon>healing</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Nursing Procedures</h4>
+              <p>Wound care, IVs & injections</p>
             </div>
-          }
+          </a>
+          <a routerLink="/nurse/handover" class="admin-tile">
+            <div class="tile-icon purple"><mat-icon>swap_horizontal_circle</mat-icon></div>
+            <div class="tile-meta">
+              <h4>SBAR Handover</h4>
+              <p>Shift continuity log</p>
+            </div>
+          </a>
+          <a routerLink="/laboratory" class="admin-tile">
+            <div class="tile-icon teal"><mat-icon>biotech</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Specimen Requisitions</h4>
+              <p>Lab orders & tube collection</p>
+            </div>
+          </a>
+          <a routerLink="/pharmacy" class="admin-tile">
+            <div class="tile-icon amber"><mat-icon>medication</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Ward Formulary</h4>
+              <p>Medication inventory check</p>
+            </div>
+          </a>
         </div>
       </div>
     </div>
@@ -437,89 +639,370 @@
   <!-- 5. RECEPTIONIST DASHBOARD VIEW             -->
   <!-- ========================================== -->
   @if (userRole() === 'Receptionist') {
+    <!-- Receptionist Operations Header Banner -->
+    <div class="reception-ops-bar">
+      <div class="reception-ops-info">
+        <div class="badge-tag"><mat-icon>desk</mat-icon> FRONT DESK OPERATIONS CENTER</div>
+        <h2>Patient Registration, Real-Time Arrival Desk & Cash Drawer</h2>
+        <p>Master Patient Index screening, queue token issuance, and daily shift reconciliation.</p>
+      </div>
+      <div class="reception-ops-actions">
+        <a routerLink="/patients/new" mat-flat-button class="action-btn-primary">
+          <mat-icon>person_add</mat-icon> Register New Patient
+        </a>
+        <a routerLink="/appointments/book" mat-stroked-button class="action-btn-secondary">
+          <mat-icon>add_alarm</mat-icon> Book Visit
+        </a>
+        <button id="reconcile-drawer-btn" mat-flat-button class="action-btn-cashier" (click)="openDrawerModal()">
+          <mat-icon>point_of_sale</mat-icon> Reconcile Cash Drawer
+        </button>
+        <button id="log-inquiry-btn" mat-stroked-button class="action-btn-inquiry" (click)="openInquiryModal()">
+          <mat-icon>support_agent</mat-icon> Log Inquiry
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 High-Impact Stat KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card blue">
-        <div class="kpi-icon-box"><mat-icon>person_add</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>how_to_reg</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Registered Patients</span>
-          <h2 class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</h2>
-          <span class="kpi-sub">Clinic directory total</span>
+          <span class="kpi-label">Checked-In Today</span>
+          <h2 class="kpi-val">{{ receptionCheckInCount() }}</h2>
+          <span class="kpi-sub">Arrived & routed to triage / doctor</span>
+        </div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>pending_actions</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Expected Arrivals</span>
+          <h2 class="kpi-val">{{ receptionScheduledCount() }}</h2>
+          <span class="kpi-sub">Awaiting front desk arrival</span>
         </div>
       </div>
 
       <div class="kpi-card green">
-        <div class="kpi-icon-box"><mat-icon>event_available</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>point_of_sale</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Today's Visits</span>
-          <h2 class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</h2>
-          <span class="kpi-sub">Appointments scheduled</span>
+          <span class="kpi-label">Today's Collections</span>
+          <h2 class="kpi-val">{{ receptionCashTotal() | currency:'USD' }}</h2>
+          <span class="kpi-sub">Cash, card & digital payments</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>support_agent</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Inquiries</span>
+          <h2 class="kpi-val">{{ receptionOpenInquiriesCount() }}</h2>
+          <span class="kpi-sub">Visitor & phone requests open</span>
         </div>
       </div>
     </div>
 
-    <div class="dash-two-col">
-      <div class="dash-panel">
-        <div class="panel-header">
-          <div class="panel-title-wrap">
-            <mat-icon>desk</mat-icon>
-            <h3>Front Desk Operations</h3>
+    <!-- Master Patient Index (MPI) Real-Time Duplicate Screener Card -->
+    <div class="dash-panel mpi-screener-panel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <mat-icon class="mpi-shield-icon">fingerprint</mat-icon>
+          <div>
+            <h3>Master Patient Index (MPI) Duplicate Screening & Search</h3>
+            <p class="panel-subtitle">Screen patients by National ID, Passport, Phone Number, MRN, or Full Name to avoid duplicate chart creation.</p>
           </div>
         </div>
-        <div class="admin-actions-grid">
-          <a routerLink="/patients/new" class="admin-tile">
-            <div class="tile-icon blue"><mat-icon>person_add</mat-icon></div>
-            <div class="tile-meta">
-              <h4>Register New Patient</h4>
-              <p>Quick intake form and auto-generated MRN</p>
+        <div class="mpi-search-bar-wrap">
+          <mat-icon class="search-ico">search</mat-icon>
+          <input
+            type="text"
+            class="mpi-search-input"
+            placeholder="Screen by National ID, Phone (e.g. 555), MRN, or Name..."
+            [ngModel]="mpiSearchQuery()"
+            (ngModelChange)="onMpiSearchChange($event)"
+          />
+          @if (isSearchingMpi()) {
+            <mat-spinner diameter="18" class="mpi-spinner"></mat-spinner>
+          } @else if (mpiSearchQuery()) {
+            <button mat-icon-button class="mpi-clear-btn" (click)="onMpiSearchChange('')">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- MPI Results Container -->
+      @if (mpiSearchQuery().trim().length >= 2) {
+        <div class="mpi-results-box">
+          @if (mpiSearchResults().length > 0) {
+            <div class="mpi-alert-warning">
+              <mat-icon>warning</mat-icon>
+              <span>Potential duplicate patient profiles detected in clinic database. Review existing records before onboarding a new chart.</span>
             </div>
-          </a>
-          <a routerLink="/appointments/book" class="admin-tile">
-            <div class="tile-icon green"><mat-icon>add_alarm</mat-icon></div>
-            <div class="tile-meta">
-              <h4>Book Consultation</h4>
-              <p>Select physician and assign time slot</p>
+
+            <div class="mpi-matches-grid">
+              @for (match of mpiSearchResults(); track match.id) {
+                <div class="mpi-match-card">
+                  <div class="match-badge-row">
+                    <span class="match-score-pill" [class.danger]="match.confidenceLevel === 'Exact'" [class.warning]="match.confidenceLevel === 'High'">
+                      {{ match.confidenceLevel }} Match
+                    </span>
+                    <span class="match-reason">{{ match.matchReason }}</span>
+                  </div>
+
+                  <div class="match-patient-body">
+                    <div class="match-avatar">{{ match.fullName.charAt(0) }}</div>
+                    <div class="match-details">
+                      <h4 class="match-name">{{ match.fullName }}</h4>
+                      <div class="match-meta-line">
+                        <span><strong>MRN:</strong> {{ match.medicalRecordNumber }}</span>
+                        @if (match.nationalId) {
+                          <span><strong>National ID:</strong> {{ match.nationalId }}</span>
+                        }
+                        <span><strong>DOB:</strong> {{ match.dateOfBirth | date:'mediumDate' }} ({{ match.gender }})</span>
+                        <span><strong>Phone:</strong> {{ match.phone }}</span>
+                      </div>
+                      <div class="match-insurance-row">
+                        <span class="ins-provider">Insurance: {{ match.insuranceProvider || 'Self-Pay / Cash' }}</span>
+                        @if (match.insurancePolicyNumber) {
+                          <span class="ins-policy">Policy #{{ match.insurancePolicyNumber }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="match-actions">
+                    <a [routerLink]="['/patients', match.id]" mat-stroked-button color="primary">
+                      <mat-icon>visibility</mat-icon> Open Chart
+                    </a>
+                    <a [routerLink]="['/appointments/book']" [queryParams]="{ patientId: match.id }" mat-flat-button color="primary">
+                      <mat-icon>calendar_today</mat-icon> Book Visit
+                    </a>
+                  </div>
+                </div>
+              }
             </div>
-          </a>
-          <a routerLink="/appointments" class="admin-tile">
-            <div class="tile-icon amber"><mat-icon>how_to_reg</mat-icon></div>
-            <div class="tile-meta">
-              <h4>Check-In Queue</h4>
-              <p>Mark arriving patients as checked in</p>
+          } @else if (!isSearchingMpi()) {
+            <div class="mpi-no-duplicate">
+              <div class="mpi-clean-icon"><mat-icon>verified</mat-icon></div>
+              <div class="mpi-clean-text">
+                <h4>No Existing Duplicate Records Found</h4>
+                <p>No matches found for "{{ mpiSearchQuery() }}". Patient is safe for new enrollment.</p>
+              </div>
+              <a [routerLink]="['/patients/new']" [queryParams]="{ query: mpiSearchQuery() }" mat-flat-button class="clean-register-btn">
+                <mat-icon>person_add</mat-icon> Proceed to Register
+              </a>
             </div>
-          </a>
-          <a routerLink="/doctor-schedules" class="admin-tile">
-            <div class="tile-icon purple"><mat-icon>schedule</mat-icon></div>
-            <div class="tile-meta">
-              <h4>Doctor Availability</h4>
-              <p>View and manage doctor working shifts</p>
-            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Live Patient Arrival & Check-In Desk -->
+    <div class="dash-panel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <mat-icon>how_to_reg</mat-icon>
+          <div>
+            <h3>Today's Patient Arrival Desk & Queue Flow</h3>
+            <p class="panel-subtitle">Process incoming patient arrivals, assign queue tokens, and route to nurse triage or doctor consultation.</p>
+          </div>
+        </div>
+        <div class="panel-actions">
+          <a routerLink="/appointments" mat-stroked-button>
+            <mat-icon>calendar_month</mat-icon> Full Appointments Desk
           </a>
         </div>
       </div>
 
+      <div class="arrivals-table-container">
+        @if (receptionTodayAppointments().length > 0) {
+          <table class="arrivals-table">
+            <thead>
+              <tr>
+                <th>Queue Token</th>
+                <th>Patient Name</th>
+                <th>Appointment Time</th>
+                <th>Attending Doctor</th>
+                <th>Visit Type</th>
+                <th>Current Status</th>
+                <th style="text-align: right;">Front-Desk Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (appt of receptionTodayAppointments(); track appt.id) {
+                <tr [class.row-arrived]="appt.status === 'CheckedIn' || appt.status === 'TriageComplete' || appt.status === 'InConsultation'">
+                  <td>
+                    @if (appt.tokenNumber) {
+                      <span class="token-pill">{{ appt.tokenNumber }}</span>
+                    } @else {
+                      <span class="token-pill-empty">--</span>
+                    }
+                  </td>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar-sm">{{ appt.patientName ? appt.patientName.charAt(0) : 'P' }}</div>
+                      <div class="patient-names">
+                        <span class="name">{{ appt.patientName }}</span>
+                        <span class="mrn">{{ appt.reasonForVisit || 'General Consultation' }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="time-cell">
+                      <mat-icon>schedule</mat-icon>
+                      <span>{{ appt.scheduledDateTime | date:'shortTime' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="doctor-name">Dr. {{ appt.doctorName }}</span>
+                  </td>
+                  <td>
+                    <span class="visit-type-pill">{{ appt.visitType || 'General Consultation' }}</span>
+                  </td>
+                  <td>
+                    <span class="status-badge status-{{ appt.status.toLowerCase() }}">{{ appt.status }}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    @if (appt.status === 'Scheduled') {
+                      <button mat-flat-button class="btn-checkin" (click)="openDeskCheckIn(appt)">
+                        <mat-icon>how_to_reg</mat-icon> Check In
+                      </button>
+                    } @else if (appt.status === 'CheckedIn') {
+                      <span class="queue-routed-badge"><mat-icon>directions_walk</mat-icon> In Triage Queue</span>
+                    } @else if (appt.status === 'TriageComplete') {
+                      <span class="queue-routed-badge green"><mat-icon>check_circle</mat-icon> Ready for MD</span>
+                    } @else if (appt.status === 'InConsultation') {
+                      <span class="queue-routed-badge purple"><mat-icon>stethoscope</mat-icon> With Doctor</span>
+                    } @else if (appt.status === 'Completed') {
+                      <span class="queue-routed-badge done"><mat-icon>done_all</mat-icon> Completed</span>
+                    } @else {
+                      <a [routerLink]="['/patients', appt.patientId]" mat-icon-button matTooltip="View Administrative Record">
+                        <mat-icon>chevron_right</mat-icon>
+                      </a>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <div class="empty-feed">
+            <mat-icon>event_busy</mat-icon>
+            <p>No appointments booked for today yet.</p>
+            <a routerLink="/appointments/book" mat-stroked-button style="margin-top: 8px;">
+              <mat-icon>add_alarm</mat-icon> Book New Appointment
+            </a>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Split 2-Column Row: Cash Register Drawer & Visitor Inquiries -->
+    <div class="dash-two-col">
+      <!-- Left: Cash Register Drawer Summary & Closing -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>sensors</mat-icon>
-            <h3>Reception Activity Feed</h3>
+            <mat-icon>point_of_sale</mat-icon>
+            <div>
+              <h3>Daily Cash Drawer & Register</h3>
+              <p class="panel-subtitle">Real-time collections drawer for today's active shift.</p>
+            </div>
+          </div>
+          <button mat-flat-button class="action-btn-cashier" (click)="openDrawerModal()">
+            <mat-icon>lock_clock</mat-icon> Close Drawer
+          </button>
+        </div>
+
+        <div class="drawer-breakdown-card">
+          <div class="drawer-status-bar">
+            <span class="drawer-status-indicator live"></span>
+            <span class="drawer-status-label">DRAWER ACTIVE — TODAY'S RECEPTION INTAKE</span>
+            <span class="drawer-time">{{ today | date:'mediumDate' }}</span>
+          </div>
+
+          <div class="drawer-totals-grid">
+            <div class="drawer-tile">
+              <span class="tile-title">Cash on Hand</span>
+              <span class="tile-amt green">{{ receptionTodaySummary()?.cashCollected ?? 0 | currency:'USD' }}</span>
+              <span class="tile-count">{{ receptionTodaySummary()?.invoicesSettledCount ?? 0 }} Invoices Settled</span>
+            </div>
+
+            <div class="drawer-tile">
+              <span class="tile-title">Card / POS</span>
+              <span class="tile-amt blue">{{ receptionTodaySummary()?.cardCollected ?? 0 | currency:'USD' }}</span>
+              <span class="tile-count">Terminal settlements</span>
+            </div>
+
+            <div class="drawer-tile">
+              <span class="tile-title">Digital / Insurance</span>
+              <span class="tile-amt purple">{{ receptionTodaySummary()?.digitalCollected ?? 0 | currency:'USD' }}</span>
+              <span class="tile-count">Direct insurance co-pays</span>
+            </div>
+          </div>
+
+          <div class="drawer-grand-total">
+            <div class="grand-info">
+              <span class="grand-label">Total Day's Gross Intake:</span>
+              <span class="grand-val">{{ receptionTodaySummary()?.totalCollected ?? 0 | currency:'USD' }}</span>
+            </div>
+            <button mat-stroked-button (click)="openDrawerModal()" class="btn-reconcile">
+              <mat-icon>fact_check</mat-icon> Balance & Reconcile Shift
+            </button>
           </div>
         </div>
-        <div class="live-feed-list">
-          @if (recentEvents().length > 0) {
-            @for (ev of recentEvents(); track $index) {
-              <div class="live-event-item">
-                <div class="event-dot"></div>
-                <div class="event-body">
-                  <span class="event-type">{{ ev.type }}</span>
-                  <p class="event-detail">{{ ev.title }}</p>
+      </div>
+
+      <!-- Right: Visitor & Telephone Inquiries Desk -->
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon>support_agent</mat-icon>
+            <div>
+              <h3>Front Desk Visitor & Phone Inquiries</h3>
+              <p class="panel-subtitle">Log visitor drop-ins, phone queries, and department directions.</p>
+            </div>
+          </div>
+          <button mat-flat-button class="action-btn-inquiry" (click)="openInquiryModal()">
+            <mat-icon>add</mat-icon> Log Inquiry
+          </button>
+        </div>
+
+        <div class="inquiries-list">
+          @if (receptionInquiries().length > 0) {
+            @for (inq of receptionInquiries(); track inq.id) {
+              <div class="inquiry-ticket" [class.resolved]="inq.status === 'Resolved'">
+                <div class="inquiry-main">
+                  <div class="inquiry-meta-row">
+                    <span class="inq-type-badge">{{ inq.inquiryType }}</span>
+                    <span class="inq-dept-badge"><mat-icon>domain</mat-icon> {{ inq.departmentTarget }}</span>
+                    <span class="inq-status-badge" [class.open]="inq.status === 'Open'" [class.resolved]="inq.status === 'Resolved'">
+                      {{ inq.status }}
+                    </span>
+                    <span class="inq-time">{{ inq.createdAt | date:'shortTime' }}</span>
+                  </div>
+                  <h4 class="inq-visitor">
+                    <mat-icon>person</mat-icon> {{ inq.visitorName }}
+                    @if (inq.phoneNumber) {
+                      <span class="inq-phone">({{ inq.phoneNumber }})</span>
+                    }
+                  </h4>
+                  <p class="inq-notes">{{ inq.notes }}</p>
                 </div>
-                <span class="event-time">{{ ev.time }}</span>
+
+                @if (inq.status === 'Open') {
+                  <div class="inquiry-action">
+                    <button mat-stroked-button color="primary" class="btn-resolve" (click)="resolveVisitorInquiry(inq.id)">
+                      <mat-icon>check</mat-icon> Resolve
+                    </button>
+                  </div>
+                }
               </div>
             }
           } @else {
             <div class="empty-feed">
-              <mat-icon>stream</mat-icon>
-              <p>Front desk live sync active.</p>
+              <mat-icon>check_circle_outline</mat-icon>
+              <p>No active inquiries logged. Front desk queue is clear.</p>
             </div>
           }
         </div>
@@ -532,80 +1015,179 @@
   <!-- ========================================== -->
   @if (userRole() === 'Pharmacist') {
     <div class="kpi-grid">
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>pending_actions</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Pending Rx Orders</span>
+          <h2 class="kpi-val">{{ pharmacyMetrics()?.pendingPrescriptionsCount ?? pharmacyPendingPrescriptions().length }}</h2>
+          <span class="kpi-sub">Awaiting verification & dispensing</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-box"><mat-icon>point_of_sale</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Today's Dispensary Sales</span>
+          <h2 class="kpi-val">{{ (pharmacyMetrics()?.todayDispensaryRevenue ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">{{ pharmacyMetrics()?.dispensedTodayCount ?? 0 }} fulfilled today</span>
+        </div>
+      </div>
+
       <div class="kpi-card purple">
         <div class="kpi-icon-box"><mat-icon>warning_amber</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Low Stock Medicines</span>
-          <h2 class="kpi-val">{{ summary()?.lowStockItemsCount ?? 0 }}</h2>
-          <span class="kpi-sub">Restock recommended</span>
+          <span class="kpi-label">Low Stock & Expiry</span>
+          <h2 class="kpi-val">{{ pharmacyMetrics()?.lowStockMedicinesCount ?? pharmacyLowStockMedicines().length }}</h2>
+          <span class="kpi-sub">{{ pharmacyMetrics()?.nearExpiryMedicinesCount ?? 0 }} batches near expiry</span>
         </div>
       </div>
 
       <div class="kpi-card blue">
-        <div class="kpi-icon-box"><mat-icon>medication</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>security</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Medicine Inventory</span>
-          <h2 class="kpi-val">Live</h2>
-          <span class="kpi-sub">Real-time stock catalog</span>
+          <span class="kpi-label">Controlled Safe</span>
+          <h2 class="kpi-val">{{ pharmacyMetrics()?.controlledSubstancesCount ?? 0 }}</h2>
+          <span class="kpi-sub">DEA & MOH audit trail active</span>
         </div>
       </div>
     </div>
 
+    <!-- Pharmacist Workspace Hub & Pending Queue -->
     <div class="dash-two-col">
+      <!-- Left Column: Dispensary Quick Workflows & Pending Orders -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
             <mat-icon>local_pharmacy</mat-icon>
-            <h3>Dispensary Console</h3>
+            <h3>Dispensary Command Center</h3>
           </div>
+          <a mat-stroked-button routerLink="/pharmacy" color="primary">Open Full Dispensary</a>
         </div>
+
         <div class="clinical-action-boxes">
           <div class="action-card-wide">
-            <mat-icon class="card-icon">medication_liquid</mat-icon>
+            <mat-icon class="card-icon" style="color: #f59e0b;">medication</mat-icon>
             <div class="card-text">
-              <h4>Doctor Prescription Dispense Queue</h4>
-              <p>Review doctor orders, dispense medications with stock auto-deduction, and generate billing invoices.</p>
+              <h4>E-Prescription Verification & Dispensing</h4>
+              <p>Verify doctor orders, check drug-allergy interactions, dispense with 1-click inventory deduction, and print thermal labels.</p>
             </div>
-            <a mat-flat-button color="primary" routerLink="/pharmacy">Prescription Queue</a>
+            <a mat-flat-button color="primary" routerLink="/pharmacy/prescriptions">Review Rx Queue</a>
           </div>
 
           <div class="action-card-wide">
-            <mat-icon class="card-icon">add_box</mat-icon>
+            <mat-icon class="card-icon" style="color: #10b981;">point_of_sale</mat-icon>
             <div class="card-text">
-              <h4>Add New Medicine to Catalog</h4>
-              <p>Register new pharmaceutical supplies, dosage forms, batch numbers, and unit prices.</p>
+              <h4>Dispensary Point-of-Sale (POS)</h4>
+              <p>Process counter sales for walk-in patients, manage multi-item cart, and tender via Cash, Card, or Insurance.</p>
             </div>
-            <a mat-stroked-button routerLink="/pharmacy">Inventory Catalog</a>
+            <a mat-flat-button style="background: #10b981; color: white;" routerLink="/pharmacy/pos">Open POS Register</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon" style="color: #3b82f6;">inventory_2</mat-icon>
+            <div class="card-text">
+              <h4>12-Category Clinical Formulary & Stock</h4>
+              <p>Manage 18+ formulary drugs across Antibiotics, Analgesics, Cardiovascular, Endocrine, and track reorder thresholds.</p>
+            </div>
+            <a mat-stroked-button routerLink="/pharmacy/formulary">View Formulary</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon" style="color: #8b5cf6;">local_shipping</mat-icon>
+            <div class="card-text">
+              <h4>Purchase Orders & Ward Requisitions</h4>
+              <p>Submit procurement purchase orders to pharmaceutical distributors or fulfill internal ward stock requests.</p>
+            </div>
+            <a mat-stroked-button routerLink="/pharmacy/requisitions">Requisitions</a>
+          </div>
+
+          <div class="action-card-wide">
+            <mat-icon class="card-icon" style="color: #ef4444;">security</mat-icon>
+            <div class="card-text">
+              <h4>Controlled Substances Regulatory Safe</h4>
+              <p>Inspect strict Schedule II-V chain-of-custody audit logs, remaining safe balances, and prescriber justifications.</p>
+            </div>
+            <a mat-stroked-button routerLink="/pharmacy/audit" style="color: #ef4444; border-color: #fca5a5;">Audit Safe Log</a>
           </div>
         </div>
       </div>
 
+      <!-- Right Column: Pending Prescriptions Desk & Low Stock -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>sensors</mat-icon>
-            <h3>Pharmacy Event Feed</h3>
+            <mat-icon>receipt_long</mat-icon>
+            <h3>Prescription Fast-Track Desk</h3>
           </div>
+          <span class="badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #d97706; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">
+            {{ pharmacyPendingPrescriptions().length }} Pending Orders
+          </span>
         </div>
-        <div class="live-feed-list">
-          @if (recentEvents().length > 0) {
-            @for (ev of recentEvents(); track $index) {
-              <div class="live-event-item">
-                <div class="event-dot"></div>
-                <div class="event-body">
-                  <span class="event-type">{{ ev.type }}</span>
-                  <p class="event-detail">{{ ev.title }}</p>
+
+        @if (pharmacyPendingPrescriptions().length > 0) {
+          <div class="pending-rx-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
+            @for (rx of pharmacyPendingPrescriptions().slice(0, 5); track rx.id) {
+              <div class="pending-rx-card" style="border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; padding: 14px 16px; background: var(--bg-card, #ffffff); display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">{{ rx.patientName || 'Patient' }}</span>
+                  <span style="font-size: 11px; font-weight: 600; color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 2px 8px; border-radius: 4px;">
+                    {{ rx.status || 'Pending' }}
+                  </span>
                 </div>
-                <span class="event-time">{{ ev.time }}</span>
+                <div style="font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between;">
+                  <span>Doctor: {{ rx.doctorName || 'Attending Physician' }}</span>
+                  <span>MRN: {{ rx.patientMrn || 'N/A' }}</span>
+                </div>
+                @if (rx.patientAllergies) {
+                  <div style="font-size: 11px; color: #dc2626; background: rgba(239, 68, 68, 0.08); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+                    <mat-icon style="font-size: 14px; width: 14px; height: 14px;">warning</mat-icon>
+                    <strong>Allergy Alert:</strong> {{ rx.patientAllergies }}
+                  </div>
+                }
+                <div style="font-size: 12px; color: var(--text-primary); background: var(--bg-hover, #f8fafc); padding: 6px 10px; border-radius: 6px;">
+                  <strong>Prescribed Meds ({{ rx.items?.length || 0 }}):</strong>
+                  <ul style="margin: 4px 0 0 16px; padding: 0;">
+                    @for (item of rx.items; track item.id) {
+                      <li>{{ item.medicineName }} — {{ item.dosage || '1 tab' }}, {{ item.frequency || 'Daily' }} (Qty: {{ item.quantity }})</li>
+                    }
+                  </ul>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                  <a mat-flat-button color="primary" routerLink="/pharmacy" style="border-radius: 8px; font-size: 12px; height: 32px; padding: 0 14px;">
+                    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon> Dispense in Pharmacy
+                  </a>
+                </div>
               </div>
             }
-          } @else {
-            <div class="empty-feed">
-              <mat-icon>stream</mat-icon>
-              <p>Waiting for new doctor prescriptions...</p>
+          </div>
+        } @else {
+          <div class="empty-feed" style="padding: 32px 16px; text-align: center;">
+            <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: #10b981; margin-bottom: 8px;">task_alt</mat-icon>
+            <h4 style="margin: 0 0 4px 0; color: var(--text-primary);">All Prescriptions Fulfilled!</h4>
+            <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">No pending doctor orders in queue. The dispensary is up to date.</p>
+          </div>
+        }
+
+        <!-- Critical Low Stock Alerts Box -->
+        @if (pharmacyLowStockMedicines().length > 0) {
+          <div style="margin-top: 16px; padding: 14px 16px; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; background: rgba(239, 68, 68, 0.04);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #dc2626; display: flex; align-items: center; gap: 6px;">
+                <mat-icon style="font-size: 18px; width: 18px; height: 18px;">warning</mat-icon>
+                Critical Low-Stock Alerts ({{ pharmacyLowStockMedicines().length }})
+              </span>
+              <a mat-button routerLink="/pharmacy" style="color: #dc2626; font-size: 12px; font-weight: 600;">Reorder</a>
             </div>
-          }
-        </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              @for (med of pharmacyLowStockMedicines().slice(0, 3); track med.id) {
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-primary);">
+                  <span><strong>{{ med.name }}</strong> ({{ med.strength || med.dosageForm }})</span>
+                  <span style="color: #dc2626; font-weight: 700;">{{ med.stockQuantity }} left (Reorder: {{ med.reorderLevel }})</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
     </div>
   }
@@ -613,90 +1195,174 @@
   <!-- ========================================== -->
   <!-- 7. ACCOUNTANT DASHBOARD VIEW               -->
   <!-- ========================================== -->
-  @if (userRole() === 'Accountant') {
+  @if (isAccountantView() || userRole() === 'Accountant') {
+    <!-- Unreconciled drawer banner alert -->
+    @if ((financeMetrics()?.unreconciledDrawersCount ?? 0) > 0) {
+      <div class="audit-alert-banner">
+        <div class="alert-content">
+          <mat-icon class="alert-icon">notification_important</mat-icon>
+          <div>
+            <strong>Front Desk Cash Drawer Audits Required:</strong>
+            <span> {{ financeMetrics()?.unreconciledDrawersCount }} receptionist shift drawer closing(s) awaiting verification and accountant sign-off.</span>
+          </div>
+        </div>
+        <a mat-flat-button color="accent" routerLink="/billing" [queryParams]="{tab: 'reconciliation'}" class="audit-action-btn">
+          <mat-icon>fact_check</mat-icon> Audit Shift Drawers
+        </a>
+      </div>
+    }
+
+    <!-- Executive Financial KPIs -->
     <div class="kpi-grid">
       <div class="kpi-card green">
         <div class="kpi-icon-box"><mat-icon>payments</mat-icon></div>
         <div class="kpi-info">
           <span class="kpi-label">Today's Revenue</span>
-          <h2 class="kpi-val">{{ (summary()?.todayRevenue ?? 0) | currency:'USD' }}</h2>
-          <span class="kpi-sub">Collections today</span>
+          <h2 class="kpi-val">{{ (financeMetrics()?.todayRevenue ?? summary()?.todayRevenue ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">Total Collected: {{ (financeMetrics()?.totalRevenue ?? 0) | currency:'USD' }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>account_balance_wallet</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Accounts Receivable (AR)</span>
+          <h2 class="kpi-val">{{ (financeMetrics()?.pendingReceivables ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">{{ financeMetrics()?.pendingClaimsCount ?? 0 }} claims pending settlement</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>receipt_long</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Accounts Payable (AP)</span>
+          <h2 class="kpi-val">{{ (financeMetrics()?.pendingPayablesAmount ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">Pending vendor bills & expenses</span>
         </div>
       </div>
 
       <div class="kpi-card blue">
-        <div class="kpi-icon-box"><mat-icon>receipt_long</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>trending_up</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Billing Invoices</span>
-          <h2 class="kpi-val">Active</h2>
-          <span class="kpi-sub">Ready for settlement</span>
+          <span class="kpi-label">Net Operating Margin</span>
+          <h2 class="kpi-val">{{ (financeMetrics()?.netProfit ?? 0) | currency:'USD' }}</h2>
+          <span class="kpi-sub">Vault Float: {{ (financeMetrics()?.pettyCashCurrentBalance ?? 0) | currency:'USD' }}</span>
         </div>
       </div>
     </div>
 
+    <!-- 2 Column Financial Dashboard Body -->
     <div class="dash-two-col">
+      <!-- Left Panel: Departmental Revenue Splits & Operations Launchpad -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
+            <mat-icon>donut_large</mat-icon>
+            <h3>Departmental Revenue Performance</h3>
+          </div>
+          <span class="live-tag">Live Allocation</span>
+        </div>
+
+        <div class="department-revenue-grid">
+          @for (dept of financeMetrics()?.departmentRevenue || []; track dept.department) {
+            <div class="dept-card">
+              <div class="dept-header">
+                <span class="dept-name">{{ dept.department }}</span>
+                <span class="dept-amount">{{ dept.revenue | currency:'USD' }}</span>
+              </div>
+              <div class="dept-progress-bar">
+                <div class="dept-progress-fill" [style.width.%]="dept.percentage"></div>
+              </div>
+              <div class="dept-footer">
+                <span class="dept-invoices">{{ dept.invoicesCount }} paid invoices</span>
+                <span class="dept-pct">{{ dept.percentage }}%</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="panel-header" style="margin-top: 8px;">
+          <div class="panel-title-wrap">
             <mat-icon>account_balance</mat-icon>
-            <h3>Financial Operations Desk</h3>
+            <h3>Financial Control Modules</h3>
           </div>
         </div>
         <div class="admin-actions-grid">
-          <a routerLink="/billing" class="admin-tile">
+          <a routerLink="/billing" [queryParams]="{tab: 'invoices'}" class="admin-tile">
             <div class="tile-icon green"><mat-icon>point_of_sale</mat-icon></div>
             <div class="tile-meta">
-              <h4>Process Invoice Payments</h4>
-              <p>Record cash, card, and insurance payments</p>
+              <h4>Patient Invoices</h4>
+              <p>Multi-mode POS, Cash, Card, EFT</p>
             </div>
           </a>
-          <a routerLink="/reports" class="admin-tile">
-            <div class="tile-icon teal"><mat-icon>analytics</mat-icon></div>
+          <a routerLink="/billing" [queryParams]="{tab: 'claims'}" class="admin-tile">
+            <div class="tile-icon amber"><mat-icon>verified</mat-icon></div>
             <div class="tile-meta">
-              <h4>Financial Analytics</h4>
-              <p>Daily ledger summaries and breakdowns</p>
+              <h4>Insurance & TPA Claims</h4>
+              <p>Clearinghouse batching & remittances</p>
             </div>
           </a>
-          <a routerLink="/reports" class="admin-tile">
-            <div class="tile-icon blue"><mat-icon>file_download</mat-icon></div>
+          <a routerLink="/billing" [queryParams]="{tab: 'expenses'}" class="admin-tile">
+            <div class="tile-icon red"><mat-icon>shopping_bag</mat-icon></div>
             <div class="tile-meta">
-              <h4>Export Invoices CSV</h4>
-              <p>Download full RFC 4180 audit ledger</p>
+              <h4>Accounts Payable (AP)</h4>
+              <p>Supplier bills & pharmacy stock invoices</p>
             </div>
           </a>
-          <a routerLink="/reports" class="admin-tile">
-            <div class="tile-icon amber"><mat-icon>people</mat-icon></div>
+          <a routerLink="/billing" [queryParams]="{tab: 'petty-cash'}" class="admin-tile">
+            <div class="tile-icon purple"><mat-icon>local_atm</mat-icon></div>
             <div class="tile-meta">
-              <h4>Export Patients CSV</h4>
-              <p>Download patient demographics roster</p>
+              <h4>Petty Cash Custody</h4>
+              <p>Emergency disbursements & float audit</p>
+            </div>
+          </a>
+          <a routerLink="/billing" [queryParams]="{tab: 'payroll'}" class="admin-tile">
+            <div class="tile-icon teal"><mat-icon>badge</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Staff Payroll & Splits</h4>
+              <p>Doctor consultation commission calculation</p>
+            </div>
+          </a>
+          <a routerLink="/billing" [queryParams]="{tab: 'reconciliation'}" class="admin-tile">
+            <div class="tile-icon blue"><mat-icon>fact_check</mat-icon></div>
+            <div class="tile-meta">
+              <h4>Drawer Closing Audits</h4>
+              <p>Verify receptionist shift drawer balances</p>
             </div>
           </a>
         </div>
       </div>
 
+      <!-- Right Panel: Financial Activity Stream & Audit Trail -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>sensors</mat-icon>
-            <h3>Payment & Billing Stream</h3>
+            <mat-icon>receipt_long</mat-icon>
+            <h3>Recent Financial Activity Ledger</h3>
           </div>
+          <span class="live-tag">Audited</span>
         </div>
-        <div class="live-feed-list">
-          @if (recentEvents().length > 0) {
-            @for (ev of recentEvents(); track $index) {
-              <div class="live-event-item">
-                <div class="event-dot"></div>
-                <div class="event-body">
-                  <span class="event-type">{{ ev.type }}</span>
-                  <p class="event-detail">{{ ev.title }}</p>
+
+        <div class="finance-feed-list">
+          @if ((financeMetrics()?.recentActivities?.length ?? 0) > 0) {
+            @for (act of financeMetrics()?.recentActivities; track act.id) {
+              <div class="finance-activity-card">
+                <div class="activity-top">
+                  <span class="act-type-tag" [ngClass]="act.type.toLowerCase()">{{ act.type }}</span>
+                  <span class="act-ref">{{ act.referenceNumber }}</span>
+                  <span class="act-date">{{ act.date | date:'shortTime' }}</span>
                 </div>
-                <span class="event-time">{{ ev.time }}</span>
+                <div class="act-desc">{{ act.description }}</div>
+                <div class="activity-bottom">
+                  <span class="act-status" [ngClass]="act.status.toLowerCase()">{{ act.status }}</span>
+                  <span class="act-amount" [class.negative]="act.amount < 0">{{ act.amount | currency:'USD' }}</span>
+                </div>
               </div>
             }
           } @else {
             <div class="empty-feed">
-              <mat-icon>stream</mat-icon>
-              <p>Financial transaction listener active.</p>
+              <mat-icon>account_balance</mat-icon>
+              <p>All financial accounts reconciled and balanced.</p>
             </div>
           }
         </div>
@@ -705,73 +1371,200 @@
   }
 
   <!-- ========================================== -->
-  <!-- 8. PATIENT DASHBOARD VIEW                  -->
+  <!-- 8. PATIENT HEALTH PORTAL VIEW              -->
   <!-- ========================================== -->
   @if (userRole() === 'Patient') {
+    <!-- Patient Welcome Profile Card -->
+    <div class="patient-profile-card mat-elevation-z2">
+      <div class="patient-avatar-box">
+        <mat-icon>person</mat-icon>
+      </div>
+      <div class="patient-main-info">
+        <div class="patient-badge-row">
+          <span class="mrn-badge">MRN: {{ patientProfile()?.medicalRecordNumber || 'MED-PAT-001' }}</span>
+          <span class="status-badge-active">Active Patient</span>
+          <span class="blood-badge" *ngIf="patientProfile()?.bloodGroup">Blood: {{ patientProfile()?.bloodGroup }}</span>
+        </div>
+        <h2>{{ patientProfile()?.firstName ? (patientProfile()?.firstName + ' ' + patientProfile()?.lastName) : 'Alice Patient' }}</h2>
+        <p class="patient-contact-meta">
+          <span><mat-icon>phone</mat-icon> {{ patientProfile()?.phone || '+1 (555) 234-5678' }}</span>
+          <span><mat-icon>email</mat-icon> {{ patientProfile()?.email || 'alice.patient@example.com' }}</span>
+          <span *ngIf="patientProfile()?.emergencyContact"><mat-icon>contact_phone</mat-icon> ICE: {{ patientProfile()?.emergencyContact }}</span>
+        </p>
+      </div>
+      <div class="patient-quick-cta">
+        <a mat-flat-button color="primary" routerLink="/appointments/book" class="cta-book-btn">
+          <mat-icon>add_alarm</mat-icon> Book Consultation
+        </a>
+      </div>
+    </div>
+
+    <!-- Patient KPI Summary Cards -->
     <div class="kpi-grid">
       <div class="kpi-card blue">
-        <div class="kpi-icon-box"><mat-icon>favorite</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>event</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Health Status</span>
-          <h2 class="kpi-val">Active Care</h2>
-          <span class="kpi-sub">MedFlow ClinicOS Portal</span>
+          <span class="kpi-label">Scheduled Visits</span>
+          <h2 class="kpi-val">{{ patientScheduledApptsCount() }}</h2>
+          <span class="kpi-sub">Upcoming doctor consultations</span>
+        </div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-icon-box"><mat-icon>hourglass_top</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Pending Approval</span>
+          <h2 class="kpi-val">{{ patientPendingApptsCount() }}</h2>
+          <span class="kpi-sub">Awaiting clinic confirmation</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-box"><mat-icon>medication</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Prescriptions</span>
+          <h2 class="kpi-val">{{ patientPrescriptions().length }}</h2>
+          <span class="kpi-sub">Active medication regimens</span>
         </div>
       </div>
 
       <div class="kpi-card green">
-        <div class="kpi-icon-box"><mat-icon>event</mat-icon></div>
+        <div class="kpi-icon-box"><mat-icon>receipt_long</mat-icon></div>
         <div class="kpi-info">
-          <span class="kpi-label">Consultations</span>
-          <h2 class="kpi-val">Book Online</h2>
-          <span class="kpi-sub">Available with our specialists</span>
+          <span class="kpi-label">Balance Due</span>
+          <h2 class="kpi-val">{{ patientOutstandingBalance() | currency }}</h2>
+          <span class="kpi-sub">Total outstanding invoices</span>
         </div>
       </div>
     </div>
 
-    <div class="dash-two-col">
+    <!-- Patient Dual Column Portal -->
+    <div class="patient-grid-layout">
+      <!-- Left Column: Upcoming Consultations & Appointments -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>health_and_safety</mat-icon>
-            <h3>Patient Services</h3>
+            <mat-icon>event_available</mat-icon>
+            <h3>My Appointments</h3>
+          </div>
+          <a mat-stroked-button routerLink="/my-appointments" class="view-all-link">View All</a>
+        </div>
+
+        <div class="patient-items-list" *ngIf="patientAppointments().length > 0; else noApptsTpl">
+          <div *ngFor="let appt of patientAppointments().slice(0, 5)" class="patient-list-card">
+            <div class="card-left-col">
+              <div class="appt-date-box">
+                <span class="month">{{ appt.scheduledDateTime | date:'MMM' }}</span>
+                <span class="day">{{ appt.scheduledDateTime | date:'dd' }}</span>
+              </div>
+              <div class="appt-details">
+                <h4>{{ appt.doctorName || 'Attending Physician' }}</h4>
+                <p class="appt-reason"><mat-icon>notes</mat-icon> {{ appt.reasonForVisit || 'General Consultation' }}</p>
+                <span class="appt-time"><mat-icon>schedule</mat-icon> {{ appt.scheduledDateTime | date:'shortTime' }} ({{ appt.durationMinutes }} mins)</span>
+              </div>
+            </div>
+            <div class="card-status-col">
+              <span class="status-pill" [class.pending]="appt.status === 'PendingApproval'" [class.scheduled]="appt.status === 'Scheduled'" [class.completed]="appt.status === 'Completed'" [class.cancelled]="appt.status === 'Cancelled'">
+                {{ appt.status === 'PendingApproval' ? 'Pending Approval' : appt.status }}
+              </span>
+            </div>
           </div>
         </div>
-        <div class="admin-actions-grid">
-          <a routerLink="/appointments/book" class="admin-tile">
-            <div class="tile-icon green"><mat-icon>add_alarm</mat-icon></div>
-            <div class="tile-meta">
-              <h4>Book Doctor Consultation</h4>
-              <p>Select your specialist and schedule a convenient visit</p>
-            </div>
-          </a>
-          <a routerLink="/appointments" class="admin-tile">
-            <div class="tile-icon blue"><mat-icon>event_available</mat-icon></div>
-            <div class="tile-meta">
-              <h4>My Consultation History</h4>
-              <p>Review past appointments and upcoming schedules</p>
-            </div>
-          </a>
-        </div>
+        <ng-template #noApptsTpl>
+          <div class="empty-patient-box">
+            <mat-icon>event_busy</mat-icon>
+            <p>No appointments booked yet.</p>
+            <a mat-flat-button color="primary" routerLink="/appointments/book">Book Your First Appointment</a>
+          </div>
+        </ng-template>
       </div>
 
+      <!-- Right Column: Active Prescriptions & Medication Queue -->
       <div class="dash-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <mat-icon>info</mat-icon>
-            <h3>Clinic Information</h3>
+            <mat-icon>medication</mat-icon>
+            <h3>My Prescriptions</h3>
+          </div>
+          <a mat-stroked-button routerLink="/my-prescriptions" class="view-all-link">View All</a>
+        </div>
+
+        <div class="patient-items-list" *ngIf="patientPrescriptions().length > 0; else noRxsTpl">
+          <div *ngFor="let rx of patientPrescriptions().slice(0, 5)" class="patient-list-card rx-card">
+            <div class="rx-icon-box">
+              <mat-icon>local_pharmacy</mat-icon>
+            </div>
+            <div class="rx-details">
+              <h4>{{ rx.doctorName || 'Prescribing Doctor' }}</h4>
+              <p class="rx-date"><mat-icon>calendar_today</mat-icon> Prescribed: {{ rx.createdAt | date:'mediumDate' }}</p>
+              <div class="rx-items-mini" *ngIf="rx.items && rx.items.length > 0">
+                <span *ngFor="let item of rx.items" class="med-tag">
+                  💊 {{ item.medicineName }} · {{ item.dosageInstructions || 'As directed' }} (Qty: {{ item.quantity }})
+                </span>
+              </div>
+            </div>
+            <div class="card-status-col">
+              <span class="status-pill" [class.scheduled]="rx.isDispensed" [class.pending]="!rx.isDispensed">
+                {{ rx.isDispensed ? 'Dispensed' : 'Ready for Pickup' }}
+              </span>
+            </div>
           </div>
         </div>
-        <div class="clinic-info-content">
-          <p><strong>MedFlow Enterprise Clinic</strong></p>
-          <p>Emergency Line: +1 (555) 911-0000</p>
-          <p>Operating Hours: Mon - Fri (08:00 - 18:00)</p>
-          <p>Location: Scranton Medical Center, Suite 400</p>
-        </div>
+        <ng-template #noRxsTpl>
+          <div class="empty-patient-box">
+            <mat-icon>inventory_2</mat-icon>
+            <p>No active prescriptions recorded.</p>
+          </div>
+        </ng-template>
       </div>
+    </div>
+
+    <!-- Patient Invoices & Billing Summary -->
+    <div class="dash-panel mt-4">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <mat-icon>receipt_long</mat-icon>
+          <h3>My Invoices & Payment Ledger</h3>
+        </div>
+        <a mat-stroked-button routerLink="/my-invoices" class="view-all-link">View Ledger</a>
+      </div>
+
+      <div class="table-responsive" *ngIf="patientInvoices().length > 0; else noInvsTpl">
+        <table class="patient-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Date Issued</th>
+              <th>Total Amount</th>
+              <th>Paid Amount</th>
+              <th>Balance Due</th>
+              <th>Payment Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let inv of patientInvoices().slice(0, 5)">
+              <td class="font-mono"><strong>{{ inv.invoiceNumber }}</strong></td>
+              <td>{{ inv.issueDate | date:'mediumDate' }}</td>
+              <td>{{ inv.totalAmount | currency }}</td>
+              <td class="text-success">{{ (inv.paidAmount || 0) | currency }}</td>
+              <td [class.text-danger]="inv.balanceDue > 0">{{ (inv.balanceDue || 0) | currency }}</td>
+              <td>
+                <span class="status-pill" [class.scheduled]="inv.status === 'Paid'" [class.pending]="inv.status === 'Unpaid' || inv.status === 'PartiallyPaid'">
+                  {{ inv.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noInvsTpl>
+        <div class="empty-patient-box">
+          <mat-icon>check_circle</mat-icon>
+          <p>No outstanding invoices. Your account is fully settled!</p>
+        </div>
+      </ng-template>
     </div>
   }
-
-</div>
 
   
   
@@ -921,6 +1714,305 @@
     </div>
   }
 
+  <!-- ========================================== -->
+  <!-- 9. RADIOLOGIST DASHBOARD VIEW              -->
+  <!-- ========================================== -->
+  @if (isRadiologistView()) {
+    <!-- Radiologist Reading Room Telemetry Banner -->
+    <div class="reading-room-telemetry-banner">
+      <div class="rr-left">
+        <div class="rr-avatar-pulse">
+          <mat-icon>camera</mat-icon>
+          <span class="active-dot"></span>
+        </div>
+        <div>
+          <div class="rr-title-row">
+            <h2 class="rr-title">Diagnostic Imaging PACS & RIS Cockpit</h2>
+            <span class="rr-station-pill"><mat-icon>sensors</mat-icon> Reading Room 3 • Dual 5MP Diagnostic Station Online</span>
+          </div>
+          <p class="rr-sub">Active Radiologist: {{ authService.currentUser()?.fullName || 'Attending Radiologist, MD' }} • Emergency Modality Pager #4092 Active</p>
+        </div>
+      </div>
+      <div class="rr-right-actions">
+        <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist'}" class="rr-action-btn">
+          <mat-icon>playlist_play</mat-icon> RIS Queue ({{ radiologyOrders().length }})
+        </a>
+        <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'safety'}" class="rr-action-btn-outline">
+          <mat-icon>shield</mat-icon> Safety Log
+        </a>
+      </div>
+    </div>
+
+    <!-- Telemetry Metric Cards Grid -->
+    <div class="kpi-grid">
+      <a class="kpi-card purple" routerLink="/radiology" [queryParams]="{tab: 'worklist'}" style="cursor: pointer; text-decoration: none;">
+        <div class="kpi-icon-box"><mat-icon>photo_library</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">RIS Modality Orders</span>
+          <h2 class="kpi-val">{{ radiologyOrders().length }}</h2>
+          <span class="kpi-sub">Total studies requisitioned today →</span>
+        </div>
+      </a>
+
+      <a class="kpi-card amber" routerLink="/radiology" [queryParams]="{tab: 'reports'}" style="cursor: pointer; text-decoration: none;">
+        <div class="kpi-icon-box"><mat-icon>assignment_turned_in</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Awaiting Interpretation</span>
+          <h2 class="kpi-val">{{ radiologyUnreportedOrders().length }}</h2>
+          <span class="kpi-sub">Pending Radiologist diagnostic read →</span>
+        </div>
+      </a>
+
+      <a class="kpi-card rose" [class.pulse-border]="radiologyCriticalOrders().length > 0" routerLink="/radiology" [queryParams]="{tab: 'worklist', priority: 'Stat'}" style="cursor: pointer; text-decoration: none;">
+        <div class="kpi-icon-box"><mat-icon>warning</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">STAT Critical Alerts</span>
+          <h2 class="kpi-val">{{ radiologyCriticalOrders().length }}</h2>
+          <span class="kpi-sub">Emergency clinical findings →</span>
+        </div>
+      </a>
+
+      <a class="kpi-card green" routerLink="/radiology" [queryParams]="{tab: 'suites'}" style="cursor: pointer; text-decoration: none;">
+        <div class="kpi-icon-box"><mat-icon>meeting_room</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Modality Suites</span>
+          <h2 class="kpi-val">5 / 5</h2>
+          <span class="kpi-sub">CT, MRI, X-Ray, US, C-Arm online →</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- STAT Critical Alert Banner -->
+    @if (radiologyCriticalOrders().length > 0) {
+      <div class="radiology-stat-alert-card">
+        <div class="stat-alert-left">
+          <div class="stat-siren-box">
+            <mat-icon>emergency</mat-icon>
+          </div>
+          <div>
+            <div class="stat-title-row">
+              <h4>STAT CRITICAL FINDINGS ACTIVE ({{ radiologyCriticalOrders().length }})</h4>
+              <span class="critical-live-tag"><span class="pulse-red"></span>Direct Verbal Read-Back Required</span>
+            </div>
+            <p class="stat-desc">
+              Immediate attention required: Emergency imaging studies logged with acute findings. Review PACS multi-slice scans and verify verbal telephone read-back with attending doctor.
+            </p>
+          </div>
+        </div>
+        <div class="stat-alert-actions">
+          <a mat-flat-button routerLink="/radiology" [queryParams]="{tab: 'viewer', orderId: radiologyCriticalOrders()[0]?.id}" class="stat-pacs-btn">
+            <mat-icon>center_focus_strong</mat-icon> Open PACS DICOM
+          </a>
+          <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'reports', orderId: radiologyCriticalOrders()[0]?.id}" class="stat-report-btn">
+            <mat-icon>edit_note</mat-icon> Finalize Report
+          </a>
+        </div>
+      </div>
+    }
+
+    <!-- Two-Column Diagnostic Operations Grid -->
+    <div class="dash-two-col">
+      <!-- Left Column: RIS Worklist Queue -->
+      <div class="dash-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <mat-icon style="color: #8b5cf6;">view_list</mat-icon>
+            <h3>Active RIS Modality Worklist</h3>
+            <span class="badge-count">{{ radiologyOrders().length }} Scans</span>
+          </div>
+          <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist'}" class="view-all-link">
+            Open Full RIS Worklist
+          </a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="patient-table">
+            <thead>
+              <tr>
+                <th>Accession / Order</th>
+                <th>Patient Details</th>
+                <th>Modality & Procedure</th>
+                <th>Priority</th>
+                <th>Room / Suite</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of radiologyOrders().slice(0, 6); track order.id) {
+                <tr [class.stat-tr]="order.priority === 'Stat'">
+                  <td>
+                    <div class="accession-cell">
+                      <span class="acc-badge">{{ order.accessionNumber || order.orderNumber }}</span>
+                      <span class="sub-date">{{ order.orderedAt | date:'shortTime' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="patient-cell-wrap">
+                      <strong class="patient-name">{{ order.patientName }}</strong>
+                      <span class="mrn-tag">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="procedure-cell-wrap">
+                      <span class="modality-tag" [attr.data-modality]="order.modality">{{ order.modality }}</span>
+                      <span class="proc-name">{{ order.procedureName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="priority-pill" [class.stat]="order.priority === 'Stat'" [class.urgent]="order.priority === 'Urgent'" [class.routine]="order.priority === 'Routine'">
+                      {{ order.priority }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="suite-label">{{ order.roomSuite || 'Modality Suite' }}</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class.completed]="order.status === 'Completed'" [class.scheduled]="order.status === 'Scheduled'" [class.pending]="order.status === 'Ordered' || order.status === 'InProgress'">
+                      {{ order.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="row-actions-group">
+                      <a mat-icon-button routerLink="/radiology" [queryParams]="{tab: 'viewer', orderId: order.id}" class="action-icon-btn pacs-icon" matTooltip="Open in Web PACS Viewer">
+                        <mat-icon>center_focus_strong</mat-icon>
+                      </a>
+                      <a mat-icon-button routerLink="/radiology" [queryParams]="{tab: 'reports', orderId: order.id}" class="action-icon-btn report-icon" matTooltip="Draft Diagnostic Report">
+                        <mat-icon>assignment_turned_in</mat-icon>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right Column: Equipment Suites & Radiation Safety -->
+      <div class="dash-panel-col">
+        <!-- Suites Readiness Pod -->
+        <div class="dash-panel">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <mat-icon style="color: #0284c7;">meeting_room</mat-icon>
+              <h3>Equipment Suites Status</h3>
+            </div>
+            <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'suites'}" class="view-all-link">Inspect Suites</a>
+          </div>
+
+          <div class="suites-telemetry-list">
+            <div class="suite-status-item ready">
+              <div class="suite-info">
+                <div class="suite-badge-dot"></div>
+                <div>
+                  <strong class="suite-name">Suite 1 — Digital X-Ray</strong>
+                  <span class="suite-model">Siemens Multix Impact DR • Room 101</span>
+                </div>
+              </div>
+              <div class="suite-meta">
+                <span class="status-text ready">Ready</span>
+                <span class="sensor-val">21.8°C Detector</span>
+              </div>
+            </div>
+
+            <div class="suite-status-item active">
+              <div class="suite-info">
+                <div class="suite-badge-dot scanning"></div>
+                <div>
+                  <strong class="suite-name">Suite 2 — CT SOMATOM Force</strong>
+                  <span class="suite-model">128-Slice Dual-Source • Room 102</span>
+                </div>
+              </div>
+              <div class="suite-meta">
+                <span class="status-text active">Scanning</span>
+                <span class="sensor-val">44°C Tube Temp</span>
+              </div>
+            </div>
+
+            <div class="suite-status-item ready">
+              <div class="suite-info">
+                <div class="suite-badge-dot"></div>
+                <div>
+                  <strong class="suite-name">Suite 3 — MRI MAGNETOM Vida</strong>
+                  <span class="suite-model">3T Superconducting • Room 103</span>
+                </div>
+              </div>
+              <div class="suite-meta">
+                <span class="status-text ready">Ready</span>
+                <span class="sensor-val">98.4% Helium</span>
+              </div>
+            </div>
+
+            <div class="suite-status-item ready">
+              <div class="suite-info">
+                <div class="suite-badge-dot"></div>
+                <div>
+                  <strong class="suite-name">Suite 4 — Ultrasound LOGIQ E10</strong>
+                  <span class="suite-model">Matrix Doppler Probes • Bay 104A</span>
+                </div>
+              </div>
+              <div class="suite-meta">
+                <span class="status-text ready">Ready</span>
+                <span class="sensor-val">Calibrated</span>
+              </div>
+            </div>
+
+            <div class="suite-status-item standby">
+              <div class="suite-info">
+                <div class="suite-badge-dot standby"></div>
+                <div>
+                  <strong class="suite-name">Suite 5 — Interventional C-Arm</strong>
+                  <span class="suite-model">Mobile Fluoroscopy • Bay 104B</span>
+                </div>
+              </div>
+              <div class="suite-meta">
+                <span class="status-text standby">Standby</span>
+                <span class="sensor-val">Sterilized</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Radiation & Contrast Safety Compliance Pod -->
+        <div class="dash-panel">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <mat-icon style="color: #10b981;">shield</mat-icon>
+              <h3>Dosimetry & Safety Audits</h3>
+            </div>
+            <a routerLink="/radiology" [queryParams]="{tab: 'safety'}" class="view-all-link">Full Registry</a>
+          </div>
+
+          <div class="dosimetry-kpi-grid">
+            <div class="dose-stat-box">
+              <span class="dose-stat-lbl">Mean CT DLP</span>
+              <strong class="dose-stat-val text-success">420 mGy*cm</strong>
+              <span class="dose-stat-sub">Joint Commission Limit &lt; 850</span>
+            </div>
+            <div class="dose-stat-box">
+              <span class="dose-stat-lbl">Contrast Lots</span>
+              <strong class="dose-stat-val text-primary">100% Verified</strong>
+              <span class="dose-stat-sub">Zero adverse reactions</span>
+            </div>
+          </div>
+
+          <div class="safety-audit-bar">
+            <div class="bar-top">
+              <span class="bar-lbl">ALARA Radiation Protocol Compliance</span>
+              <span class="bar-val">99.4%</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 99.4%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>
+
   <!-- BROADCAST ALERT MODAL (Admin Only) -->
   @if (userRole() === 'Admin' && isAlertModalOpen()) {
     <div class="modal-backdrop fade-in" (click)="closeBroadcastModal()">
@@ -953,6 +2045,382 @@
           <button mat-flat-button (click)="sendBroadcastAlert()" [disabled]="isSendingAlert() || !alertMessage().trim()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; font-weight: 700; border-radius: 10px;">
             <mat-icon>send</mat-icon>
             <span>{{ isSendingAlert() ? 'Broadcasting...' : 'Broadcast to All Staff' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- NURSE CLINICAL TRIAGE & VITALS MODAL -->
+  @if (isNurseTriageModalOpen()) {
+    <div class="modal-backdrop fade-in" (click)="closeNurseTriageModal()">
+      <div class="modal-dialog mat-elevation-z24 scale-in" (click)="$event.stopPropagation()" style="max-width: 650px; border-radius: 20px; overflow: hidden; background: var(--bg-modal, #ffffff);">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+              <mat-icon>monitor_heart</mat-icon>
+            </div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">Clinical Triage & Vitals Capture</h2>
+              <p style="margin: 2px 0 0 0; font-size: 0.825rem; opacity: 0.9;">Patient: <strong>{{ activeNurseAppt()?.patientName }}</strong> &bull; Acuity assessment</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeNurseTriageModal()" style="color: white;">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" style="padding: 24px; max-height: 75vh; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+          <!-- Live Calculated Health Summary -->
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-subtle, #f8fafc); border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #0284c7;">
+              📊 BMI: {{ nurseBmi() }} kg/m²
+            </span>
+            <span style="height: 14px; width: 1px; background: #cbd5e1;"></span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: #334155;">
+              BP: {{ nurseSystolic() }}/{{ nurseDiastolic() }} mmHg
+            </span>
+            <span style="height: 14px; width: 1px; background: #cbd5e1;"></span>
+            <span style="font-size: 0.85rem; font-weight: 600;" [style.color]="nurseSpO2() < 95 ? '#dc2626' : '#059669'">
+              SpO2: {{ nurseSpO2() }}%
+            </span>
+          </div>
+
+          <!-- Acuity & Room Assignment Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <mat-form-field appearance="outline">
+              <mat-label>Triage Urgency Level</mat-label>
+              <mat-select [ngModel]="nurseUrgency()" (ngModelChange)="nurseUrgency.set($event)">
+                <mat-option value="Routine">Routine (Standard OPD)</mat-option>
+                <mat-option value="Urgent">Urgent (Priority Care)</mat-option>
+                <mat-option value="Emergency">Emergency (Immediate)</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>emergency</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Room / Bay Assignment</mat-label>
+              <mat-select [ngModel]="nurseRoom()" (ngModelChange)="nurseRoom.set($event)">
+                <mat-option value="Exam Room 1">Exam Room 1</mat-option>
+                <mat-option value="Exam Room 2">Exam Room 2</mat-option>
+                <mat-option value="Exam Room 3">Exam Room 3</mat-option>
+                <mat-option value="Triage Bay A">Triage Bay A</mat-option>
+                <mat-option value="Triage Bay B">Triage Bay B</mat-option>
+                <mat-option value="Procedure Room">Procedure Room</mat-option>
+                <mat-option value="Observation Bed 1">Observation Bed 1</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>meeting_room</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Vitals Grid -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <mat-form-field appearance="outline">
+              <mat-label>Systolic BP</mat-label>
+              <input matInput type="number" [ngModel]="nurseSystolic()" (ngModelChange)="nurseSystolic.set($event)" min="50" max="250">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">mmHg</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Diastolic BP</mat-label>
+              <input matInput type="number" [ngModel]="nurseDiastolic()" (ngModelChange)="nurseDiastolic.set($event)" min="30" max="150">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">mmHg</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Heart Rate</mat-label>
+              <input matInput type="number" [ngModel]="nurseHeartRate()" (ngModelChange)="nurseHeartRate.set($event)" min="30" max="220">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">bpm</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Body Temp (°C)</mat-label>
+              <input matInput type="number" step="0.1" [ngModel]="nurseTemp()" (ngModelChange)="nurseTemp.set($event)" min="30" max="45">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">°C</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Respiratory Rate</mat-label>
+              <input matInput type="number" [ngModel]="nurseRespiratory()" (ngModelChange)="nurseRespiratory.set($event)" min="5" max="60">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">/min</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Pulse Ox (SpO2 %)</mat-label>
+              <input matInput type="number" [ngModel]="nurseSpO2()" (ngModelChange)="nurseSpO2.set($event)" min="50" max="100">
+              <span matSuffix style="font-size: 11px; color: #0284c7; font-weight: 700; margin-right: 4px;">%</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Pain Score (0 - 10)</mat-label>
+              <input matInput type="number" [ngModel]="nursePain()" (ngModelChange)="nursePain.set($event)" min="0" max="10">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Height (cm)</mat-label>
+              <input matInput type="number" [ngModel]="nurseHeight()" (ngModelChange)="nurseHeight.set($event)" min="30" max="250">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">cm</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Weight (kg)</mat-label>
+              <input matInput type="number" step="0.5" [ngModel]="nurseWeight()" (ngModelChange)="nurseWeight.set($event)" min="2" max="300">
+              <span matSuffix style="font-size: 11px; color: #64748b; margin-right: 4px;">kg</span>
+            </mat-form-field>
+          </div>
+
+          <!-- Chief Complaint & Triage Notes -->
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Chief Complaint & Nurse Triage Observations</mat-label>
+            <textarea matInput rows="2" [ngModel]="nurseTriageNotes()" (ngModelChange)="nurseTriageNotes.set($event)" placeholder="Presenting complaints, known drug allergies verified, immediate nurse notes..."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 24px; background: var(--bg-subtle, #f8fafc); border-top: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: flex-end; gap: 12px;">
+          <button mat-stroked-button (click)="closeNurseTriageModal()" [disabled]="isSubmittingTriage()">Cancel</button>
+          <button mat-flat-button (click)="saveNurseTriage()" [disabled]="isSubmittingTriage()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; font-weight: 700; border-radius: 10px;">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ isSubmittingTriage() ? 'Saving Triage...' : 'Save & Complete Triage' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL: FRONT DESK PATIENT ARRIVAL CHECK-IN -->
+  <!-- ========================================== -->
+  @if (showDeskCheckInModal()) {
+    <div class="modal-backdrop" (click)="closeDeskCheckIn()">
+      <div class="modal-card modal-compact" (click)="$event.stopPropagation()" style="max-width: 520px; width: 95%;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; padding: 20px 24px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: rgba(255,255,255,0.2); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <mat-icon style="color: white; font-size: 24px; width: 24px; height: 24px;">how_to_reg</mat-icon>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: white;">Front Desk Patient Check-In</h3>
+              <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.85);">Assign queue token and route arriving patient to clinical station</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeDeskCheckIn()" style="color: white;"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="modal-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+          <!-- Patient Summary Banner -->
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; color: #166534; font-size: 1rem;">{{ deskCheckInAppt()?.patientName }}</div>
+              <div style="font-size: 0.8rem; color: #15803d;">Purpose: {{ deskCheckInAppt()?.reasonForVisit || 'Consultation' }} | Attending: Dr. {{ deskCheckInAppt()?.doctorName }}</div>
+            </div>
+            <span style="background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">Arrived at Desk</span>
+          </div>
+
+          <!-- Token Number Input -->
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Queue / Token Number</mat-label>
+            <input matInput [ngModel]="deskToken()" (ngModelChange)="deskToken.set($event)" placeholder="e.g. Q-101, A-04" />
+            <mat-icon matSuffix>confirmation_number</mat-icon>
+            <mat-hint>Auto-generated or custom physical token slip number</mat-hint>
+          </mat-form-field>
+
+          <!-- Visit Type Select -->
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Visit Type / Purpose</mat-label>
+            <mat-select [ngModel]="deskVisitType()" (ngModelChange)="deskVisitType.set($event)">
+              <mat-option value="General Consultation">General Consultation</mat-option>
+              <mat-option value="Follow-up">Follow-up Visit</mat-option>
+              <mat-option value="Vaccination">Vaccination / Immunization</mat-option>
+              <mat-option value="Diagnostic Check">Diagnostic / Lab Work</mat-option>
+              <mat-option value="Administrative / Paperwork">Administrative / Medical Certificate</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>category</mat-icon>
+          </mat-form-field>
+
+          <!-- Routing Station Select -->
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Route Patient To</mat-label>
+            <mat-select [ngModel]="deskRoutingStation()" (ngModelChange)="deskRoutingStation.set($event)">
+              <mat-option value="Nurse Triage Station">Nurse Triage Station (Vital Signs Intake)</mat-option>
+              <mat-option value="Waiting Lounge A">Waiting Lounge A (Direct to Physician)</mat-option>
+              <mat-option value="Exam Room 1">Exam Room 1</mat-option>
+              <mat-option value="Exam Room 2">Exam Room 2</mat-option>
+              <mat-option value="Diagnostic Lab">Diagnostic Laboratory</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>directions_walk</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 24px; background: var(--bg-subtle, #f8fafc); border-top: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: flex-end; gap: 12px; border-radius: 0 0 16px 16px;">
+          <button mat-stroked-button (click)="closeDeskCheckIn()" [disabled]="isSubmittingCheckIn()">Cancel</button>
+          <button mat-flat-button (click)="submitDeskCheckIn()" [disabled]="isSubmittingCheckIn()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; font-weight: 700;">
+            <mat-icon>how_to_reg</mat-icon>
+            <span>{{ isSubmittingCheckIn() ? 'Checking In...' : 'Confirm Check-In & Route' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL: DAILY CASH DRAWER RECONCILIATION   -->
+  <!-- ========================================== -->
+  @if (showDrawerModal()) {
+    <div class="modal-backdrop" (click)="closeDrawerModal()">
+      <div class="modal-card drawer-modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header drawer-modal-header">
+          <div class="header-icon-title">
+            <div class="modal-ico-box">
+              <mat-icon>point_of_sale</mat-icon>
+            </div>
+            <div>
+              <h3>Close Daily Cash Register Drawer</h3>
+              <p>Reconcile physical counted cash with recorded system collections</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeDrawerModal()" class="close-modal-btn"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="modal-body drawer-modal-body">
+          <!-- Shift Selection -->
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Shift Name / Period</mat-label>
+            <mat-select [ngModel]="drawerShift()" (ngModelChange)="drawerShift.set($event)">
+              <mat-option value="Morning Shift">Morning Shift (08:00 - 16:00)</mat-option>
+              <mat-option value="Evening Shift">Evening Shift (16:00 - 00:00)</mat-option>
+              <mat-option value="Night Shift">Night Shift (00:00 - 08:00)</mat-option>
+              <mat-option value="Full Day Shift">Full Day Shift Closing</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- System Collections Summary Box -->
+          <div class="drawer-modal-summary">
+            <div class="summary-title">System Recorded Sales Today</div>
+            <div class="drawer-summary-grid">
+              <div class="drawer-summary-tile">
+                <div class="tile-label">System Cash</div>
+                <div class="tile-val cash">{{ receptionTodaySummary()?.cashCollected ?? 0 | currency:'USD' }}</div>
+              </div>
+              <div class="drawer-summary-tile">
+                <div class="tile-label">System Card</div>
+                <div class="tile-val card">{{ receptionTodaySummary()?.cardCollected ?? 0 | currency:'USD' }}</div>
+              </div>
+              <div class="drawer-summary-tile">
+                <div class="tile-label">Digital / Other</div>
+                <div class="tile-val digital">{{ receptionTodaySummary()?.digitalCollected ?? 0 | currency:'USD' }}</div>
+              </div>
+            </div>
+            <div class="summary-total-row">
+              <span>Total System Revenue:</span>
+              <span class="total-amount">{{ receptionTodaySummary()?.totalCollected ?? 0 | currency:'USD' }}</span>
+            </div>
+          </div>
+
+          <!-- Physical Cash Counted Input -->
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Actual Physical Cash Counted in Drawer ($)</mat-label>
+            <input matInput type="number" step="0.01" min="0" [ngModel]="drawerCashCounted()" (ngModelChange)="drawerCashCounted.set($event)" />
+            <span matPrefix class="currency-prefix">$&nbsp;</span>
+            <mat-hint>Enter physical bills and coins counted in drawer</mat-hint>
+          </mat-form-field>
+
+          <!-- Real-time Discrepancy Preview -->
+          <div class="drawer-variance-box">
+            <span class="variance-label">Register Balance Variance:</span>
+            <span class="variance-amount"
+                  [class.balanced]="(drawerCashCounted() - (receptionTodaySummary()?.cashCollected ?? 0)) === 0"
+                  [class.surplus]="(drawerCashCounted() - (receptionTodaySummary()?.cashCollected ?? 0)) > 0"
+                  [class.shortage]="(drawerCashCounted() - (receptionTodaySummary()?.cashCollected ?? 0)) < 0">
+              {{ (drawerCashCounted() - (receptionTodaySummary()?.cashCollected ?? 0)) === 0 ? 'BALANCED ($0.00)' : ((drawerCashCounted() - (receptionTodaySummary()?.cashCollected ?? 0)) | currency:'USD') }}
+            </span>
+          </div>
+
+          <!-- Closing Notes -->
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Shift Drawer Notes / Discrepancy Reason</mat-label>
+            <textarea matInput rows="2" [ngModel]="drawerNotes()" (ngModelChange)="drawerNotes.set($event)" placeholder="e.g. Drawer verified by Clara. Starting float of $100 preserved."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer drawer-modal-footer">
+          <button mat-stroked-button (click)="closeDrawerModal()" [disabled]="isSubmittingDrawer()">Cancel</button>
+          <button mat-flat-button (click)="submitDrawerReconciliation()" [disabled]="isSubmittingDrawer()" class="submit-drawer-btn">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ isSubmittingDrawer() ? 'Submitting...' : 'Submit & Close Cash Drawer' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL: LOG VISITOR INQUIRY TICKET          -->
+  <!-- ========================================== -->
+  @if (showNewInquiryModal()) {
+    <div class="modal-backdrop" (click)="closeInquiryModal()">
+      <div class="modal-card modal-compact inquiry-modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header inquiry-modal-header">
+          <div class="header-icon-title">
+            <div class="modal-ico-box">
+              <mat-icon>support_agent</mat-icon>
+            </div>
+            <div>
+              <h3>Log Visitor / Phone Inquiry</h3>
+              <p>Track front desk drop-ins, phone questions, and department directions</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeInquiryModal()" class="close-modal-btn"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="modal-body inquiry-modal-body">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Visitor / Caller Full Name</mat-label>
+            <input matInput [ngModel]="inquiryVisitorName()" (ngModelChange)="inquiryVisitorName.set($event)" placeholder="e.g. Sarah Jenkins" />
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Contact Phone Number (Optional)</mat-label>
+            <input matInput [ngModel]="inquiryPhone()" (ngModelChange)="inquiryPhone.set($event)" placeholder="e.g. +1 555-0192" />
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+
+          <div class="inquiry-select-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Inquiry Type</mat-label>
+              <mat-select [ngModel]="inquiryType()" (ngModelChange)="inquiryType.set($event)">
+                <mat-option value="General Information">General Information</mat-option>
+                <mat-option value="Directions / Locating Clinic">Directions / Room Location</mat-option>
+                <mat-option value="Prescription Pickup">Prescription Pickup</mat-option>
+                <mat-option value="Billing Query">Billing / Insurance Query</mat-option>
+                <mat-option value="Physician Contact">Doctor Inquiry / Message</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Target Department</mat-label>
+              <mat-select [ngModel]="inquiryDept()" (ngModelChange)="inquiryDept.set($event)">
+                <mat-option value="Reception">Front Desk Reception</mat-option>
+                <mat-option value="Nursing">Nursing Station</mat-option>
+                <mat-option value="Pharmacy">Pharmacy Dispensary</mat-option>
+                <mat-option value="Laboratory">Pathology Laboratory</mat-option>
+                <mat-option value="Physician Desk">Physician Desk</mat-option>
+                <mat-option value="Billing / Administration">Billing & Admin</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Inquiry Details / Request Summary</mat-label>
+            <textarea matInput rows="3" [ngModel]="inquiryNotes()" (ngModelChange)="inquiryNotes.set($event)" placeholder="Details of visitor request, questions asked, or action required..."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer inquiry-modal-footer">
+          <button mat-stroked-button (click)="closeInquiryModal()" [disabled]="isSubmittingInquiry()">Cancel</button>
+          <button mat-flat-button (click)="submitInquiry()" [disabled]="isSubmittingInquiry()" class="submit-inquiry-btn">
+            <mat-icon>send</mat-icon>
+            <span>{{ isSubmittingInquiry() ? 'Logging...' : 'Queue Inquiry Ticket' }}</span>
           </button>
         </div>
       </div>

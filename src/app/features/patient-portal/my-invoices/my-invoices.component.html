@@ -1,0 +1,187 @@
+<div class="invoices-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="badge-portal">Patient Billing Portal</span>
+        <span class="badge-mrn">MRN: {{ patient()?.medicalRecordNumber || 'PAT-ALICE-001' }}</span>
+      </div>
+      <h1 class="page-title">My Invoices & Payment Ledger</h1>
+      <p class="page-subtitle">Track your medical consultation bills, pharmacy invoices, payments made, and current balance</p>
+    </div>
+  </div>
+
+  <!-- Financial Summary KPI Strip -->
+  <div class="kpi-strip">
+    <div class="kpi-box blue">
+      <div class="kpi-icon"><mat-icon>receipt</mat-icon></div>
+      <div class="kpi-meta">
+        <span class="label">Total Billed</span>
+        <span class="amount">{{ totalBilled() | currency }}</span>
+      </div>
+    </div>
+    <div class="kpi-box green">
+      <div class="kpi-icon"><mat-icon>check_circle</mat-icon></div>
+      <div class="kpi-meta">
+        <span class="label">Total Settled</span>
+        <span class="amount">{{ totalPaid() | currency }}</span>
+      </div>
+    </div>
+    <div class="kpi-box amber">
+      <div class="kpi-icon"><mat-icon>account_balance_wallet</mat-icon></div>
+      <div class="kpi-meta">
+        <span class="label">Balance Due</span>
+        <span class="amount">{{ totalOutstanding() | currency }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices Table Section -->
+  <div class="invoices-card mat-elevation-z2">
+    <div class="card-header">
+      <mat-icon>receipt_long</mat-icon>
+      <h3>Itemized Invoices & Billing History</h3>
+    </div>
+
+    <div *ngIf="isLoading()" class="loading-state">
+      <mat-icon class="spin-icon">sync</mat-icon>
+      <p>Retrieving your billing records...</p>
+    </div>
+
+    <div class="table-responsive" *ngIf="!isLoading() && invoices().length > 0; else noInvoicesTpl">
+      <table class="invoices-table">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Total Amount</th>
+            <th>Amount Paid</th>
+            <th>Balance Due</th>
+            <th>Payment Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inv of invoices()" (click)="openDetailModal(inv)" class="clickable-row">
+            <td class="font-mono"><strong>{{ inv.invoiceNumber }}</strong></td>
+            <td>{{ inv.issueDate | date:'mediumDate' }}</td>
+            <td>{{ inv.dueDate ? (inv.dueDate | date:'mediumDate') : '30 Days Net' }}</td>
+            <td class="font-semibold">{{ inv.totalAmount | currency }}</td>
+            <td class="text-success font-semibold">{{ (inv.paidAmount || 0) | currency }}</td>
+            <td [class.text-danger]="inv.balanceDue > 0" class="font-bold">{{ (inv.balanceDue || 0) | currency }}</td>
+            <td>
+              <span class="status-pill" [class.paid]="inv.status === 'Paid'" [class.unpaid]="inv.status === 'Unpaid' || inv.status === 'Issued'" [class.partial]="inv.status === 'PartiallyPaid'">
+                <mat-icon *ngIf="inv.status === 'Paid'">done_all</mat-icon>
+                <mat-icon *ngIf="inv.status === 'Unpaid' || inv.status === 'Issued'">pending</mat-icon>
+                {{ inv.status }}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button mat-stroked-button color="primary" class="view-inv-btn" (click)="$event.stopPropagation(); openDetailModal(inv)">
+                <mat-icon>receipt</mat-icon> Receipt
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #noInvoicesTpl>
+      <div class="empty-state">
+        <mat-icon>check_circle</mat-icon>
+        <h3>No outstanding bills</h3>
+        <p>Your account has zero outstanding balances or past due invoices.</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Modal: Itemized Invoice & Payment Receipt -->
+  <div *ngIf="isDetailModalOpen()" class="modal-backdrop" (click)="closeDetailModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-icon-box blue">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="header-title-box">
+          <h3>Invoice {{ selectedInvoice()?.invoiceNumber }}</h3>
+          <p>Issued {{ selectedInvoice()?.issueDate | date:'mediumDate' }} · Department: {{ selectedInvoice()?.department || 'Clinical Care' }}</p>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="closeDetailModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedInvoice() as inv">
+        <div class="inv-modal-kpi-row">
+          <div class="modal-kpi-item">
+            <span class="lbl">Total Bill</span>
+            <span class="val">{{ inv.totalAmount | currency }}</span>
+          </div>
+          <div class="modal-kpi-item">
+            <span class="lbl">Amount Settled</span>
+            <span class="val text-success">{{ (inv.paidAmount || 0) | currency }}</span>
+          </div>
+          <div class="modal-kpi-item">
+            <span class="lbl">Balance Remaining</span>
+            <span class="val" [class.text-danger]="inv.balanceDue > 0">{{ (inv.balanceDue || 0) | currency }}</span>
+          </div>
+          <div class="modal-kpi-item">
+            <span class="lbl">Status</span>
+            <span class="status-pill" [class.paid]="inv.status === 'Paid'" [class.unpaid]="inv.status === 'Unpaid' || inv.status === 'Issued'" [class.partial]="inv.status === 'PartiallyPaid'">
+              {{ inv.status }}
+            </span>
+          </div>
+        </div>
+
+        <h4 class="modal-subheading">Itemized Charges & Services</h4>
+        <div class="modal-items-table-wrap">
+          <table class="modal-items-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of (inv.lineItems?.length ? inv.lineItems : [{description: 'Consultation & Clinical Services', quantity: 1, unitPrice: inv.totalAmount, lineTotal: inv.totalAmount}])">
+                <td>{{ item.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.unitPrice | currency }}</td>
+                <td style="text-align: right; font-weight: 700;">{{ item.lineTotal | currency }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inv-summary-breakdown">
+          <div class="breakdown-row" *ngIf="inv.subTotal">
+            <span>Subtotal:</span>
+            <span>{{ inv.subTotal | currency }}</span>
+          </div>
+          <div class="breakdown-row" *ngIf="(inv.taxAmount || 0) > 0">
+            <span>Tax:</span>
+            <span>+{{ inv.taxAmount | currency }}</span>
+          </div>
+          <div class="breakdown-row discount" *ngIf="(inv.discountAmount || 0) > 0">
+            <span>Discount / Insurance:</span>
+            <span>-{{ inv.discountAmount | currency }}</span>
+          </div>
+          <div class="breakdown-row total">
+            <strong>Total Amount:</strong>
+            <strong>{{ inv.totalAmount | currency }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-stroked-button color="primary" class="download-pdf-btn" (click)="downloadPdf(selectedInvoice()!.id)">
+          <mat-icon>picture_as_pdf</mat-icon> Download Official PDF
+        </button>
+        <button mat-flat-button color="primary" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

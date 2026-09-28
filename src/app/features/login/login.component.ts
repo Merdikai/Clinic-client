@@ -51,7 +51,13 @@ export class LoginComponent {
     this.themeService.toggleTheme();
   }
 
-  
+  fillCredentials(username: string, pass: string): void {
+    this.loginForm.patchValue({
+      username: username,
+      password: pass
+    });
+    this.loginForm.markAsDirty();
+  }
 
   onSubmit() {
     if (this.loginForm.invalid) {

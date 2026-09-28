@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Invoice, CreateInvoiceRequest, PaymentRequest } from '../models/billing.model';
@@ -11,8 +11,11 @@ export class BillingService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/billing`;
 
-  getInvoices(): Observable<Invoice[]> {
-    return this.http.get<Invoice[]>(`${this.apiUrl}/invoices`);
+  getInvoices(patientId?: string, department?: string): Observable<Invoice[]> {
+    let params = new HttpParams();
+    if (patientId) params = params.set('patientId', patientId);
+    if (department) params = params.set('department', department);
+    return this.http.get<Invoice[]>(`${this.apiUrl}/invoices`, { params });
   }
 
   getInvoice(id: string): Observable<Invoice> {
@@ -20,7 +23,8 @@ export class BillingService {
   }
 
   getInvoicesByPatient(patientId: string): Observable<Invoice[]> {
-    return this.http.get<Invoice[]>(`${this.apiUrl}/invoices/patient/${patientId}`);
+    const params = new HttpParams().set('patientId', patientId);
+    return this.http.get<Invoice[]>(`${this.apiUrl}/invoices`, { params });
   }
 
   createInvoice(request: any): Observable<Invoice> {
@@ -48,8 +52,11 @@ export class BillingService {
     return this.http.post<any>(`${this.apiUrl}/payments`, payload);
   }
 
-  downloadPdf(invoiceId: string): Observable<Blob> {
+  downloadPdf(invoiceId: string, design: string = 'ExecutiveNavy'): Observable<Blob> {
+    let params = new HttpParams();
+    if (design) params = params.set('design', design);
     return this.http.get(`${this.apiUrl}/invoices/${invoiceId}/pdf`, {
+      params,
       responseType: 'blob'
     });
   }

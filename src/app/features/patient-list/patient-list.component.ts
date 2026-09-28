@@ -13,6 +13,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PatientStore } from '../../store/patient.store';
 import { PatientService } from '../../services/patient.service';
+import { AuthService } from '../../services/auth.service';
+import { PermissionService } from '../../services/permission.service';
 import { ToastService } from '../../ui/toast/toast.service';
 
 @Component({
@@ -38,6 +40,8 @@ import { ToastService } from '../../ui/toast/toast.service';
 export class PatientListComponent implements OnInit {
   patientStore = inject(PatientStore);
   patientService = inject(PatientService);
+  public authService = inject(AuthService);
+  public permissionService = inject(PermissionService);
   toast = inject(ToastService);
   router = inject(Router);
 
@@ -46,6 +50,23 @@ export class PatientListComponent implements OnInit {
   totalCount = this.patientStore.totalCount;
   selectedGender = signal<string>('ALL');
   searchQuery = signal<string>('');
+
+  isDoctor = computed(() => {
+    const role = (this.permissionService.activeRole() || '').toLowerCase();
+    return role === 'doctor' || this.authService.isDoctor();
+  });
+  isAdmin = computed(() => {
+    const role = (this.permissionService.activeRole() || '').toLowerCase();
+    return role === 'admin' || this.authService.isAdmin();
+  });
+  isRadiologist = computed(() => {
+    const role = (this.permissionService.activeRole() || '').toLowerCase();
+    return role === 'radiologist' || this.authService.hasRole('Radiologist');
+  });
+  canCreateAppointment = computed(() => {
+    const role = (this.permissionService.activeRole() || '').toLowerCase();
+    return (role === 'receptionist' || role === 'admin' || role === 'nurse' || role === 'patient') && !this.isDoctor() && !this.isRadiologist();
+  });
 
   displayedColumns = ['patientId', 'name', 'gender', 'phone', 'bloodGroup', 'actions'];
 
@@ -90,10 +111,10 @@ export class PatientListComponent implements OnInit {
   }
 
   editPatient(patient: any) {
-      this.router.navigate(['/patients/edit', patient.id]);
-    }
+    this.router.navigate(['/patients/edit', patient.id]);
+  }
 
-    deletePatient(id: string) {
+  deletePatient(id: string) {
     if (confirm('Are you sure you want to delete this patient record completely? This action cannot be undone.')) {
       this.patientService.delete(id).subscribe({
         next: () => {
@@ -104,5 +125,4 @@ export class PatientListComponent implements OnInit {
       });
     }
   }
-
 }

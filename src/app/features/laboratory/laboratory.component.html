@@ -1,4 +1,4 @@
-﻿<div class="lab-workspace">
+<div class="lab-workspace">
   <!-- Page Header -->
   <div class="page-header">
     <div class="header-content">
@@ -7,31 +7,39 @@
           <mat-icon>biotech</mat-icon>
         </div>
         <div>
-          <h1 class="page-title">Laboratory & Diagnostics</h1>
-          <p class="page-subtitle">Manage lab orders, sample tracking, test results, and diagnostic reports</p>
+          <h1 class="page-title">{{ isDoctor() ? "Diagnostic Requisitions & Pathology Reports" : (isNurse() ? "Laboratory Specimen Orders & Phlebotomy" : "Laboratory Information Management System (LIMS)") }}</h1>
+          <p class="page-subtitle">{{ isDoctor() ? "Electronic laboratory order entry, specimen tracking status, and verified pathology reports" : (isNurse() ? "Collect patient specimens, track phlebotomy orders, and inspect diagnostic requisitions" : "Diagnostic bench execution, specimen accession barcoding, multi-parameter test runs, chemical inventory & analyzer QC") }}</p>
         </div>
       </div>
       <div class="header-actions">
-        <button mat-flat-button color="primary" class="new-order-btn" (click)="openCreateOrderModal()">
+        <button mat-stroked-button class="action-btn" (click)="openEquipmentLogModal()" *ngIf="isLabTech()">
+          <mat-icon>tune</mat-icon>
+          <span>Log QC Run</span>
+        </button>
+        <button mat-stroked-button class="action-btn" (click)="openReagentModal()" *ngIf="isLabTech()">
+          <mat-icon>science</mat-icon>
+          <span>Add Reagent</span>
+        </button>
+        <button mat-flat-button color="primary" class="new-order-btn" (click)="openCreateOrderModal()" *ngIf="canOrderLab()">
           <mat-icon>add_circle</mat-icon>
-          <span>New Lab Order</span>
+          <span>{{ isDoctor() ? 'Order Diagnostic Test' : 'New Lab Order' }}</span>
         </button>
       </div>
     </div>
 
     <!-- Quick Metrics Overview -->
-    <div class="metrics-grid">
-      <div class="metric-card card-pending">
+    <div class="metrics-grid" [class.doctor-metrics-grid]="isDoctor() || isNurse()">
+      <div class="metric-card card-pending" (click)="onTabChanged(0); onStatusFilter('Ordered')">
         <div class="metric-icon-wrap">
           <mat-icon>hourglass_empty</mat-icon>
         </div>
         <div class="metric-details">
           <span class="metric-value">{{ labStore.metrics()?.pendingOrders ?? 0 }}</span>
-          <span class="metric-label">Pending Orders</span>
+          <span class="metric-label">{{ isDoctor() ? 'Active Orders' : 'Pending Orders' }}</span>
         </div>
       </div>
 
-      <div class="metric-card card-samples">
+      <div class="metric-card card-samples" (click)="onTabChanged(isDoctor() ? 0 : 1)">
         <div class="metric-icon-wrap">
           <mat-icon>science</mat-icon>
         </div>
@@ -41,91 +49,458 @@
         </div>
       </div>
 
-      <div class="metric-card card-progress">
+      <div class="metric-card card-progress" (click)="onTabChanged(isDoctor() ? 0 : (isNurse() ? 0 : 2))">
         <div class="metric-icon-wrap">
           <mat-icon>autorenew</mat-icon>
         </div>
         <div class="metric-details">
           <span class="metric-value">{{ labStore.metrics()?.inProgress ?? 0 }}</span>
-          <span class="metric-label">Testing In Progress</span>
+          <span class="metric-label">In-Analysis</span>
         </div>
       </div>
 
-      <div class="metric-card card-completed">
+      <div class="metric-card card-completed" (click)="onTabChanged(0); onStatusFilter('Completed')">
         <div class="metric-icon-wrap">
           <mat-icon>check_circle</mat-icon>
         </div>
         <div class="metric-details">
           <span class="metric-value">{{ labStore.metrics()?.completedToday ?? 0 }}</span>
-          <span class="metric-label">Completed Today</span>
+          <span class="metric-label">{{ isDoctor() ? 'Reports Ready' : 'Completed Today' }}</span>
         </div>
       </div>
+
+      <div class="metric-card card-alerts" (click)="onTabChanged(0)">
+        <div class="metric-icon-wrap alert-pulse">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <div class="metric-details">
+          <span class="metric-value text-critical">{{ labStore.metrics()?.criticalValueAlerts ?? 0 }}</span>
+          <span class="metric-label">Critical Alerts</span>
+        </div>
+      </div>
+
+      <!-- Technician Only Metrics (Hidden for Doctors & Nurses) -->
+      <ng-container *ngIf="!isDoctor() && !isNurse()">
+        <div class="metric-card card-rejected" (click)="onTabChanged(1)">
+          <div class="metric-icon-wrap">
+            <mat-icon>cancel_presentation</mat-icon>
+          </div>
+          <div class="metric-details">
+            <span class="metric-value text-rejected">{{ labStore.metrics()?.rejectedSamples ?? 0 }}</span>
+            <span class="metric-label">Rejected Samples</span>
+          </div>
+        </div>
+
+        <div class="metric-card card-reagents" (click)="onTabChanged(3)">
+          <div class="metric-icon-wrap">
+            <mat-icon>inventory_2</mat-icon>
+          </div>
+          <div class="metric-details">
+            <span class="metric-value text-reagent">{{ labStore.metrics()?.lowStockReagents ?? 0 }}</span>
+            <span class="metric-label">Low Reagents</span>
+          </div>
+        </div>
+
+        <div class="metric-card card-qc" (click)="onTabChanged(5)">
+          <div class="metric-icon-wrap">
+            <mat-icon>precision_manufacturing</mat-icon>
+          </div>
+          <div class="metric-details">
+            <span class="metric-value text-qc">{{ labStore.metrics()?.calibrationsDue ?? 0 }}</span>
+            <span class="metric-label">Calibrations Due</span>
+          </div>
+        </div>
+      </ng-container>
     </div>
   </div>
 
-  <!-- Main Content Card -->
-  <mat-card class="content-card">
-    <div class="table-toolbar">
-      <div class="search-box">
-        <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          placeholder="Search by order #, patient name, MRN..."
-          (input)="onSearchChange($event)"
-        />
-      </div>
+  <!-- ==========================================
+       DOCTOR WORKSPACE VIEW (CLINICAL ORDERS ONLY)
+       ========================================== -->
+  <mat-card class="content-card doctor-workspace-card" *ngIf="isDoctor()">
+    <mat-tab-group [selectedIndex]="selectedTab()" (selectedIndexChange)="onTabChanged($event)" animationDuration="200ms" class="custom-tab-group doctor-tab-group">
 
-      <div class="filter-group">
-        <mat-form-field appearance="outline" density="compact" class="compact-select">
-          <mat-label>Status</mat-label>
-          <mat-select [value]="labStore.statusFilter()" (selectionChange)="onStatusFilter($event.value)">
-            <mat-option value="ALL">All Statuses</mat-option>
-            <mat-option value="Ordered">Ordered</mat-option>
-            <mat-option value="SampleCollected">Sample Collected</mat-option>
-            <mat-option value="InProgress">In Progress</mat-option>
-            <mat-option value="Completed">Completed</mat-option>
-          </mat-select>
-        </mat-form-field>
+      <!-- TAB 0: DOCTOR DIAGNOSTIC ORDERS -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">assignment</mat-icon>
+          <span>Diagnostic Orders & Status</span>
+          <span class="tab-badge" *ngIf="(labStore.metrics()?.pendingOrders || 0) > 0">{{ labStore.metrics()?.pendingOrders }}</span>
+        </ng-template>
 
-        <mat-form-field appearance="outline" density="compact" class="compact-select">
-          <mat-label>Priority</mat-label>
-          <mat-select [value]="labStore.priorityFilter()" (selectionChange)="onPriorityFilter($event.value)">
-            <mat-option value="ALL">All Priorities</mat-option>
-            <mat-option value="Routine">Routine</mat-option>
-            <mat-option value="Urgent">Urgent</mat-option>
-            <mat-option value="Stat">Stat (Emergency)</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </div>
-    <mat-tab-group animationDuration="200ms" class="custom-tab-group">
-      <mat-tab label="Clinical Orders Queue">
-        <div class="tab-content">
-          <div *ngIf="labStore.isLoading()" class="loading-spinner-wrap">
-            <mat-spinner diameter="40"></mat-spinner>
-            <span>Loading laboratory orders...</span>
+        <div class="tab-content-wrap">
+          <!-- Filter Toolbar -->
+          <div class="table-toolbar">
+            <div class="search-box">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                placeholder="Search orders by patient name, MRN, order #..."
+                (input)="onSearchChange($event)"
+              />
+            </div>
+
+            <div class="filter-group">
+              <mat-form-field appearance="outline" density="compact" class="compact-select">
+                <mat-label>Status</mat-label>
+                <mat-select [value]="labStore.statusFilter()" (selectionChange)="onStatusFilter($event.value)">
+                  <mat-option value="ALL">All Statuses</mat-option>
+                  <mat-option value="Ordered">Ordered (Pending Phlebotomy)</mat-option>
+                  <mat-option value="SampleCollected">Sample in Lab</mat-option>
+                  <mat-option value="InProgress">In-Analysis</mat-option>
+                  <mat-option value="Completed">Completed (Reports Ready)</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" density="compact" class="compact-select">
+                <mat-label>Urgency</mat-label>
+                <mat-select [value]="labStore.priorityFilter()" (selectionChange)="onPriorityFilter($event.value)">
+                  <mat-option value="ALL">All Priorities</mat-option>
+                  <mat-option value="Routine">Routine</mat-option>
+                  <mat-option value="Urgent">Urgent</mat-option>
+                  <mat-option value="Stat">Stat (Emergency)</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <button mat-flat-button color="primary" class="order-cta-toolbar-btn" (click)="openCreateOrderModal()">
+                <mat-icon>add_circle</mat-icon>
+                <span>New Lab Requisition</span>
+              </button>
+            </div>
           </div>
 
-          <div *ngIf="!labStore.isLoading() && labStore.filteredOrders().length === 0" class="empty-state">
-            <mat-icon>science_off</mat-icon>
-            <h3>No laboratory orders found</h3>
-            <p>Create a new order to begin specimen collection and test analysis.</p>
-            <button mat-stroked-button color="primary" (click)="openCreateOrderModal()">Create Order</button>
-          </div>
+          <!-- Doctor Orders Table -->
+          <div class="table-container mat-elevation-z1">
+            <table mat-table [dataSource]="labStore.filteredOrders()" class="lab-table doctor-table">
 
-          <div class="table-container" *ngIf="!labStore.isLoading() && labStore.filteredOrders().length > 0">
-            <table mat-table [dataSource]="labStore.filteredOrders()" class="lab-table">
-              
+              <!-- Order Number Column -->
               <ng-container matColumnDef="orderNumber">
-                <th mat-header-cell *matHeaderCellDef>Order #</th>
+                <th mat-header-cell *matHeaderCellDef>Requisition #</th>
                 <td mat-cell *matCellDef="let order">
                   <div class="order-num-cell">
-                    <span class="order-id">{{ order.orderNumber }}</span>
-                    <span class="doctor-sub">Dr. {{ order.doctorName }}</span>
+                    <span class="order-num-text">{{ order.orderNumber }}</span>
+                    <span class="clinical-indication-preview" *ngIf="order.clinicalNotes" [matTooltip]="order.clinicalNotes">
+                      {{ order.clinicalNotes }}
+                    </span>
                   </div>
                 </td>
               </ng-container>
 
+              <!-- Patient Column -->
+              <ng-container matColumnDef="patient">
+                <th mat-header-cell *matHeaderCellDef>Patient File</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="patient-cell" *ngIf="order.patient">
+                    <div class="patient-avatar-mini">{{ order.patient.firstName?.charAt(0) || 'P' }}</div>
+                    <div class="patient-info">
+                      <span class="patient-name">{{ order.patient.firstName }} {{ order.patient.lastName }}</span>
+                      <span class="patient-mrn">MRN: {{ order.patient.medicalRecordNumber }}</span>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Diagnostic Tests Column -->
+              <ng-container matColumnDef="tests">
+                <th mat-header-cell *matHeaderCellDef>Ordered Diagnostic Panels</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="tests-cell">
+                    <div class="test-chip" *ngFor="let item of order.items">
+                      <span class="test-name">{{ item.testName }}</span>
+                      <span class="test-type" *ngIf="item.sampleType">({{ item.sampleType }})</span>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Order Date Column -->
+              <ng-container matColumnDef="orderDate">
+                <th mat-header-cell *matHeaderCellDef>Requisition Date</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="date-cell">{{ order.orderDate | date:'MMM d, y, h:mm a' }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Priority Column -->
+              <ng-container matColumnDef="priority">
+                <th mat-header-cell *matHeaderCellDef>Urgency</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">
+                    {{ order.priority }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Status Column -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Specimen Status</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+                    {{ order.status === 'SampleCollected' ? 'Sample in Lab' : (order.status === 'Ordered' ? 'Awaiting Phlebotomy' : (order.status === 'InProgress' ? 'In Analysis' : order.status)) }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Actions Column (DOCTOR ONLY) -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Pathology Report</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="action-buttons-cell doctor-actions-cell">
+                    <button
+                      mat-stroked-button
+                      class="btn-report-pro"
+                      [class.btn-report-active]="order.status === 'Completed'"
+                      matTooltip="Open Verified Pathology Report"
+                      (click)="openReportModal(order)"
+                    >
+                      <mat-icon>{{ order.status === 'Completed' ? 'verified' : 'description' }}</mat-icon>
+                      <span>{{ order.status === 'Completed' ? 'View Official Report' : 'Requisition Summary' }}</span>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="doctorDisplayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: doctorDisplayedColumns;" class="lab-row"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="doctorDisplayedColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>science</mat-icon>
+                    <h3>No Diagnostic Orders Found</h3>
+                    <p>There are no active diagnostic orders matching your criteria.</p>
+                    <button mat-flat-button color="primary" class="mt-2" (click)="openCreateOrderModal()">
+                      <mat-icon>add_circle</mat-icon> Place Diagnostic Order
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- TAB 1: DIAGNOSTIC TEST DIRECTORY & REFERENCE RANGES -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">menu_book</mat-icon>
+          <span>Diagnostic Test Directory</span>
+          <span class="tab-badge info" *ngIf="labStore.templates().length > 0">{{ labStore.templates().length }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap catalog-view-wrapper">
+          <!-- Catalog Banner -->
+          <div class="bench-banner catalog-banner">
+            <div class="banner-text">
+              <h3>Diagnostic Test Directory & Reference Intervals</h3>
+              <p>Explore all institutional laboratory panels, specimen collection requirements, turnaround times, and normal physiological ranges.</p>
+            </div>
+            <div class="catalog-summary-chips">
+              <span class="catalog-stat-chip">
+                <mat-icon>biotech</mat-icon>
+                <span><strong>{{ labStore.templates().length }}</strong> Panels</span>
+              </span>
+              <span class="catalog-stat-chip active-filter" *ngIf="catalogCategoryFilter() !== 'ALL' || catalogSearchQuery()">
+                <mat-icon>filter_alt</mat-icon>
+                <span><strong>{{ filteredCatalogTemplates().length }}</strong> Filtered</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Filters & Search Toolbar -->
+          <div class="catalog-filters-bar">
+            <div class="category-pills">
+              <button
+                *ngFor="let cat of catalogCategories()"
+                type="button"
+                class="category-pill"
+                [class.active]="catalogCategoryFilter() === cat"
+                (click)="catalogCategoryFilter.set(cat)"
+              >
+                <mat-icon class="pill-icon">{{ getCategoryIcon(cat) }}</mat-icon>
+                <span class="pill-label">{{ cat === 'ALL' ? 'All Panels' : cat }}</span>
+                <span class="count-pill">{{ getCategoryCount(cat) }}</span>
+              </button>
+            </div>
+
+            <div class="catalog-search">
+              <mat-icon class="search-icon">search</mat-icon>
+              <input
+                type="text"
+                placeholder="Search panels by name, code, specimen, or indication..."
+                [value]="catalogSearchQuery()"
+                (input)="catalogSearchQuery.set($any($event.target).value)"
+              />
+              <button
+                *ngIf="catalogSearchQuery()"
+                mat-icon-button
+                class="clear-search-btn"
+                (click)="catalogSearchQuery.set('')"
+                type="button"
+                matTooltip="Clear search"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="catalog-grid" *ngIf="filteredCatalogTemplates().length > 0">
+            <div *ngFor="let test of filteredCatalogTemplates()" class="pro-test-card" [class.is-inactive]="!test.isActive">
+              <div class="card-glow-strip" [style.background]="getCategoryGradient(test.category)"></div>
+
+              <div class="pro-card-header">
+                <div class="header-top-row">
+                  <span class="cat-pill" [style.color]="getCategoryColor(test.category)" [style.background]="getCategoryBg(test.category)">
+                    <mat-icon>{{ getCategoryIcon(test.category) }}</mat-icon>
+                    <span>{{ test.category }}</span>
+                  </span>
+                  <div class="code-and-status">
+                    <span class="code-pill">{{ test.testCode }}</span>
+                  </div>
+                </div>
+                <h3 class="test-title-pro" [matTooltip]="test.testName">{{ test.testName }}</h3>
+              </div>
+
+              <div class="pro-card-body">
+                <p class="test-desc-pro" *ngIf="test.description">{{ test.description }}</p>
+
+                <div class="spec-matrix">
+                  <div class="spec-matrix-item">
+                    <div class="spec-icon-wrap">
+                      <mat-icon>colorize</mat-icon>
+                    </div>
+                    <div class="spec-txt">
+                      <span class="spec-lbl">Specimen</span>
+                      <span class="spec-val" [matTooltip]="test.sampleType">{{ test.sampleType }}</span>
+                    </div>
+                  </div>
+
+                  <div class="spec-matrix-item">
+                    <div class="spec-icon-wrap">
+                      <mat-icon>schedule</mat-icon>
+                    </div>
+                    <div class="spec-txt">
+                      <span class="spec-lbl">Turnaround</span>
+                      <span class="spec-val">{{ test.turnaroundTimeHours }} hrs</span>
+                    </div>
+                  </div>
+
+                  <div class="spec-matrix-item fee-item">
+                    <div class="spec-icon-wrap">
+                      <mat-icon>payments</mat-icon>
+                    </div>
+                    <div class="spec-txt">
+                      <span class="spec-lbl">Patient Fee</span>
+                      <span class="spec-val price-highlight">${{ test.price | number:'1.2-2' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="parameters-section" *ngIf="getParsedParameters(test.parametersJson).length > 0">
+                  <div class="params-header">
+                    <span class="params-title">
+                      <mat-icon>tune</mat-icon>
+                      Reference Intervals ({{ getParsedParameters(test.parametersJson).length }} Parameters)
+                    </span>
+                  </div>
+                  <div class="params-table-mini">
+                    <div *ngFor="let p of getParsedParameters(test.parametersJson)" class="param-row-mini">
+                      <span class="p-name">{{ p.name }}</span>
+                      <div class="p-range-wrap">
+                        <span class="p-ref">{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</span>
+                        <span class="p-unit" *ngIf="p.unit">{{ p.unit }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pro-card-footer">
+                <button mat-flat-button color="primary" class="order-now-btn" (click)="openCreateOrderModal(test.id)">
+                  <mat-icon>add_circle</mat-icon>
+                  <span>Order Diagnostic Panel (${{ test.price | number:'1.2-2' }})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+
+  <!-- ==========================================
+       TECHNICIAN & NURSE WORKSPACE (ALL 7 TABS)
+       ========================================== -->
+  <mat-card class="content-card" *ngIf="!isDoctor()">
+    <mat-tab-group [selectedIndex]="selectedTab()" (selectedIndexChange)="onTabChanged($event)" animationDuration="200ms" class="custom-tab-group">
+
+      <!-- ==========================================
+           TAB 0: DIAGNOSTIC WORKLIST
+           ========================================== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">assignment</mat-icon>
+          <span>Diagnostic Worklist</span>
+          <span class="tab-badge" *ngIf="(labStore.metrics()?.pendingOrders || 0) > 0">{{ labStore.metrics()?.pendingOrders }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap">
+          <!-- Filter Toolbar -->
+          <div class="table-toolbar">
+            <div class="search-box">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                placeholder="Search by order #, accession barcode, patient name, MRN..."
+                (input)="onSearchChange($event)"
+              />
+            </div>
+
+            <div class="filter-group">
+              <mat-form-field appearance="outline" density="compact" class="compact-select">
+                <mat-label>Status</mat-label>
+                <mat-select [value]="labStore.statusFilter()" (selectionChange)="onStatusFilter($event.value)">
+                  <mat-option value="ALL">All Statuses</mat-option>
+                  <mat-option value="Ordered">Ordered</mat-option>
+                  <mat-option value="SampleCollected">Sample Collected</mat-option>
+                  <mat-option value="InProgress">In Progress</mat-option>
+                  <mat-option value="Completed">Completed</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" density="compact" class="compact-select">
+                <mat-label>Priority</mat-label>
+                <mat-select [value]="labStore.priorityFilter()" (selectionChange)="onPriorityFilter($event.value)">
+                  <mat-option value="ALL">All Priorities</mat-option>
+                  <mat-option value="Routine">Routine</mat-option>
+                  <mat-option value="Urgent">Urgent</mat-option>
+                  <mat-option value="Stat">Stat (Emergency)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Orders Table -->
+          <div class="table-container">
+            <div *ngIf="labStore.isLoading()" class="loading-overlay">
+              <mat-spinner diameter="40"></mat-spinner>
+              <span>Loading orders...</span>
+            </div>
+
+            <table mat-table [dataSource]="labStore.filteredOrders()" class="lab-table">
+              <!-- Order Number Column -->
+              <ng-container matColumnDef="orderNumber">
+                <th mat-header-cell *matHeaderCellDef>Order #</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="order-id-cell">
+                    <span class="order-number">{{ order.orderNumber }}</span>
+                    <span class="doctor-badge" *ngIf="order.doctorName">Dr. {{ order.doctorName }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Patient Column -->
               <ng-container matColumnDef="patient">
                 <th mat-header-cell *matHeaderCellDef>Patient</th>
                 <td mat-cell *matCellDef="let order">
@@ -136,27 +511,50 @@
                 </td>
               </ng-container>
 
-              <ng-container matColumnDef="tests">
-                <th mat-header-cell *matHeaderCellDef>Tests & Specimens</th>
+              <!-- Specimen Barcode Column -->
+              <ng-container matColumnDef="specimen">
+                <th mat-header-cell *matHeaderCellDef>Accession Barcode</th>
                 <td mat-cell *matCellDef="let order">
-                  <div class="test-badges-list">
-                    <div *ngFor="let item of order.items" class="test-item-chip" [class.has-result]="!!item.result">
-                      <span class="test-code">{{ item.testCode }}</span>
-                      <span class="test-name">{{ item.testName }}</span>
-                      <span *ngIf="item.result?.hasAbnormalFlag" class="abnormal-indicator" matTooltip="Abnormal Values Detected">⚠️</span>
-                    </div>
+                  <div class="specimen-cell">
+                    <span class="barcode-pill" *ngIf="order.specimenBarcode">
+                      <mat-icon>qr_code_2</mat-icon>
+                      {{ order.specimenBarcode }}
+                    </span>
+                    <span class="uncollected-pill" *ngIf="!order.specimenBarcode">
+                      <mat-icon>pending</mat-icon>
+                      Awaiting Intake
+                    </span>
+                    <span class="rejection-pill" *ngIf="order.isRejected" [matTooltip]="order.rejectionReason">
+                      <mat-icon>error</mat-icon>
+                      REJECTED
+                    </span>
                   </div>
                 </td>
               </ng-container>
 
-              <ng-container matColumnDef="orderDate">
-                <th mat-header-cell *matHeaderCellDef>Ordered At</th>
+              <!-- Tests Column -->
+              <ng-container matColumnDef="tests">
+                <th mat-header-cell *matHeaderCellDef>Diagnostic Tests</th>
                 <td mat-cell *matCellDef="let order">
-                  <span class="date-cell">{{ order.orderDate | date:'mediumDate' }}</span>
-                  <span class="time-sub">{{ order.orderDate | date:'shortTime' }}</span>
+                  <div class="tests-chips-list">
+                    <span *ngFor="let item of order.items" class="test-tag" [class.tag-abnormal]="item.result?.hasAbnormalFlag" [class.tag-rejected]="item.isRejected">
+                      <mat-icon class="mini-icon">{{ getCategoryIcon(item.category) }}</mat-icon>
+                      {{ item.testCode }}
+                      <mat-icon class="alert-icon" *ngIf="item.result?.hasAbnormalFlag">warning</mat-icon>
+                    </span>
+                  </div>
                 </td>
               </ng-container>
 
+              <!-- Date Column -->
+              <ng-container matColumnDef="orderDate">
+                <th mat-header-cell *matHeaderCellDef>Order Date</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="date-text">{{ order.orderDate | date:'MMM d, y, h:mm a' }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Priority Column -->
               <ng-container matColumnDef="priority">
                 <th mat-header-cell *matHeaderCellDef>Priority</th>
                 <td mat-cell *matCellDef="let order">
@@ -166,310 +564,1314 @@
                 </td>
               </ng-container>
 
+              <!-- Status Column -->
               <ng-container matColumnDef="status">
                 <th mat-header-cell *matHeaderCellDef>Status</th>
                 <td mat-cell *matCellDef="let order">
                   <span class="status-badge" [ngClass]="getStatusClass(order.status)">
-                    {{ order.status }}
+                    {{ order.status === 'SampleCollected' ? 'Sample in Lab' : order.status }}
                   </span>
                 </td>
               </ng-container>
 
+              <!-- Total Cost Column -->
               <ng-container matColumnDef="totalCost">
-                <th mat-header-cell *matHeaderCellDef>Cost</th>
+                <th mat-header-cell *matHeaderCellDef>Billing</th>
                 <td mat-cell *matCellDef="let order">
-                  <span class="cost-cell">{{ order.totalCost | currency:'USD' }}</span>
+                  <div class="billing-cell">
+                    <span class="cost-val">${{ order.totalCost | number:'1.2-2' }}</span>
+                    <span class="billed-status" [class.is-billed]="order.isBilled">
+                      {{ order.isBilled ? 'Billed' : 'Unbilled' }}
+                    </span>
+                  </div>
                 </td>
               </ng-container>
 
+              <!-- Actions Column -->
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Actions</th>
                 <td mat-cell *matCellDef="let order">
-                  <div class="actions-cell">
-                    <button
-                      *ngIf="order.status === 'Ordered'"
-                      mat-stroked-button
-                      color="accent"
-                      class="btn-action"
-                      (click)="updateStatus(order, 'SampleCollected')"
-                      matTooltip="Mark specimen as collected"
-                    >
-                      <mat-icon>bloodtype</mat-icon>
-                      <span>Collect</span>
-                    </button>
-
-                    <button
-                      *ngIf="order.status === 'SampleCollected'"
-                      mat-stroked-button
-                      color="primary"
-                      class="btn-action"
-                      (click)="updateStatus(order, 'InProgress')"
-                      matTooltip="Begin laboratory analysis"
-                    >
-                      <mat-icon>biotech</mat-icon>
-                      <span>Analyze</span>
-                    </button>
-
-                    <div *ngIf="order.status === 'InProgress' || order.status === 'Completed'" class="result-actions-group">
-                      <button
-                        *ngFor="let item of order.items"
-                        mat-flat-button
-                        [color]="item.result ? 'accent' : 'primary'"
-                        class="btn-result-entry"
-                        (click)="openResultModal(order, item)"
-                      >
-                        <mat-icon>{{ item.result ? 'edit_note' : 'add_task' }}</mat-icon>
-                        <span>{{ item.testCode }}</span>
-                      </button>
-                    </div>
-
+                  <div class="action-buttons-cell">
+                    <!-- Intake Specimen -->
                     <button
                       mat-icon-button
-                      class="btn-report-view"
-                      (click)="openReportModal(order)"
-                      matTooltip="View & Print Diagnostic Slip"
+                      class="btn-intake"
+                      matTooltip="Specimen Intake & Barcoding"
+                      *ngIf="canCollectSample() && (!order.specimenBarcode || order.requiresRecollection)"
+                      (click)="openAccessionModal(order)"
                     >
-                      <mat-icon>receipt_long</mat-icon>
+                      <mat-icon>qr_code_scanner</mat-icon>
+                    </button>
+
+                    <!-- Reject Specimen -->
+                    <button
+                      mat-icon-button
+                      class="btn-reject"
+                      matTooltip="Reject Specimen (Hemolysis/Clotted)"
+                      *ngIf="isLabTech() && !order.isRejected && order.status !== 'Completed'"
+                      (click)="openRejectModal(order)"
+                    >
+                      <mat-icon>block</mat-icon>
+                    </button>
+
+                    <!-- Enter Results -->
+                    <button
+                      mat-icon-button
+                      class="btn-results"
+                      matTooltip="Record / View Results"
+                      *ngIf="isLabTech() && (order.status === 'SampleCollected' || order.status === 'InProgress' || order.status === 'Completed')"
+                      (click)="openResultModal(order, order.items[0])"
+                    >
+                      <mat-icon>edit_note</mat-icon>
+                    </button>
+
+                    <!-- Official Pathology Report -->
+                    <button
+                      mat-icon-button
+                      class="btn-report"
+                      matTooltip="View Pathology Report"
+                      (click)="openReportModal(order)"
+                    >
+                      <mat-icon>description</mat-icon>
+                    </button>
+
+                    <!-- Diagnostic Invoice / Billing -->
+                    <button
+                      mat-icon-button
+                      class="btn-bill"
+                      [class.billed]="order.isBilled"
+                      [matTooltip]="order.isBilled ? 'View Issued Diagnostic Invoice' : 'Generate & Issue Diagnostic Invoice'"
+                      *ngIf="isLabTech()"
+                      (click)="billOrder(order)"
+                    >
+                      <mat-icon>{{ order.isBilled ? 'receipt_long' : 'receipt' }}</mat-icon>
                     </button>
                   </div>
                 </td>
               </ng-container>
 
               <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="order-row"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="lab-row"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="displayedColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>science</mat-icon>
+                    <h3>No Laboratory Orders Found</h3>
+                    <p>There are no active diagnostic orders matching your filters.</p>
+                  </div>
+                </td>
+              </tr>
             </table>
           </div>
         </div>
       </mat-tab>
 
-            <!-- ========================================== -->
-      <!-- TAB 2: DIAGNOSTIC TEST CATALOG EXPLORER   -->
-      <!-- ========================================== -->
-      <mat-tab label="Diagnostic Test Catalog">
-        <div class="tab-content catalog-tab-wrapper">
-          <!-- Catalog Filter Header -->
-          <div class="catalog-control-bar">
-            <div class="catalog-search-wrap">
+      <!-- ==========================================
+           TAB 1: SPECIMEN ACCESSION & INTAKE
+           ========================================== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">qr_code_scanner</mat-icon>
+          <span>Specimen Accession</span>
+          <span class="tab-badge warning" *ngIf="pendingAccessionOrders().length > 0">{{ pendingAccessionOrders().length }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap">
+          <div class="bench-banner">
+            <div class="banner-text">
+              <h3>Phlebotomy & Specimen Intake Bench</h3>
+              <p>Verify patient identity, review required specimen tube types, inspect sample integrity, and issue accession barcodes.</p>
+            </div>
+            <div class="tube-legend">
+              <span class="legend-item"><span class="color-dot lavender"></span> EDTA Lavender (Whole Blood)</span>
+              <span class="legend-item"><span class="color-dot gold"></span> SST Gold (Serum Separator)</span>
+              <span class="legend-item"><span class="color-dot grey"></span> Fluoride Grey (Glucose)</span>
+              <span class="legend-item"><span class="color-dot yellow"></span> Sterile Cup (Urine)</span>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table mat-table [dataSource]="pendingAccessionOrders()" class="lab-table">
+              <ng-container matColumnDef="orderNumber">
+                <th mat-header-cell *matHeaderCellDef>Order #</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="order-number">{{ order.orderNumber }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="patient">
+                <th mat-header-cell *matHeaderCellDef>Patient Name & MRN</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="patient-cell">
+                    <span class="patient-name">{{ order.patientName }}</span>
+                    <span class="patient-mrn">MRN: {{ order.patientMedicalRecordNumber }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="sampleRequirements">
+                <th mat-header-cell *matHeaderCellDef>Required Specimen & Tube</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="tube-requirements-cell">
+                    <span *ngFor="let item of order.items" class="tube-badge">
+                      <mat-icon>colorize</mat-icon>
+                      {{ item.sampleType || 'Whole Blood' }} ({{ item.testCode }})
+                    </span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="specimenStatus">
+                <th mat-header-cell *matHeaderCellDef>Integrity Status</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="rejection-pill" *ngIf="order.isRejected" [matTooltip]="order.rejectionReason">
+                    <mat-icon>cancel</mat-icon>
+                    REJECTED: {{ order.rejectionReason }}
+                  </span>
+                  <span class="status-badge status-ordered" *ngIf="!order.isRejected">
+                    Awaiting Venipuncture
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="collectionTime">
+                <th mat-header-cell *matHeaderCellDef>Ordered At</th>
+                <td mat-cell *matCellDef="let order">
+                  <span class="date-text">{{ order.orderDate | date:'MMM d, h:mm a' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Bench Actions</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="action-buttons-cell">
+                    <ng-container *ngIf="isLabTech()">
+                      <button mat-flat-button color="primary" class="mini-action-btn" (click)="openAccessionModal(order)">
+                        <mat-icon>qr_code</mat-icon>
+                        <span>Intake Specimen</span>
+                      </button>
+                      <button mat-stroked-button color="warn" class="mini-action-btn" (click)="openRejectModal(order)">
+                        <mat-icon>report_problem</mat-icon>
+                        <span>Reject Sample</span>
+                      </button>
+                    </ng-container>
+                    <span class="audited-text" *ngIf="!isLabTech()" style="color: #64748b; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">visibility</mat-icon> Audit View
+                    </span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="accessionColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: accessionColumns;"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="accessionColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>check_circle_outline</mat-icon>
+                    <h3>Specimen Intake Queue is Clear</h3>
+                    <p>All laboratory specimens have been collected and accessioned with barcodes.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==========================================
+           TAB 2: ANALYZER & TEST EXECUTION
+           ========================================== -->
+      <mat-tab *ngIf="!isNurse()">
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">precision_manufacturing</mat-icon>
+          <span>Analyzer & Results</span>
+          <span class="tab-badge" *ngIf="readyForAnalyzerOrders().length > 0">{{ readyForAnalyzerOrders().length }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap">
+          <div class="bench-banner">
+            <div class="banner-text">
+              <h3>Diagnostic Analyzer Testing Bench</h3>
+              <p>Loaded samples with verified accession barcodes ready for test execution, multi-parameter result recording, auto-flagging, and digital sign-off.</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table mat-table [dataSource]="readyForAnalyzerOrders()" class="lab-table">
+              <ng-container matColumnDef="orderNumber">
+                <th mat-header-cell *matHeaderCellDef>Order #</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="order-number">{{ row.order.orderNumber }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="patient">
+                <th mat-header-cell *matHeaderCellDef>Patient</th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="patient-cell">
+                    <span class="patient-name">{{ row.order.patientName }}</span>
+                    <span class="patient-mrn">MRN: {{ row.order.patientMedicalRecordNumber }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="barcode">
+                <th mat-header-cell *matHeaderCellDef>Barcode</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="barcode-pill">
+                    <mat-icon>qr_code_2</mat-icon>
+                    {{ row.order.specimenBarcode || 'SPM-PENDING' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="testName">
+                <th mat-header-cell *matHeaderCellDef>Test To Perform</th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="test-detail-cell">
+                    <span class="test-title">{{ row.item.testName }}</span>
+                    <span class="test-sub">Code: {{ row.item.testCode }} ({{ row.item.category }})</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="sampleType">
+                <th mat-header-cell *matHeaderCellDef>Specimen</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="tube-badge">{{ row.item.sampleType }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="priority">
+                <th mat-header-cell *matHeaderCellDef>Priority</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="priority-badge" [ngClass]="getPriorityClass(row.order.priority)">
+                    {{ row.order.priority }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Stage</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [ngClass]="getStatusClass(row.item.status)">
+                    {{ row.item.status }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="action-buttons-cell">
+                    <ng-container *ngIf="isLabTech()">
+                      <button mat-flat-button color="primary" class="mini-action-btn" (click)="openResultModal(row.order, row.item)">
+                        <mat-icon>science</mat-icon>
+                        <span>Enter Results</span>
+                      </button>
+                      <button mat-stroked-button class="mini-action-btn" *ngIf="row.item.result" (click)="verifyItemResult(row.item)">
+                        <mat-icon>verified</mat-icon>
+                        <span>Sign Off</span>
+                      </button>
+                    </ng-container>
+                    <span class="audited-text" *ngIf="!isLabTech()" style="color: #64748b; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">visibility</mat-icon> Audit View
+                    </span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="executionColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: executionColumns;"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="executionColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>check_circle</mat-icon>
+                    <h3>All Accessioned Tests Processed</h3>
+                    <p>No tests currently waiting for analyzer execution.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==========================================
+           TAB 3: REAGENTS & CHEMICAL INVENTORY
+           ========================================== -->
+      <mat-tab *ngIf="!isNurse()">
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">biotech</mat-icon>
+          <span>Reagents & Stock</span>
+          <span class="tab-badge alert" *ngIf="(labStore.metrics()?.lowStockReagents || 0) > 0">{{ labStore.metrics()?.lowStockReagents }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap">
+          <!-- Inventory Controls -->
+          <div class="table-toolbar">
+            <div class="search-box">
               <mat-icon>search</mat-icon>
               <input
                 type="text"
-                placeholder="Search test name, code, or clinical description..."
-                [ngModel]="catalogSearchQuery()"
-                (ngModelChange)="catalogSearchQuery.set($event)"
+                placeholder="Search reagents, catalog codes, lot numbers..."
+                (input)="loadReagents()"
               />
-              <button *ngIf="catalogSearchQuery()" mat-icon-button class="clear-search-btn" (click)="catalogSearchQuery.set('')">
-                <mat-icon>close</mat-icon>
-              </button>
             </div>
 
-            <div class="category-pills-row">
-              <button
-                *ngFor="let cat of catalogCategories()"
-                type="button"
-                class="category-pill-btn"
-                [class.active]="catalogCategoryFilter() === cat"
-                (click)="catalogCategoryFilter.set(cat)"
-              >
-                {{ cat === 'ALL' ? 'All Profiles (' + labStore.templates().length + ')' : cat }}
+            <div class="filter-group">
+              <mat-checkbox [checked]="reagentLowStockOnly()" (change)="reagentLowStockOnly.set($event.checked); loadReagents()">
+                Low Stock Only
+              </mat-checkbox>
+
+              <button mat-flat-button color="primary" class="action-btn" (click)="openReagentModal()">
+                <mat-icon>add</mat-icon>
+                <span>New Reagent</span>
               </button>
             </div>
           </div>
 
-          <!-- Empty State if no tests match filter -->
-          <div *ngIf="filteredCatalogTemplates().length === 0" class="empty-state">
-            <mat-icon>search_off</mat-icon>
-            <h3>No Diagnostic Profiles Match Filter</h3>
-            <p>Try resetting the search keyword or selecting "All Profiles".</p>
-            <button mat-stroked-button color="primary" (click)="catalogSearchQuery.set(''); catalogCategoryFilter.set('ALL')">
-              Reset Filters
+          <!-- Reagents Table -->
+          <div class="table-container">
+            <table mat-table [dataSource]="reagents()" class="lab-table">
+              <ng-container matColumnDef="catalogCode">
+                <th mat-header-cell *matHeaderCellDef>Catalog #</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="order-number">{{ r.catalogCode }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Reagent / Consumable Name</th>
+                <td mat-cell *matCellDef="let r">
+                  <div class="reagent-detail-cell">
+                    <span class="reagent-title">{{ r.name }}</span>
+                    <span class="reagent-sub" *ngIf="r.manufacturer">{{ r.manufacturer }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef>Category</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="test-tag">
+                    <mat-icon class="mini-icon">{{ getCategoryIcon(r.category) }}</mat-icon>
+                    {{ r.category }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="lotNumber">
+                <th mat-header-cell *matHeaderCellDef>Lot #</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="lot-badge">{{ r.lotNumber }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="stockLevel">
+                <th mat-header-cell *matHeaderCellDef>Current Stock</th>
+                <td mat-cell *matCellDef="let r">
+                  <div class="stock-cell">
+                    <div class="stock-text">
+                      <span class="stock-qty" [class.text-critical]="r.currentStock <= r.minimumThreshold">{{ r.currentStock }} {{ r.unitOfMeasure }}</span>
+                      <span class="stock-min">(Min: {{ r.minimumThreshold }})</span>
+                    </div>
+                    <div class="stock-bar-track">
+                      <div
+                        class="stock-bar-fill"
+                        [class.fill-danger]="r.currentStock <= r.minimumThreshold"
+                        [class.fill-warning]="r.currentStock > r.minimumThreshold && r.currentStock <= r.minimumThreshold * 1.5"
+                        [style.width.%]="Math.min(100, (r.currentStock / (r.minimumThreshold * 2)) * 100)"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="storageCondition">
+                <th mat-header-cell *matHeaderCellDef>Storage Condition</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="storage-badge">
+                    <mat-icon>thermostat</mat-icon>
+                    {{ r.storageCondition }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="expiryDate">
+                <th mat-header-cell *matHeaderCellDef>Expiry Date</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="date-text">{{ r.expiryDate | date:'mediumDate' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let r">
+                  <div class="action-buttons-cell">
+                    <button mat-stroked-button class="mini-action-btn" (click)="openAdjustStockModal(r)">
+                      <mat-icon>swap_vert</mat-icon>
+                      <span>Adjust</span>
+                    </button>
+                    <button mat-icon-button class="btn-intake" matTooltip="Submit Replenishment Requisition" (click)="openRequisitionModal(r)">
+                      <mat-icon>add_shopping_cart</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="reagentColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: reagentColumns;"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="reagentColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>science</mat-icon>
+                    <h3>No Reagents Found</h3>
+                    <p>Click "New Reagent" to add chemicals and test kits to the inventory.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==========================================
+           TAB 4: SUPPLY REQUISITIONS
+           ========================================== -->
+      <mat-tab *ngIf="!isNurse()">
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">inventory</mat-icon>
+          <span>Requisitions</span>
+          <span class="tab-badge" *ngIf="requisitions().length > 0">{{ requisitions().length }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                placeholder="Search requisitions by number or item..."
+                (input)="loadRequisitions()"
+              />
+            </div>
+
+            <div class="filter-group">
+              <button mat-flat-button color="primary" class="action-btn" (click)="openRequisitionModal()">
+                <mat-icon>add</mat-icon>
+                <span>New Requisition</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table mat-table [dataSource]="requisitions()" class="lab-table">
+              <ng-container matColumnDef="reqNumber">
+                <th mat-header-cell *matHeaderCellDef>Requisition #</th>
+                <td mat-cell *matCellDef="let req">
+                  <span class="order-number">{{ req.requisitionNumber }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="itemName">
+                <th mat-header-cell *matHeaderCellDef>Requested Item</th>
+                <td mat-cell *matCellDef="let req">
+                  <div class="reagent-detail-cell">
+                    <span class="reagent-title">{{ req.itemName }}</span>
+                    <span class="reagent-sub">{{ req.reason }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef>Category</th>
+                <td mat-cell *matCellDef="let req">
+                  <span class="test-tag">{{ req.category }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="quantity">
+                <th mat-header-cell *matHeaderCellDef>Quantity</th>
+                <td mat-cell *matCellDef="let req">
+                  <span class="qty-badge">{{ req.quantityRequested }} {{ req.unitOfMeasure }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="estimatedCost">
+                <th mat-header-cell *matHeaderCellDef>Est. Total</th>
+                <td mat-cell *matCellDef="let req">
+                  <span class="cost-val">${{ req.totalEstimatedCost | number:'1.2-2' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="urgency">
+                <th mat-header-cell *matHeaderCellDef>Urgency</th>
+                <td mat-cell *matCellDef="let req">
+                  <span class="priority-badge" [ngClass]="getPriorityClass(req.urgency)">
+                    {{ req.urgency }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let req">
+                  <span class="status-badge" [ngClass]="'status-' + req.status.toLowerCase()">
+                    {{ req.status }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="requestedBy">
+                <th mat-header-cell *matHeaderCellDef>Requested By</th>
+                <td mat-cell *matCellDef="let req">
+                  <div class="patient-cell">
+                    <span class="patient-name">{{ req.requestedByUserName }}</span>
+                    <span class="patient-mrn">{{ req.createdAt | date:'MMM d, y' }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let req">
+                  <div class="action-buttons-cell">
+                    <button
+                      mat-stroked-button
+                      class="mini-action-btn"
+                      *ngIf="req.status !== 'Fulfilled' && req.status !== 'Rejected'"
+                      (click)="openReviewRequisitionModal(req)"
+                    >
+                      <mat-icon>rate_review</mat-icon>
+                      <span>Review</span>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="requisitionColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: requisitionColumns;"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="requisitionColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>inventory</mat-icon>
+                    <h3>No Requisitions Found</h3>
+                    <p>Click "New Requisition" to create a purchase order for laboratory supplies.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==========================================
+           TAB 5: EQUIPMENT & QUALITY CONTROL (QC)
+           ========================================== -->
+      <mat-tab *ngIf="!isNurse()">
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">health_and_safety</mat-icon>
+          <span>Quality Control & Analyzers</span>
+          <span class="tab-badge alert" *ngIf="(labStore.metrics()?.calibrationsDue || 0) > 0">{{ labStore.metrics()?.calibrationsDue }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap">
+          <div class="bench-banner">
+            <div class="banner-text">
+              <h3>Equipment Calibration & Levey-Jennings Quality Control</h3>
+              <p>Automated diagnostic analyzers require daily calibration runs, tri-level control checks, and preventive maintenance records to maintain ISO 15189 accreditation.</p>
+            </div>
+            <button mat-flat-button color="primary" class="action-btn" (click)="openEquipmentLogModal()">
+              <mat-icon>add_task</mat-icon>
+              <span>Record Calibration Run</span>
             </button>
           </div>
 
-          <!-- Beautiful Diagnostic Cards Grid -->
-          <div class="pro-catalog-grid" *ngIf="filteredCatalogTemplates().length > 0">
-            <div *ngFor="let test of filteredCatalogTemplates()" class="pro-test-card">
-              <div class="card-glow-edge" [style.background]="getCategoryGradient(test.category)"></div>
-              
-              <!-- Card Header -->
-              <div class="pro-card-header">
-                <div class="category-meta-left">
-                  <div class="category-icon-bubble" [style.background]="getCategoryGradient(test.category)">
-                    <mat-icon>{{ getCategoryIcon(test.category) }}</mat-icon>
+          <div class="table-container">
+            <table mat-table [dataSource]="equipmentLogs()" class="lab-table">
+              <ng-container matColumnDef="equipment">
+                <th mat-header-cell *matHeaderCellDef>Equipment & Serial</th>
+                <td mat-cell *matCellDef="let log">
+                  <div class="reagent-detail-cell">
+                    <span class="reagent-title">{{ log.equipmentName }}</span>
+                    <span class="reagent-sub">Model: {{ log.equipmentModel }} | S/N: {{ log.serialNumber }}</span>
                   </div>
-                  <div class="category-titles">
-                    <span class="category-name">{{ test.category }}</span>
-                    <span class="code-badge">{{ test.testCode }}</span>
-                  </div>
-                </div>
+                </td>
+              </ng-container>
 
-                <div class="price-chip-wrap">
-                  <span class="price-val">{{ test.price | currency:'USD' }}</span>
+              <ng-container matColumnDef="location">
+                <th mat-header-cell *matHeaderCellDef>Location</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="storage-badge">{{ log.location }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="logType">
+                <th mat-header-cell *matHeaderCellDef>Log Type</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="test-tag">{{ log.logType }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="sdScore">
+                <th mat-header-cell *matHeaderCellDef>SD Score</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="lot-badge" *ngIf="log.standardDeviationScore !== null">
+                    {{ log.standardDeviationScore }} SD
+                  </span>
+                  <span class="text-muted" *ngIf="log.standardDeviationScore === null">-</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>QC Status</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="status-badge" [ngClass]="log.status === 'Passed' ? 'status-completed' : (log.status === 'Warning' ? 'status-inprogress' : 'status-ordered')">
+                    {{ log.status }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="findings">
+                <th mat-header-cell *matHeaderCellDef>Findings & Actions</th>
+                <td mat-cell *matCellDef="let log">
+                  <div class="findings-cell">
+                    <span class="finding-text">{{ log.findings }}</span>
+                    <span class="action-text" *ngIf="log.correctiveAction">Action: {{ log.correctiveAction }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="performedAt">
+                <th mat-header-cell *matHeaderCellDef>Certified By</th>
+                <td mat-cell *matCellDef="let log">
+                  <div class="patient-cell">
+                    <span class="patient-name">{{ log.performedByUserName }}</span>
+                    <span class="patient-mrn">{{ log.performedAt | date:'MMM d, h:mm a' }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="nextDue">
+                <th mat-header-cell *matHeaderCellDef>Next Due</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="date-text" *ngIf="log.nextMaintenanceDueDate">{{ log.nextMaintenanceDueDate | date:'mediumDate' }}</span>
+                  <span class="text-muted" *ngIf="!log.nextMaintenanceDueDate">None</span>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="equipmentColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: equipmentColumns;"></tr>
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-cell" [attr.colspan]="equipmentColumns.length">
+                  <div class="empty-state">
+                    <mat-icon>build</mat-icon>
+                    <h3>No Equipment Calibration Logs</h3>
+                    <p>Click "Record Calibration Run" to register instrument QC logs.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==========================================
+           TAB 6: DIAGNOSTIC TEST DIRECTORY
+           ========================================== -->
+      <mat-tab *ngIf="!isNurse()">
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">menu_book</mat-icon>
+          <span>Diagnostic Catalog</span>
+          <span class="tab-badge info" *ngIf="labStore.templates().length > 0">{{ labStore.templates().length }}</span>
+        </ng-template>
+
+        <div class="tab-content-wrap catalog-view-wrapper">
+          <!-- Catalog Banner -->
+          <div class="bench-banner catalog-banner">
+            <div class="banner-text">
+              <h3>Clinical Pathology Test Directory & Specimen Protocols</h3>
+              <p>Standardized diagnostic test panels, specimen handling guidelines, clinical turnaround times (TAT), and validated reference intervals.</p>
+            </div>
+            <div class="catalog-summary-chips">
+              <span class="catalog-stat-chip">
+                <mat-icon>biotech</mat-icon>
+                <span><strong>{{ labStore.templates().length }}</strong> Panels</span>
+              </span>
+              <span class="catalog-stat-chip active-filter" *ngIf="catalogCategoryFilter() !== 'ALL' || catalogSearchQuery()">
+                <mat-icon>filter_alt</mat-icon>
+                <span><strong>{{ filteredCatalogTemplates().length }}</strong> Filtered</span>
+              </span>
+              <button mat-flat-button class="create-test-btn" (click)="openCreateTestModal()" *ngIf="isLabTech()">
+                <mat-icon>add_circle</mat-icon>
+                <span>Add Test Panel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters & Search Toolbar -->
+          <div class="catalog-filters-bar">
+            <div class="category-pills">
+              <button
+                *ngFor="let cat of catalogCategories()"
+                type="button"
+                class="category-pill"
+                [class.active]="catalogCategoryFilter() === cat"
+                (click)="catalogCategoryFilter.set(cat)"
+              >
+                <mat-icon class="pill-icon">{{ getCategoryIcon(cat) }}</mat-icon>
+                <span class="pill-label">{{ cat === 'ALL' ? 'All Panels' : cat }}</span>
+                <span class="count-pill">{{ getCategoryCount(cat) }}</span>
+              </button>
+            </div>
+
+            <div class="catalog-search">
+              <mat-icon class="search-icon">search</mat-icon>
+              <input
+                type="text"
+                placeholder="Search panels by name, code, specimen, or description..."
+                [value]="catalogSearchQuery()"
+                (input)="catalogSearchQuery.set($any($event.target).value)"
+              />
+              <button
+                *ngIf="catalogSearchQuery()"
+                mat-icon-button
+                class="clear-search-btn"
+                (click)="catalogSearchQuery.set('')"
+                type="button"
+                matTooltip="Clear search"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="filteredCatalogTemplates().length === 0" class="empty-catalog-state">
+            <div class="empty-icon-circle">
+              <mat-icon>search_off</mat-icon>
+            </div>
+            <h3>No Diagnostic Tests Found</h3>
+            <p *ngIf="catalogSearchQuery()">
+              No panels match "<strong>{{ catalogSearchQuery() }}</strong>"
+              <span *ngIf="catalogCategoryFilter() !== 'ALL'"> in {{ catalogCategoryFilter() }}</span>.
+            </p>
+            <p *ngIf="!catalogSearchQuery()">
+              No test panels available in category <strong>{{ catalogCategoryFilter() }}</strong>.
+            </p>
+            <div class="empty-actions">
+              <button mat-flat-button color="primary" class="reset-filter-btn" (click)="catalogCategoryFilter.set('ALL'); catalogSearchQuery.set('')">
+                <mat-icon>refresh</mat-icon>
+                <span>Reset Filters</span>
+              </button>
+              <button mat-stroked-button class="add-new-empty-btn" (click)="openCreateTestModal()" *ngIf="isLabTech()">
+                <mat-icon>add</mat-icon>
+                <span>Create Test Panel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="catalog-grid" *ngIf="filteredCatalogTemplates().length > 0">
+            <div *ngFor="let test of filteredCatalogTemplates()" class="pro-test-card" [class.is-inactive]="!test.isActive">
+              <div class="card-glow-strip" [style.background]="getCategoryGradient(test.category)"></div>
+
+              <div class="pro-card-header">
+                <div class="header-top-row">
+                  <span class="cat-pill" [style.color]="getCategoryColor(test.category)" [style.background]="getCategoryBg(test.category)">
+                    <mat-icon>{{ getCategoryIcon(test.category) }}</mat-icon>
+                    <span>{{ test.category }}</span>
+                  </span>
+                  <div class="code-and-status">
+                    <span class="code-pill">{{ test.testCode }}</span>
+                    <span class="inactive-badge" *ngIf="!test.isActive">Inactive</span>
+                  </div>
                 </div>
+                <h3 class="test-title-pro" [matTooltip]="test.testName">{{ test.testName }}</h3>
               </div>
 
-              <!-- Card Body -->
               <div class="pro-card-body">
-                <h3 class="test-name-title">{{ test.testName }}</h3>
-                <p class="test-description-text">{{ test.description }}</p>
+                <p class="test-desc-pro" *ngIf="test.description">{{ test.description }}</p>
 
-                <!-- Specimen & TAT specs -->
-                <div class="test-specs-row">
-                  <div class="spec-tag">
-                    <mat-icon>colorize</mat-icon>
-                    <span>Specimen: <strong>{{ test.sampleType }}</strong></span>
+                <div class="spec-matrix">
+                  <div class="spec-matrix-item">
+                    <div class="spec-icon-wrap">
+                      <mat-icon>colorize</mat-icon>
+                    </div>
+                    <div class="spec-txt">
+                      <span class="spec-lbl">Specimen</span>
+                      <span class="spec-val" [matTooltip]="test.sampleType">{{ test.sampleType }}</span>
+                    </div>
                   </div>
-                  <div class="spec-tag">
-                    <mat-icon>schedule</mat-icon>
-                    <span>TAT: <strong>{{ test.turnaroundTimeHours }} hrs</strong></span>
+
+                  <div class="spec-matrix-item">
+                    <div class="spec-icon-wrap">
+                      <mat-icon>schedule</mat-icon>
+                    </div>
+                    <div class="spec-txt">
+                      <span class="spec-lbl">Turnaround</span>
+                      <span class="spec-val">{{ test.turnaroundTimeHours }} hrs</span>
+                    </div>
+                  </div>
+
+                  <div class="spec-matrix-item fee-item">
+                    <div class="spec-icon-wrap">
+                      <mat-icon>payments</mat-icon>
+                    </div>
+                    <div class="spec-txt">
+                      <span class="spec-lbl">Standard Fee</span>
+                      <span class="spec-val price-highlight">${{ test.price | number:'1.2-2' }}</span>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Parameters Reference Table -->
-                <div class="parameters-section">
-                  <div class="params-header-row">
+                <div class="parameters-section" *ngIf="getParsedParameters(test.parametersJson).length > 0">
+                  <div class="params-header">
                     <span class="params-title">
-                      <mat-icon>fact_check</mat-icon>
-                      Biological Reference Intervals ({{ getParsedParameters(test.parametersJson).length }})
+                      <mat-icon>tune</mat-icon>
+                      Reference Intervals ({{ getParsedParameters(test.parametersJson).length }} Parameters)
                     </span>
                   </div>
-
                   <div class="params-table-mini">
                     <div *ngFor="let p of getParsedParameters(test.parametersJson)" class="param-row-mini">
                       <span class="p-name">{{ p.name }}</span>
                       <div class="p-range-wrap">
                         <span class="p-ref">{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</span>
-                        <span class="p-unit">{{ p.unit }}</span>
+                        <span class="p-unit" *ngIf="p.unit">{{ p.unit }}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Card Footer Action -->
               <div class="pro-card-footer">
-                <button
-                  mat-flat-button
-                  color="primary"
-                  class="order-now-btn"
-                  (click)="openCreateOrderModal(test.id)"
-                >
-                  <mat-icon>add_circle_outline</mat-icon>
-                  <span>Order {{ test.testCode }}</span>
+                <button mat-flat-button color="primary" class="order-now-btn" (click)="openCreateOrderModal(test.id)">
+                  <mat-icon>add_shopping_cart</mat-icon>
+                  <span>Order Panel (${{ test.price | number:'1.2-2' }})</span>
                 </button>
+                <div class="catalog-card-mgmt-actions" *ngIf="isLabTech()">
+                  <button mat-icon-button class="card-mgmt-btn edit-action-btn" (click)="openEditTestModal(test)" matTooltip="Update Test Details & Fees in Database">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button class="card-mgmt-btn delete-action-btn" (click)="confirmDeleteTest(test)" matTooltip="Delete Test from Database">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </mat-tab>
+
     </mat-tab-group>
   </mat-card>
 
-  <!-- MODAL 1: CREATE NEW LAB ORDER -->
-  <div class="custom-modal-overlay" *ngIf="isCreatingOrder()">
-    <div class="custom-modal-dialog order-modal">
-      <div class="modal-header">
+  <!-- ==========================================
+       MODAL: ORDER PLACEMENT (HIGH-TECH CLINICAL UI)
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isCreatingOrder()" (click)="closeCreateOrderModal()">
+    <div class="modal-dialog modal-xl order-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header order-modal-header">
         <div class="modal-title-group">
-          <mat-icon>add_circle</mat-icon>
-          <h3>Place Laboratory Order</h3>
+          <div class="modal-icon-badge order-badge">
+            <mat-icon>biotech</mat-icon>
+          </div>
+          <div>
+            <h2>Create New Laboratory Order</h2>
+            <p>Select patient, clinical urgency, and diagnostic pathology panels</p>
+          </div>
         </div>
-        <button mat-icon-button (click)="closeCreateOrderModal()">
+        <button mat-icon-button class="modal-close-btn" (click)="closeCreateOrderModal()">
           <mat-icon>close</mat-icon>
         </button>
       </div>
 
-      <form [formGroup]="orderForm" (ngSubmit)="submitOrder()" class="modal-body">
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Select Patient</mat-label>
-            <mat-select formControlName="patientId" placeholder="Choose a patient">
-              <mat-option *ngFor="let p of patients()" [value]="p.id">
-                {{ p.firstName }} {{ p.lastName }} (MRN: {{ p.medicalRecordNumber }})
-              </mat-option>
-            </mat-select>
-            <mat-error *ngIf="orderForm.get('patientId')?.hasError('required')">Patient is required</mat-error>
-          </mat-form-field>
-        </div>
+      <form [formGroup]="orderForm" (ngSubmit)="submitOrder()">
+        <div class="modal-body order-modal-body">
+          <!-- Step 1: Patient Requisition & Priority Row -->
+          <div class="order-section-block">
+            <div class="section-badge-title">
+              <span class="step-num">1</span>
+              <span class="step-label">Patient Requisition & Clinical Urgency</span>
+            </div>
 
-        <div class="form-row two-col">
-          <mat-form-field appearance="outline">
-            <mat-label>Order Priority</mat-label>
-            <mat-select formControlName="priority">
-              <mat-option value="Routine">Routine</mat-option>
-              <mat-option value="Urgent">Urgent</mat-option>
-              <mat-option value="Stat">Stat (Emergency)</mat-option>
-            </mat-select>
-          </mat-form-field>
+            <div class="requisition-top-grid">
+              <div class="patient-picker-col">
+                <mat-form-field appearance="outline" class="full-width-field patient-select-field">
+                  <mat-label>Select Patient</mat-label>
+                  <mat-select formControlName="patientId">
+                    <mat-option *ngFor="let p of patients()" [value]="p.id">
+                      {{ p.firstName }} {{ p.lastName }} (MRN: {{ p.medicalRecordNumber }})
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix class="field-prefix-icon">person_search</mat-icon>
+                </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Clinical Notes / Indications</mat-label>
-            <input matInput formControlName="clinicalNotes" placeholder="e.g. Fasting 12h, Suspected anemia" />
-          </mat-form-field>
-        </div>
-
-        <div class="test-selection-section">
-          <label class="section-label">Select Laboratory Tests & Panels</label>
-          <div class="test-selection-grid">
-            <div
-              *ngFor="let template of labStore.templates()"
-              class="test-select-card"
-              [class.selected]="isTestSelected(template.id)"
-              (click)="toggleTestSelection(template.id)"
-            >
-              <div class="checkbox-col">
-                <mat-checkbox
-                  [checked]="isTestSelected(template.id)"
-                  (click)="$event.stopPropagation()"
-                  (change)="toggleTestSelection(template.id)"
-                ></mat-checkbox>
-              </div>
-              <div class="test-info">
-                <div class="top-row">
-                  <span class="code">{{ template.testCode }}</span>
-                  <span class="price">{{ template.price | currency:'USD' }}</span>
+                <!-- Patient Quick Profile Card -->
+                <div class="patient-quick-card" *ngIf="selectedPatient() as pt">
+                  <div class="pt-avatar">
+                    <mat-icon>account_circle</mat-icon>
+                  </div>
+                  <div class="pt-info">
+                    <div class="pt-name-row">
+                      <span class="pt-fullname">{{ pt.firstName }} {{ pt.lastName }}</span>
+                      <span class="pt-mrn-badge">{{ pt.medicalRecordNumber }}</span>
+                      <span class="pt-blood-pill" *ngIf="pt.bloodGroup">{{ pt.bloodGroup }}</span>
+                    </div>
+                    <div class="pt-meta-row">
+                      <span>DOB: {{ pt.dateOfBirth | date:'mediumDate' }}</span>
+                      <span class="sep">•</span>
+                      <span>Gender: {{ pt.gender }}</span>
+                      <span class="sep" *ngIf="pt.phone">•</span>
+                      <span *ngIf="pt.phone">Phone: {{ pt.phone }}</span>
+                    </div>
+                  </div>
                 </div>
-                <span class="name">{{ template.testName }}</span>
-                <span class="sample">Specimen: {{ template.sampleType }}</span>
               </div>
+
+              <!-- Priority Segmented Pills -->
+              <div class="priority-segmented-wrapper">
+                <label class="segmented-label">Requisition Urgency</label>
+                <div class="priority-pill-group">
+                  <button
+                    type="button"
+                    class="priority-pill pill-routine"
+                    [class.active]="orderForm.get('priority')?.value === 'Routine'"
+                    (click)="setOrderPriority('Routine')"
+                  >
+                    <div class="pill-icon-box">
+                      <mat-icon>schedule</mat-icon>
+                    </div>
+                    <div class="pill-text">
+                      <span class="pill-name">Routine</span>
+                      <small>Standard TAT</small>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="priority-pill pill-urgent"
+                    [class.active]="orderForm.get('priority')?.value === 'Urgent'"
+                    (click)="setOrderPriority('Urgent')"
+                  >
+                    <div class="pill-icon-box">
+                      <mat-icon>priority_high</mat-icon>
+                    </div>
+                    <div class="pill-text">
+                      <span class="pill-name">Urgent</span>
+                      <small>Priority Queue</small>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="priority-pill pill-stat"
+                    [class.active]="orderForm.get('priority')?.value === 'Stat'"
+                    (click)="setOrderPriority('Stat')"
+                  >
+                    <div class="pill-icon-box">
+                      <mat-icon>bolt</mat-icon>
+                    </div>
+                    <div class="pill-text">
+                      <span class="pill-name">Stat</span>
+                      <small>Emergency 1hr</small>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width-field clinical-notes-field">
+              <mat-label>Clinical Indication / Diagnosis / Fasting Instructions</mat-label>
+              <textarea matInput formControlName="clinicalNotes" rows="2" placeholder="e.g. 12hr fasting confirmed, rule out microcytic anemia, acute metabolic acidosis, routine pre-op screening..."></textarea>
+              <mat-icon matPrefix class="field-prefix-icon">notes</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Step 2: Diagnostic Test Panel Selection -->
+          <div class="order-section-block">
+            <div class="section-badge-title test-selection-header">
+              <div class="title-left">
+                <span class="step-num">2</span>
+                <span class="step-label">Select Diagnostic Panels</span>
+              </div>
+              <div class="title-right" *ngIf="getSelectedTestsCount() > 0">
+                <span class="selected-counter-badge">
+                  <mat-icon>check_circle</mat-icon>
+                  {{ getSelectedTestsCount() }} Selected
+                </span>
+                <button type="button" class="clear-all-link" (click)="clearSelectedTests()">
+                  Clear Selection
+                </button>
+              </div>
+            </div>
+
+            <!-- In-Modal Test Search & Filter Toolbar -->
+            <div class="order-test-toolbar">
+              <div class="order-cat-pills">
+                <button
+                  *ngFor="let cat of orderModalCategories()"
+                  type="button"
+                  class="order-cat-pill"
+                  [class.active]="orderModalCategoryFilter() === cat"
+                  (click)="orderModalCategoryFilter.set(cat)"
+                >
+                  <mat-icon class="pill-mini-icon">{{ getCategoryIcon(cat) }}</mat-icon>
+                  <span>{{ cat === 'ALL' ? 'All Panels' : cat }}</span>
+                </button>
+              </div>
+
+              <div class="order-test-search">
+                <mat-icon class="search-mini-icon">search</mat-icon>
+                <input
+                  type="text"
+                  placeholder="Filter tests by name, code, specimen..."
+                  [value]="orderModalSearchQuery()"
+                  (input)="orderModalSearchQuery.set($any($event.target).value)"
+                />
+                <button
+                  type="button"
+                  *ngIf="orderModalSearchQuery()"
+                  mat-icon-button
+                  class="clear-mini-btn"
+                  (click)="orderModalSearchQuery.set('')"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Diagnostic Panels Grid -->
+            <div class="order-panels-grid">
+              <div
+                *ngFor="let t of orderModalFilteredTemplates()"
+                class="order-test-card"
+                [class.is-selected]="isTestSelected(t.id)"
+                (click)="toggleTestSelection(t.id)"
+              >
+                <div class="card-glow-indicator"></div>
+                <div class="card-checkbox-wrap">
+                  <mat-icon class="card-check-icon">
+                    {{ isTestSelected(t.id) ? 'check_circle' : 'radio_button_unchecked' }}
+                  </mat-icon>
+                </div>
+                <div class="card-content-wrap">
+                  <div class="card-top-line">
+                    <span class="card-code-pill">{{ t.testCode }}</span>
+                    <span class="card-cat-badge" [style.color]="getCategoryColor(t.category)" [style.background]="getCategoryBg(t.category)">
+                      {{ t.category }}
+                    </span>
+                  </div>
+                  <h4 class="card-name">{{ t.testName }}</h4>
+                  <p class="card-desc" *ngIf="t.description">{{ t.description }}</p>
+                  <div class="card-meta-line">
+                    <span class="meta-pill"><mat-icon>colorize</mat-icon> {{ t.sampleType }}</span>
+                    <span class="meta-pill"><mat-icon>schedule</mat-icon> {{ t.turnaroundTimeHours }}h TAT</span>
+                    <span class="meta-price">${{ t.price | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty filtered tests state inside modal -->
+            <div class="order-tests-empty" *ngIf="orderModalFilteredTemplates().length === 0">
+              <mat-icon>search_off</mat-icon>
+              <span>No tests matching "{{ orderModalSearchQuery() }}"</span>
             </div>
           </div>
         </div>
 
-        <div class="order-summary-bar">
-          <div class="summary-item">
-            <span>Selected Tests:</span>
-            <strong>{{ (orderForm.get('selectedTests')?.value || []).length }}</strong>
+        <!-- Sticky Floating Footer Summary Bar -->
+        <div class="order-floating-footer">
+          <div class="footer-summary-left">
+            <div class="summary-stat">
+              <span class="stat-lbl">Panels Selected</span>
+              <span class="stat-val">{{ getSelectedTestsCount() }} test<span *ngIf="getSelectedTestsCount() !== 1">s</span></span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-stat total-fee-stat">
+              <span class="stat-lbl">Total Diagnostic Fee</span>
+              <span class="stat-val fee-highlight">${{ calculateOrderTotal() | number:'1.2-2' }}</span>
+            </div>
           </div>
-          <div class="summary-item">
-            <span>Estimated Total:</span>
-            <strong class="total-price">{{ calculateOrderTotal() | currency:'USD' }}</strong>
+          <div class="footer-summary-actions">
+            <button type="button" mat-stroked-button class="btn-cancel" (click)="closeCreateOrderModal()">Cancel</button>
+            <button
+              type="submit"
+              mat-flat-button
+              color="primary"
+              class="btn-submit-order"
+              [disabled]="orderForm.invalid || getSelectedTestsCount() === 0 || isSubmitting()"
+            >
+              <mat-icon *ngIf="!isSubmitting()">send</mat-icon>
+              <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+              <span>Place & Dispatch Order</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: SPECIMEN ACCESSION & BARCODING
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isAccessionModal()" (click)="closeAccessionModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">qr_code_scanner</mat-icon>
+          <div>
+            <h2>Specimen Intake & Accessioning</h2>
+            <p>Order #{{ selectedOrder()?.orderNumber }} | {{ selectedOrder()?.patientName }}</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeAccessionModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="accessionForm" (ngSubmit)="submitAccession()">
+        <div class="modal-body">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Specimen Type</mat-label>
+              <mat-select formControlName="specimenType">
+                <mat-option value="Whole Blood">Whole Blood</mat-option>
+                <mat-option value="Serum">Serum</mat-option>
+                <mat-option value="Fluoride Plasma">Fluoride Plasma</mat-option>
+                <mat-option value="Clean Catch Urine">Clean Catch Urine</mat-option>
+                <mat-option value="Nasopharyngeal Swab">Nasopharyngeal Swab</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Vacuum Tube / Container</mat-label>
+              <mat-select formControlName="tubeType">
+                <mat-option value="EDTA Lavender Top">EDTA Lavender Top (4ml)</mat-option>
+                <mat-option value="SST Gold Top Gel Separator">SST Gold Top Gel Separator (5ml)</mat-option>
+                <mat-option value="Sodium Fluoride Grey Top">Sodium Fluoride Grey Top (2ml)</mat-option>
+                <mat-option value="Sterile Urine Container">Sterile Urine Container (50ml)</mat-option>
+                <mat-option value="Viral Transport Media (VTM)">Viral Transport Media (VTM)</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Sample Condition</mat-label>
+              <mat-select formControlName="sampleCondition">
+                <mat-option value="Viable">Viable (Normal Optical Integrity)</mat-option>
+                <mat-option value="Mild Lipemic">Mild Lipemic</mat-option>
+                <mat-option value="Icteric">Icteric (Bilirubinemia)</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Volume Collected (mL)</mat-label>
+              <input matInput type="number" step="0.5" formControlName="collectionVolumeMl" />
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Phlebotomy & Intake Notes</mat-label>
+            <textarea matInput formControlName="technicianNotes" rows="2" placeholder="Venipuncture site, butterfly gauge, fast duration..."></textarea>
+          </mat-form-field>
+
+          <div class="barcode-preview-box">
+            <mat-icon>qr_code_2</mat-icon>
+            <div class="barcode-info">
+              <span class="preview-title">Accession Barcode Preview</span>
+              <span class="preview-val">SPM-{{ selectedOrder()?.orderNumber?.replace('LAB-', '') }}</span>
+              <span class="preview-sub">Automated barcode label dispatched to thermal printer</span>
+            </div>
           </div>
         </div>
 
-        <div class="modal-actions">
-          <button type="button" mat-stroked-button (click)="closeCreateOrderModal()">Cancel</button>
-          <button
-            type="submit"
-            mat-flat-button
-            color="primary"
-            [disabled]="orderForm.invalid || isSubmitting()"
-          >
-            <mat-spinner *ngIf="isSubmitting()" diameter="20"></mat-spinner>
-            <span *ngIf="!isSubmitting()">Create Lab Order</span>
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeAccessionModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="accessionForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">check_circle</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Accept Specimen & Issue Barcode</span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL 2: RESULT ENTRY & PARAMETER VALIDATION -->
-  <div class="custom-modal-overlay" *ngIf="isEnteringResults()">
-    <div class="custom-modal-dialog results-modal">
+  <!-- ==========================================
+       MODAL: SPECIMEN REJECTION
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isRejectModal()" (click)="closeRejectModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header modal-header-warn">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">cancel_presentation</mat-icon>
+          <div>
+            <h2>Reject Specimen with Clinical Reason</h2>
+            <p>Order #{{ selectedOrder()?.orderNumber }} | {{ selectedOrder()?.patientName }}</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeRejectModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="rejectForm" (ngSubmit)="submitRejection()">
+        <div class="modal-body">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Clinical Rejection Reason</mat-label>
+            <mat-select formControlName="rejectionReason">
+              <mat-option value="Severe Hemolysis (Free hemoglobin > 300 mg/dL)">Severe Hemolysis (Free hemoglobin > 300 mg/dL)</mat-option>
+              <mat-option value="Grossly Clotted Specimen">Grossly Clotted Specimen</mat-option>
+              <mat-option value="Insufficient Volume (QNS)">Insufficient Volume (Quantity Not Sufficient)</mat-option>
+              <mat-option value="Incorrect Collection Tube (Wrong Anticoagulant)">Incorrect Collection Tube (Wrong Anticoagulant)</mat-option>
+              <mat-option value="Sample Expired / Transit Delay">Sample Expired / Transit Delay</mat-option>
+              <mat-option value="Unlabeled / Mislabeled Tube">Unlabeled / Mislabeled Tube</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-checkbox formControlName="requiresRecollection" class="checkbox-line">
+            Flag Order for Urgent Patient Re-collection / Redraw
+          </mat-checkbox>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Technician Narrative / Clinical Justification</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Document visual inspection, phlebotomy notification, redraw request details..."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeRejectModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="warn" [disabled]="rejectForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">block</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Confirm Specimen Rejection</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: RESULT ENTRY & AUTO-FLAGGING
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isEnteringResults()" (click)="closeResultModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-group">
-          <mat-icon>science</mat-icon>
+          <mat-icon class="header-icon">science</mat-icon>
           <div>
-            <h3>Enter Results: {{ selectedOrderItem()?.testName }}</h3>
-            <p class="modal-sub">Patient: {{ selectedOrder()?.patientName }} | Order: {{ selectedOrder()?.orderNumber }}</p>
+            <h2>Record Diagnostic Test Results</h2>
+            <p>{{ selectedOrderItem()?.testName }} ({{ selectedOrderItem()?.testCode }}) | {{ selectedOrder()?.patientName }}</p>
           </div>
         </div>
         <button mat-icon-button (click)="closeResultModal()">
@@ -478,82 +1880,71 @@
       </div>
 
       <div class="modal-body">
-        <p class="instruction-text">
-          Enter numerical or quantitative readings for each parameter below. Flags are automatically calculated based on normal clinical reference ranges.
-        </p>
+        <div class="specimen-meta-bar">
+          <span>Barcode: <strong>{{ selectedOrder()?.specimenBarcode || 'SPM-PENDING' }}</strong></span>
+          <span>Sample: <strong>{{ selectedOrderItem()?.sampleType }}</strong></span>
+          <span>Patient MRN: <strong>{{ selectedOrder()?.patientMedicalRecordNumber }}</strong></span>
+        </div>
 
-        <div class="parameter-table-wrap">
-          <table class="param-entry-table">
-            <thead>
-              <tr>
-                <th>Parameter</th>
-                <th>Measured Value</th>
-                <th>Unit</th>
-                <th>Reference Range</th>
-                <th>Flag Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let p of resultParameters()">
-                <td class="param-name-cell">
-                  <strong>{{ p.name }}</strong>
-                </td>
-                <td class="input-cell">
-                  <input
-                    type="text"
-                    [(ngModel)]="p.value"
-                    (input)="evaluateParamFlag(p)"
-                    placeholder="Enter value"
-                    class="param-input"
-                  />
-                </td>
-                <td class="unit-cell">{{ p.unit }}</td>
-                <td class="ref-cell">{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</td>
-                <td class="flag-cell">
-                  <span class="flag-badge" [ngClass]="getFlagClass(p.flag)">
-                    {{ p.flag }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="params-entry-table">
+          <div class="params-table-header">
+            <span class="col-name">Parameter</span>
+            <span class="col-value">Measured Value</span>
+            <span class="col-unit">Unit</span>
+            <span class="col-ref">Reference Interval</span>
+            <span class="col-flag">Alert Flag</span>
+          </div>
+
+          <div *ngFor="let p of resultParameters()" class="param-entry-row">
+            <span class="col-name p-name-label">{{ p.name }}</span>
+            <div class="col-value">
+              <input
+                type="text"
+                class="value-input"
+                [(ngModel)]="p.value"
+                (input)="evaluateParamFlag(p)"
+                placeholder="Enter value"
+              />
+            </div>
+            <span class="col-unit">{{ p.unit }}</span>
+            <span class="col-ref">{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</span>
+            <div class="col-flag">
+              <span class="flag-badge" [ngClass]="getFlagClass(p.flag)">{{ p.flag }}</span>
+            </div>
+          </div>
         </div>
 
         <mat-form-field appearance="outline" class="full-width remarks-field">
-          <mat-label>Pathologist / Technician Clinical Remarks</mat-label>
-          <textarea
-            matInput
-            rows="3"
-            [(ngModel)]="resultRemarks"
-            placeholder="e.g. Normal parameters within healthy biological range."
-          ></textarea>
+          <mat-label>Technician Remarks & Interpretation</mat-label>
+          <textarea matInput [ngModel]="resultRemarks()" (ngModelChange)="resultRemarks.set($event)" rows="2" placeholder="Microscopic findings, analyzer calibration notes, duplicate run confirmations..."></textarea>
         </mat-form-field>
+      </div>
 
-        <div class="modal-actions">
-          <button mat-stroked-button (click)="closeResultModal()">Cancel</button>
-          <button
-            mat-flat-button
-            color="primary"
-            (click)="submitResults()"
-            [disabled]="isSubmitting()"
-          >
-            <mat-spinner *ngIf="isSubmitting()" diameter="20"></mat-spinner>
-            <span *ngIf="!isSubmitting()">Save & Complete Test</span>
-          </button>
-        </div>
+      <div class="modal-footer">
+        <button type="button" mat-stroked-button (click)="closeResultModal()">Cancel</button>
+        <button type="button" mat-flat-button color="primary" (click)="submitResults()" [disabled]="isSubmitting()">
+          <mat-icon *ngIf="!isSubmitting()">save</mat-icon>
+          <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+          <span>Save & Sign Results</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 3: DIAGNOSTIC REPORT PRINT / SLIP -->
-  <div class="custom-modal-overlay" *ngIf="isViewingReport()">
-    <div class="custom-modal-dialog report-modal">
-      <div class="modal-header">
+  <!-- ==========================================
+       MODAL: OFFICIAL PATHOLOGY REPORT VIEWER
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isViewingReport()" (click)="closeReportModal()">
+    <div class="modal-dialog modal-lg report-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header report-modal-header">
         <div class="modal-title-group">
-          <mat-icon>description</mat-icon>
-          <h3>Diagnostic Laboratory Report</h3>
+          <mat-icon class="header-icon">verified</mat-icon>
+          <div>
+            <h2>Pathology & Diagnostic Laboratory Report</h2>
+            <p>Official Clinical Diagnostic Documentation</p>
+          </div>
         </div>
-        <div class="header-btns">
+        <div class="modal-actions">
           <button mat-flat-button color="primary" (click)="printReport()">
             <mat-icon>print</mat-icon>
             <span>Print Report</span>
@@ -564,98 +1955,666 @@
         </div>
       </div>
 
-      <div class="report-paper printable-area" *ngIf="selectedOrder()">
+      <div class="modal-body report-body" id="printable-report">
+        <!-- Clinic Header -->
         <div class="report-clinic-header">
-          <div class="brand-left">
-            <h2>🏥 APEX CLINICAL LABORATORIES</h2>
-            <p>100 Healthcare Boulevard, Medical District</p>
-            <p>Tel: +1 (555) 019-2834 | Lic: CLIA-99A01234</p>
+          <div class="clinic-logo-text">
+            <h2>CLINIC HEALTHCARE SYSTEM</h2>
+            <p>Department of Pathology and Laboratory Medicine</p>
+            <span class="clinic-sub">CAP & ISO 15189 Certified Reference Laboratory</span>
           </div>
-          <div class="report-badge-right">
-            <span class="report-type-badge">OFFICIAL DIAGNOSTIC REPORT</span>
-            <span class="order-ref">Order Ref: {{ selectedOrder()?.orderNumber }}</span>
-          </div>
-        </div>
-
-        <div class="report-divider"></div>
-
-        <div class="demographics-grid">
-          <div class="demo-col">
-            <p><strong>Patient Name:</strong> {{ selectedOrder()?.patientName }}</p>
-            <p><strong>MRN:</strong> {{ selectedOrder()?.patientMedicalRecordNumber }}</p>
-          </div>
-          <div class="demo-col">
-            <p><strong>Referring Doctor:</strong> Dr. {{ selectedOrder()?.doctorName }}</p>
-            <p><strong>Order Priority:</strong> {{ selectedOrder()?.priority }}</p>
-          </div>
-          <div class="demo-col">
-            <p><strong>Ordered Date:</strong> {{ selectedOrder()?.orderDate | date:'medium' }}</p>
-            <p><strong>Report Status:</strong> {{ selectedOrder()?.status }}</p>
+          <div class="report-barcode-box" *ngIf="selectedOrder()?.specimenBarcode">
+            <span class="barcode-font">*{{ selectedOrder()?.specimenBarcode }}*</span>
+            <span class="barcode-label">{{ selectedOrder()?.specimenBarcode }}</span>
           </div>
         </div>
 
         <div class="report-divider"></div>
 
-        <div class="report-test-results">
-          <div *ngFor="let item of selectedOrder()?.items" class="test-report-block">
-            <div class="test-block-header">
-              <h4>{{ item.testName }} ({{ item.testCode }})</h4>
-              <span class="specimen-badge">Specimen: {{ item.sampleType }}</span>
-            </div>
-
-            <div *ngIf="item.result" class="results-table-wrap">
-              <table class="report-table">
-                <thead>
-                  <tr>
-                    <th>Parameter</th>
-                    <th>Result Value</th>
-                    <th>Reference Range</th>
-                    <th>Units</th>
-                    <th>Flag</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let r of getParsedParameters(item.result.parameterResultsJson)">
-                    <td><strong>{{ r.name || r.parameterName }}</strong></td>
-                    <td class="res-val" [class.abnormal]="r.flag !== 'Normal'">
-                      {{ r.value }}
-                    </td>
-                    <td>{{ r.normalText || (r.minRef + ' - ' + r.maxRef) }}</td>
-                    <td>{{ r.unit }}</td>
-                    <td>
-                      <span class="flag-badge" [ngClass]="getFlagClass(r.flag)">
-                        {{ r.flag }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div *ngIf="item.result.remarks" class="result-remarks-box">
-                <strong>Technician / Pathologist Notes:</strong>
-                <p>{{ item.result.remarks }}</p>
-              </div>
-            </div>
-
-            <div *ngIf="!item.result" class="pending-result-note">
-              <em>Analysis in progress. Specimen collected and undergoing laboratory processing.</em>
-            </div>
+        <!-- Demographics Grid -->
+        <div class="report-demographics-grid">
+          <div class="demo-col">
+            <div class="demo-item"><span class="lbl">Patient Name:</span> <strong>{{ selectedOrder()?.patientName }}</strong></div>
+            <div class="demo-item"><span class="lbl">MRN:</span> <strong>{{ selectedOrder()?.patientMedicalRecordNumber }}</strong></div>
+            <div class="demo-item"><span class="lbl">Referring Doctor:</span> <strong>Dr. {{ selectedOrder()?.doctorName }}</strong></div>
+          </div>
+          <div class="demo-col">
+            <div class="demo-item"><span class="lbl">Order Number:</span> <strong>{{ selectedOrder()?.orderNumber }}</strong></div>
+            <div class="demo-item"><span class="lbl">Accession Date:</span> <strong>{{ selectedOrder()?.orderDate | date:'medium' }}</strong></div>
+            <div class="demo-item"><span class="lbl">Specimen Type:</span> <strong>{{ selectedOrder()?.specimenType || selectedOrder()?.items?.[0]?.sampleType || 'Whole Blood' }}</strong></div>
           </div>
         </div>
 
-        <div class="report-signature-footer">
-          <div class="sig-block">
-            <div class="sig-line"></div>
-            <p>Medical Technologist</p>
-            <small>Specimen Authenticated</small>
+        <div class="report-divider"></div>
+
+        <!-- Diagnostic Items and Results -->
+        <div *ngFor="let item of selectedOrder()?.items" class="report-test-section">
+          <div class="report-test-title">
+            <h3>{{ item.testName }} ({{ item.testCode }})</h3>
+            <span class="status-badge" [ngClass]="getStatusClass(item.status)">{{ item.status }}</span>
           </div>
-          <div class="sig-block">
-            <div class="sig-line"></div>
-            <p>Consultant Pathologist</p>
-            <small>Electronically Verified</small>
+
+          <table class="report-data-table" *ngIf="item.result">
+            <thead>
+              <tr>
+                <th>Test Parameter</th>
+                <th>Result</th>
+                <th>Units</th>
+                <th>Reference Range</th>
+                <th>Flag</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of getParsedParameters(item.result.parameterResultsJson)" [class.row-flagged]="p.flag !== 'Normal'">
+                <td class="p-name">{{ p.parameterName }}</td>
+                <td class="p-val"><strong>{{ p.value }}</strong></td>
+                <td>{{ p.unit }}</td>
+                <td>{{ p.normalText || (p.minRef + ' - ' + p.maxRef) }}</td>
+                <td>
+                  <span class="flag-badge" [ngClass]="getFlagClass(p.flag)">{{ p.flag }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="report-remarks" *ngIf="item.result?.remarks">
+            <strong>Clinical Remarks:</strong>
+            <p>{{ item.result.remarks }}</p>
+          </div>
+        </div>
+
+        <!-- Sign-off Seal -->
+        <div class="report-sign-off">
+          <div class="sign-block">
+            <div class="sign-line"></div>
+            <span>Technician Digital Signature</span>
+            <small>Leo Technician, MLS (ASCP)</small>
+          </div>
+          <div class="sign-block">
+            <div class="sign-line"></div>
+            <span>Laboratory Director / Pathologist</span>
+            <small>Dr. John Smith, MD, FCAP</small>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- ==========================================
+       MODAL: REGISTER NEW REAGENT
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isReagentModal()" (click)="closeReagentModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">science</mat-icon>
+          <div>
+            <h2>Register Chemical Reagent or Consumable</h2>
+            <p>Maintain lot tracking, storage guidelines, and minimum stock alerts</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeReagentModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="reagentForm" (ngSubmit)="submitReagent()">
+        <div class="modal-body">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Reagent Name</mat-label>
+              <input matInput formControlName="name" placeholder="e.g. Sysmex Cellpack Diluent" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Catalog Code</mat-label>
+              <input matInput formControlName="catalogCode" placeholder="e.g. REA-CBC-009" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Category</mat-label>
+              <mat-select formControlName="category">
+                <mat-option value="Hematology">Hematology</mat-option>
+                <mat-option value="Biochemistry">Biochemistry</mat-option>
+                <mat-option value="Lipid">Lipid</mat-option>
+                <mat-option value="Microbiology">Microbiology</mat-option>
+                <mat-option value="Consumables">Consumables</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Lot Number</mat-label>
+              <input matInput formControlName="lotNumber" placeholder="e.g. LOT-2026-X" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Current Stock</mat-label>
+              <input matInput type="number" formControlName="currentStock" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Minimum Threshold</mat-label>
+              <input matInput type="number" formControlName="minimumThreshold" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Unit of Measure</mat-label>
+              <input matInput formControlName="unitOfMeasure" placeholder="Bottles, Kits, Tubes" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Expiry Date</mat-label>
+              <input matInput type="date" formControlName="expiryDate" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Storage Condition</mat-label>
+              <mat-select formControlName="storageCondition">
+                <mat-option value="15-25°C Room Temp">15-25°C Room Temp</mat-option>
+                <mat-option value="2-8°C Refrigerated">2-8°C Refrigerated</mat-option>
+                <mat-option value="-20°C Frozen">-20°C Frozen</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Manufacturer</mat-label>
+              <input matInput formControlName="manufacturer" placeholder="e.g. Roche Diagnostics" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Unit Cost ($)</mat-label>
+              <input matInput type="number" step="0.5" formControlName="unitCost" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeReagentModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="reagentForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">save</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Register Reagent</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: REAGENT STOCK ADJUSTMENT
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isAdjustStockModal()" (click)="closeAdjustStockModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">swap_vert</mat-icon>
+          <div>
+            <h2>Adjust Reagent Stock Quantity</h2>
+            <p>{{ selectedReagent()?.name }} (Current: {{ selectedReagent()?.currentStock }} {{ selectedReagent()?.unitOfMeasure }})</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeAdjustStockModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="stockAdjustmentForm" (ngSubmit)="submitStockAdjustment()">
+        <div class="modal-body">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Adjustment Type</mat-label>
+              <mat-select formControlName="adjustmentType">
+                <mat-option value="restock">Add Stock (+ Replenishment)</mat-option>
+                <mat-option value="consumption">Deduct Stock (- Routine Consumption)</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Quantity ({{ selectedReagent()?.unitOfMeasure }})</mat-label>
+              <input matInput type="number" formControlName="adjustmentQuantity" />
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Audit Reason</mat-label>
+            <input matInput formControlName="reason" placeholder="Vendor shipment delivery, analyzer batch consumption..." />
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeAdjustStockModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="stockAdjustmentForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">check</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Update Stock</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: CREATE SUPPLY REQUISITION
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isRequisitionModal()" (click)="closeRequisitionModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">inventory</mat-icon>
+          <div>
+            <h2>Create Supply Purchase Requisition</h2>
+            <p>Request reagent or consumable replenishment from purchasing / procurement</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeRequisitionModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="requisitionForm" (ngSubmit)="submitRequisition()">
+        <div class="modal-body">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Linked Reagent from Inventory (Optional)</mat-label>
+            <mat-select formControlName="labReagentId" (selectionChange)="onReagentSelectedForReq($event.value)">
+              <mat-option value="">None / Custom Non-Catalog Item</mat-option>
+              <mat-option *ngFor="let r of reagents()" [value]="r.id">
+                {{ r.name }} ({{ r.catalogCode }} - Stock: {{ r.currentStock }})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Item Name</mat-label>
+              <input matInput formControlName="itemName" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Category</mat-label>
+              <mat-select formControlName="category">
+                <mat-option value="Hematology">Hematology</mat-option>
+                <mat-option value="Biochemistry">Biochemistry</mat-option>
+                <mat-option value="Lipid">Lipid</mat-option>
+                <mat-option value="Consumables">Consumables</mat-option>
+                <mat-option value="Microbiology">Microbiology</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Quantity</mat-label>
+              <input matInput type="number" formControlName="quantityRequested" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Unit</mat-label>
+              <input matInput formControlName="unitOfMeasure" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Estimated Unit Cost ($)</mat-label>
+              <input matInput type="number" step="0.5" formControlName="estimatedUnitCost" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Urgency Level</mat-label>
+              <mat-select formControlName="urgency">
+                <mat-option value="Routine">Routine</mat-option>
+                <mat-option value="High">High</mat-option>
+                <mat-option value="Urgent">Urgent</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Clinical Justification / Need</mat-label>
+            <textarea matInput formControlName="reason" rows="2" placeholder="Describe low stock, upcoming tests, or scheduled maintenance..."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeRequisitionModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="requisitionForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">send</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Submit Requisition</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: REVIEW SUPPLY REQUISITION
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isReviewRequisitionModal()" (click)="closeReviewRequisitionModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">rate_review</mat-icon>
+          <div>
+            <h2>Review Supply Purchase Requisition</h2>
+            <p>{{ selectedRequisition()?.requisitionNumber }} | {{ selectedRequisition()?.itemName }}</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeReviewRequisitionModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="reviewRequisitionForm" (ngSubmit)="submitRequisitionReview()">
+        <div class="modal-body">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Decision Status</mat-label>
+              <mat-select formControlName="status">
+                <mat-option value="Approved">Approved (PO Dispatched)</mat-option>
+                <mat-option value="Fulfilled">Fulfilled (Goods Received & Restocked)</mat-option>
+                <mat-option value="Rejected">Rejected</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Review Notes / PO Number</mat-label>
+            <textarea matInput formControlName="reviewNotes" rows="3" placeholder="PO reference, vendor delivery ETA, approval comments..."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeReviewRequisitionModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="reviewRequisitionForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">check</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Submit Review Decision</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: EQUIPMENT QC & CALIBRATION LOG
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isEquipmentLogModal()" (click)="closeEquipmentLogModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <mat-icon class="header-icon">health_and_safety</mat-icon>
+          <div>
+            <h2>Log Analyzer QC / Calibration Run</h2>
+            <p>Maintain accreditation logs, control lot standard deviations, and maintenance records</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeEquipmentLogModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="equipmentLogForm" (ngSubmit)="submitEquipmentLog()">
+        <div class="modal-body">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Equipment Name</mat-label>
+              <input matInput formControlName="equipmentName" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Model</mat-label>
+              <input matInput formControlName="equipmentModel" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Serial Number</mat-label>
+              <input matInput formControlName="serialNumber" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Bench Location</mat-label>
+              <input matInput formControlName="location" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Log Type</mat-label>
+              <mat-select formControlName="logType">
+                <mat-option value="DailyCalibration">Daily Calibration</mat-option>
+                <mat-option value="WeeklyCleaning">Weekly Cleaning</mat-option>
+                <mat-option value="PreventiveMaintenance">Preventive Maintenance</mat-option>
+                <mat-option value="CorrectiveRepair">Corrective Repair</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Control Lot Number</mat-label>
+              <input matInput formControlName="controlLotNumber" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Standard Deviation (SD Score)</mat-label>
+              <input matInput type="number" step="0.01" formControlName="standardDeviationScore" placeholder="e.g. 0.25" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>QC Status</mat-label>
+              <mat-select formControlName="status">
+                <mat-option value="Passed">Passed (Within 1.5 SD)</mat-option>
+                <mat-option value="Warning">Warning (Between 1.5 and 2.0 SD)</mat-option>
+                <mat-option value="Failed">Failed (Action Required)</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Inspection Findings</mat-label>
+            <textarea matInput formControlName="findings" rows="2" placeholder="Laser optics, flow cell rinse, temperature checks..."></textarea>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Corrective Action Taken</mat-label>
+              <input matInput formControlName="correctiveAction" placeholder="Buffer wash, optical realign, sensor recalibration..." />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Next Maintenance Due</mat-label>
+              <input matInput type="date" formControlName="nextMaintenanceDueDate" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeEquipmentLogModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="equipmentLogForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">save</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>Record QC Entry</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: CREATE / EDIT DIAGNOSTIC TEST PANEL
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isEditTestModal()" (click)="closeEditTestModal()">
+    <div class="modal-dialog modal-lg edit-test-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge test-badge">
+            <mat-icon>{{ isCreatingTest() ? 'add_box' : 'edit_note' }}</mat-icon>
+          </div>
+          <div>
+            <h2>{{ isCreatingTest() ? 'Create New Diagnostic Panel' : 'Edit Diagnostic Panel & Protocols' }}</h2>
+            <p>{{ isCreatingTest() ? 'Define a new laboratory test template and persist directly to database' : 'Update turnaround times, fees, reference intervals, or specimen protocols' }}</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeEditTestModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="testTemplateForm" (ngSubmit)="submitTestTemplate()">
+        <div class="modal-body">
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Test Code</mat-label>
+              <input matInput formControlName="testCode" placeholder="e.g. CBC, LIPID, TSH" />
+              <mat-hint>Unique clinical abbreviation</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col-2">
+              <mat-label>Test Panel Name</mat-label>
+              <input matInput formControlName="testName" placeholder="e.g. Complete Blood Count with Differential" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Department / Category</mat-label>
+              <mat-select formControlName="category">
+                <mat-option value="Hematology">Hematology</mat-option>
+                <mat-option value="Biochemistry">Biochemistry</mat-option>
+                <mat-option value="Lipid">Lipid</mat-option>
+                <mat-option value="Microbiology">Microbiology</mat-option>
+                <mat-option value="Endocrinology">Endocrinology</mat-option>
+                <mat-option value="Immunology">Immunology</mat-option>
+                <mat-option value="Urinalysis">Urinalysis</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Sample / Specimen Type</mat-label>
+              <mat-select formControlName="sampleType">
+                <mat-option value="Whole Blood (EDTA)">Whole Blood (EDTA)</mat-option>
+                <mat-option value="Serum">Serum</mat-option>
+                <mat-option value="Fluoride Plasma">Fluoride Plasma</mat-option>
+                <mat-option value="Clean Catch Urine">Clean Catch Urine</mat-option>
+                <mat-option value="Nasopharyngeal Swab">Nasopharyngeal Swab</mat-option>
+                <mat-option value="Stool Specimen">Stool Specimen</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Turnaround Time (Hours)</mat-label>
+              <input matInput type="number" formControlName="turnaroundTimeHours" min="1" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="form-col">
+              <mat-label>Standard Fee ($)</mat-label>
+              <input matInput type="number" step="0.5" formControlName="price" min="0" />
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Clinical Description & Indications</mat-label>
+              <textarea matInput formControlName="description" rows="2" placeholder="Clinical utility, diagnostic indications, fasting protocols..."></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row toggle-row" *ngIf="!isCreatingTest()">
+            <mat-checkbox formControlName="isActive" color="primary">
+              Active Diagnostic Test (Available for Requisition in Clinic)
+            </mat-checkbox>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width json-code-field">
+            <mat-label>Parameter Reference Intervals (JSON Array)</mat-label>
+            <textarea matInput formControlName="parametersJson" rows="5" class="code-textarea" placeholder='[{"name": "Parameter", "unit": "mg/dL", "minRef": 10, "maxRef": 50, "normalText": "10 - 50 mg/dL"}]'></textarea>
+            <mat-hint>Configure measured parameters, units, and reference intervals for automated clinical flagging.</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" mat-stroked-button (click)="closeEditTestModal()">Cancel</button>
+          <button type="submit" mat-flat-button color="primary" [disabled]="testTemplateForm.invalid || isSubmitting()">
+            <mat-icon *ngIf="!isSubmitting()">save</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+            <span>{{ isCreatingTest() ? 'Create Panel in Database' : 'Save Changes to Database' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: CONFIRM DELETE DIAGNOSTIC PANEL
+       ========================================== -->
+  <div class="modal-backdrop" *ngIf="isDeleteConfirmModal()" (click)="cancelDeleteTest()">
+    <div class="modal-dialog delete-confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header modal-header-danger">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge danger-badge">
+            <mat-icon>delete_forever</mat-icon>
+          </div>
+          <div>
+            <h2>Delete Diagnostic Panel</h2>
+            <p>Database Removal Confirmation</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="cancelDeleteTest()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="delete-warning-banner">
+          <mat-icon>warning</mat-icon>
+          <div>
+            <strong>Are you sure you want to remove this test panel?</strong>
+            <p>This action will immediately update the PostgreSQL database. If historical patient orders reference this panel, it will be safely deactivated to preserve clinical records.</p>
+          </div>
+        </div>
+
+        <div class="test-delete-preview" *ngIf="testToDelete() as t">
+          <div class="preview-item">
+            <span class="preview-lbl">Test Code:</span>
+            <span class="preview-code">{{ t.testCode }}</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-lbl">Panel Name:</span>
+            <span class="preview-name">{{ t.testName }}</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-lbl">Category:</span>
+            <span class="preview-cat">{{ t.category }}</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-lbl">Fee:</span>
+            <span class="preview-fee">${{ t.price | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" mat-stroked-button (click)="cancelDeleteTest()">Cancel</button>
+        <button type="button" mat-flat-button color="warn" (click)="executeDeleteTest()" [disabled]="isSubmitting()">
+          <mat-icon *ngIf="!isSubmitting()">delete</mat-icon>
+          <mat-spinner diameter="20" *ngIf="isSubmitting()"></mat-spinner>
+          <span>Confirm & Delete from Database</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>

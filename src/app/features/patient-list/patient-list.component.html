@@ -153,11 +153,17 @@
             <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
             <td mat-cell *matCellDef="let p">
               <div class="actions-cell">
-                <a mat-flat-button color="primary" [routerLink]="['/patients', p.id]" class="action-btn-primary view-file-btn" matTooltip="View Clinical File">
+                <a mat-flat-button color="primary" [routerLink]="['/patients', p.id]" class="action-btn-primary view-file-btn" matTooltip="View Clinical File & Imaging History">
                   <mat-icon>folder_shared</mat-icon>
-                  <span>View File</span>
+                  <span>{{ isRadiologist() ? 'Imaging EMR' : 'View File' }}</span>
                 </a>
-                <a mat-icon-button class="action-icon-btn book-btn" routerLink="/appointments/book" matTooltip="Schedule Consultation">
+                <a *ngIf="isDoctor()" mat-icon-button class="action-icon-btn rad-order-btn" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: p.id}" matTooltip="Requisition Imaging Exam">
+                  <mat-icon>camera</mat-icon>
+                </a>
+                <a *ngIf="isRadiologist()" mat-icon-button class="action-icon-btn pacs-btn" routerLink="/radiology" [queryParams]="{tab: 'viewer'}" matTooltip="Open Web PACS Viewer">
+                  <mat-icon>center_focus_strong</mat-icon>
+                </a>
+                <a *ngIf="canCreateAppointment()" mat-icon-button class="action-icon-btn book-btn" routerLink="/appointments/book" matTooltip="Schedule Consultation">
                   <mat-icon>calendar_today</mat-icon>
                 </a>
                 <button mat-icon-button class="action-icon-btn edit-btn" (click)="editPatient(p)" matTooltip="Edit Patient Details">

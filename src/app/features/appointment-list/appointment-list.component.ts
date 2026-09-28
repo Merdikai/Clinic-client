@@ -1,6 +1,8 @@
+import { PermissionService } from '../../services/permission.service';
+import { PatientService } from '../../services/patient.service';
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,21 +18,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AppointmentStore } from '../../store/appointment.store';
 import { LiveSyncService } from '../../services/live-sync.service';
-import { ConsultationService } from '../../services/consultation.service';
 import { VitalSignsService } from '../../services/vital-signs.service';
 import { ToastService } from '../../ui/toast/toast.service';
-import { MedicineService } from '../../services/medicine.service';
 import { AuthService } from '../../services/auth.service';
-import { Medicine } from '../../models/medicine.model';
+import { AppointmentService } from '../../services/appointment.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-
-interface RxItem {
-  medicineId: string;
-  medicineName: string;
-  quantity: number;
-  dosageInstructions: string;
-  unitPrice: number;
-}
 
 @Component({
   selector: 'app-appointment-list',
@@ -57,13 +49,36 @@ interface RxItem {
   styleUrls: ['./appointment-list.component.scss']
 })
 export class AppointmentListComponent implements OnInit {
+  public permissionService = inject(PermissionService);
+  private patientService = inject(PatientService);
+  public authService = inject(AuthService);
+  private appointmentService = inject(AppointmentService);
+  isPatient = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'patient' || this.authService.hasRole('Patient'));
+  canConsult = computed(() => this.authService.hasRole('Doctor'));
+  isNurse = computed(() => this.authService.hasRole('Nurse'));
+  isReceptionist = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'receptionist' || this.authService.hasRole('Receptionist'));
+  isAdmin = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'admin' || this.authService.hasRole('Admin'));
+
+  // Receptionist Workflows
+  showCheckInModal = signal(false);
+  checkInTargetAppt = signal<any>(null);
+  tokenInput = signal<string>('');
+  visitTypeInput = signal<string>('General Consultation');
+  routingStation = signal<string>('Nurse Triage Station');
+
+  showRescheduleModal = signal(false);
+  rescheduleTargetAppt = signal<any>(null);
+  rescheduleDate = signal<string>('');
+  rescheduleTime = signal<string>('10:00');
+  rescheduleReason = signal<string>('');
+
+  activePatientId = signal<string | null>(null);
+  doctorFilterScope = signal<'all' | 'my'>(this.authService.hasRole('Doctor') ? 'my' : 'all');
   appointmentStore = inject(AppointmentStore);
   apptStore = this.appointmentStore;
+  private router = inject(Router);
   private liveSyncService = inject(LiveSyncService);
-  private consultationService = inject(ConsultationService);
-  private medicineService = inject(MedicineService);
   private snackBar = inject(MatSnackBar);
-
   appointments = this.appointmentStore.appointments;
   isLoading = this.appointmentStore.isLoading;
   displayedColumns = ['date', 'patient', 'doctor', 'status', 'actions'];
@@ -71,8 +86,22 @@ export class AppointmentListComponent implements OnInit {
   // Status Filter
   selectedStatusFilter = signal<string>('ALL');
 
+  scopedAppointments = computed(() => {
+    const list = this.appointments() || [];
+    if (this.authService.hasRole('Doctor') && this.doctorFilterScope() === 'my') {
+      const user: any = this.authService.currentUser();
+      const currentUserName = user ? ((user.fullName || user.name || user.username || user.email || '') as string).trim().toLowerCase() : '';
+      const userId = user?.id || user?.userId || '';
+      return list.filter(a =>
+        (currentUserName && a.doctorName && a.doctorName.toLowerCase().includes(currentUserName)) ||
+        (userId && a.doctorId && a.doctorId === userId)
+      );
+    }
+    return list;
+  });
+
   filteredAppointments = computed(() => {
-    let list = this.appointments() || [];
+    let list = this.scopedAppointments() || [];
     const filter = this.selectedStatusFilter();
     if (filter !== 'ALL') {
       list = list.filter(a => a.status?.toLowerCase() === filter.toLowerCase());
@@ -84,32 +113,6 @@ export class AppointmentListComponent implements OnInit {
   scheduledCount = computed(() => (this.appointments() || []).filter(a => a.status === 'Scheduled').length);
   checkedInCount = computed(() => (this.appointments() || []).filter(a => a.status === 'CheckedIn').length);
   completedCount = computed(() => (this.appointments() || []).filter(a => a.status === 'Completed').length);
-
-  // Consultation Modal State
-  isConsultationModalOpen = signal(false);
-  activeAppointment = signal<any>(null);
-  isSubmitting = signal(false);
-
-  // Consultation Form Fields
-  symptoms = signal('');
-  diagnosis = signal('');
-  clinicalNotes = signal('');
-  prescriptionNotes = signal('');
-
-  // Pre-set symptoms chips
-  symptomChips = ['Fever (>38°C)', 'Dry Cough', 'Sore Throat', 'Headache', 'Chest Pain', 'Shortness of Breath', 'Fatigue', 'Nausea / Vomiting', 'Body Ache'];
-
-  // Available medicines for prescription
-  availableMedicines = signal<Medicine[]>([]);
-  selectedMedicineId = signal('');
-  prescribeQuantity = signal<number>(1);
-  dosageInstructions = signal('1 tablet twice daily after meals for 7 days');
-  prescriptionItems = signal<RxItem[]>([]);
-
-  // Running total calculation
-  rxTotalEstimatedCost = computed(() => {
-    return this.prescriptionItems().reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-  });
 
   constructor() {
     this.liveSyncService.appointmentBooked$.pipe(
@@ -126,15 +129,20 @@ export class AppointmentListComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.appointmentStore.loadAppointments();
-    this.loadMedicines();
-  }
+    // Doctors must use the modern /my-consultations workspace with complete encounter documentation & account isolation
+    if (this.authService.isDoctor()) {
+      this.router.navigate(['/my-consultations']);
+      return;
+    }
 
-  loadMedicines() {
-    this.medicineService.getAll().subscribe({
-      next: (res) => { const items = res.items || res.data || (Array.isArray(res) ? res : []); this.availableMedicines.set(items); },
-      error: () => {}
+    this.patientService.getAll(1, 1).subscribe({
+      next: (res: any) => {
+        if (res.items && res.items.length > 0) {
+          this.activePatientId.set(res.items[0].id);
+        }
+      }
     });
+    this.appointmentStore.loadAppointments();
   }
 
   onDateChange(date: Date | null) {
@@ -147,114 +155,107 @@ export class AppointmentListComponent implements OnInit {
     this.snackBar.open('Patient checked in and added to Doctor Queue', 'Success', { duration: 3000 });
   }
 
+  openReceptionCheckInModal(appt: any) {
+    this.checkInTargetAppt.set(appt);
+    const existingToken = appt.tokenNumber || `Q-${Math.floor(100 + Math.random() * 900)}`;
+    this.tokenInput.set(existingToken);
+    this.visitTypeInput.set(appt.visitType || 'General Consultation');
+    this.routingStation.set('Nurse Triage Station');
+    this.showCheckInModal.set(true);
+  }
+
+  closeReceptionCheckInModal() {
+    this.showCheckInModal.set(false);
+    this.checkInTargetAppt.set(null);
+  }
+
+  confirmReceptionCheckIn() {
+    const appt = this.checkInTargetAppt();
+    if (!appt) return;
+
+    this.appointmentService.checkInWithDetails(appt.id, this.tokenInput(), this.visitTypeInput()).subscribe({
+      next: () => {
+        this.toast.success(`Patient Checked In! Token [${this.tokenInput()}] issued and routed to ${this.routingStation()}.`);
+        this.appointmentStore.loadAppointments();
+        this.closeReceptionCheckInModal();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.detail || err.error?.title || 'Check-in failed');
+      }
+    });
+  }
+
+  openRescheduleModal(appt: any) {
+    this.rescheduleTargetAppt.set(appt);
+    const curr = appt.scheduledDateTime ? new Date(appt.scheduledDateTime) : new Date();
+    this.rescheduleDate.set(curr.toISOString().split('T')[0]);
+    this.rescheduleTime.set(`${String(curr.getHours()).padStart(2, '0')}:${String(curr.getMinutes()).padStart(2, '0')}`);
+    this.rescheduleReason.set('');
+    this.showRescheduleModal.set(true);
+  }
+
+  closeRescheduleModal() {
+    this.showRescheduleModal.set(false);
+    this.rescheduleTargetAppt.set(null);
+  }
+
+  confirmReschedule() {
+    const appt = this.rescheduleTargetAppt();
+    if (!appt || !this.rescheduleDate()) {
+      this.toast.warning('Please pick a valid reschedule date');
+      return;
+    }
+
+    const [hours, minutes] = (this.rescheduleTime() || '09:00').split(':').map(Number);
+    const dateObj = new Date(this.rescheduleDate());
+    dateObj.setHours(hours || 9, minutes || 0, 0, 0);
+
+    this.appointmentService.reschedule(appt.id, dateObj.toISOString(), this.rescheduleReason()).subscribe({
+      next: () => {
+        this.toast.success(`Appointment rescheduled to ${dateObj.toLocaleDateString()} at ${this.rescheduleTime()}`);
+        this.appointmentStore.loadAppointments();
+        this.closeRescheduleModal();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.detail || err.error?.title || 'Rescheduling failed');
+      }
+    });
+  }
+
+  markNoShow(appt: any) {
+    if (!confirm(`Mark appointment for ${appt.patientName || 'patient'} as No-Show?`)) return;
+
+    this.appointmentService.markNoShow(appt.id, 'No-show flagged by Front Desk Reception').subscribe({
+      next: () => {
+        this.toast.info(`Appointment marked as No-Show for ${appt.patientName || 'patient'}.`);
+        this.appointmentStore.loadAppointments();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.detail || err.error?.title || 'Failed to update No-Show status');
+      }
+    });
+  }
+
+  canConsultFor(appointment: any): boolean {
+    if (!this.canConsult()) return false;
+    const currentId = this.authService.currentUserId();
+    if (!appointment?.doctorId || !currentId) return true;
+    return appointment.doctorId.toLowerCase() === currentId.toLowerCase();
+  }
+
   cancel(appointmentId: string) {
     this.appointmentStore.cancel(appointmentId);
     this.snackBar.open('Appointment cancelled.', 'Close', { duration: 3000 });
   }
 
-  openConsultationModal(appointment: any) {
-    this.activeAppointment.set(appointment);
-    this.symptoms.set('');
-    this.diagnosis.set('');
-    this.clinicalNotes.set('');
-    this.prescriptionNotes.set('');
-    this.prescriptionItems.set([]);
-    this.selectedMedicineId.set('');
-    this.prescribeQuantity.set(1);
-    this.dosageInstructions.set('1 tablet twice daily after meals for 7 days');
-    this.isConsultationModalOpen.set(true);
-  }
-
-  closeConsultationModal() {
-    this.isConsultationModalOpen.set(false);
-    this.activeAppointment.set(null);
-  }
-
-  appendSymptom(chip: string) {
-    const current = this.symptoms();
-    if (!current) {
-      this.symptoms.set(chip);
-    } else if (!current.includes(chip)) {
-      this.symptoms.set(current + ', ' + chip);
-    }
-  }
-
-  addMedicineToPrescription() {
-    const medId = this.selectedMedicineId();
-    if (!medId) {
-      this.snackBar.open('Please select a medicine from catalog', 'Close', { duration: 3000 });
-      return;
-    }
-
-    const med = this.availableMedicines().find(m => m.id === medId);
-    if (!med) return;
-
-    const newItem: RxItem = {
-      medicineId: med.id,
-      medicineName: med.name,
-      quantity: this.prescribeQuantity() || 1,
-      dosageInstructions: this.dosageInstructions() || 'Take as prescribed',
-      unitPrice: med.unitPrice
-    };
-
-    this.prescriptionItems.update(items => [...items, newItem]);
-    this.selectedMedicineId.set('');
-    this.dosageInstructions.set('1 tablet twice daily after meals for 7 days');
-    this.prescribeQuantity.set(1);
-    this.snackBar.open(`Added ${med.name} to prescription`, 'Close', { duration: 2000 });
-  }
-
-  removePrescriptionItem(index: number) {
-    this.prescriptionItems.update(items => items.filter((_, i) => i !== index));
-  }
-
-  submitConsultation() {
-    const appt = this.activeAppointment();
-    if (!appt) return;
-
-    if (!this.diagnosis().trim()) {
-      this.snackBar.open('Please provide a primary diagnosis', 'Close', { duration: 3000 });
-      return;
-    }
-
-    this.isSubmitting.set(true);
-    const payload = {
-      appointmentId: appt.id,
-      symptoms: this.symptoms(),
-      diagnosis: this.diagnosis(),
-      clinicalNotes: this.clinicalNotes(),
-      prescriptionNotes: this.prescriptionNotes(),
-      prescriptionItems: this.prescriptionItems().map(item => ({
-        medicineId: item.medicineId,
-        quantity: item.quantity,
-        dosageInstructions: item.dosageInstructions
-      }))
-    };
-
-    this.consultationService.create(payload).subscribe({
-      next: (res) => {
-        this.isSubmitting.set(false);
-        this.isConsultationModalOpen.set(false);
-        this.snackBar.open('Consultation recorded & Prescription successfully sent to Pharmacy Queue!', 'Success', { duration: 5000 });
-        this.appointmentStore.loadAppointments();
-      },
-      error: (err) => {
-        this.isSubmitting.set(false);
-        this.snackBar.open(err.error?.detail || 'Failed to submit consultation', 'Close', { duration: 4000 });
-      }
-    });
-  }
-
-  
-  public authService = inject(AuthService);
   private vitalSignsService = inject(VitalSignsService);
   private toast = inject(ToastService);
 
   // Vital Signs Modal State
   isVitalsModalOpen = signal(false);
+  vitalsHistory = signal<any[]>([]);
   activeVitalsAppointment = signal<any>(null);
   isSubmittingVitals = signal(false);
-
   vitalsSystolic = signal<number>(120);
   vitalsDiastolic = signal<number>(80);
   vitalsHeartRate = signal<number>(72);
@@ -262,6 +263,11 @@ export class AppointmentListComponent implements OnInit {
   vitalsRespiratory = signal<number>(16);
   vitalsWeight = signal<number>(70);
   vitalsHeight = signal<number>(170);
+  vitalsOxygenSaturation = signal<number>(98);
+  vitalsPainScore = signal<number>(0);
+  vitalsTriageUrgency = signal<string>('Routine');
+  vitalsRoomAssignment = signal<string>('Exam Room 1');
+  vitalsTriageNotes = signal<string>('');
 
   // Computed Live Health Indicators
   computedBmi = computed(() => {
@@ -288,10 +294,14 @@ export class AppointmentListComponent implements OnInit {
     return { label: 'Stage 2 HTN', class: 'bp-stage2' };
   });
 
-    openVitalsModal(appointment: any) {
+  openVitalsModal(appointment: any) {
     this.activeVitalsAppointment.set(appointment);
+    this.vitalsTriageUrgency.set(appointment.triageUrgency || 'Routine');
+    this.vitalsRoomAssignment.set(appointment.roomAssignment || 'Exam Room 1');
+    this.vitalsTriageNotes.set(appointment.triageNotes || '');
 
     // If local appointment already has vital signs, populate immediately
+    this.vitalsHistory.set(appointment.vitalSigns ? [appointment.vitalSigns] : []);
     if (appointment.vitalSigns) {
       this.populateVitals(appointment.vitalSigns);
     } else {
@@ -310,6 +320,8 @@ export class AppointmentListComponent implements OnInit {
           const resp = v.respiratoryRate ?? v.RespiratoryRate;
           const wt = v.weightKg ?? v.WeightKg;
           const ht = v.heightCm ?? v.HeightCm;
+          const spo2 = v.oxygenSaturation ?? v.OxygenSaturation;
+          const pain = v.painScore ?? v.PainScore;
 
           const freshVitals = {
             ...v,
@@ -319,18 +331,19 @@ export class AppointmentListComponent implements OnInit {
             temperatureC: Number(temp),
             respiratoryRate: Number(resp),
             weightKg: Number(wt),
-            heightCm: Number(ht)
+            heightCm: Number(ht),
+            oxygenSaturation: spo2 != null ? Number(spo2) : undefined,
+            painScore: pain != null ? Number(pain) : undefined
           };
 
           appointment.vitalSigns = freshVitals;
           this.activeVitalsAppointment.set({ ...appointment });
           this.populateVitals(freshVitals);
+          this.vitalsHistory.set([freshVitals]);
           this.appointmentStore.updateAppointmentVitals(appointment.id, freshVitals);
         }
       },
-      error: () => {
-        // Not yet recorded on server, keep default/form values
-      }
+      error: () => {}
     });
 
     this.isVitalsModalOpen.set(true);
@@ -345,6 +358,8 @@ export class AppointmentListComponent implements OnInit {
     const resp = v.respiratoryRate ?? v.RespiratoryRate;
     const wt = v.weightKg ?? v.WeightKg;
     const ht = v.heightCm ?? v.HeightCm;
+    const spo2 = v.oxygenSaturation ?? v.OxygenSaturation;
+    const pain = v.painScore ?? v.PainScore;
 
     if (sys != null && !isNaN(Number(sys))) this.vitalsSystolic.set(Number(sys));
     if (dia != null && !isNaN(Number(dia))) this.vitalsDiastolic.set(Number(dia));
@@ -353,6 +368,8 @@ export class AppointmentListComponent implements OnInit {
     if (resp != null && !isNaN(Number(resp))) this.vitalsRespiratory.set(Number(resp));
     if (wt != null && !isNaN(Number(wt))) this.vitalsWeight.set(Number(wt));
     if (ht != null && !isNaN(Number(ht))) this.vitalsHeight.set(Number(ht));
+    if (spo2 != null && !isNaN(Number(spo2))) this.vitalsOxygenSaturation.set(Number(spo2));
+    if (pain != null && !isNaN(Number(pain))) this.vitalsPainScore.set(Number(pain));
   }
 
   private resetVitalsToDefault() {
@@ -363,6 +380,11 @@ export class AppointmentListComponent implements OnInit {
     this.vitalsRespiratory.set(16);
     this.vitalsWeight.set(70);
     this.vitalsHeight.set(170);
+    this.vitalsOxygenSaturation.set(98);
+    this.vitalsPainScore.set(0);
+    this.vitalsTriageUrgency.set('Routine');
+    this.vitalsRoomAssignment.set('Exam Room 1');
+    this.vitalsTriageNotes.set('');
   }
 
   closeVitalsModal() {
@@ -383,7 +405,9 @@ export class AppointmentListComponent implements OnInit {
       temperatureC: Number(this.vitalsTemp()),
       respiratoryRate: Number(this.vitalsRespiratory()),
       weightKg: Number(this.vitalsWeight()),
-      heightCm: Number(this.vitalsHeight())
+      heightCm: Number(this.vitalsHeight()),
+      oxygenSaturation: Number(this.vitalsOxygenSaturation()),
+      painScore: Number(this.vitalsPainScore())
     };
 
     const currentUser = this.authService.currentUser();
@@ -399,22 +423,48 @@ export class AppointmentListComponent implements OnInit {
           temperatureC: payload.temperatureC,
           respiratoryRate: payload.respiratoryRate,
           weightKg: payload.weightKg,
-          heightCm: payload.heightCm
+          heightCm: payload.heightCm,
+          oxygenSaturation: payload.oxygenSaturation,
+          painScore: payload.painScore
         };
 
-        // Update in-memory objects immediately
         appt.vitalSigns = freshVitals;
         this.activeVitalsAppointment.set({ ...appt });
         this.appointmentStore.updateAppointmentVitals(appt.id, freshVitals);
 
+        // Also record triage assessment & room assignment
+        this.appointmentService.updateTriage(appt.id, {
+          triageUrgency: this.vitalsTriageUrgency(),
+          roomAssignment: this.vitalsRoomAssignment(),
+          triageNotes: this.vitalsTriageNotes(),
+          status: (appt.status === 'CheckedIn' || appt.status === 'Scheduled') ? 'TriageComplete' : undefined
+        }).subscribe({
+          next: () => {
+            this.appointmentStore.loadAppointments();
+          },
+          error: () => {}
+        });
+
         this.isSubmittingVitals.set(false);
         this.isVitalsModalOpen.set(false);
-        this.toast.success(`Vital signs recorded successfully for ${appt.patientName || 'patient'}!`);
+        this.toast.success(`Clinical triage and vital signs recorded for ${appt.patientName || 'patient'}!`);
         this.appointmentStore.loadAppointments();
       },
       error: (err: any) => {
         this.isSubmittingVitals.set(false);
         this.toast.error(err.error?.detail || err.error?.title || 'Failed to record vital signs');
+      }
+    });
+  }
+
+  dischargePatient(appointmentId: string) {
+    this.appointmentService.updateStatus(appointmentId, { status: 'Completed' }).subscribe({
+      next: () => {
+        this.toast.success('Patient discharged and appointment marked Completed.');
+        this.appointmentStore.loadAppointments();
+      },
+      error: (err: any) => {
+        this.toast.error(err.error?.detail || 'Failed to discharge patient');
       }
     });
   }
@@ -426,4 +476,5 @@ export class AppointmentListComponent implements OnInit {
     return name.substring(0, 2).toUpperCase();
   }
 }
+
 

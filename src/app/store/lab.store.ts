@@ -1,4 +1,4 @@
-﻿import { inject, computed } from '@angular/core';
+import { inject, computed } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
 import { setAllEntities, addEntity, updateEntity, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
@@ -116,6 +116,20 @@ export const LabStore = signalStore(
 
     setPriorityFilter(priorityFilter: string) {
       patchState(store, { priorityFilter });
+    },
+
+    addTemplate(template: LabTestTemplate) {
+      patchState(store, { templates: [template, ...store.templates()] });
+    },
+
+    updateTemplateInStore(template: LabTestTemplate) {
+      const updated = store.templates().map(t => t.id === template.id ? template : t);
+      patchState(store, { templates: updated });
+    },
+
+    removeTemplateFromStore(id: string) {
+      const remaining = store.templates().filter(t => t.id !== id);
+      patchState(store, { templates: remaining });
     }
   }))
 );

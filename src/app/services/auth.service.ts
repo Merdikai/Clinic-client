@@ -1,4 +1,4 @@
-﻿import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap, Observable } from 'rxjs';
@@ -20,6 +20,35 @@ export class AuthService {
   accessToken = computed(() => this.currentUser()?.token || this.getToken());
   isAuthenticated = computed(() => !!this.accessToken());
   userRoles = computed(() => this.currentUser()?.roles ?? []);
+
+  currentUserId = computed(() => {
+    const user = this.currentUser();
+    if (user?.userId) return user.userId;
+    if (user?.id) return user.id;
+    return this.getUserIdFromToken();
+  });
+
+  currentUserName = computed(() => this.currentUser()?.fullName || this.currentUser()?.username || 'User');
+  isDoctor = computed(() => this.hasRole('Doctor'));
+  isAdmin = computed(() => this.hasRole('Admin'));
+  isRadiologist = computed(() => this.hasRole('Radiologist'));
+  isPatient = computed(() => this.hasRole('Patient'));
+
+  get currentUserValue(): UserInfo | null {
+    return this.currentUser();
+  }
+
+  private getUserIdFromToken(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.nameid || payload.sub || payload.id || null;
+    } catch {
+      return null;
+    }
+  }
+
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(

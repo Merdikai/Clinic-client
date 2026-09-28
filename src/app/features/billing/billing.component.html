@@ -1,219 +1,1789 @@
-<div class="page-container premium-page">
-  <div class="page-header-card">
-    <div class="header-left">
-      <div class="header-icon-box">
-        <mat-icon>receipt_long</mat-icon>
-      </div>
-      <div>
-        <h1 class="page-title">Billing & Accounts Receivable</h1>
-        <p class="page-subtitle">Patient ledger management, payment collections, and RFC 4180 financial auditing</p>
-      </div>
+<div class="finance-workspace-container">
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 1. EXECUTIVE HEADER & ACTIONS                             -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <header class="finance-header">
+    <div class="header-titles">
+      @if (isPharmacist()) {
+        <div class="badge-tag" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.25);">
+          <mat-icon>local_pharmacy</mat-icon>
+          <span>Dispensary Pharmacy Billing & AR Ledger</span>
+        </div>
+        <h1>Dispensary Invoices & Pharmacy Collections</h1>
+        <p class="subtitle">
+          Real-time prescription dispensing invoices, OTC point-of-sale receipts, patient copays, and pharmacy revenue ledger.
+        </p>
+      } @else if (isLabTech()) {
+        <div class="badge-tag" style="background: rgba(13, 148, 136, 0.12); color: #0d9488; border: 1px solid rgba(13, 148, 136, 0.25);">
+          <mat-icon>biotech</mat-icon>
+          <span>Pathology Laboratory Billing & AR Ledger</span>
+        </div>
+        <h1>Laboratory Invoices & Pathology Collections</h1>
+        <p class="subtitle">
+          Real-time diagnostic pathology test invoices, clinical accession billing, doctor requisition charges, and laboratory revenue ledger.
+        </p>
+      } @else {
+        <div class="badge-tag">
+          <mat-icon>account_balance</mat-icon>
+          <span>Financial Operations & Revenue Control</span>
+        </div>
+        <h1>Financial Control Center</h1>
+        <p class="subtitle">
+          Enterprise AR billing, insurance clearinghouse claims, accounts payable, petty cash float, doctor commissions payroll, and receptionist drawer audit.
+        </p>
+      }
     </div>
-    <div class="header-actions">
-      <button mat-flat-button color="primary" class="create-btn" (click)="showNewInvoiceModal.set(!showNewInvoiceModal())">
-        <mat-icon>{{ showNewInvoiceModal() ? 'close' : 'add_card' }}</mat-icon>
-        <span>{{ showNewInvoiceModal() ? 'Close Form' : 'Issue New Invoice' }}</span>
-      </button>
-    </div>
-  </div>
 
-  <!-- New Invoice Inline Drawer -->
-  @if (showNewInvoiceModal()) {
-    <div class="premium-card breathtaking-drawer">
-      <div class="breathtaking-drawer-bg"></div>
-      
-      <div class="drawer-content-wrapper">
-        <div class="drawer-header-pro">
-          <div class="drawer-icon-box giant-glow-box accent-glow">
-            <mat-icon>post_add</mat-icon>
-          </div>
-          <div class="drawer-title-group">
-            <h3 class="gradient-text">Issue Clinical Bill / Invoice</h3>
-            <p>Manually generate an invoice for consultations or clinical services not linked to automated prescriptions.</p>
+    <div class="header-actions">
+      @if (isPharmacist()) {
+        <a mat-flat-button class="action-btn-primary" routerLink="/pharmacy/pos">
+          <mat-icon>point_of_sale</mat-icon>
+          <span>Open POS Register</span>
+        </a>
+      } @else if (isLabTech()) {
+        <a mat-flat-button class="action-btn-primary" routerLink="/laboratory" [queryParams]="{tab: 'worklist'}">
+          <mat-icon>science</mat-icon>
+          <span>Open Laboratory</span>
+        </a>
+      } @else {
+        @if (canManageBilling()) {
+          <button mat-flat-button class="action-btn-primary" (click)="showNewInvoiceModal.set(true)">
+            <mat-icon>add_card</mat-icon>
+            <span>New Invoice</span>
+          </button>
+        }
+
+        @if (canManageAccounting()) {
+          <button mat-stroked-button class="action-btn-outline" (click)="openNewClaimModal()">
+            <mat-icon>health_and_safety</mat-icon>
+            <span>Submit Claim</span>
+          </button>
+
+          <button mat-stroked-button class="action-btn-outline" (click)="showNewExpenseModal.set(true)">
+            <mat-icon>receipt</mat-icon>
+            <span>Record AP Expense</span>
+          </button>
+
+          <button mat-stroked-button class="action-btn-outline" (click)="showNewPettyCashModal.set(true)">
+            <mat-icon>payments</mat-icon>
+            <span>Petty Cash</span>
+          </button>
+        }
+      }
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 2. FINANCIAL KPI CARDS RIBBON                             -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (!isPatient()) {
+    @if (isPharmacist()) {
+      <section class="kpi-ribbon">
+        <div class="kpi-card teal">
+          <div class="kpi-icon-wrap"><mat-icon>paid</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Dispensary Revenue</span>
+            <h2 class="kpi-value">{{ dispensaryRevenue() | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Settled pharmacy receipts</span>
           </div>
         </div>
 
-        <form [formGroup]="invoiceForm" (ngSubmit)="submitInvoice()" class="drawer-form-pro">
-          <div class="form-grid-three">
-            <mat-form-field appearance="outline" class="pro-field">
-              <mat-label>Select Patient</mat-label>
-              <mat-select formControlName="patientId">
-                @for (p of patients(); track p.id) {
-                  <mat-option [value]="p.id">
-                    {{ p.firstName }} {{ p.lastName }} ({{ p.medicalRecordNumber || 'PAT' }})
-                  </mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
+        <div class="kpi-card amber">
+          <div class="kpi-icon-wrap"><mat-icon>pending_actions</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Pending Dispensary AR</span>
+            <h2 class="kpi-value">{{ dispensaryOutstanding() | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Unpaid prescription balances</span>
+          </div>
+        </div>
 
-            <mat-form-field appearance="outline" class="pro-field">
-              <mat-label>Total Invoice Amount ($)</mat-label>
-              <mat-icon matPrefix>attach_money</mat-icon>
-              <input matInput type="number" formControlName="amount" placeholder="150.00" min="1" step="0.01">
-            </mat-form-field>
-            
-            <div class="payment-method-box">
-               <span class="box-label">Preferred Settlement</span>
-               <div class="box-val">Standard Payment Cycle</div>
+        <div class="kpi-card blue">
+          <div class="kpi-icon-wrap"><mat-icon>receipt_long</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Dispensary Invoices</span>
+            <h2 class="kpi-value">{{ dispensaryInvoiceCount() }}</h2>
+            <span class="kpi-meta">Total prescription & OTC invoices</span>
+          </div>
+        </div>
+
+        <div class="kpi-card purple">
+          <div class="kpi-icon-wrap"><mat-icon>task_alt</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Settled Rx Invoices</span>
+            <h2 class="kpi-value">{{ dispensaryPaidCount() }}</h2>
+            <span class="kpi-meta">Fully paid & dispensed</span>
+          </div>
+        </div>
+      </section>
+    } @else if (isLabTech()) {
+      <section class="kpi-ribbon">
+        <div class="kpi-card teal">
+          <div class="kpi-icon-wrap"><mat-icon>paid</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Pathology Revenue</span>
+            <h2 class="kpi-value">{{ labRevenue() | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Settled lab diagnostic fees</span>
+          </div>
+        </div>
+
+        <div class="kpi-card amber">
+          <div class="kpi-icon-wrap"><mat-icon>pending_actions</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Pending Pathology AR</span>
+            <h2 class="kpi-value">{{ labOutstanding() | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Unpaid laboratory balances</span>
+          </div>
+        </div>
+
+        <div class="kpi-card blue">
+          <div class="kpi-icon-wrap"><mat-icon>receipt_long</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Diagnostic Invoices</span>
+            <h2 class="kpi-value">{{ labInvoiceCount() }}</h2>
+            <span class="kpi-meta">Total pathology invoices</span>
+          </div>
+        </div>
+
+        <div class="kpi-card purple">
+          <div class="kpi-icon-wrap"><mat-icon>task_alt</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Settled Lab Orders</span>
+            <h2 class="kpi-value">{{ labPaidCount() }}</h2>
+            <span class="kpi-meta">Fully paid diagnostic tests</span>
+          </div>
+        </div>
+      </section>
+    } @else {
+      <section class="kpi-ribbon">
+        <div class="kpi-card teal">
+          <div class="kpi-icon-wrap"><mat-icon>paid</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Total Revenue Collected</span>
+            <h2 class="kpi-value">{{ totalRevenue() | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Lifetime settled receipts</span>
+          </div>
+        </div>
+
+        <div class="kpi-card amber">
+          <div class="kpi-icon-wrap"><mat-icon>pending_actions</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Pending AR Receivables</span>
+            <h2 class="kpi-value">{{ outstandingBalance() | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Patient & insurer balances</span>
+          </div>
+        </div>
+
+        <div class="kpi-card blue">
+          <div class="kpi-icon-wrap"><mat-icon>health_and_safety</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Active Insurance Claims</span>
+            <h2 class="kpi-value">{{ metrics()?.pendingClaimsAmount || 0 | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">{{ metrics()?.pendingClaimsCount || 0 }} claims pending clearinghouse</span>
+          </div>
+        </div>
+
+        <div class="kpi-card rose">
+          <div class="kpi-icon-wrap"><mat-icon>account_balance_wallet</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Accounts Payable (AP)</span>
+            <h2 class="kpi-value">{{ metrics()?.pendingPayablesAmount || 0 | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Supplier & vendor invoices due</span>
+          </div>
+        </div>
+
+        <div class="kpi-card purple">
+          <div class="kpi-icon-wrap"><mat-icon>savings</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Petty Cash Float</span>
+            <h2 class="kpi-value">{{ metrics()?.pettyCashCurrentBalance || 402.50 | currency:'USD':'symbol':'1.2-2' }}</h2>
+            <span class="kpi-meta">Vault cash on hand</span>
+          </div>
+        </div>
+
+        <div class="kpi-card orange">
+          <div class="kpi-icon-wrap"><mat-icon>fact_check</mat-icon></div>
+          <div class="kpi-content">
+            <span class="kpi-title">Drawer Shift Audits</span>
+            <h2 class="kpi-value">{{ metrics()?.unreconciledDrawersCount || 0 }} Shifts</h2>
+            <span class="kpi-meta">Receptionist drawers pending audit</span>
+          </div>
+        </div>
+      </section>
+    }
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 3. WORKSPACE TAB NAVIGATION                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (!isPatient() && !isPharmacist() && !isLabTech()) {
+    <nav class="finance-nav-tabs">
+      <button class="nav-tab-btn" [class.active]="activeTab() === 'invoices'" (click)="setTab('invoices')">
+        <mat-icon>receipt_long</mat-icon>
+        <span>Invoices &amp; AR Ledger</span>
+      </button>
+
+      @if (!isReceptionist()) {
+        <button class="nav-tab-btn" [class.active]="activeTab() === 'claims'" (click)="setTab('claims')">
+          <mat-icon>health_and_safety</mat-icon>
+          <span>Insurance Claims</span>
+          @if ((metrics()?.pendingClaimsCount || 0) > 0) {
+            <span class="tab-badge blue">{{ metrics()?.pendingClaimsCount }}</span>
+          }
+        </button>
+
+        <button class="nav-tab-btn" [class.active]="activeTab() === 'adjustments'" (click)="setTab('adjustments')">
+          <mat-icon>price_check</mat-icon>
+          <span>Discounts &amp; Refunds</span>
+          @if ((metrics()?.pendingAdjustmentsCount || 0) > 0) {
+            <span class="tab-badge amber">{{ metrics()?.pendingAdjustmentsCount }}</span>
+          }
+        </button>
+
+        <button class="nav-tab-btn" [class.active]="activeTab() === 'expenses'" (click)="setTab('expenses')">
+          <mat-icon>account_balance_wallet</mat-icon>
+          <span>Supplier Payables (AP)</span>
+        </button>
+      }
+
+      <button class="nav-tab-btn" [class.active]="activeTab() === 'petty-cash'" (click)="setTab('petty-cash')">
+        <mat-icon>payments</mat-icon>
+        <span>{{ isReceptionist() ? 'Cash Float &amp; Drawers' : 'Petty Cash Float' }}</span>
+      </button>
+
+      @if (!isReceptionist()) {
+        <button class="nav-tab-btn" [class.active]="activeTab() === 'payroll'" (click)="setTab('payroll')">
+          <mat-icon>badge</mat-icon>
+          <span>Staff Payroll &amp; Commissions</span>
+        </button>
+      }
+
+      <button class="nav-tab-btn" [class.active]="activeTab() === 'reconciliation'" (click)="setTab('reconciliation')">
+        <mat-icon>fact_check</mat-icon>
+        <span>Reception Drawer Audits</span>
+        @if ((metrics()?.unreconciledDrawersCount || 0) > 0) {
+          <span class="tab-badge rose">{{ metrics()?.unreconciledDrawersCount }} pend</span>
+        }
+      </button>
+    </nav>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: INVOICES & AR LEDGER                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'invoices' || isPatient()) {
+    <section class="tab-pane-content">
+      <div class="pane-toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Payment Status:</span>
+          <div class="chip-filter-row">
+            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'All'" (click)="invoiceStatusFilter.set('All')">All Invoices</button>
+            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'Unpaid'" (click)="invoiceStatusFilter.set('Unpaid')">Unpaid</button>
+            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'PartiallyPaid'" (click)="invoiceStatusFilter.set('PartiallyPaid')">Partially Paid</button>
+            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'Paid'" (click)="invoiceStatusFilter.set('Paid')">Paid</button>
+          </div>
+        </div>
+
+        <div class="toolbar-stats">
+          <span>Showing <strong>{{ filteredInvoices().length }}</strong> invoices</span>
+        </div>
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Patient Name</th>
+              <th>Date Issued</th>
+              <th>Due Date</th>
+              <th>Total Amount</th>
+              <th>Balance Due</th>
+              <th>Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredInvoices().length === 0) {
+              <tr>
+                <td colspan="8" class="empty-row">
+                  <mat-icon>receipt</mat-icon>
+                  <p>No billing invoices matching the current criteria.</p>
+                </td>
+              </tr>
+            }
+            @for (inv of filteredInvoices(); track inv.id) {
+              <tr>
+                <td>
+                  <span class="code-badge">{{ inv.invoiceNumber }}</span>
+                  @if (inv.department === 'Pharmacy' || (inv.invoiceNumber && inv.invoiceNumber.startsWith('INV-RX'))) {
+                    <span class="status-tag pharmacy-tag" style="margin-left: 6px; font-size: 0.68rem; padding: 2px 6px; background: rgba(2, 132, 199, 0.12); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 4px; font-weight: 600;">Rx Dispensary</span>
+                  }
+                </td>
+                <td>
+                  <div class="patient-cell">
+                    <mat-icon class="subtle-icon">person</mat-icon>
+                    <strong>{{ inv.patientName || 'Outpatient Client' }}</strong>
+                  </div>
+                </td>
+                <td>{{ inv.issueDate | date:'mediumDate' }}</td>
+                <td>{{ inv.dueDate | date:'mediumDate' }}</td>
+                <td>
+                  <span class="amount-val">{{ inv.totalAmount | currency:'USD' }}</span>
+                </td>
+                <td>
+                  <span class="amount-val" [class.danger]="inv.balanceDue > 0">
+                    {{ inv.balanceDue | currency:'USD' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-tag" [ngClass]="inv.status?.toLowerCase()">
+                    {{ inv.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="btn-group-row">
+                    @if (inv.balanceDue > 0 && (canManageBilling() || isPharmacist() || isLabTech())) {
+                      <button mat-flat-button class="btn-sm btn-primary" (click)="openPaymentDialog(inv)" matTooltip="Collect Payment (Cash/POS/Insurance)">
+                        <mat-icon>point_of_sale</mat-icon>
+                        <span>Settle</span>
+                      </button>
+                    }
+
+                    <button mat-icon-button class="icon-btn-subtle" (click)="downloadPdf(inv.id)" matTooltip="Download Official PDF Receipt">
+                      <mat-icon>picture_as_pdf</mat-icon>
+                    </button>
+
+                    @if (canManageAccounting()) {
+                      <button mat-icon-button class="icon-btn-subtle" (click)="openNewClaimModal(inv)" matTooltip="Submit Insurance Claim">
+                        <mat-icon>health_and_safety</mat-icon>
+                      </button>
+
+                      <button mat-icon-button class="icon-btn-subtle" (click)="openNewAdjustmentModal(inv)" matTooltip="Request Discount or Refund">
+                        <mat-icon>price_check</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: INSURANCE CLAIMS & TPAs                            -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'claims' && !isPatient()) {
+    <section class="tab-pane-content">
+      <div class="pane-toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Clearinghouse Status:</span>
+          <div class="chip-filter-row">
+            <button class="chip-filter" [class.active]="claimStatusFilter() === 'All'" (click)="claimStatusFilter.set('All')">All Claims</button>
+            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Submitted'" (click)="claimStatusFilter.set('Submitted')">Submitted</button>
+            <button class="chip-filter" [class.active]="claimStatusFilter() === 'InReview'" (click)="claimStatusFilter.set('InReview')">In Review</button>
+            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Approved'" (click)="claimStatusFilter.set('Approved')">Approved</button>
+            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Remitted'" (click)="claimStatusFilter.set('Remitted')">Remitted</button>
+            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Denied'" (click)="claimStatusFilter.set('Denied')">Denied</button>
+          </div>
+        </div>
+
+        @if (canManageAccounting()) {
+          <button mat-flat-button class="action-btn-primary btn-sm" (click)="openNewClaimModal()">
+            <mat-icon>add</mat-icon>
+            <span>Submit New Claim</span>
+          </button>
+        }
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Claim #</th>
+              <th>Invoice #</th>
+              <th>Patient</th>
+              <th>Payer / TPA</th>
+              <th>Policy / Group</th>
+              <th>Claimed Amount</th>
+              <th>Covered Amount</th>
+              <th>Patient Copay</th>
+              <th>Status</th>
+              <th class="text-right">Remittance Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredClaims().length === 0) {
+              <tr>
+                <td colspan="10" class="empty-row">
+                  <mat-icon>health_and_safety</mat-icon>
+                  <p>No insurance claims found in this view.</p>
+                </td>
+              </tr>
+            }
+            @for (claim of filteredClaims(); track claim.id) {
+              <tr>
+                <td><span class="code-badge">{{ claim.claimNumber }}</span></td>
+                <td>{{ claim.invoiceNumber }}</td>
+                <td><strong>{{ claim.patientName }}</strong></td>
+                <td>
+                  <div class="tpa-badge">
+                    <mat-icon class="subtle-icon">verified</mat-icon>
+                    <span>{{ claim.insuranceProvider }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="policy-text">{{ claim.policyNumber }}</span>
+                  @if (claim.groupNumber) {
+                    <small class="group-sub">({{ claim.groupNumber }})</small>
+                  }
+                </td>
+                <td><strong>{{ claim.claimAmount | currency:'USD' }}</strong></td>
+                <td>
+                  <span [class.text-success]="claim.coveredAmount > 0">
+                    {{ claim.coveredAmount | currency:'USD' }}
+                  </span>
+                </td>
+                <td>{{ claim.patientCopay | currency:'USD' }}</td>
+                <td>
+                  <span class="status-tag" [ngClass]="claim.status.toLowerCase()">
+                    {{ claim.status }}
+                  </span>
+                  @if (claim.denialReason) {
+                    <div class="denial-warning" [matTooltip]="claim.denialReason">
+                      <mat-icon>warning</mat-icon>
+                      <span>Reason: {{ claim.denialReason | slice:0:25 }}...</span>
+                    </div>
+                  }
+                </td>
+                <td class="text-right">
+                  @if (canManageAccounting()) {
+                    <button mat-flat-button class="btn-sm btn-primary" (click)="openReconcileClaimModal(claim)">
+                      <mat-icon>sync_alt</mat-icon>
+                      <span>Reconcile Remittance</span>
+                    </button>
+                  } @else {
+                    <span class="audited-text">Audited & Logged</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: BILLING ADJUSTMENTS & REFUNDS                      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'adjustments' && !isPatient()) {
+    <section class="tab-pane-content">
+      <div class="pane-toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Approval Status:</span>
+          <div class="chip-filter-row">
+            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'All'" (click)="adjustmentStatusFilter.set('All')">All</button>
+            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'PendingApproval'" (click)="adjustmentStatusFilter.set('PendingApproval')">Pending Approval</button>
+            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'Approved'" (click)="adjustmentStatusFilter.set('Approved')">Approved</button>
+            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'Rejected'" (click)="adjustmentStatusFilter.set('Rejected')">Rejected</button>
+          </div>
+        </div>
+
+        @if (canManageAccounting()) {
+          <button mat-flat-button class="action-btn-primary btn-sm" (click)="openNewAdjustmentModal()">
+            <mat-icon>add</mat-icon>
+            <span>Request Adjustment</span>
+          </button>
+        }
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Adjustment #</th>
+              <th>Invoice #</th>
+              <th>Patient</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Reason & Justification</th>
+              <th>Requested By</th>
+              <th>Approver</th>
+              <th>Status</th>
+              <th class="text-right">Sign-Off</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredAdjustments().length === 0) {
+              <tr>
+                <td colspan="10" class="empty-row">
+                  <mat-icon>price_check</mat-icon>
+                  <p>No billing adjustments logged.</p>
+                </td>
+              </tr>
+            }
+            @for (adj of filteredAdjustments(); track adj.id) {
+              <tr>
+                <td><span class="code-badge">{{ adj.adjustmentNumber }}</span></td>
+                <td>{{ adj.invoiceNumber }}</td>
+                <td><strong>{{ adj.patientName }}</strong></td>
+                <td>
+                  <span class="type-pill" [ngClass]="adj.type.toLowerCase()">{{ adj.type }}</span>
+                </td>
+                <td><strong class="amount-val">{{ adj.amount | currency:'USD' }}</strong></td>
+                <td><span class="reason-cell">{{ adj.reason }}</span></td>
+                <td>{{ adj.requestedByUserName }}</td>
+                <td>{{ adj.approvedByUserName || '—' }}</td>
+                <td>
+                  <span class="status-tag" [ngClass]="adj.status.toLowerCase()">
+                    {{ adj.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  @if (adj.status === 'PendingApproval' && canManageAccounting()) {
+                    <div class="btn-group-row">
+                      <button mat-flat-button class="btn-sm btn-success" (click)="openReviewAdjustmentModal(adj)">
+                        <mat-icon>verified</mat-icon>
+                        <span>Review</span>
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="audited-text">Locked & Audited</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 4: ACCOUNTS PAYABLE & SUPPLIER EXPENSES               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'expenses' && !isPatient()) {
+    <section class="tab-pane-content">
+      <div class="pane-toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Vendor Category:</span>
+          <div class="chip-filter-row">
+            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'All'" (click)="expenseCategoryFilter.set('All')">All Categories</button>
+            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'PharmaceuticalSupplier'" (click)="expenseCategoryFilter.set('PharmaceuticalSupplier')">Pharma Supplier</button>
+            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'MedicalSupplies'" (click)="expenseCategoryFilter.set('MedicalSupplies')">Medical Supplies</button>
+            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'EquipmentMaintenance'" (click)="expenseCategoryFilter.set('EquipmentMaintenance')">Equipment</button>
+            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'WasteDisposal'" (click)="expenseCategoryFilter.set('WasteDisposal')">Bio-Waste</button>
+          </div>
+        </div>
+
+        @if (canManageAccounting()) {
+          <button mat-flat-button class="action-btn-primary btn-sm" (click)="showNewExpenseModal.set(true)">
+            <mat-icon>add</mat-icon>
+            <span>Record Vendor Invoice</span>
+          </button>
+        }
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Expense #</th>
+              <th>Category</th>
+              <th>Vendor Name</th>
+              <th>Invoice Reference</th>
+              <th>Description</th>
+              <th>Net Amount</th>
+              <th>Due Date</th>
+              <th>Dispensary PO Link</th>
+              <th>Status</th>
+              <th class="text-right">AP Settle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredExpenses().length === 0) {
+              <tr>
+                <td colspan="10" class="empty-row">
+                  <mat-icon>receipt</mat-icon>
+                  <p>No supplier invoices found in this category.</p>
+                </td>
+              </tr>
+            }
+            @for (exp of filteredExpenses(); track exp.id) {
+              <tr>
+                <td><span class="code-badge">{{ exp.expenseNumber }}</span></td>
+                <td><span class="category-pill">{{ exp.category }}</span></td>
+                <td><strong>{{ exp.vendorName }}</strong></td>
+                <td>{{ exp.invoiceReference }}</td>
+                <td>{{ exp.description }}</td>
+                <td><strong>{{ exp.amount + exp.taxAmount | currency:'USD' }}</strong></td>
+                <td>{{ exp.dueDate | date:'mediumDate' }}</td>
+                <td>
+                  @if (exp.pharmacyRequisitionNumber) {
+                    <span class="po-badge" matTooltip="Linked to Dispensary Purchase Order">
+                      <mat-icon>local_pharmacy</mat-icon>
+                      {{ exp.pharmacyRequisitionNumber }}
+                    </span>
+                  } @else {
+                    <span class="text-muted">N/A</span>
+                  }
+                </td>
+                <td>
+                  <span class="status-tag" [ngClass]="exp.status.toLowerCase()">
+                    {{ exp.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  @if (exp.status !== 'Paid' && canManageAccounting()) {
+                    <button mat-flat-button class="btn-sm btn-primary" (click)="openSettleExpenseModal(exp)">
+                      <mat-icon>payment</mat-icon>
+                      <span>Pay Vendor</span>
+                    </button>
+                  } @else if (exp.status === 'Paid') {
+                    <span class="paid-date-badge">Paid {{ exp.paidDate | date:'shortDate' }}</span>
+                  } @else {
+                    <span class="audited-text">Audited & Logged</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 5: PETTY CASH FLOAT LEDGER                            -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'petty-cash' && !isPatient()) {
+    <section class="tab-pane-content">
+      <div class="petty-cash-banner">
+        <div class="banner-left">
+          <div class="float-circle">
+            <mat-icon>savings</mat-icon>
+          </div>
+          <div class="float-info">
+            <span class="banner-sub">Current Vault Cash Balance</span>
+            <h2 class="float-amount">{{ metrics()?.pettyCashCurrentBalance || 402.50 | currency:'USD' }}</h2>
+            <p class="float-note">Authorized monthly replenishment float: $500.00 • Vault Custodian: Dave Accountant</p>
+          </div>
+        </div>
+
+        <div class="banner-right">
+          @if (canManageAccounting()) {
+            <button mat-flat-button class="action-btn-primary" (click)="showNewPettyCashModal.set(true)">
+              <mat-icon>add</mat-icon>
+              <span>Record Voucher / Float</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Voucher #</th>
+              <th>Type</th>
+              <th>Category</th>
+              <th>Payee / Source</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Remaining Balance</th>
+              <th>Disbursed By</th>
+              <th>Date</th>
+              <th>Receipt Ref</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (pettyCashVouchers().length === 0) {
+              <tr>
+                <td colspan="10" class="empty-row">
+                  <mat-icon>payments</mat-icon>
+                  <p>No petty cash vouchers recorded.</p>
+                </td>
+              </tr>
+            }
+            @for (v of pettyCashVouchers(); track v.id) {
+              <tr>
+                <td><span class="code-badge">{{ v.voucherNumber }}</span></td>
+                <td>
+                  <span class="type-pill" [class.replenish]="v.type === 'Replenishment'">
+                    {{ v.type }}
+                  </span>
+                </td>
+                <td>{{ v.category }}</td>
+                <td><strong>{{ v.payee }}</strong></td>
+                <td>{{ v.description }}</td>
+                <td>
+                  <strong [class.text-success]="v.type === 'Replenishment'" [class.text-danger]="v.type === 'Disbursement'">
+                    {{ v.type === 'Replenishment' ? '+' : '-' }}{{ v.amount | currency:'USD' }}
+                  </strong>
+                </td>
+                <td><strong>{{ v.remainingBalance | currency:'USD' }}</strong></td>
+                <td>{{ v.disbursedByUserName }}</td>
+                <td>{{ v.createdAt | date:'short' }}</td>
+                <td>
+                  @if (v.receiptRef) {
+                    <span class="receipt-ref-badge">{{ v.receiptRef }}</span>
+                  } @else {
+                    <span class="text-muted">None</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 6: STAFF PAYROLL & COMMISSIONS                        -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'payroll' && !isPatient()) {
+    <section class="tab-pane-content">
+      <div class="payroll-summary-banner">
+        <div class="stat-box">
+          <span class="stat-label">Staff Count</span>
+          <h3 class="stat-val">{{ payrollTotals().count }} Staff</h3>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Base Salaries</span>
+          <h3 class="stat-val">{{ payrollTotals().base | currency:'USD' }}</h3>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Doctor Commissions</span>
+          <h3 class="stat-val text-success">+{{ payrollTotals().comms | currency:'USD' }}</h3>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Overtime Pay</span>
+          <h3 class="stat-val">+{{ payrollTotals().ot | currency:'USD' }}</h3>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Tax Deductions (15%)</span>
+          <h3 class="stat-val text-danger">-{{ payrollTotals().tax | currency:'USD' }}</h3>
+        </div>
+        <div class="stat-box highlight">
+          <span class="stat-label">Net Payable</span>
+          <h3 class="stat-val">{{ payrollTotals().net | currency:'USD' }}</h3>
+        </div>
+
+        <div class="banner-action-wrap">
+          @if (canManageAccounting()) {
+            <button mat-flat-button class="action-btn-primary" (click)="showGeneratePayrollModal.set(true)">
+              <mat-icon>auto_awesome</mat-icon>
+              <span>Run Monthly Batch</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Payroll #</th>
+              <th>Staff Member</th>
+              <th>Role</th>
+              <th>Period</th>
+              <th>Base Salary</th>
+              <th>Doctor Consults & Commission</th>
+              <th>Overtime</th>
+              <th>Tax (15%)</th>
+              <th>Net Salary</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (payrollRecords().length === 0) {
+              <tr>
+                <td colspan="11" class="empty-row">
+                  <mat-icon>badge</mat-icon>
+                  <p>No payroll records for this period. Click "Run Monthly Batch" to calculate salaries and doctor commissions.</p>
+                </td>
+              </tr>
+            }
+            @for (rec of payrollRecords(); track rec.id) {
+              <tr>
+                <td><span class="code-badge">{{ rec.payrollNumber }}</span></td>
+                <td><strong>{{ rec.staffName }}</strong></td>
+                <td><span class="role-pill">{{ rec.role }}</span></td>
+                <td>{{ rec.periodMonth }}/{{ rec.periodYear }}</td>
+                <td>{{ rec.baseSalary | currency:'USD' }}</td>
+                <td>
+                  @if (rec.role === 'Doctor') {
+                    <span class="comm-highlight">
+                      {{ rec.consultationsCount }} visits = {{ rec.doctorCommissionShare | currency:'USD' }}
+                    </span>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td>
+                  @if (rec.overtimeHours > 0) {
+                    <span>{{ rec.overtimeHours }}h ({{ rec.overtimePay | currency:'USD' }})</span>
+                  } @else {
+                    <span class="text-muted">0h</span>
+                  }
+                </td>
+                <td class="text-danger">-{{ rec.taxDeductions | currency:'USD' }}</td>
+                <td><strong class="net-salary">{{ rec.netSalaryPayable | currency:'USD' }}</strong></td>
+                <td>
+                  <span class="status-tag" [ngClass]="rec.status.toLowerCase()">
+                    {{ rec.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  @if (rec.status !== 'Disbursed' && canManageAccounting()) {
+                    <button mat-flat-button class="btn-sm btn-primary" (click)="openDisbursePayrollModal(rec)">
+                      <mat-icon>send</mat-icon>
+                      <span>Disburse</span>
+                    </button>
+                  } @else if (rec.status === 'Disbursed') {
+                    <span class="paid-date-badge">Disbursed</span>
+                  } @else {
+                    <span class="audited-text">Audited & Logged</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 7: RECEPTION DRAWER SHIFT AUDITS (FRONT DESK CONNECTION)-->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'reconciliation' && !isPatient()) {
+    <section class="tab-pane-content">
+      <div class="pane-toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Audit Status:</span>
+          <div class="chip-filter-row">
+            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'All'" (click)="reconciliationAuditFilter.set('All')">All Drawer Shifts</button>
+            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'Pending'" (click)="reconciliationAuditFilter.set('Pending')">Pending Audit</button>
+            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'VerifiedBalanced'" (click)="reconciliationAuditFilter.set('VerifiedBalanced')">Verified Balanced</button>
+            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'DiscrepancyApproved'" (click)="reconciliationAuditFilter.set('DiscrepancyApproved')">Discrepancy Approved</button>
+          </div>
+        </div>
+
+        <div class="toolbar-stats">
+          <mat-icon class="info-icon">info</mat-icon>
+          <span>Front-desk receptionists submit cash drawer closing reports at shift end. Accountant verifies counted cash against register receipts.</span>
+        </div>
+      </div>
+
+      <div class="table-card mat-elevation-z1">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Shift</th>
+              <th>Receptionist</th>
+              <th>Total Collected</th>
+              <th>Cash Counted</th>
+              <th>Discrepancy</th>
+              <th>Invoices Settled</th>
+              <th>Drawer Status</th>
+              <th>Accountant Audit</th>
+              <th class="text-right">Verification Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredReconciliations().length === 0) {
+              <tr>
+                <td colspan="10" class="empty-row">
+                  <mat-icon>fact_check</mat-icon>
+                  <p>No receptionist shift drawer reports found in this filter.</p>
+                </td>
+              </tr>
+            }
+            @for (recon of filteredReconciliations(); track recon.id) {
+              <tr>
+                <td>{{ recon.reconciliationDate | date:'mediumDate' }}</td>
+                <td><strong>{{ recon.shift }}</strong></td>
+                <td>
+                  <div class="receptionist-meta">
+                    <mat-icon class="subtle-icon">badge</mat-icon>
+                    <span>{{ recon.receptionistName }}</span>
+                  </div>
+                </td>
+                <td><strong>{{ recon.totalCollected | currency:'USD' }}</strong></td>
+                <td>{{ recon.closingCashCounted | currency:'USD' }}</td>
+                <td>
+                  <span [class.text-danger]="recon.discrepancyAmount !== 0" [class.text-success]="recon.discrepancyAmount === 0">
+                    {{ recon.discrepancyAmount === 0 ? '$0.00 (Balanced)' : (recon.discrepancyAmount | currency:'USD') }}
+                  </span>
+                </td>
+                <td>{{ recon.invoicesSettledCount }} receipts</td>
+                <td>
+                  <span class="status-tag" [ngClass]="recon.status.toLowerCase()">
+                    {{ recon.status }}
+                  </span>
+                </td>
+                <td>
+                  @if (recon.auditStatus && recon.auditStatus !== 'Pending') {
+                    <div class="audit-badge verified">
+                      <mat-icon>verified</mat-icon>
+                      <span>{{ recon.auditStatus }} ({{ recon.auditedByUserName }})</span>
+                    </div>
+                  } @else {
+                    <span class="audit-badge pending">
+                      <mat-icon>hourglass_empty</mat-icon>
+                      <span>Pending Audit</span>
+                    </span>
+                  }
+                </td>
+                <td class="text-right">
+                  @if (canManageAccounting()) {
+                    <button mat-flat-button class="btn-sm btn-primary" (click)="openAuditDrawerModal(recon)">
+                      <mat-icon>rule</mat-icon>
+                      <span>Audit Shift Drawer</span>
+                    </button>
+                  } @else {
+                    <span class="audited-text">Audited & Logged</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SETTLE INVOICE PAYMENT                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (selectedInvoiceForPay()) {
+    <div class="modal-overlay" (click)="selectedInvoiceForPay.set(null)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>point_of_sale</mat-icon>
+            <h3>Settle Invoice Payment</h3>
+          </div>
+          <button mat-icon-button (click)="selectedInvoiceForPay.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="invoice-pay-meta">
+            <div class="meta-item">
+              <span class="label">Invoice Number:</span>
+              <strong>{{ selectedInvoiceForPay()?.invoiceNumber }}</strong>
+            </div>
+            <div class="meta-item">
+              <span class="label">Patient Name:</span>
+              <strong>{{ selectedInvoiceForPay()?.patientName }}</strong>
+            </div>
+            <div class="meta-item">
+              <span class="label">Balance Outstanding:</span>
+              <strong class="text-danger">{{ selectedInvoiceForPay()?.balanceDue | currency:'USD' }}</strong>
             </div>
           </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Invoice Description / Services Rendered</mat-label>
-            <input matInput formControlName="description" placeholder="e.g. Physician Consultation & Routine Screening">
-          </mat-form-field>
-
-          <div class="drawer-footer-pro">
-            <button mat-stroked-button type="button" class="cancel-btn-pro" (click)="showNewInvoiceModal.set(false)">
-              <mat-icon>close</mat-icon> Cancel
-            </button>
-            <button mat-flat-button color="primary" type="submit" class="submit-btn-pro" [disabled]="invoiceForm.invalid || isProcessing()">
-              <mat-icon>receipt_long</mat-icon> 
-              <span>Issue & Save Invoice</span>
-            </button>
+          <div class="form-group">
+            <label>Payment Amount ($):</label>
+            <input type="number" class="finance-input" [(ngModel)]="paymentAmountInput" [max]="selectedInvoiceForPay()?.balanceDue || 9999" />
           </div>
-        </form>
-      </div>
-    </div>
-  }
 
-  <!-- Payment Modal -->
-  @if (selectedInvoiceForPay()) {
-    <div class="content-card inline-drawer pay-drawer mat-elevation-z4">
-      <div class="drawer-header">
-        <div class="drawer-title">
-          <mat-icon>payments</mat-icon>
-          <h3>Settle Invoice #{{ selectedInvoiceForPay()?.invoiceNumber }}</h3>
-        </div>
-        <p>Record payment collection against the outstanding patient balance.</p>
-      </div>
-      <div class="pay-body">
-        <div class="balance-callout">
-          <span>Outstanding Balance Due:</span>
-          <strong>{{ selectedInvoiceForPay()?.balanceDue | currency }}</strong>
+          <div class="form-group">
+            <label>Settlement Payment Method:</label>
+            <select class="finance-select" [(ngModel)]="paymentMethodInput">
+              <option value="Cash">Cash (Front Desk Drawer)</option>
+              <option value="Credit Card">Credit / Debit Card (POS Terminal)</option>
+              <option value="Bank Transfer">Bank Transfer (ACH / EFT)</option>
+              <option value="Insurance Copay">Insurance Copay Benefit</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Transaction / Merchant Reference:</label>
+            <input type="text" class="finance-input" [(ngModel)]="paymentReferenceInput" placeholder="e.g. POS-AUTH-89210 or CASH-RCP" />
+          </div>
         </div>
 
-        <div class="form-grid-two">
-          <mat-form-field appearance="outline">
-            <mat-label>Payment Amount ($)</mat-label>
-            <input matInput type="number" [(ngModel)]="paymentAmountInput" placeholder="Enter amount to pay" min="1">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Payment Method</mat-label>
-            <mat-select [(ngModel)]="paymentMethodInput">
-              <mat-option value="Cash">Cash Collection</mat-option>
-              <mat-option value="CreditCard">Credit Card (POS)</mat-option>
-              <mat-option value="DebitCard">Debit Card</mat-option>
-              <mat-option value="Insurance">Insurance Provider Claim</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="drawer-footer">
-          <button mat-stroked-button (click)="selectedInvoiceForPay.set(null)">Cancel</button>
-          <button mat-flat-button color="primary" (click)="submitPayment()" [disabled]="!paymentAmountInput || isProcessing()">
-            <mat-icon>verified</mat-icon> Confirm & Settle Payment
+        <div class="modal-footer">
+          <button mat-button (click)="selectedInvoiceForPay.set(null)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitPayment()" [disabled]="isProcessing() || paymentAmountInput <= 0">
+            <mat-icon>check_circle</mat-icon>
+            <span>Confirm Settlement</span>
           </button>
         </div>
       </div>
     </div>
   }
 
-  <!-- Metrics Overview Cards -->
-  <div class="metrics-cards-grid">
-    <div class="metric-widget green">
-      <div class="widget-icon-box"><mat-icon>payments</mat-icon></div>
-      <div>
-        <div class="widget-label">Total Collected Revenue</div>
-        <div class="widget-value">{{ totalRevenue() | currency }}</div>
-        <div class="widget-subtext">Settled & confirmed payments</div>
-      </div>
-    </div>
-
-    <div class="metric-widget amber">
-      <div class="widget-icon-box"><mat-icon>account_balance_wallet</mat-icon></div>
-      <div>
-        <div class="widget-label">Outstanding Balances</div>
-        <div class="widget-value">{{ outstandingBalance() | currency }}</div>
-        <div class="widget-subtext">Accounts receivable</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Invoices Table Card -->
-  <div class="content-card">
-    <div class="table-responsive">
-      <table mat-table [dataSource]="invoices()" class="custom-table">
-        <ng-container matColumnDef="invoiceNumber">
-          <th mat-header-cell *matHeaderCellDef> Invoice # </th>
-          <td mat-cell *matCellDef="let row">
-            <span class="invoice-num-badge">{{ row.invoiceNumber }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="patient">
-          <th mat-header-cell *matHeaderCellDef> Patient Name </th>
-          <td mat-cell *matCellDef="let row">
-            <span class="person-name">{{ row.patientName || 'Patient' }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef> Issue Date </th>
-          <td mat-cell *matCellDef="let row"> {{ (row.issueDate || row.issuedDate) | date:'mediumDate' }} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef> Payment Status </th>
-          <td mat-cell *matCellDef="let row">
-            <span class="badge-pill" [class.success]="row.status === 'Paid'" [class.danger]="row.status === 'Unpaid' || row.status === 'Overdue'" [class.warning]="row.status === 'PartiallyPaid' || row.status === 'Partial' || row.status === 'Issued'">
-              {{ row.status }}
-            </span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef> Total Invoiced </th>
-          <td mat-cell *matCellDef="let row">
-            <span class="total-val">{{ row.totalAmount | currency }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="balance">
-          <th mat-header-cell *matHeaderCellDef> Balance Due </th>
-          <td mat-cell *matCellDef="let row">
-            <strong [class.has-balance]="row.balanceDue > 0">{{ row.balanceDue | currency }}</strong>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef> Financial Actions </th>
-          <td mat-cell *matCellDef="let row">
-            <div class="actions-group">
-              @if (row.balanceDue > 0) {
-                <button mat-flat-button color="primary" class="pay-btn" (click)="openPaymentDialog(row)">
-                  <mat-icon>payments</mat-icon> Settle Pay
-                </button>
-              }
-              <button mat-stroked-button (click)="downloadPdf(row.id)" title="Download RFC 4180 Invoice PDF">
-                <mat-icon>picture_as_pdf</mat-icon> PDF
-              </button>
-            </div>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-
-      @if (invoices().length === 0) {
-        <div class="empty-state">
-          <mat-icon class="empty-icon">receipt</mat-icon>
-          <h3>No Invoices Issued Yet</h3>
-          <p>Click 'Issue New Invoice' above or dispense a doctor prescription to create an invoice.</p>
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RECONCILE INSURANCE CLAIM (TPA / REMITTANCE)       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (selectedClaimForReconcile()) {
+    <div class="modal-overlay" (click)="selectedClaimForReconcile.set(null)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>health_and_safety</mat-icon>
+            <h3>Reconcile Insurance Claim Remittance</h3>
+          </div>
+          <button mat-icon-button (click)="selectedClaimForReconcile.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
-      }
+
+        <div class="modal-body" [formGroup]="reconcileClaimForm">
+          <div class="claim-info-banner">
+            <div>Claim #: <strong>{{ selectedClaimForReconcile()?.claimNumber }}</strong></div>
+            <div>Payer: <strong>{{ selectedClaimForReconcile()?.insuranceProvider }}</strong></div>
+            <div>Claimed: <strong>{{ selectedClaimForReconcile()?.claimAmount | currency:'USD' }}</strong></div>
+          </div>
+
+          <div class="form-group">
+            <label>Clearinghouse Adjudication Decision:</label>
+            <select class="finance-select" formControlName="status">
+              <option value="Remitted">Remitted (Payment Disbursed via EFT)</option>
+              <option value="Approved">Approved (Awaiting Clearinghouse Settlement)</option>
+              <option value="Denied">Denied / Rejected (Non-covered or Prior Auth missing)</option>
+              <option value="InReview">Under Additional Clinical Review</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Covered / Reimbursed Amount ($):</label>
+            <input type="number" class="finance-input" formControlName="coveredAmount" />
+          </div>
+
+          <div class="form-group">
+            <label>Remittance Advice Reference (EFT Trace #):</label>
+            <input type="text" class="finance-input" formControlName="remittanceReference" placeholder="e.g. EFT-BCBS-89312" />
+          </div>
+
+          <div class="form-group" *ngIf="reconcileClaimForm.get('status')?.value === 'Denied'">
+            <label class="text-danger">Denial Reason Code (CARC / RARC):</label>
+            <input type="text" class="finance-input" formControlName="denialReason" placeholder="e.g. CO-16: Prior authorization missing" />
+          </div>
+
+          <div class="form-group">
+            <label>Audit & Clinical Notes:</label>
+            <textarea class="finance-textarea" formControlName="notes" rows="3" placeholder="Additional remarks regarding remittance or appeal..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="selectedClaimForReconcile.set(null)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitReconcileClaim()" [disabled]="isProcessing()">
+            <mat-icon>sync_alt</mat-icon>
+            <span>Save Adjudication</span>
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: REVIEW BILLING ADJUSTMENT / REFUND                 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (selectedAdjustmentForReview()) {
+    <div class="modal-overlay" (click)="selectedAdjustmentForReview.set(null)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>price_check</mat-icon>
+            <h3>Review Billing Adjustment / Refund</h3>
+          </div>
+          <button mat-icon-button (click)="selectedAdjustmentForReview.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="claim-info-banner">
+            <div>Adjustment: <strong>{{ selectedAdjustmentForReview()?.adjustmentNumber }}</strong></div>
+            <div>Type: <strong>{{ selectedAdjustmentForReview()?.type }}</strong></div>
+            <div>Amount: <strong class="text-danger">{{ selectedAdjustmentForReview()?.amount | currency:'USD' }}</strong></div>
+          </div>
+
+          <p><strong>Reason:</strong> {{ selectedAdjustmentForReview()?.reason }}</p>
+
+          <div class="form-group">
+            <label>Approver Audit Notes:</label>
+            <textarea class="finance-textarea" [(ngModel)]="reviewAdjustmentNotes" rows="3" placeholder="Enter approval rationale or rejection explanation..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="selectedAdjustmentForReview.set(null)">Cancel</button>
+          <button mat-stroked-button color="warn" (click)="submitReviewAdjustment('Rejected')" [disabled]="isProcessing()">
+            <mat-icon>cancel</mat-icon>
+            <span>Reject</span>
+          </button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitReviewAdjustment('Approved')" [disabled]="isProcessing()">
+            <mat-icon>verified</mat-icon>
+            <span>Approve & Apply</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SETTLE SUPPLIER EXPENSE (AP)                       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (selectedExpenseForSettle()) {
+    <div class="modal-overlay" (click)="selectedExpenseForSettle.set(null)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>payment</mat-icon>
+            <h3>Settle Accounts Payable Expense</h3>
+          </div>
+          <button mat-icon-button (click)="selectedExpenseForSettle.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="claim-info-banner">
+            <div>Expense: <strong>{{ selectedExpenseForSettle()?.expenseNumber }}</strong></div>
+            <div>Vendor: <strong>{{ selectedExpenseForSettle()?.vendorName }}</strong></div>
+            <div>Payable: <strong class="text-success">{{ (selectedExpenseForSettle()?.amount || 0) + (selectedExpenseForSettle()?.taxAmount || 0) | currency:'USD' }}</strong></div>
+          </div>
+
+          <div class="form-group">
+            <label>Payment Method:</label>
+            <select class="finance-select" [(ngModel)]="settlePaymentMethod">
+              <option value="BankTransfer">Bank Wire / ACH Direct Debit</option>
+              <option value="CorporateCard">Corporate Credit Card</option>
+              <option value="Cheque">Corporate Check</option>
+              <option value="Cash">Cash Voucher</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Bank Payment Trace Reference:</label>
+            <input type="text" class="finance-input" [(ngModel)]="settlePaymentRef" placeholder="e.g. ACH-MCK-20260901" />
+          </div>
+
+          <div class="form-group">
+            <label>Settlement Notes:</label>
+            <textarea class="finance-textarea" [(ngModel)]="settlePaymentNotes" rows="2" placeholder="Warehouse delivery receipt verification..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="selectedExpenseForSettle.set(null)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitSettleExpense()" [disabled]="isProcessing()">
+            <mat-icon>check_circle</mat-icon>
+            <span>Mark as Paid</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: AUDIT RECEPTIONIST DRAWER SHIFT                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (selectedReconciliationForAudit()) {
+    <div class="modal-overlay" (click)="selectedReconciliationForAudit.set(null)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>rule</mat-icon>
+            <h3>Audit Receptionist Cash Drawer</h3>
+          </div>
+          <button mat-icon-button (click)="selectedReconciliationForAudit.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="drawer-audit-summary">
+            <div class="summary-col">
+              <span class="sub-label">Receptionist:</span>
+              <strong>{{ selectedReconciliationForAudit()?.receptionistName }}</strong>
+            </div>
+            <div class="summary-col">
+              <span class="sub-label">Shift:</span>
+              <strong>{{ selectedReconciliationForAudit()?.shift }}</strong>
+            </div>
+            <div class="summary-col">
+              <span class="sub-label">Total Registered:</span>
+              <strong>{{ selectedReconciliationForAudit()?.totalCollected | currency:'USD' }}</strong>
+            </div>
+            <div class="summary-col">
+              <span class="sub-label">Counted Physical Cash:</span>
+              <strong>{{ selectedReconciliationForAudit()?.closingCashCounted | currency:'USD' }}</strong>
+            </div>
+            <div class="summary-col">
+              <span class="sub-label">Discrepancy:</span>
+              <strong [class.text-danger]="selectedReconciliationForAudit()?.discrepancyAmount !== 0" [class.text-success]="selectedReconciliationForAudit()?.discrepancyAmount === 0">
+                {{ selectedReconciliationForAudit()?.discrepancyAmount | currency:'USD' }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Accountant Audit Verdict:</label>
+            <select class="finance-select" [(ngModel)]="auditStatusInput">
+              <option value="VerifiedBalanced">Verified Balanced (Physical Cash matches POS Ledger)</option>
+              <option value="DiscrepancyApproved">Discrepancy Approved (Tolerable rounding/float variance)</option>
+              <option value="Disputed">Disputed (Cash shortage under investigation)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Audit Sign-Off Notes:</label>
+            <textarea class="finance-textarea" [(ngModel)]="auditNotesInput" rows="3" placeholder="State verification steps, physical drawer count, safe deposit envelope ID..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="selectedReconciliationForAudit.set(null)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitAuditDrawer()" [disabled]="isProcessing()">
+            <mat-icon>verified</mat-icon>
+            <span>Sign Off Audit</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RECORD PETTY CASH VOUCHER                          -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (showNewPettyCashModal()) {
+    <div class="modal-overlay" (click)="showNewPettyCashModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>payments</mat-icon>
+            <h3>Record Petty Cash Voucher</h3>
+          </div>
+          <button mat-icon-button (click)="showNewPettyCashModal.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" [formGroup]="newPettyCashForm">
+          <div class="form-group">
+            <label>Transaction Type:</label>
+            <select class="finance-select" formControlName="type">
+              <option value="Disbursement">Disbursement (Cash Outflow)</option>
+              <option value="Replenishment">Replenishment (Bank Float Cash Inflow)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Amount ($):</label>
+            <input type="number" class="finance-input" formControlName="amount" />
+          </div>
+
+          <div class="form-group">
+            <label>Expense Category:</label>
+            <select class="finance-select" formControlName="category">
+              <option value="OfficeSupplies">Office Supplies</option>
+              <option value="UrgentCourier">Urgent Specimen Courier</option>
+              <option value="Breakroom">Waiting Area Patient Refreshments</option>
+              <option value="LocalTravel">Emergency Patient Taxi Transport</option>
+              <option value="MinorRepairs">Facility Minor Repairs</option>
+              <option value="PettyCashReplenish">Float Bank Cashier Replenishment</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Payee / Vendor Name:</label>
+            <input type="text" class="finance-input" formControlName="payee" placeholder="e.g. Metro Courier Express or Costco" />
+          </div>
+
+          <div class="form-group">
+            <label>Purpose / Description:</label>
+            <input type="text" class="finance-input" formControlName="description" placeholder="e.g. Urgent courier delivery of biopsy specimen" />
+          </div>
+
+          <div class="form-group">
+            <label>Receipt Reference # (Optional):</label>
+            <input type="text" class="finance-input" formControlName="receiptRef" placeholder="e.g. REC-MTR-991" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="showNewPettyCashModal.set(false)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitPettyCash()" [disabled]="isProcessing() || newPettyCashForm.invalid">
+            <mat-icon>check</mat-icon>
+            <span>Save Voucher</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RECORD SUPPLIER INVOICE (AP)                       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (showNewExpenseModal()) {
+    <div class="modal-overlay" (click)="showNewExpenseModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>receipt</mat-icon>
+            <h3>Record Supplier Invoice (AP)</h3>
+          </div>
+          <button mat-icon-button (click)="showNewExpenseModal.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" [formGroup]="newExpenseForm">
+          <div class="form-group">
+            <label>Category:</label>
+            <select class="finance-select" formControlName="category">
+              <option value="PharmaceuticalSupplier">Pharmaceutical Supplier (McKesson, Pfizer)</option>
+              <option value="MedicalSupplies">Medical Supplies & PPE (Medline)</option>
+              <option value="EquipmentMaintenance">Equipment Maintenance & Calibration</option>
+              <option value="WasteDisposal">Hazardous Waste Disposal (Stericycle)</option>
+              <option value="FacilityRent">Facility Rent & Utilities</option>
+              <option value="Miscellaneous">Miscellaneous Operations</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Vendor / Supplier Name:</label>
+            <input type="text" class="finance-input" formControlName="vendorName" placeholder="e.g. McKesson Medical-Surgical" />
+          </div>
+
+          <div class="form-group">
+            <label>Supplier Invoice Reference #:</label>
+            <input type="text" class="finance-input" formControlName="invoiceReference" placeholder="e.g. INV-MCK-881920" />
+          </div>
+
+          <div class="form-group">
+            <label>Invoice Description:</label>
+            <input type="text" class="finance-input" formControlName="description" placeholder="e.g. Monthly antibiotic & consumable replenishment" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Net Amount ($):</label>
+              <input type="number" class="finance-input" formControlName="amount" />
+            </div>
+            <div class="form-group half">
+              <label>Tax Amount ($):</label>
+              <input type="number" class="finance-input" formControlName="taxAmount" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Payment Due Date:</label>
+              <input type="date" class="finance-input" formControlName="dueDate" />
+            </div>
+            <div class="form-group half">
+              <label>Payment Method:</label>
+              <select class="finance-select" formControlName="paymentMethod">
+                <option value="BankTransfer">Bank Wire / ACH</option>
+                <option value="CorporateCard">Corporate Card</option>
+                <option value="Cheque">Check</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="showNewExpenseModal.set(false)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitExpense()" [disabled]="isProcessing() || newExpenseForm.invalid">
+            <mat-icon>check</mat-icon>
+            <span>Save to AP Ledger</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RUN MONTHLY PAYROLL BATCH                          -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (showGeneratePayrollModal()) {
+    <div class="modal-overlay" (click)="showGeneratePayrollModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>auto_awesome</mat-icon>
+            <h3>Run Monthly Payroll & Commission Batch</h3>
+          </div>
+          <button mat-icon-button (click)="showGeneratePayrollModal.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p>
+            This automated calculation pulls all active clinical staff, computes base salaries, adds doctor consultation commissions ($20.00 per consultation completed during this period), calculates overtime pay, and withholds estimated tax deductions (15%).
+          </p>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Period Month (1-12):</label>
+              <input type="number" class="finance-input" [(ngModel)]="payrollMonthInput" min="1" max="12" />
+            </div>
+            <div class="form-group half">
+              <label>Period Year:</label>
+              <input type="number" class="finance-input" [(ngModel)]="payrollYearInput" min="2020" max="2030" />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="showGeneratePayrollModal.set(false)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitGeneratePayroll()" [disabled]="isProcessing()">
+            <mat-icon>play_arrow</mat-icon>
+            <span>Execute Calculation</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: DISBURSE PAYROLL SALARY                            -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (selectedPayrollForDisburse()) {
+    <div class="modal-overlay" (click)="selectedPayrollForDisburse.set(null)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>send</mat-icon>
+            <h3>Disburse Staff Salary</h3>
+          </div>
+          <button mat-icon-button (click)="selectedPayrollForDisburse.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="claim-info-banner">
+            <div>Staff: <strong>{{ selectedPayrollForDisburse()?.staffName }}</strong></div>
+            <div>Role: <strong>{{ selectedPayrollForDisburse()?.role }}</strong></div>
+            <div>Net Payable: <strong class="text-success">{{ selectedPayrollForDisburse()?.netSalaryPayable | currency:'USD' }}</strong></div>
+          </div>
+
+          <div class="form-group">
+            <label>Direct Deposit ACH / Bank Wire Trace Number:</label>
+            <input type="text" class="finance-input" [(ngModel)]="disbursePaymentRef" placeholder="e.g. ACH-PR-202609-SMITH" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="selectedPayrollForDisburse.set(null)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitDisbursePayroll()" [disabled]="isProcessing() || !disbursePaymentRef">
+            <mat-icon>check_circle</mat-icon>
+            <span>Confirm Disbursement</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SUBMIT INSURANCE CLAIM                             -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (showNewClaimModal()) {
+    <div class="modal-overlay" (click)="showNewClaimModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>health_and_safety</mat-icon>
+            <h3>Submit Electronic Insurance Claim</h3>
+          </div>
+          <button mat-icon-button (click)="showNewClaimModal.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" [formGroup]="newClaimForm">
+          <div class="form-group">
+            <label>Select Patient Invoice to Claim:</label>
+            <select class="finance-select" formControlName="invoiceId">
+              <option value="" disabled>-- Select Invoice --</option>
+              @for (inv of invoices(); track inv.id) {
+                <option [value]="inv.id">{{ inv.invoiceNumber }} — {{ inv.patientName }} ({{ inv.totalAmount | currency:'USD' }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Insurance Payer / TPA:</label>
+            <select class="finance-select" formControlName="insuranceProvider">
+              <option value="BlueCross BlueShield">BlueCross BlueShield</option>
+              <option value="Aetna Health">Aetna Health</option>
+              <option value="Cigna Global">Cigna Global</option>
+              <option value="UnitedHealthcare">UnitedHealthcare</option>
+              <option value="Medicare Part B">Medicare Part B</option>
+              <option value="Medicaid State">Medicaid State Plan</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Policy Number:</label>
+              <input type="text" class="finance-input" formControlName="policyNumber" placeholder="e.g. BCBS-994821" />
+            </div>
+            <div class="form-group half">
+              <label>Group Number (Optional):</label>
+              <input type="text" class="finance-input" formControlName="groupNumber" placeholder="e.g. GRP-TECH-44" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Claim Amount ($):</label>
+              <input type="number" class="finance-input" formControlName="claimAmount" />
+            </div>
+            <div class="form-group half">
+              <label>Patient Copay ($):</label>
+              <input type="number" class="finance-input" formControlName="patientCopay" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Clinical Justification & Notes:</label>
+            <textarea class="finance-textarea" formControlName="notes" rows="2" placeholder="Primary diagnostic ICD-10 or encounter description..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="showNewClaimModal.set(false)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitClaim()" [disabled]="isProcessing() || newClaimForm.invalid">
+            <mat-icon>send</mat-icon>
+            <span>Submit to Clearinghouse</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: REQUEST BILLING ADJUSTMENT / DISCOUNT               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (showNewAdjustmentModal()) {
+    <div class="modal-overlay" (click)="showNewAdjustmentModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>price_check</mat-icon>
+            <h3>Request Billing Adjustment or Refund</h3>
+          </div>
+          <button mat-icon-button (click)="showNewAdjustmentModal.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" [formGroup]="newAdjustmentForm">
+          <div class="form-group">
+            <label>Select Target Invoice:</label>
+            <select class="finance-select" formControlName="invoiceId">
+              <option value="" disabled>-- Select Invoice --</option>
+              @for (inv of invoices(); track inv.id) {
+                <option [value]="inv.id">{{ inv.invoiceNumber }} — {{ inv.patientName }} ({{ inv.totalAmount | currency:'USD' }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Adjustment Type:</label>
+            <select class="finance-select" formControlName="type">
+              <option value="Discount">Courtesy / Senior / Staff Discount</option>
+              <option value="Refund">Duplicate Charge Refund</option>
+              <option value="BadDebtWriteOff">Indigent / Bad Debt Write-Off</option>
+              <option value="CourtesyWaiver">Administrative Courtesy Waiver</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Adjustment Amount ($):</label>
+            <input type="number" class="finance-input" formControlName="amount" />
+          </div>
+
+          <div class="form-group">
+            <label>Detailed Clinical / Billing Reason:</label>
+            <textarea class="finance-textarea" formControlName="reason" rows="3" placeholder="Provide justification for finance audit review..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="showNewAdjustmentModal.set(false)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitAdjustment()" [disabled]="isProcessing() || newAdjustmentForm.invalid">
+            <mat-icon>send</mat-icon>
+            <span>Submit for Review</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: CREATE INVOICE                                      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  @if (showNewInvoiceModal()) {
+    <div class="modal-overlay" (click)="showNewInvoiceModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon>add_card</mat-icon>
+            <h3>Generate Outpatient Billing Invoice</h3>
+          </div>
+          <button mat-icon-button (click)="showNewInvoiceModal.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" [formGroup]="invoiceForm">
+          <div class="form-group">
+            <label>Patient:</label>
+            <select class="finance-select" formControlName="patientId">
+              <option value="" disabled>-- Select Patient --</option>
+              @for (p of patients(); track p.id) {
+                <option [value]="p.id">{{ p.firstName }} {{ p.lastName }} ({{ p.medicalRecordNumber }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="preset-pill-row">
+            <span class="preset-label">Quick Presets:</span>
+            @for (pr of servicePresets; track pr.label) {
+              <button type="button" class="preset-pill" (click)="applyPreset(pr)">
+                {{ pr.label }}
+              </button>
+            }
+          </div>
+
+          <div class="form-group">
+            <label>Service Description:</label>
+            <input type="text" class="finance-input" formControlName="description" />
+          </div>
+
+          <div class="form-group">
+            <label>Total Price ($):</label>
+            <input type="number" class="finance-input" formControlName="amount" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button mat-button (click)="showNewInvoiceModal.set(false)">Cancel</button>
+          <button mat-flat-button class="action-btn-primary" (click)="submitInvoice()" [disabled]="isProcessing() || invoiceForm.invalid">
+            <mat-icon>check_circle</mat-icon>
+            <span>Create Invoice</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===================================== -->
+  <!-- MODAL: PDF DESIGN THEME CHOOSER      -->
+  <!-- ===================================== -->
+  @if (showPdfDesignModal()) {
+    <div class="modal-overlay" (click)="closePdfDesignModal()">
+      <div class="modal-card modal-lg" style="max-width: 820px;" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon style="color: #ef4444; font-size: 28px; width: 28px; height: 28px;">picture_as_pdf</mat-icon>
+            <div>
+              <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Choose Invoice PDF Design Theme</h3>
+              <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-secondary);">
+                Select a designer layout to render this official clinical billing document.
+              </p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closePdfDesignModal()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body" style="padding: 20px;">
+          <div class="design-theme-cards-grid">
+            <!-- Theme 1: Executive Navy & Gold -->
+            <div class="theme-card" [class.selected]="selectedPdfDesign() === 'ExecutiveNavy'" (click)="selectPdfDesign('ExecutiveNavy')">
+              <div class="theme-header-bar navy">
+                <span class="theme-tag">Executive Standard</span>
+              </div>
+              <div class="theme-card-body">
+                <div class="theme-title-row">
+                  <h4>👔 Executive Navy & Gold</h4>
+                  @if (selectedPdfDesign() === 'ExecutiveNavy') {
+                    <mat-icon class="check-icon">check_circle</mat-icon>
+                  }
+                </div>
+                <p class="theme-desc">Formal hospital statement with dark slate navy headers, gold amber accents, and serif typography.</p>
+                <div class="theme-palette-dots">
+                  <span class="dot" style="background: #0F172A;" title="Dark Navy"></span>
+                  <span class="dot" style="background: #D97706;" title="Amber Gold"></span>
+                  <span class="dot" style="background: #F8FAFC;" title="Clean Slate"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme 2: Modern Emerald & Mint -->
+            <div class="theme-card" [class.selected]="selectedPdfDesign() === 'ModernEmerald'" (click)="selectPdfDesign('ModernEmerald')">
+              <div class="theme-header-bar emerald">
+                <span class="theme-tag">Clinical Tech</span>
+              </div>
+              <div class="theme-card-body">
+                <div class="theme-title-row">
+                  <h4>🌿 Modern Emerald & Mint</h4>
+                  @if (selectedPdfDesign() === 'ModernEmerald') {
+                    <mat-icon class="check-icon">check_circle</mat-icon>
+                  }
+                </div>
+                <p class="theme-desc">Fresh, clean clinical healthcare look with forest emerald headers, crisp mint accents, and modern layout.</p>
+                <div class="theme-palette-dots">
+                  <span class="dot" style="background: #065F46;" title="Forest Emerald"></span>
+                  <span class="dot" style="background: #059669;" title="Vibrant Mint"></span>
+                  <span class="dot" style="background: #F0FDF4;" title="Soft Mint Tint"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme 3: Clinical Cyan & Cobalt -->
+            <div class="theme-card" [class.selected]="selectedPdfDesign() === 'ClinicalCyan'" (click)="selectPdfDesign('ClinicalCyan')">
+              <div class="theme-header-bar cyan">
+                <span class="theme-tag">Diagnostic Center</span>
+              </div>
+              <div class="theme-card-body">
+                <div class="theme-title-row">
+                  <h4>💎 Clinical Cyan & Cobalt</h4>
+                  @if (selectedPdfDesign() === 'ClinicalCyan') {
+                    <mat-icon class="check-icon">check_circle</mat-icon>
+                  }
+                </div>
+                <p class="theme-desc">High-tech digital care center design with deep hospital sky blue, cyan highlights, and bold contrast.</p>
+                <div class="theme-palette-dots">
+                  <span class="dot" style="background: #0369A1;" title="Hospital Blue"></span>
+                  <span class="dot" style="background: #0284C7;" title="Cyan Accent"></span>
+                  <span class="dot" style="background: #F0F9FF;" title="Ice White"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 20px; display: flex; justify-content: flex-end; gap: 12px;">
+          <button mat-button (click)="closePdfDesignModal()">Cancel</button>
+          <button mat-flat-button color="primary" (click)="confirmDownloadPdf()" class="action-btn-primary" style="background: #0284c7; color: #fff; font-weight: 700; border-radius: 8px; padding: 0 20px;">
+            <mat-icon>file_download</mat-icon>
+            <span>Download Invoice PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

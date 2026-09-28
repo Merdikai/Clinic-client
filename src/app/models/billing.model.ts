@@ -9,6 +9,10 @@ export interface Invoice {
   paidAmount: number;
   balanceDue: number;
   status: 'Draft' | 'Issued' | 'Paid' | 'PartiallyPaid' | 'Unpaid' | 'Overdue' | 'Cancelled';
+  department?: string;
+  subTotal?: number;
+  taxAmount?: number;
+  discountAmount?: number;
   items?: InvoiceItem[];
   lineItems?: InvoiceItem[];
 }

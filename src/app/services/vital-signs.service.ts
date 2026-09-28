@@ -12,8 +12,8 @@ export class VitalSignsService {
     return this.http.get<VitalSign>(`${this.apiUrl}/appointment/${appointmentId}`);
   }
 
-  record(request: RecordVitalsRequest, nurseId?: string) {
-    const url = nurseId ? `${this.apiUrl}?nurseId=${nurseId}` : this.apiUrl;
+  record(request: RecordVitalsRequest, userId?: string) {
+    const url = userId ? `${this.apiUrl}?userId=${userId}` : this.apiUrl;
     return this.http.post<VitalSign>(url, request);
   }
 }

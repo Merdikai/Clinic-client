@@ -17,10 +17,13 @@ export class ThemeService {
       const currentTheme = this.theme();
       this.isDark.set(currentTheme === 'dark');
       document.documentElement.setAttribute('data-theme', currentTheme);
+      document.body?.setAttribute('data-theme', currentTheme);
       if (currentTheme === 'dark') {
-        document.documentElement.classList.add('dark-theme');
+        document.documentElement.classList.add('dark-theme', 'dark-mode');
+        document.body?.classList.add('dark-theme', 'dark-mode');
       } else {
-        document.documentElement.classList.remove('dark-theme');
+        document.documentElement.classList.remove('dark-theme', 'dark-mode');
+        document.body?.classList.remove('dark-theme', 'dark-mode');
       }
       localStorage.setItem(this.THEME_KEY, currentTheme);
     });

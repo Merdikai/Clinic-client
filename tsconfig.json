@@ -11,6 +11,7 @@
     "isolatedModules": true,
     "experimentalDecorators": true,
     "importHelpers": true,
+    "preserveSymlinks": true,
     "target": "ES2022",
     "module": "preserve"
   },

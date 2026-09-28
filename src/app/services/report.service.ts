@@ -31,11 +31,19 @@ export class ReportService {
     return this.http.get<any>(`${this.apiUrl}/doctor-appointments`, { params });
   }
 
-  exportPatientsCsv(): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/export/patients`, { responseType: 'blob' });
+  exportPatientsCsv(startDate?: string, endDate?: string, timeframe?: string): Observable<Blob> {
+    const params: any = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (timeframe) params.timeframe = timeframe;
+    return this.http.get(`${this.apiUrl}/export/patients`, { params, responseType: 'blob' });
   }
 
-  exportInvoicesCsv(): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/export/invoices`, { responseType: 'blob' });
+  exportInvoicesCsv(startDate?: string, endDate?: string, timeframe?: string): Observable<Blob> {
+    const params: any = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (timeframe) params.timeframe = timeframe;
+    return this.http.get(`${this.apiUrl}/export/invoices`, { params, responseType: 'blob' });
   }
 }

@@ -1,0 +1,198 @@
+<div class="prescriptions-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="badge-portal">Patient Pharmacy Portal</span>
+        <span class="badge-mrn">MRN: {{ patient()?.medicalRecordNumber || 'PAT-ALICE-001' }}</span>
+      </div>
+      <h1 class="page-title">My Prescriptions & Medication Queue</h1>
+      <p class="page-subtitle">Track your doctor-prescribed medications, dosage instructions, and dispensing statuses</p>
+    </div>
+    <div class="header-actions">
+      <a mat-flat-button color="primary" routerLink="/appointments/book" class="cta-btn">
+        <mat-icon>add_alarm</mat-icon> Book Consultation / Refill
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card purple">
+      <div class="kpi-icon-box"><mat-icon>medication</mat-icon></div>
+      <div class="kpi-info">
+        <span class="kpi-label">Active Prescriptions</span>
+        <h2 class="kpi-val">{{ prescriptions().length }}</h2>
+        <span class="kpi-sub">Doctor orders issued</span>
+      </div>
+    </div>
+
+    <div class="kpi-card blue">
+      <div class="kpi-icon-box"><mat-icon>local_pharmacy</mat-icon></div>
+      <div class="kpi-info">
+        <span class="kpi-label">Total Medications</span>
+        <h2 class="kpi-val">{{ totalMedicines() }}</h2>
+        <span class="kpi-sub">Prescribed items</span>
+      </div>
+    </div>
+
+    <div class="kpi-card green">
+      <div class="kpi-icon-box"><mat-icon>verified</mat-icon></div>
+      <div class="kpi-info">
+        <span class="kpi-label">Pharmacy Status</span>
+        <h2 class="kpi-val">Ready</h2>
+        <span class="kpi-sub">Available for pickup</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prescriptions List -->
+  <div class="rx-card-list">
+    <div *ngIf="isLoading()" class="loading-state">
+      <mat-icon class="spin-icon">sync</mat-icon>
+      <p>Retrieving your medication records...</p>
+    </div>
+
+    <div *ngIf="!isLoading() && prescriptions().length > 0; else noRxsTpl">
+      <div *ngFor="let rx of prescriptions()" class="rx-item-card mat-elevation-z2">
+        <div class="rx-item-top">
+          <div class="doctor-meta">
+            <div class="rx-icon"><mat-icon>local_pharmacy</mat-icon></div>
+            <div>
+              <h3>{{ rx.doctorName || 'Prescribing Physician (General Practice)' }}</h3>
+              <span class="rx-date"><mat-icon>calendar_today</mat-icon> Prescribed on: {{ rx.issuedAt ? (rx.issuedAt | date:'fullDate') : (rx.createdAt | date:'fullDate') }}</span>
+            </div>
+          </div>
+          <span class="status-pill" [class.dispensed]="rx.isDispensed" [class.ready]="!rx.isDispensed">
+            <mat-icon>{{ rx.isDispensed ? 'check_circle' : 'hourglass_top' }}</mat-icon>
+            {{ rx.isDispensed ? 'Dispensed' : 'Ready for Pickup' }}
+          </span>
+        </div>
+
+        <!-- Prescribed Items -->
+        <div class="rx-meds-list" *ngIf="rx.items && rx.items.length > 0">
+          <div *ngFor="let item of rx.items" class="med-item-row">
+            <div class="med-name-col">
+              <span class="med-emoji">💊</span>
+              <div>
+                <h4>{{ item.medicineName }}</h4>
+                <span class="med-qty">Quantity Prescribed: <strong>{{ item.quantity }} units</strong></span>
+              </div>
+            </div>
+            <div class="med-dosage-col">
+              <span class="dosage-label">Dosage & Instructions:</span>
+              <p class="dosage-text">{{ item.dosageInstructions || '1 tablet once daily in the evening after food for 14 days' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fallback if single item without nested array -->
+        <div class="rx-meds-list" *ngIf="!rx.items || rx.items.length === 0">
+          <div class="med-item-row">
+            <div class="med-name-col">
+              <span class="med-emoji">💊</span>
+              <div>
+                <h4>{{ rx.medicineName || 'Cetirizine 10mg' }}</h4>
+                <span class="med-qty">Quantity Prescribed: <strong>{{ rx.quantity || 2 }} units</strong></span>
+              </div>
+            </div>
+            <div class="med-dosage-col">
+              <span class="dosage-label">Dosage & Instructions:</span>
+              <p class="dosage-text">{{ rx.dosageInstructions || '1 tablet once daily in the evening for 14 days' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Doctor Advisory Notes -->
+        <div class="rx-notes-box" *ngIf="rx.notes">
+          <span class="notes-label"><mat-icon>info</mat-icon> Physician's Advisory:</span>
+          <p class="notes-text">{{ rx.notes }}</p>
+        </div>
+
+        <div class="rx-card-footer">
+          <button mat-stroked-button color="primary" class="view-rx-details-btn" (click)="openDetailModal(rx)">
+            <mat-icon>visibility</mat-icon> View Full Regimen & Instructions
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noRxsTpl>
+      <div class="empty-state">
+        <mat-icon>medication</mat-icon>
+        <h3>No Prescriptions on File</h3>
+        <p>You have no active prescriptions or medication orders at this time.</p>
+        <a mat-flat-button color="primary" routerLink="/appointments/book">Book Consultation</a>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Modal: Prescription Details & Dispensation -->
+  <div *ngIf="isDetailModalOpen()" class="modal-backdrop" (click)="closeDetailModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-icon-box purple">
+          <mat-icon>medication</mat-icon>
+        </div>
+        <div class="header-title-box">
+          <h3>E-Prescription & Pharmacy Details</h3>
+          <p>Prescribed by {{ selectedPrescription()?.doctorName || 'Attending Physician' }}</p>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="closeDetailModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedPrescription() as rx">
+        <div class="rx-modal-meta-grid">
+          <div class="meta-item">
+            <span class="lbl">Prescription ID</span>
+            <span class="val font-mono">{{ rx.id ? (rx.id | slice:0:8) : 'RX-PORTAL' }}...</span>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">Date Issued</span>
+            <span class="val">{{ (rx.issuedAt || rx.createdAt) | date:'mediumDate' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">Dispensing Status</span>
+            <span class="status-pill" [class.dispensed]="rx.isDispensed" [class.ready]="!rx.isDispensed">
+              {{ rx.isDispensed ? 'Dispensed' : 'Ready for Pickup' }}
+            </span>
+          </div>
+          <div class="meta-item" *ngIf="rx.dispensedAt">
+            <span class="lbl">Dispensed Date</span>
+            <span class="val">{{ rx.dispensedAt | date:'mediumDate' }}</span>
+          </div>
+        </div>
+
+        <h4 class="modal-subheading">Prescribed Medications</h4>
+        <div class="modal-meds-list">
+          <div *ngFor="let item of (rx.items?.length ? rx.items : [rx])" class="modal-med-row">
+            <div class="med-info">
+              <strong>💊 {{ item.medicineName || rx.medicineName || 'Prescribed Drug' }}</strong>
+              <span class="generic-name" *ngIf="item.genericName">Generic: {{ item.genericName }}</span>
+              <span class="instructions-text">Instructions: {{ item.dosageInstructions || 'Take as directed by your physician' }}</span>
+            </div>
+            <div class="med-qty-badge">
+              <span>Qty: {{ item.quantity || 1 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="rx.notes" class="modal-advisory-box">
+          <span class="lbl"><mat-icon>info</mat-icon> Physician Advisory:</span>
+          <p>{{ rx.notes }}</p>
+        </div>
+
+        <div *ngIf="rx.verificationNotes" class="modal-pharmacist-box">
+          <span class="lbl"><mat-icon>verified</mat-icon> Pharmacist Notes:</span>
+          <p>{{ rx.verificationNotes }}</p>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-flat-button color="primary" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

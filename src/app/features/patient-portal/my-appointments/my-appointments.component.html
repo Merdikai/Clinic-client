@@ -1,0 +1,212 @@
+<div class="patient-page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="header-badge-row">
+        <span class="badge-role">Patient Portal</span>
+        <span class="badge-mrn">MRN: {{ patient()?.medicalRecordNumber || 'PAT-ALICE-001' }}</span>
+      </div>
+      <h1 class="page-title">My Appointments & Clinical Visits</h1>
+      <p class="page-subtitle">View your confirmed appointments, consultation results, recorded vitals, and pending visit requests</p>
+    </div>
+    <div class="header-actions">
+      <a mat-flat-button color="primary" routerLink="/appointments/book" class="book-cta-btn">
+        <mat-icon>add_alarm</mat-icon> Book New Appointment
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Chips -->
+  <div class="filters-bar">
+    <button class="filter-chip" [class.active]="selectedFilter() === 'ALL'" (click)="selectedFilter.set('ALL')">
+      All Consultations ({{ appointments().length }})
+    </button>
+    <button class="filter-chip" [class.active]="selectedFilter() === 'SCHEDULED'" (click)="selectedFilter.set('SCHEDULED')">
+      Confirmed / Upcoming
+    </button>
+    <button class="filter-chip" [class.active]="selectedFilter() === 'PENDING'" (click)="selectedFilter.set('PENDING')">
+      Pending Clinic Approval
+    </button>
+    <button class="filter-chip" [class.active]="selectedFilter() === 'COMPLETED'" (click)="selectedFilter.set('COMPLETED')">
+      Completed & Results
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <mat-icon class="spin-icon">sync</mat-icon>
+    <p>Loading your clinical appointments...</p>
+  </div>
+
+  <!-- Appointments Grid -->
+  <div *ngIf="!isLoading()" class="appts-grid">
+    <div *ngFor="let appt of filteredAppointments()" class="appt-card mat-elevation-z2" [class.completed-card]="appt.status === 'Completed'" [class.pending-card]="appt.status === 'PendingApproval'">
+      <!-- Card Header -->
+      <div class="appt-card-top">
+        <div class="doctor-profile">
+          <div class="doc-avatar">
+            <mat-icon>medical_services</mat-icon>
+          </div>
+          <div>
+            <h3>{{ appt.doctorName || 'Attending Physician' }}</h3>
+            <span class="specialty-text">Consultant Physician · General Practice</span>
+          </div>
+        </div>
+
+        <div class="status-wrap">
+          <span class="status-pill" [class.pending]="appt.status === 'PendingApproval'" [class.scheduled]="appt.status === 'Scheduled'" [class.completed]="appt.status === 'Completed'" [class.cancelled]="appt.status === 'Cancelled'">
+            <mat-icon *ngIf="appt.status === 'Scheduled'">check_circle</mat-icon>
+            <mat-icon *ngIf="appt.status === 'PendingApproval'">hourglass_top</mat-icon>
+            <mat-icon *ngIf="appt.status === 'Completed'">task_alt</mat-icon>
+            <mat-icon *ngIf="appt.status === 'Cancelled'">cancel</mat-icon>
+            {{ appt.status === 'PendingApproval' ? 'Pending Approval' : appt.status }}
+          </span>
+
+          <button *ngIf="appt.status === 'Scheduled' || appt.status === 'PendingApproval'" 
+                  mat-stroked-button 
+                  color="warn" 
+                  class="cancel-appt-btn" 
+                  (click)="openCancelModal(appt)"
+                  matTooltip="Cancel this appointment">
+            <mat-icon>close</mat-icon> Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Card Schedule Meta -->
+      <div class="appt-schedule-row">
+        <div class="meta-item">
+          <mat-icon>calendar_today</mat-icon>
+          <span>{{ appt.scheduledDateTime | date:'fullDate' }}</span>
+        </div>
+        <div class="meta-item">
+          <mat-icon>schedule</mat-icon>
+          <span>{{ appt.scheduledDateTime | date:'shortTime' }} ({{ appt.durationMinutes }} Minutes)</span>
+        </div>
+        <div class="meta-item">
+          <mat-icon>chat_bubble_outline</mat-icon>
+          <span>Reason: <strong>{{ appt.reasonForVisit || 'General Medical Consultation' }}</strong></span>
+        </div>
+      </div>
+
+      <!-- Pending Approval Message Box -->
+      <div *ngIf="appt.status === 'PendingApproval'" class="pending-notice-box">
+        <mat-icon>info</mat-icon>
+        <div>
+          <h4>Appointment Request Received</h4>
+          <p>Your consultation request is awaiting review by our reception team. You will be notified once confirmed.</p>
+        </div>
+      </div>
+
+      <!-- Consultation Results Section (For Completed Appointments) -->
+      <div *ngIf="appt.status === 'Completed'" class="results-box">
+        <div class="results-header">
+          <mat-icon>clinical_notes</mat-icon>
+          <h4>Consultation Results & Clinical Findings</h4>
+        </div>
+
+        <!-- Doctor's Diagnosis & Notes -->
+        <div class="findings-grid">
+          <div class="finding-card diagnosis-card">
+            <span class="field-label">Diagnosis</span>
+            <p class="field-val">{{ getVisitResultForAppt(appt.id)?.diagnosis || 'Clinical consultation completed - primary assessment concluded.' }}</p>
+          </div>
+          <div class="finding-card symptoms-card">
+            <span class="field-label">Symptoms Reported</span>
+            <p class="field-val">{{ getVisitResultForAppt(appt.id)?.symptoms || 'General clinical symptoms reviewed.' }}</p>
+          </div>
+        </div>
+
+        <div class="notes-block" *ngIf="getVisitResultForAppt(appt.id)?.clinicalNotes || getVisitResultForAppt(appt.id)?.findings">
+          <span class="field-label">Doctor's Clinical Notes & Recommendations</span>
+          <p class="clinical-text">{{ getVisitResultForAppt(appt.id)?.clinicalNotes || getVisitResultForAppt(appt.id)?.findings }}</p>
+        </div>
+
+        <!-- Recorded Vitals Section -->
+        <div class="vitals-strip" *ngIf="getVisitResultForAppt(appt.id)?.vitalSigns as vitals">
+          <div class="vital-badge" *ngIf="vitals.systolicBP && vitals.diastolicBP">
+            <span class="lbl">Blood Pressure</span>
+            <span class="val">{{ vitals.systolicBP }} / {{ vitals.diastolicBP }} mmHg</span>
+          </div>
+          <div class="vital-badge" *ngIf="vitals.heartRateBpm">
+            <span class="lbl">Heart Rate</span>
+            <span class="val">{{ vitals.heartRateBpm }} bpm</span>
+          </div>
+          <div class="vital-badge" *ngIf="vitals.temperatureC">
+            <span class="lbl">Temperature</span>
+            <span class="val">{{ vitals.temperatureC }} °C</span>
+          </div>
+          <div class="vital-badge" *ngIf="vitals.weightKg">
+            <span class="lbl">Weight / Height</span>
+            <span class="val">{{ vitals.weightKg }} kg<span *ngIf="vitals.heightCm"> · {{ vitals.heightCm }} cm</span></span>
+          </div>
+        </div>
+
+        <!-- Prescribed Medications -->
+        <div class="rx-strip" *ngIf="getVisitResultForAppt(appt.id)?.prescription as rx">
+          <span class="rx-label"><mat-icon>medication</mat-icon> Prescriptions Issued:</span>
+          <span class="rx-pill" *ngIf="rx.notes">💊 {{ rx.notes }}</span>
+          <span class="rx-pill" *ngIf="!rx.notes">💊 Active prescription registered — view My Prescriptions</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredAppointments().length === 0" class="empty-state-box">
+      <mat-icon>event_busy</mat-icon>
+      <h3>No appointments found in this category</h3>
+      <p>Need to see a doctor? Book a new consultation with our healthcare team.</p>
+      <a mat-flat-button color="primary" routerLink="/appointments/book">Book Consultation</a>
+    </div>
+  </div>
+
+  <!-- Modal: Cancel Appointment Confirmation -->
+  <div *ngIf="isCancelModalOpen()" class="modal-backdrop" (click)="closeCancelModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-icon-box danger">
+          <mat-icon>event_busy</mat-icon>
+        </div>
+        <div class="header-title-box">
+          <h3>Cancel Consultation Request</h3>
+          <p>Are you sure you want to cancel this appointment?</p>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="closeCancelModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedApptToCancel() as appt">
+        <div class="appt-preview-summary">
+          <div class="preview-row">
+            <span class="lbl"><mat-icon>medical_services</mat-icon> Physician:</span>
+            <span class="val">{{ appt.doctorName || 'Attending Doctor' }}</span>
+          </div>
+          <div class="preview-row">
+            <span class="lbl"><mat-icon>event</mat-icon> Date & Time:</span>
+            <span class="val">{{ appt.scheduledDateTime | date:'fullDate' }} at {{ appt.scheduledDateTime | date:'shortTime' }}</span>
+          </div>
+          <div class="preview-row">
+            <span class="lbl"><mat-icon>notes</mat-icon> Reason:</span>
+            <span class="val">{{ appt.reasonForVisit || 'General Consultation' }}</span>
+          </div>
+        </div>
+        <p class="cancel-warning-text">
+          <mat-icon>warning</mat-icon>
+          This action will cancel your appointment and release your scheduled time slot.
+        </p>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-button class="keep-btn" (click)="closeCancelModal()" [disabled]="isCancelling()">
+          Keep Appointment
+        </button>
+        <button mat-flat-button color="warn" class="confirm-cancel-btn" (click)="confirmCancel()" [disabled]="isCancelling()">
+          <mat-icon *ngIf="!isCancelling()">cancel</mat-icon>
+          <span *ngIf="!isCancelling()">Confirm Cancellation</span>
+          <span *ngIf="isCancelling()">Cancelling...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -11,6 +11,8 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { PatientService } from '../../services/patient.service';
 import { DoctorService, DoctorDto } from '../../services/doctor.service';
 import { AppointmentService } from '../../services/appointment.service';
+import { AuthService } from '../../services/auth.service';
+import { PermissionService } from '../../services/permission.service';
 import { Patient } from '../../models/patient.model';
 
 @Component({
@@ -35,10 +37,20 @@ export class AppointmentBookingComponent implements OnInit {
   private patientService = inject(PatientService);
   private doctorService = inject(DoctorService);
   private appointmentService = inject(AppointmentService);
+  public authService = inject(AuthService);
+  private permissionService = inject(PermissionService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private snackBar = inject(MatSnackBar);
 
+  isDoctor = computed(() => this.authService.isDoctor());
+  isPatient = computed(() => 
+    this.authService.isPatient() || 
+    this.authService.userRoles().includes('Patient') || 
+    this.permissionService.activeRole() === 'Patient'
+  );
+
+  currentPatient = signal<Patient | null>(null);
   patients = signal<Patient[]>([]);
   doctors = signal<DoctorDto[]>([]);
   isSubmitting = signal(false);
@@ -54,14 +66,52 @@ export class AppointmentBookingComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.loadPatients();
+    if (this.isDoctor()) {
+      this.snackBar.open('Doctors do not schedule patient appointments directly. Receptionists & Admin manage bookings.', 'Close', { duration: 4000 });
+      this.router.navigate(['/my-consultations']);
+      return;
+    }
+
+    if (this.isPatient()) {
+      // Auto-load current patient profile and lock patientId
+      this.patientService.getMyProfile().subscribe({
+        next: (pat: Patient) => {
+          this.currentPatient.set(pat);
+          this.bookingForm.patchValue({ patientId: pat.id });
+        },
+        error: () => {
+          const fallback: any = {
+            id: 'a11ce000-0000-0000-0000-000000000001',
+            firstName: 'Alice',
+            lastName: 'Patient',
+            medicalRecordNumber: 'PAT-ALICE-001',
+            email: 'alice.patient@clinic.com'
+          };
+          this.currentPatient.set(fallback);
+          this.bookingForm.patchValue({ patientId: fallback.id });
+        }
+      });
+    } else {
+      this.loadPatients();
+    }
+
     this.loadDoctors();
 
     this.route.queryParams.subscribe((params) => {
-      if (params['patientId']) {
+      if (params['patientId'] && !this.isPatient()) {
         this.bookingForm.patchValue({ patientId: params['patientId'] });
       }
     });
+  }
+
+  goBack() {
+    if (this.isDoctor()) {
+      this.router.navigate(['/my-consultations']);
+    } else if (this.isPatient()) {
+      this.router.navigate(['/my-appointments']);
+    } else {
+      this.router.navigate(['/appointments']);
+    }
   }
 
   loadPatients() {
@@ -103,7 +153,11 @@ export class AppointmentBookingComponent implements OnInit {
       next: () => {
         this.isSubmitting.set(false);
         this.snackBar.open('Appointment booked successfully!', 'Close', { duration: 3000 });
-        this.router.navigate(['/appointments']);
+        if (this.isPatient()) {
+          this.router.navigate(['/my-appointments']);
+        } else {
+          this.router.navigate(['/appointments']);
+        }
       },
       error: (error) => {
         this.isSubmitting.set(false);

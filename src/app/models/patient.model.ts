@@ -1,4 +1,4 @@
-﻿export interface Patient {
+export interface Patient {
   id: string;
   medicalRecordNumber: string;
   firstName: string;
@@ -10,7 +10,13 @@
   address?: string;
   bloodGroup: string;
   bloodType?: string;
+  allergies?: string;
   emergencyContact?: string;
+  nationalId?: string;
+  insuranceProvider?: string;
+  insurancePolicyNumber?: string;
+  insuranceCoveragePlan?: string;
+  insuranceEligibilityStatus?: string;
   registeredAt?: string;
 }
 
@@ -23,7 +29,13 @@ export interface CreatePatientRequest {
   email: string;
   address?: string;
   bloodGroup?: string;
+  allergies?: string;
   emergencyContact?: string;
+  nationalId?: string;
+  insuranceProvider?: string;
+  insurancePolicyNumber?: string;
+  insuranceCoveragePlan?: string;
+  insuranceEligibilityStatus?: string;
 }
 
 export interface PagedResponse<T> {

@@ -1,0 +1,182 @@
+<div class="medical-file-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="badge-portal">Electronic Health Record (EHR)</span>
+        <span class="badge-confidential">Confidential Patient File</span>
+      </div>
+      <h1 class="page-title">My Personal Medical File</h1>
+      <p class="page-subtitle">Official electronic health chart, clinical history, recorded vitals, and diagnostic findings</p>
+    </div>
+    <div class="header-actions">
+      <a mat-stroked-button routerLink="/my-appointments" class="cta-link">
+        <mat-icon>event</mat-icon> My Appointments
+      </a>
+      <a mat-flat-button color="primary" routerLink="/appointments/book" class="cta-link">
+        <mat-icon>add_alarm</mat-icon> Book Consultation
+      </a>
+    </div>
+  </div>
+
+  <!-- Demographics Card -->
+  <div class="demographics-card mat-elevation-z2">
+    <div class="avatar-box">
+      <mat-icon>badge</mat-icon>
+    </div>
+    <div class="demographics-content">
+      <div class="top-row">
+        <h2>{{ patient()?.firstName ? (patient()?.firstName + ' ' + patient()?.lastName) : 'Alice Patient' }}</h2>
+        <span class="mrn-tag">MRN: {{ patient()?.medicalRecordNumber || 'PAT-ALICE-001' }}</span>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-field">
+          <span class="label">Date of Birth</span>
+          <span class="value">{{ patient()?.dateOfBirth ? (patient()?.dateOfBirth | date:'mediumDate') : 'April 15, 1992 (Age 34)' }}</span>
+        </div>
+        <div class="meta-field">
+          <span class="label">Gender</span>
+          <span class="value">{{ patient()?.gender || 'Female' }}</span>
+        </div>
+        <div class="meta-field">
+          <span class="label">Blood Group</span>
+          <span class="value blood-tag">{{ patient()?.bloodGroup || 'O+' }}</span>
+        </div>
+        <div class="meta-field">
+          <span class="label">Phone Contact</span>
+          <span class="value">{{ patient()?.phone || '+1 (555) 666-7777' }}</span>
+        </div>
+        <div class="meta-field">
+          <span class="label">Email Address</span>
+          <span class="value">{{ patient()?.email || 'alice.patient@clinic.com' }}</span>
+        </div>
+        <div class="meta-field">
+          <span class="label">Emergency Contact (ICE)</span>
+          <span class="value ice-tag">{{ patient()?.emergencyContact || 'Bob Patient (+1 555-999-8888)' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clinical Alerts & Allergies Strip -->
+  <div class="clinical-alerts-strip">
+    <div class="alert-box allergy">
+      <mat-icon>warning</mat-icon>
+      <div>
+        <h4>Known Allergies</h4>
+        <p>{{ patient()?.allergies || 'No known drug or environmental allergies recorded.' }}</p>
+      </div>
+    </div>
+    <div class="alert-box condition">
+      <mat-icon>health_and_safety</mat-icon>
+      <div>
+        <h4>Emergency Contact & Clinical Alerts</h4>
+        <p>{{ patient()?.emergencyContact ? ('ICE: ' + patient()?.emergencyContact) : 'No chronic clinical alerts on file.' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Visits Timeline -->
+  <div class="section-card mat-elevation-z2">
+    <div class="section-title">
+      <mat-icon>history_edu</mat-icon>
+      <h3>Clinical Visit History & Consultation Summaries</h3>
+    </div>
+
+    <div class="timeline-wrap" *ngIf="medicalHistory()?.visits?.length > 0; else defaultVisitTpl">
+      <div *ngFor="let visit of medicalHistory()?.visits" class="timeline-event">
+        <div class="event-indicator"></div>
+        <div class="event-content">
+          <div class="event-top">
+            <h4>{{ visit.diagnosis || 'Clinical Consultation' }}</h4>
+            <span class="visit-date"><mat-icon>event</mat-icon> {{ visit.visitDate | date:'fullDate' }}</span>
+          </div>
+          <p class="doctor-sub">Attending: <strong>{{ visit.doctorName || 'Attending Physician' }}</strong> · Reason: {{ visit.reasonForVisit }}</p>
+          <div class="symptoms-tag-box" *ngIf="visit.symptoms">
+            <span class="tag-title">Symptoms:</span>
+            <span>{{ visit.symptoms }}</span>
+          </div>
+
+          <!-- Recorded Vitals in this Visit -->
+          <div *ngIf="visit.vitalSigns" class="event-vitals">
+            <span class="vital-pill" *ngIf="visit.vitalSigns.systolicBP && visit.vitalSigns.diastolicBP">BP: {{ visit.vitalSigns.systolicBP }}/{{ visit.vitalSigns.diastolicBP }} mmHg</span>
+            <span class="vital-pill" *ngIf="visit.vitalSigns.heartRateBpm">HR: {{ visit.vitalSigns.heartRateBpm }} bpm</span>
+            <span class="vital-pill" *ngIf="visit.vitalSigns.temperatureC">Temp: {{ visit.vitalSigns.temperatureC }} °C</span>
+            <span class="vital-pill" *ngIf="visit.vitalSigns.weightKg">Weight: {{ visit.vitalSigns.weightKg }} kg</span>
+          </div>
+
+          <div *ngIf="visit.clinicalNotes || visit.findings" class="visit-notes-box">
+            <span class="notes-lbl">Physician Findings:</span>
+            <p>{{ visit.clinicalNotes || visit.findings }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #defaultVisitTpl>
+      <div class="empty-timeline-box">
+        <mat-icon>history_edu</mat-icon>
+        <h4>No Clinical Consultations Recorded Yet</h4>
+        <p>Your physician consultation summaries, diagnosed conditions, and vital signs will be recorded here automatically when you complete clinic visits.</p>
+        <a mat-flat-button color="primary" routerLink="/appointments/book">Schedule Consultation</a>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Diagnostic Radiology & PACS Reports -->
+  <div class="section-card mat-elevation-z2" style="margin-top: 24px;">
+    <div class="section-title">
+      <mat-icon class="rad-icon">biotech</mat-icon>
+      <h3>Diagnostic Radiology & Imaging Studies (PACS)</h3>
+    </div>
+
+    <div class="timeline-wrap" *ngIf="radiologyOrders().length > 0; else noRadiologyTpl">
+      <div *ngFor="let rad of radiologyOrders()" class="timeline-event rad-event">
+        <div class="event-indicator rad-indicator"></div>
+        <div class="event-content">
+          <div class="event-top">
+            <h4>
+              <span class="modality-pill">{{ rad.modality }}</span>
+              {{ rad.procedureName }}
+            </h4>
+            <span class="visit-date"><mat-icon>event</mat-icon> {{ rad.orderedAt | date:'mediumDate' }}</span>
+          </div>
+          <p class="doctor-sub">
+            Accession: <strong>{{ rad.accessionNumber || rad.orderNumber }}</strong> · 
+            Status: <span class="status-chip" [class.completed]="rad.status === 'Completed'" [class.pending]="rad.status !== 'Completed'">{{ rad.status }}</span> · 
+            Priority: <strong>{{ rad.priority }}</strong>
+          </p>
+
+          <div *ngIf="rad.findings || rad.impression" class="rad-findings-card">
+            <div *ngIf="rad.impression" class="rad-impression">
+              <strong>Diagnostic Impression:</strong>
+              <p>{{ rad.impression }}</p>
+            </div>
+            <div *ngIf="rad.findings" class="rad-findings">
+              <strong>Radiological Findings:</strong>
+              <p>{{ rad.findings }}</p>
+            </div>
+            <div *ngIf="rad.radiologistSignature" class="rad-sig">
+              Signed by: {{ rad.radiologistSignature }} <span *ngIf="rad.reportedAt">({{ rad.reportedAt | date:'short' }})</span>
+            </div>
+          </div>
+
+          <div *ngIf="rad.imageUrl" class="rad-image-action">
+            <a [href]="rad.imageUrl" target="_blank" rel="noopener noreferrer" mat-stroked-button color="primary">
+              <mat-icon>photo_library</mat-icon>
+              View PACS / DICOM Scan Image
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noRadiologyTpl>
+      <div class="empty-radiology-box">
+        <mat-icon>image_not_supported</mat-icon>
+        <p>No imaging studies or diagnostic radiology reports on file for this patient.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

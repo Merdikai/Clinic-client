@@ -1,17 +1,58 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Compiled output
+# ==========================================
+# Compiled & Build Output
+# ==========================================
 /dist
 /tmp
 /out-tsc
 /bazel-out
+*.tsbuildinfo
+.esbuild/
 
-# Node
+# ==========================================
+# Node & Package Managers
+# ==========================================
 /node_modules
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
 
-# IDEs and editors
+# ==========================================
+# Angular CLI
+# ==========================================
+/.angular/
+.sass-cache/
+
+# ==========================================
+# Testing & Coverage
+# ==========================================
+/coverage/
+.nyc_output/
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# ==========================================
+# Environment & Local Secrets
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
 .idea/
 .project
 .classpath
@@ -19,6 +60,10 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+*.sublime-project
+*.swp
+*.*~
+.history/
 
 # Visual Studio Code
 .vscode/*
@@ -27,18 +72,30 @@ yarn-error.log
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/mcp.json
-.history/*
 
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-__screenshots__/
-
-# System files
+# ==========================================
+# Operating System Files
+# ==========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+
+# ==========================================
+# Temporary & Scratch Files
+# ==========================================
+*.tmp
+*.bak
+scratch_*.txt
+extracted_diff.txt
+
+# ==========================================
+# Documentation & Screenshots (Tracked)
+# ==========================================
+!screenshots/
+!screenshots/**
+

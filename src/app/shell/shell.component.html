@@ -1,101 +1,1333 @@
-﻿<div class="shell-container" [class.dark-mode]="themeService.isDarkMode()">
+<div class="app-layout">
+  <!-- SIDEBAR NAVIGATION (DYNAMIC PBAC ADAPTATION) -->
   <aside class="sidebar" [class.collapsed]="isCollapsed()">
-    <div class="brand-header">
-      <div class="brand-logo">
-        <div class="logo-icon">
-          <mat-icon>local_hospital</mat-icon>
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-logo-glow">
+          <mat-icon class="brand-icon">local_hospital</mat-icon>
         </div>
-        @if (!isCollapsed()) {
-          <span class="brand-title">MedFlow OS</span>
-        }
+        <div class="brand-text" *ngIf="!isCollapsed()">
+          <span class="brand-title">CLINICARE</span>
+          <span class="brand-sub">Enterprise EHR</span>
+        </div>
       </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="collapse-btn" [matTooltip]="isCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'">
+      <button mat-icon-button class="collapse-toggle-btn" (click)="toggleSidebar()" [matTooltip]="isCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'">
         <mat-icon>{{ isCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
 
-    <nav class="nav-menu">
-      <!-- Dashboard (All Roles) -->
-      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" matTooltip="Clinic Control Center" [matTooltipDisabled]="!isCollapsed()">
-        <mat-icon>dashboard</mat-icon>
-        @if (!isCollapsed()) { <span>Dashboard</span> }
-      </a>
+    <!-- Active Persona / Role Badge in Sidebar -->
+    <div class="persona-badge-box" *ngIf="!isCollapsed()">
+      <div class="persona-icon" [attr.data-role]="activeSimulatedRole()">
+        <mat-icon>{{ getRoleIcon(activeSimulatedRole()) }}</mat-icon>
+      </div>
+      <div class="persona-info">
+        <span class="persona-role">{{ activeSimulatedRole() }} Workspace</span>
+        <span class="persona-auth">{{ getRoleSubtitle(activeSimulatedRole()) }}</span>
+      </div>
+    </div>
 
-      <!-- Patients -->
-      @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist'])) {
-        <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()">
-          <mat-icon>groups</mat-icon>
-          @if (!isCollapsed()) { <span>Patients</span> }
+    <nav class="sidebar-nav">
+      <!-- PATIENT PORTAL NAVIGATION SECTION -->
+      @if (activeSimulatedRole() === 'Patient') {
+        <!-- PATIENT HEALTH PORTAL HEADER -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-section-title patient-title">PATIENT HEALTH PORTAL</span>
+            <span class="cockpit-live-tag patient-tag"><span class="pulse-emerald"></span>CONNECTED</span>
+          </div>
+          <span class="cockpit-dept-caption">Personal Health Record &amp; Self-Service</span>
+        </div>
+
+        <!-- PATIENT TELEMETRY HUD POD (EXPANDED SIDEBAR) -->
+        <div class="physician-hud-pod patient-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar patient-avatar">
+                <mat-icon>person</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">{{ patientDisplayName() }}</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>Verified Patient • Active</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/my-appointments" class="hud-tile" matTooltip="My Consultations &amp; Visits">
+              <span class="hud-tile-val">{{ activeAppointmentsCount() }}</span>
+              <span class="hud-tile-lbl">Visits</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/my-prescriptions" class="hud-tile" matTooltip="My Medication Regimens">
+              <span class="hud-tile-val warn-val">Rx</span>
+              <span class="hud-tile-lbl">Meds</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/my-invoices" class="hud-tile" matTooltip="My Invoices &amp; Balances">
+              <span class="hud-tile-val alert-val">$</span>
+              <span class="hud-tile-lbl">Ledger</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- PATIENT NAVIGATION ITEMS WITH DUAL-TIER CAPTIONS & GLOW BADGES -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">MY HEALTH SERVICES</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="My Health Portal — Patient Overview" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>health_and_safety</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Health Portal</span>
+            <span class="nav-sub-desc">Personal Health Dashboard</span>
+          </div>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">Portal</span>
         </a>
-      }
 
-      <!-- Appointments -->
-      @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Patient'])) {
-        <a routerLink="/appointments" routerLinkActive="active" class="nav-item" matTooltip="Appointments Schedule" [matTooltipDisabled]="!isCollapsed()">
-          <mat-icon>event_available</mat-icon>
-          @if (!isCollapsed()) { <span>Appointments</span> }
+        <a routerLink="/my-appointments" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Appointments — Consultations Queue" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper emerald-glow">
+            <mat-icon>event_available</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Appointments</span>
+            <span class="nav-sub-desc">Upcoming Visits &amp; Queue</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">Upcoming</span>
         </a>
-      }
 
-      <!-- Doctor Schedules -->
-      @if (hasAnyRole(['Admin', 'Doctor', 'Receptionist'])) {
-        <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Doctor Shifts & Availability" [matTooltipDisabled]="!isCollapsed()">
-          <mat-icon>schedule</mat-icon>
-          @if (!isCollapsed()) { <span>Doctor Schedules</span> }
+        <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Book Consultation — New Appointment" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>add_alarm</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Book Consultation</span>
+            <span class="nav-sub-desc">Schedule Attending Physician</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">+ New</span>
         </a>
-      }
 
-      <!-- Pharmacy -->
-      @if (hasAnyRole(['Admin', 'Pharmacist', 'Doctor'])) {
-        <a routerLink="/pharmacy" routerLinkActive="active" class="nav-item" matTooltip="Pharmacy & Inventory" [matTooltipDisabled]="!isCollapsed()">
-          <mat-icon>medication</mat-icon>
-          @if (!isCollapsed()) { <span>Pharmacy</span> }
+        <div class="nav-section-title" *ngIf="!isCollapsed()">CLINICAL RECORDS &amp; RX</div>
+
+        <a routerLink="/my-medical-file" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Medical File — EMR &amp; History" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper violet-glow">
+            <mat-icon>folder_shared</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Medical File</span>
+            <span class="nav-sub-desc">Diagnoses, Allergies &amp; Vitals</span>
+          </div>
+          <span class="nav-badge purple" *ngIf="!isCollapsed()">EMR</span>
         </a>
-      }
 
-      <!-- Laboratory & Diagnostics -->
-      <!-- Laboratory & Diagnostics -->
-      @if (hasAnyRole(['Admin', 'Doctor', 'LabTechnician'])) {
-        <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Laboratory & Diagnostics" [matTooltipDisabled]="!isCollapsed()">
+        <a routerLink="/my-prescriptions" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Prescriptions — Medication Regimens" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>medication</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Prescriptions</span>
+            <span class="nav-sub-desc">Regimens &amp; Pharmacy Status</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">Active Rx</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">BILLING &amp; SETTLEMENTS</div>
+
+        <a routerLink="/my-invoices" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Invoices &amp; Bills — Itemized Ledger" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>receipt_long</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Invoices &amp; Bills</span>
+            <span class="nav-sub-desc">Receipts &amp; Balances</span>
+          </div>
+          <span class="nav-badge alert" *ngIf="!isCollapsed()">Ledger</span>
+        </a>
+      } @else if (activeSimulatedRole() === 'Doctor') {
+        <!-- CLINICAL COCKPIT & ATTENDING PHYSICIAN WORKSPACE -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-section-title">CLINICAL COCKPIT</span>
+            <span class="cockpit-live-tag"><span class="pulse-emerald"></span>MD ACTIVE</span>
+          </div>
+          <span class="cockpit-dept-caption">{{ doctorDepartment() }}</span>
+        </div>
+
+        <!-- PHYSICIAN TELEMETRY HUD POD (EXPANDED SIDEBAR) -->
+        <div class="physician-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar">
+                <mat-icon>stethoscope</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">{{ doctorDisplayName() }}</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>On Duty • Room 102</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/my-consultations" class="hud-tile" matTooltip="Active Patient Consultations Waiting">
+              <span class="hud-tile-val">{{ todayConsultationsCount() }}</span>
+              <span class="hud-tile-lbl">Queue</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/doctor-inbasket" class="hud-tile" matTooltip="Pending InBasket Results & Orders">
+              <span class="hud-tile-val alert-val">{{ inbasketPendingCount() }}</span>
+              <span class="hud-tile-lbl">Sign-off</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/my-patients" class="hud-tile" matTooltip="Patients in Your Clinical Panel">
+              <span class="hud-tile-val">{{ doctorPanelCount() }}</span>
+              <span class="hud-tile-lbl">Panel</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- COCKPIT NAVIGATION ITEMS WITH DUAL-TIER CAPTIONS & GLOW BADGES -->
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Clinical Cockpit — Real-time Clinical HUD" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>speed</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Clinical Cockpit</span>
+            <span class="nav-sub-desc">Real-time Clinical HUD</span>
+          </div>
+          <span class="nav-badge live-pulse" *ngIf="!isCollapsed()"><span class="pulse-dot"></span>Live</span>
+        </a>
+
+        <a routerLink="/my-consultations" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Consultations — Direct Care Queue" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper emerald-glow">
+            <mat-icon>event_available</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Consultations</span>
+            <span class="nav-sub-desc">Direct Care Queue</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">{{ todayConsultationsCount() }} waiting</span>
+        </a>
+
+        <a routerLink="/doctor-inbasket" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Physician InBasket — Labs & Sign-offs" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>inbox</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Physician InBasket</span>
+            <span class="nav-sub-desc">Labs & Sign-offs</span>
+          </div>
+          <span class="nav-badge alert" *ngIf="!isCollapsed()">{{ inbasketPendingCount() }} pend</span>
+        </a>
+
+        <a routerLink="/my-patients" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Patient Panel — Assigned Patients Only" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper violet-glow">
+            <mat-icon>groups</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Patient Panel</span>
+            <span class="nav-sub-desc">Assigned Patients Only</span>
+          </div>
+          <span class="nav-badge purple" *ngIf="!isCollapsed()">{{ doctorPanelCount() }} panel</span>
+        </a>
+
+        <a routerLink="/patients" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Patient EMR Records — Hospital EMR Lookup" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>folder_shared</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Patient EMR Records</span>
+            <span class="nav-sub-desc">Hospital EMR Lookup</span>
+          </div>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">{{ totalPatientsCount() }} files</span>
+        </a>
+
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="My Shifts & Coverage — Roster & Duty Room" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">My Shifts & Coverage</span>
+            <span class="nav-sub-desc">Roster & Duty Room</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">On-Duty</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">DIAGNOSTICS & FORMULARY</div>
+
+        <a routerLink="/radiology" routerLinkActive="active" class="nav-item" matTooltip="Radiology & Diagnostic Imaging" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>camera</mat-icon>
+          <span *ngIf="!isCollapsed()">Radiology & Imaging</span>
+          <span class="nav-badge purple" *ngIf="!isCollapsed()">{{ radiologyStudiesCount() }} PACS</span>
+        </a>
+
+        <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Diagnostic Lab Orders & Directory" [matTooltipDisabled]="!isCollapsed()">
           <mat-icon>biotech</mat-icon>
-          @if (!isCollapsed()) { <span>Laboratory</span> }
+          <span *ngIf="!isCollapsed()">Lab Orders & Directory</span>
+          <span class="nav-badge neutral" *ngIf="!isCollapsed()">{{ labCatalogCount() }} tests</span>
         </a>
-      }
 
-      <!-- Billing -->
-      @if (hasAnyRole(['Admin', 'Accountant', 'Receptionist'])) {
-        <a routerLink="/billing" routerLinkActive="active" class="nav-item" matTooltip="Billing & Accounts Receivable" [matTooltipDisabled]="!isCollapsed()">
+        <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item" matTooltip="Clinical Medication Formulary" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>medication</mat-icon>
+          <span *ngIf="!isCollapsed()">Medication Formulary</span>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">Formulary</span>
+        </a>
+      } @else if (activeSimulatedRole() === 'Nurse') {
+        <!-- NURSE HQ COCKPIT HEADER -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-section-title cyan-text">NURSE HQ</span>
+            <span class="cockpit-live-tag"><span class="pulse-emerald"></span>TRIAGE ACTIVE</span>
+          </div>
+          <span class="cockpit-dept-caption">{{ nurseDepartment() }}</span>
+        </div>
+
+        <!-- NURSE TELEMETRY HUD POD -->
+        <div class="physician-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar">
+                <mat-icon>local_hospital</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">{{ nurseDisplayName() }}</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>On Duty • Triage Station</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/appointments" class="hud-tile" matTooltip="Triage Patient Queue">
+              <span class="hud-tile-val alert-val">{{ todayConsultationsCount() }}</span>
+              <span class="hud-tile-lbl">Triage</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/nurse/procedures" class="hud-tile" matTooltip="Active Nursing Procedures">
+              <span class="hud-tile-val">{{ nurseProceduresCount() }}</span>
+              <span class="hud-tile-lbl">Procedures</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/patients" class="hud-tile" matTooltip="Total Patient EMR Records">
+              <span class="hud-tile-val">{{ totalPatientsCount() }}</span>
+              <span class="hud-tile-lbl">Files</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- TRIAGE & CLINICAL OPERATIONS -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">TRIAGE & CLINICAL CARE</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Nurse Station — Triage & Clinical Dashboard" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>local_hospital</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Nurse Station</span>
+            <span class="nav-sub-desc">Triage & Clinical Cockpit</span>
+          </div>
+          <span class="nav-badge live-pulse" *ngIf="!isCollapsed()"><span class="pulse-dot"></span>OPD</span>
+        </a>
+
+        <a routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="Triage & Flow Board — Patient Queue" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper emerald-glow">
+            <mat-icon>fact_check</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Triage & Flow Board</span>
+            <span class="nav-sub-desc">Patient Intake & Vitals Queue</span>
+          </div>
+          <span class="nav-badge alert" *ngIf="!isCollapsed()">{{ todayConsultationsCount() }} queue</span>
+        </a>
+
+        <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Book Appointment — Schedule Clinical Visit" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>event</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Book Appointment</span>
+            <span class="nav-sub-desc">Schedule Patient Consult</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">Schedule</span>
+        </a>
+
+        <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="Patients Directory — Hospital EMR Records" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>people</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Patients Directory</span>
+            <span class="nav-sub-desc">Vitals & Clinical Charts</span>
+          </div>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">{{ totalPatientsCount() }} files</span>
+        </a>
+
+        <a routerLink="/patients/new" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="New Patient Registration — Demographic Intake" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>person_add</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">New Patient Intake</span>
+            <span class="nav-sub-desc">Registration & Demographics</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">Intake</span>
+        </a>
+
+        <!-- NURSING PROCEDURES & SBAR -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">NURSING PROCEDURES & SBAR</div>
+
+        <a routerLink="/nurse/procedures" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Nursing Procedures — Wound Care, IV & Meds" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper red-glow">
+            <mat-icon>healing</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Nursing Procedures</span>
+            <span class="nav-sub-desc">Wound Care, IV & Injections</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">{{ nurseProceduresCount() }} active</span>
+        </a>
+
+        <a routerLink="/nurse/handover" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Shift Handover — SBAR Clinical Transition" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper violet-glow">
+            <mat-icon>swap_horizontal_circle</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Shift Handover (SBAR)</span>
+            <span class="nav-sub-desc">Standardized Clinical Transition</span>
+          </div>
+          <span class="nav-badge purple" *ngIf="!isCollapsed()">SBAR</span>
+        </a>
+
+        <!-- DIAGNOSTICS & PHARMACY -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">DIAGNOSTICS & PHARMACY</div>
+
+        <a routerLink="/laboratory" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Specimen Orders — Phlebotomy & Accession" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>biotech</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Specimen Orders</span>
+            <span class="nav-sub-desc">Phlebotomy & Sample Accession</span>
+          </div>
+          <span class="nav-badge warning" *ngIf="!isCollapsed() && (labMetrics()?.samplesCollected || 0) > 0">
+            {{ labMetrics()?.samplesCollected }} ready
+          </span>
+        </a>
+
+        <a routerLink="/radiology" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Radiology & Imaging — RIS Worklist & Status" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper purple-glow">
+            <mat-icon>camera</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Radiology & Imaging</span>
+            <span class="nav-sub-desc">RIS Worklist & Status</span>
+          </div>
+          <span class="nav-badge purple" *ngIf="!isCollapsed() && radiologyStudiesCount() > 0">
+            {{ radiologyStudiesCount() }} PACS
+          </span>
+        </a>
+
+        <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Medication Formulary — Drug Catalog & Stock" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>medication</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Medication Formulary</span>
+            <span class="nav-sub-desc">Clinical Drug Directory</span>
+          </div>
+          <span class="nav-badge neutral" *ngIf="!isCollapsed()">Formulary</span>
+        </a>
+
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Duty Roster & Shifts — Coverage & Duty Station" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Duty Roster & Shifts</span>
+            <span class="nav-sub-desc">Coverage & Shift Schedule</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">Active</span>
+        </a>
+      } @else if (activeSimulatedRole() === 'Receptionist') {
+        <!-- RECEPTIONIST / FRONT DESK WORKSPACE -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">FRONT DESK OPERATIONS</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" matTooltip="Front Desk Dashboard" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>space_dashboard</mat-icon>
+          <span *ngIf="!isCollapsed()">Front Desk Dashboard</span>
+          <span class="nav-badge live-pulse" *ngIf="!isCollapsed()"><span class="pulse-dot"></span>Live</span>
+        </a>
+
+        <a routerLink="/appointments" routerLinkActive="active" class="nav-item" matTooltip="Arrivals & Calendar" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>how_to_reg</mat-icon>
+          <span *ngIf="!isCollapsed()">Arrivals & Queue Desk</span>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">{{ activeAppointmentsCount() }} today</span>
+        </a>
+
+        <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item" matTooltip="Book Consultation" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>add_alarm</mat-icon>
+          <span *ngIf="!isCollapsed()">Book Appointment</span>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">+ New</span>
+        </a>
+
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Doctor Shifts & Availability" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>calendar_month</mat-icon>
+          <span *ngIf="!isCollapsed()">Doctor Availability</span>
+          <span class="nav-badge neutral" *ngIf="!isCollapsed()">Schedules</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">PATIENT DIRECTORY (MPI)</div>
+
+        <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patient Demographics & MPI" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>badge</mat-icon>
+          <span *ngIf="!isCollapsed()">Master Patient Index</span>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">{{ totalPatientsCount() }} MPI</span>
+        </a>
+
+        <a routerLink="/patients/new" routerLinkActive="active" class="nav-item" matTooltip="Register New Patient" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>person_add</mat-icon>
+          <span *ngIf="!isCollapsed()">New Registration</span>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">Intake</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">FRONT DESK CASHIER</div>
+
+        <a routerLink="/billing" routerLinkActive="active" class="nav-item" matTooltip="Cashier Desk & Invoicing" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>point_of_sale</mat-icon>
+          <span *ngIf="!isCollapsed()">Cashier & Invoicing</span>
+          <span class="nav-badge alert" *ngIf="!isCollapsed()">{{ pendingInvoicesCount() }} open</span>
+        </a>
+      } @else if (activeSimulatedRole() === 'Pharmacist') {
+        <!-- PHARMACIST DISPENSARY CONTROL WORKSPACE -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-role-title">CENTRAL DISPENSARY</span>
+            <span class="cockpit-live-tag"><span class="pulse-emerald"></span>RPH ACTIVE</span>
+          </div>
+          <span class="cockpit-dept-caption">Pharmacy Operations & Safe</span>
+        </div>
+
+        <!-- PHARMACIST TELEMETRY HUD POD (EXPANDED SIDEBAR) -->
+        <div class="physician-hud-pod pharmacist-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;">
+                <mat-icon>local_pharmacy</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">Dispensary Lead</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>Dispensary Safe • Active</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/pharmacy/prescriptions" class="hud-tile" matTooltip="Doctor Prescriptions Pending Dispense">
+              <span class="hud-tile-val alert-val">{{ pharmacyMetrics()?.pendingPrescriptionsCount || 0 }}</span>
+              <span class="hud-tile-lbl">Pending Rx</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/pharmacy/formulary" class="hud-tile" matTooltip="Low Stock Drugs Needing Reorder">
+              <span class="hud-tile-val danger-val">{{ pharmacyMetrics()?.lowStockMedicinesCount || 0 }}</span>
+              <span class="hud-tile-lbl">Low Stock</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Pharmacy' }" class="hud-tile" matTooltip="Prescriptions Dispensed Today">
+              <span class="hud-tile-val success-val">{{ pharmacyMetrics()?.dispensedTodayCount || 0 }}</span>
+              <span class="hud-tile-lbl">Dispensed</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">DISPENSARY OPERATIONS</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Dispensary Cockpit" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>dashboard_customize</mat-icon>
+          <span *ngIf="!isCollapsed()">Dispensary Cockpit</span>
+        </a>
+
+        <a routerLink="/pharmacy/prescriptions" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Doctor Prescriptions Queue" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>local_pharmacy</mat-icon>
+          <span *ngIf="!isCollapsed()">Prescriptions Queue</span>
+          <span class="nav-badge alert" *ngIf="!isCollapsed() && (pharmacyMetrics()?.pendingPrescriptionsCount || 0) > 0">
+            {{ pharmacyMetrics()?.pendingPrescriptionsCount }}
+          </span>
+        </a>
+
+        <a routerLink="/pharmacy/pos" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Dispensary Point-of-Sale (POS)" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>point_of_sale</mat-icon>
+          <span *ngIf="!isCollapsed()">Counter POS Register</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">INVENTORY & FORMULARY</div>
+
+        <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="12-Category Clinical Drug Formulary" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>inventory_2</mat-icon>
+          <span *ngIf="!isCollapsed()">Drug Formulary</span>
+          <span class="nav-badge danger" *ngIf="!isCollapsed() && (pharmacyMetrics()?.lowStockMedicinesCount || 0) > 0">
+            {{ pharmacyMetrics()?.lowStockMedicinesCount }} low
+          </span>
+        </a>
+
+        <a routerLink="/pharmacy/requisitions" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Stock Purchase Orders & Ward Transfers" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>local_shipping</mat-icon>
+          <span *ngIf="!isCollapsed()">Stock Requisitions</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">REGULATORY & AUDIT</div>
+
+        <a routerLink="/pharmacy/audit" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Controlled Substances Safe & DEA Audit" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>shield_locked</mat-icon>
+          <span *ngIf="!isCollapsed()">Controlled Safe Ledger</span>
+          <span class="nav-badge purple" *ngIf="!isCollapsed() && (pharmacyMetrics()?.controlledSubstancesCount || 0) > 0">
+            DEA
+          </span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">FINANCIAL RECORDS</div>
+
+        <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Pharmacy' }" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Dispensary Invoices & Ledger" [matTooltipDisabled]="!isCollapsed()">
           <mat-icon>receipt_long</mat-icon>
-          @if (!isCollapsed()) { <span>Billing</span> }
+          <span *ngIf="!isCollapsed()">Dispensary Invoices</span>
         </a>
-      }
+      } @else if (activeSimulatedRole() === 'Accountant') {
+        <!-- FINANCIAL OPERATIONS & ACCOUNTING COCKPIT HEADER -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-role-title" style="color: #38bdf8; letter-spacing: 0.05em;">FINANCE &amp; REVENUE</span>
+            <span class="cockpit-live-tag"><span class="pulse-emerald"></span>AUDIT ENGINE LIVE</span>
+          </div>
+          <span class="cockpit-dept-caption">{{ accountantDepartment() }}</span>
+        </div>
 
-      <!-- Reports (Admin, Accountant) -->
-      @if (hasAnyRole(['Admin', 'Accountant'])) {
-        <a routerLink="/reports" routerLinkActive="active" class="nav-item" matTooltip="Analytics & Reports" [matTooltipDisabled]="!isCollapsed()">
-          <mat-icon>analytics</mat-icon>
-          @if (!isCollapsed()) { <span>Reports</span> }
-        </a>
-      }
+        <!-- ACCOUNTANT EXECUTIVE TELEMETRY HUD POD -->
+        <div class="physician-hud-pod accountant-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar accountant-avatar" style="background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%); color: #fff;">
+                <mat-icon>account_balance</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">{{ accountantDisplayName() }}</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>CPA • Audit Ready</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/billing" [queryParams]="{tab: 'invoices'}" class="hud-tile" matTooltip="Today's Revenue Collected">
+              <span class="hud-tile-val success-val">${{ (financeMetrics()?.todayRevenue || 0) > 1000 ? ((financeMetrics()?.todayRevenue || 0) / 1000 | number:'1.1-1') + 'k' : (financeMetrics()?.todayRevenue || 0 | number:'1.0-0') }}</span>
+              <span class="hud-tile-lbl">Today</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/billing" [queryParams]="{tab: 'claims'}" class="hud-tile" matTooltip="Pending Accounts Receivable">
+              <span class="hud-tile-val warn-val">${{ (financeMetrics()?.pendingReceivables || 0) > 1000 ? ((financeMetrics()?.pendingReceivables || 0) / 1000 | number:'1.1-1') + 'k' : (financeMetrics()?.pendingReceivables || 0 | number:'1.0-0') }}</span>
+              <span class="hud-tile-lbl">AR Open</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/billing" [queryParams]="{tab: 'reconciliation'}" class="hud-tile" matTooltip="Shift Drawers Awaiting Audit">
+              <span class="hud-tile-val alert-val">{{ financeMetrics()?.unreconciledDrawersCount || 0 }}</span>
+              <span class="hud-tile-lbl">Drawers</span>
+            </a>
+          </div>
+        </div>
 
-      <!-- User & Roles (Admin Only) -->
-      @if (hasRole('Admin')) {
-        <a routerLink="/users" routerLinkActive="active" class="nav-item" matTooltip="User & Role Management" [matTooltipDisabled]="!isCollapsed()">
-          <mat-icon>admin_panel_settings</mat-icon>
-          @if (!isCollapsed()) { <span>Users & Roles</span> }
+        <div class="nav-section-title" *ngIf="!isCollapsed()">FINANCIAL COCKPIT</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="Executive Finance Cockpit" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>dashboard_customize</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Finance Cockpit</span>
+            <span class="nav-sub-desc">Executive P&amp;L &amp; Flow Control</span>
+          </div>
         </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">REVENUE &amp; BILLING (AR)</div>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'invoices'}" [class.active]="isBillingTabActive('invoices')" class="nav-item cockpit-item" matTooltip="Patient Invoices &amp; Accounts Receivable" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper emerald-glow">
+            <mat-icon>receipt_long</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Invoices &amp; AR Ledger</span>
+            <span class="nav-sub-desc">Patient POS &amp; Collections</span>
+          </div>
+        </a>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'claims'}" [class.active]="isBillingTabActive('claims')" class="nav-item cockpit-item" matTooltip="Insurance Claims &amp; Remittance TPA" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>health_and_safety</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Insurance Claims</span>
+            <span class="nav-sub-desc">TPA Submissions &amp; Remittance</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed() && (financeMetrics()?.pendingClaimsCount || 0) > 0">
+            {{ financeMetrics()?.pendingClaimsCount }}
+          </span>
+        </a>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'adjustments'}" [class.active]="isBillingTabActive('adjustments')" class="nav-item cockpit-item" matTooltip="Discounts, Refunds &amp; Bad-Debt Write-Offs" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>price_check</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Adjustments &amp; Refunds</span>
+            <span class="nav-sub-desc">Discounts &amp; Bad-Debt Audits</span>
+          </div>
+          <span class="nav-badge alert" *ngIf="!isCollapsed() && (financeMetrics()?.pendingAdjustmentsCount || 0) > 0">
+            {{ financeMetrics()?.pendingAdjustmentsCount }}
+          </span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">PAYABLES &amp; CASH DESK (AP)</div>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'expenses'}" [class.active]="isBillingTabActive('expenses')" class="nav-item cockpit-item" matTooltip="Vendor Payables &amp; Pharmacy Stock POs" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper rose-glow">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Supplier Payables (AP)</span>
+            <span class="nav-sub-desc">Vendor Invoices &amp; POs</span>
+          </div>
+        </a>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'petty-cash'}" [class.active]="isBillingTabActive('petty-cash')" class="nav-item cockpit-item" matTooltip="Petty Cash Disbursements &amp; Float" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper purple-glow">
+            <mat-icon>payments</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Petty Cash Ledger</span>
+            <span class="nav-sub-desc">Vault Float &amp; Disbursements</span>
+          </div>
+        </a>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'payroll'}" [class.active]="isBillingTabActive('payroll')" class="nav-item cockpit-item" matTooltip="Staff Salaries &amp; Doctor Consultation Commissions" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper teal-glow">
+            <mat-icon>badge</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Payroll &amp; Commissions</span>
+            <span class="nav-sub-desc">Staff Salaries &amp; MD Shares</span>
+          </div>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">RECEPTION &amp; CASH AUDIT</div>
+
+        <a routerLink="/billing" [queryParams]="{tab: 'reconciliation'}" [class.active]="isBillingTabActive('reconciliation')" class="nav-item cockpit-item" matTooltip="Front-Desk Shift Closing &amp; Drawer Verification" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper orange-glow">
+            <mat-icon>fact_check</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Shift Drawer Audits</span>
+            <span class="nav-sub-desc">Cash Reconciliation Verification</span>
+          </div>
+          <span class="nav-badge danger" *ngIf="!isCollapsed() && (financeMetrics()?.unreconciledDrawersCount || 0) > 0">
+            {{ financeMetrics()?.unreconciledDrawersCount }} pend
+          </span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">FINANCIAL REPORTING</div>
+
+        <a routerLink="/reports" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="P&amp;L Statements, Departmental Analytics &amp; CSV Exports" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper indigo-glow">
+            <mat-icon>analytics</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">P&amp;L &amp; Financial Reports</span>
+            <span class="nav-sub-desc">Departmental Revenue Splits</span>
+          </div>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">CLINICAL ROSTER &amp; SUBJECTS</div>
+
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Hospital Duty Roster &amp; Staff Schedules" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Duty Schedule</span>
+            <span class="nav-sub-desc">Hospital Staff Shift Roster</span>
+          </div>
+        </a>
+
+        <a routerLink="/patients" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Patient Master Directory &amp; Accounts" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>people</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Patients Directory</span>
+            <span class="nav-sub-desc">Master Charts &amp; Guarantors</span>
+          </div>
+        </a>
+      } @else if (activeSimulatedRole() === 'LabTechnician') {
+        <!-- LABORATORY INFORMATION MANAGEMENT SYSTEM (LIMS) HIGH-TECH HEADER -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-role-title" style="color: #2dd4bf; letter-spacing: 0.05em;">PATHOLOGY & LIMS</span>
+            <span class="cockpit-live-tag"><span class="pulse-emerald"></span>ANALYZERS ONLINE</span>
+          </div>
+          <span class="cockpit-dept-caption">Diagnostic Pathology & Molecular LIS</span>
+        </div>
+
+        <!-- LAB TECHNICIAN TELEMETRY HUD POD -->
+        <div class="physician-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar" style="background: linear-gradient(135deg, #0d9488, #0284c7); color: #fff;">
+                <mat-icon>biotech</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">Diagnostic Pathology Lead</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>LIS Core Bench • Active</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/laboratory" [queryParams]="{tab: 'worklist'}" class="hud-tile" matTooltip="New Doctor Diagnostic Orders">
+              <span class="hud-tile-val alert-val">{{ labMetrics()?.pendingOrders || 0 }}</span>
+              <span class="hud-tile-lbl">Orders</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/laboratory" [queryParams]="{tab: 'execution'}" class="hud-tile" matTooltip="Critical Value Alerts">
+              <span class="hud-tile-val danger-val">{{ labMetrics()?.criticalValueAlerts || 0 }}</span>
+              <span class="hud-tile-lbl">Critical</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/laboratory" [queryParams]="{tab: 'execution'}" class="hud-tile" matTooltip="Samples Active on Analyzer Bench">
+              <span class="hud-tile-val success-val">{{ labMetrics()?.inProgress || 0 }}</span>
+              <span class="hud-tile-lbl">Testing</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">LIMS COCKPIT & WORKLIST</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Pathology Executive Dashboard" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>dashboard_customize</mat-icon>
+          <span *ngIf="!isCollapsed()">LIMS Cockpit</span>
+        </a>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'worklist'}" [class.active]="isLabTabActive('worklist')" class="nav-item cockpit-item" matTooltip="Clinical Diagnostic Worklist" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>science</mat-icon>
+          <span *ngIf="!isCollapsed()">Diagnostic Worklist</span>
+          <span class="nav-badge info" *ngIf="!isCollapsed() && (labMetrics()?.pendingOrders || 0) > 0">
+            {{ labMetrics()?.pendingOrders }} new
+          </span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">SPECIMEN & ANALYTICS</div>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'accession'}" [class.active]="isLabTabActive('accession')" class="nav-item cockpit-item" matTooltip="Specimen Accession & Barcoding" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>qr_code_scanner</mat-icon>
+          <span *ngIf="!isCollapsed()">Accession & Barcodes</span>
+          <span class="nav-badge warning" *ngIf="!isCollapsed() && (labMetrics()?.samplesCollected || 0) > 0">
+            {{ labMetrics()?.samplesCollected }} ready
+          </span>
+        </a>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'execution'}" [class.active]="isLabTabActive('execution')" class="nav-item cockpit-item" matTooltip="Analyzer Runs & Results Entry" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>precision_manufacturing</mat-icon>
+          <span *ngIf="!isCollapsed()">Analyzer & Results</span>
+          <span class="nav-badge danger" *ngIf="!isCollapsed() && (labMetrics()?.criticalValueAlerts || 0) > 0">
+            {{ labMetrics()?.criticalValueAlerts }} crit
+          </span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">INVENTORY & REAGENTS</div>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'reagents'}" [class.active]="isLabTabActive('reagents')" class="nav-item cockpit-item" matTooltip="Reagents & Consumables Control" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>biotech</mat-icon>
+          <span *ngIf="!isCollapsed()">Reagents & Kits</span>
+          <span class="nav-badge danger" *ngIf="!isCollapsed() && (labMetrics()?.lowStockReagents || 0) > 0">
+            {{ labMetrics()?.lowStockReagents }} low
+          </span>
+        </a>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'requisitions'}" [class.active]="isLabTabActive('requisitions')" class="nav-item cockpit-item" matTooltip="Lab Purchase Requisitions" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>inventory</mat-icon>
+          <span *ngIf="!isCollapsed()">Supply Requisitions</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">QUALITY ASSURANCE & QC</div>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'qc'}" [class.active]="isLabTabActive('qc')" class="nav-item cockpit-item" matTooltip="Analyzer Calibrations & QC Runs" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>health_and_safety</mat-icon>
+          <span *ngIf="!isCollapsed()">Analyzer QC & Logs</span>
+          <span class="nav-badge alert" *ngIf="!isCollapsed() && (labMetrics()?.calibrationsDue || 0) > 0">
+            {{ labMetrics()?.calibrationsDue }} due
+          </span>
+        </a>
+
+        <a routerLink="/laboratory" [queryParams]="{tab: 'catalog'}" [class.active]="isLabTabActive('catalog')" class="nav-item cockpit-item" matTooltip="Diagnostic Test Catalog & Reference Intervals" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>menu_book</mat-icon>
+          <span *ngIf="!isCollapsed()">Test Directory & Ranges</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">FINANCIAL & BILLING</div>
+
+        <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Laboratory' }" [class.active]="isBillingDeptActive('Laboratory')" class="nav-item cockpit-item" matTooltip="Laboratory Diagnostic Invoices & Ledger" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>receipt_long</mat-icon>
+          <span *ngIf="!isCollapsed()">Lab Invoices</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">CLINICAL ROSTER & SUBJECTS</div>
+
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Laboratory Staff Duty Schedules & Shifts" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>calendar_month</mat-icon>
+          <span *ngIf="!isCollapsed()">Duty Schedule</span>
+        </a>
+
+        <a routerLink="/patients" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Clinical Patients Directory & Specimen Subjects" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>people</mat-icon>
+          <span *ngIf="!isCollapsed()">Patients Directory</span>
+        </a>
+      } @else if (activeSimulatedRole() === 'Radiologist') {
+        <!-- IMAGING COCKPIT HIGH-TECH HEADER -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-section-title purple-text">IMAGING COCKPIT</span>
+            <span class="cockpit-live-tag"><span class="pulse-emerald"></span>PACS ONLINE</span>
+          </div>
+          <span class="cockpit-dept-caption">Diagnostic Radiology & PACS Reading Suite</span>
+        </div>
+
+        <!-- PHYSICIAN TELEMETRY HUD POD FOR RADIOLOGIST -->
+        <div class="physician-hud-pod" *ngIf="!isCollapsed()">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar purple-glow">
+                <mat-icon>camera</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">{{ radiologistDisplayName() }}</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>On Duty • Reading Room 3</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/radiology" [queryParams]="{tab: 'worklist'}" class="hud-tile" matTooltip="RIS Imaging Worklist">
+              <span class="hud-tile-val">{{ radiologyStudiesCount() }}</span>
+              <span class="hud-tile-lbl">Worklist</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/radiology" [queryParams]="{tab: 'reports'}" class="hud-tile" matTooltip="Unreported Scans Waiting Diagnostic Read">
+              <span class="hud-tile-val warn-val">{{ radiologyUnreportedCount() }}</span>
+              <span class="hud-tile-lbl">Unread</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/radiology" [queryParams]="{tab: 'worklist', priority: 'STAT'}" class="hud-tile" matTooltip="STAT Critical Finding Alerts">
+              <span class="hud-tile-val alert-val">{{ radiologyCriticalCount() }}</span>
+              <span class="hud-tile-lbl">STAT</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- RADIOLOGIST EXECUTIVE DASHBOARD & COCKPIT NAVIGATION -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">OVERVIEW & COCKPIT</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="Radiology Executive Dashboard & Analytics" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>dashboard</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Radiology Dashboard</span>
+            <span class="nav-sub-desc">Executive Telemetry & Alerts</span>
+          </div>
+          <span class="nav-badge live-pulse" *ngIf="!isCollapsed()"><span class="pulse-dot"></span>Live</span>
+        </a>
+
+        <a routerLink="/radiology" [queryParams]="{tab: 'overview'}" [class.active]="isRadiologyTabActive('overview')" class="nav-item cockpit-item" matTooltip="Imaging Cockpit — Operational Telemetry HUD" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper purple-glow">
+            <mat-icon>dashboard_customize</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Imaging Cockpit</span>
+            <span class="nav-sub-desc">Operational Workstation HUD</span>
+          </div>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">Telemetry</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">DIAGNOSTIC PACS & RIS</div>
+
+        <a routerLink="/radiology" [queryParams]="{tab: 'worklist'}" [class.active]="isRadiologyTabActive('worklist')" class="nav-item cockpit-item" matTooltip="RIS Worklist — STAT & Routine Study Requisitions" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper purple-glow">
+            <mat-icon>view_list</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">RIS Order Worklist</span>
+            <span class="nav-sub-desc">STAT & Modality Queue</span>
+          </div>
+          <span class="nav-badge purple" *ngIf="!isCollapsed()">{{ radiologyStudiesCount() }} scans</span>
+        </a>
+
+        <a routerLink="/radiology" [queryParams]="{tab: 'viewer'}" [class.active]="isRadiologyTabActive('viewer')" class="nav-item cockpit-item" matTooltip="Web PACS Viewer — W/L, Calipers & Multi-Slice Inspection" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper emerald-glow">
+            <mat-icon>center_focus_strong</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">PACS DICOM Viewer</span>
+            <span class="nav-sub-desc">W/L, Calipers & Slices</span>
+          </div>
+          <span class="nav-badge emerald" *ngIf="!isCollapsed()">PACS</span>
+        </a>
+
+        <a routerLink="/radiology" [queryParams]="{tab: 'reports'}" [class.active]="isRadiologyTabActive('reports')" class="nav-item cockpit-item" matTooltip="Structured Diagnostic Reporting & Critical Alerting" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>assignment_turned_in</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Diagnostic Reports</span>
+            <span class="nav-sub-desc">Templates & Sign-Off</span>
+          </div>
+          <span class="nav-badge alert" *ngIf="!isCollapsed() && radiologyUnreportedCount() > 0">{{ radiologyUnreportedCount() }} unread</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">SAFETY & MODALITIES</div>
+
+        <a routerLink="/radiology" [queryParams]="{tab: 'safety'}" [class.active]="isRadiologyTabActive('safety')" class="nav-item cockpit-item" matTooltip="Radiation Safety Dosimetry & Contrast Media Tracking" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper rose-glow">
+            <mat-icon>shield</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Radiation & Contrast Log</span>
+            <span class="nav-sub-desc">DLP/DAP & Safety Audit</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">{{ radiologySafetyCount() }} audits</span>
+        </a>
+
+        <a routerLink="/radiology" [queryParams]="{tab: 'suites'}" [class.active]="isRadiologyTabActive('suites')" class="nav-item cockpit-item" matTooltip="Equipment Suites & Modality Room Readiness" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>meeting_room</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Modality Suites</span>
+            <span class="nav-sub-desc">CT, MRI, US, X-Ray</span>
+          </div>
+          <span class="nav-badge neutral" *ngIf="!isCollapsed()">5 Suites</span>
+        </a>
+
+        <div class="nav-section-title" *ngIf="!isCollapsed()">PATIENT & EMR LOOKUP</div>
+
+        <a routerLink="/patients" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Patient EMR & Historical Studies" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>folder_shared</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Patient Imaging Records</span>
+            <span class="nav-sub-desc">Hospital EMR Lookup</span>
+          </div>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">{{ totalPatientsCount() }} files</span>
+        </a>
+
+        <a routerLink="/schedules" [queryParams]="{dept: 'radiology'}" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Modality Shifts & Roster" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Modality Shifts</span>
+            <span class="nav-sub-desc">Roster & Coverage</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">On-Duty</span>
+        </a>
+      } @else if (activeSimulatedRole() === 'Admin') {
+        <!-- ENTERPRISE ADMINISTRATOR & IAM GOVERNANCE WORKSPACE -->
+        <div class="cockpit-section-header" *ngIf="!isCollapsed()">
+          <div class="cockpit-title-row">
+            <span class="cockpit-section-title" style="color: #818cf8;">SYSTEM GOVERNANCE</span>
+            <span class="cockpit-live-tag" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.35);">
+              <span class="pulse-emerald"></span>IAM ENFORCED
+            </span>
+          </div>
+          <span class="cockpit-dept-caption">Enterprise IAM &amp; Compliance Infrastructure</span>
+        </div>
+
+        <!-- ADMIN TELEMETRY HUD POD -->
+        <div class="physician-hud-pod admin-hud-pod" *ngIf="!isCollapsed()" style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%); border-color: rgba(99, 102, 241, 0.3);">
+          <div class="hud-top-row">
+            <div class="hud-physician-cluster">
+              <div class="hud-md-avatar" style="background: rgba(99, 102, 241, 0.25); color: #a5b4fc; box-shadow: 0 0 14px rgba(99, 102, 241, 0.35);">
+                <mat-icon>admin_panel_settings</mat-icon>
+              </div>
+              <div class="hud-text-details">
+                <span class="hud-md-name">{{ adminDisplayName() }}</span>
+                <span class="hud-duty-pill"><span class="dot-online"></span>● Active · IAM Administrator</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-telemetry-strip">
+            <a routerLink="/users/directory" class="hud-tile" matTooltip="Total Staff Accounts in Directory">
+              <span class="hud-tile-val">{{ adminStaffUsersCount() }}</span>
+              <span class="hud-tile-lbl">Staff</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/users/roster" class="hud-tile" matTooltip="Staff Members Currently Clocked-In On Duty">
+              <span class="hud-tile-val warn-val">{{ adminActiveDutyCount() }}</span>
+              <span class="hud-tile-lbl">On-Duty</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/users/audit" class="hud-tile" matTooltip="HIPAA EMR Security & Break-Glass Audit Trail">
+              <span class="hud-tile-val alert-val">{{ adminAuditLogsCount() }}</span>
+              <span class="hud-tile-lbl">Audits</span>
+            </a>
+            <div class="hud-divider"></div>
+            <a routerLink="/users/roster" class="hud-tile" matTooltip="Active Physician Coverage Delegations">
+              <span class="hud-tile-val" style="color: #a78bfa;">{{ adminDelegationsCount() }}</span>
+              <span class="hud-tile-lbl">Coverage</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- SECTION 1: EXECUTIVE OVERVIEW -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">EXECUTIVE OVERVIEW</div>
+
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="Executive Hospital Cockpit & Telemetry" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>dashboard</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Executive Cockpit</span>
+            <span class="nav-sub-desc">Clinic KPI &amp; System Telemetry</span>
+          </div>
+          <span class="nav-badge live-pulse" *ngIf="!isCollapsed()"><span class="pulse-dot"></span>Live</span>
+        </a>
+
+        <a routerLink="/reports" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Enterprise Analytics, Census, P&L & Departmental Reports" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper amber-glow">
+            <mat-icon>insights</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Enterprise Reports</span>
+            <span class="nav-sub-desc">Financial P&amp;L &amp; Census Analytics</span>
+          </div>
+          <span class="nav-badge alert" *ngIf="!isCollapsed()">Reports</span>
+        </a>
+
+        <!-- SECTION 2: IDENTITY & ACCESS GOVERNANCE (THE 4 CORE FUNCTIONALITIES) -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">IDENTITY &amp; ACCESS GOVERNANCE</div>
+
+        <a routerLink="/users/directory" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Staff Directory — User Provisioning & Password Reset" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper blue-glow">
+            <mat-icon>badge</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Staff Directory</span>
+            <span class="nav-sub-desc">Accounts, Provisioning &amp; Status</span>
+          </div>
+          <span class="nav-badge info" *ngIf="!isCollapsed()">{{ adminStaffUsersCount() }} staff</span>
+        </a>
+
+        <a routerLink="/users/pbac" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="PBAC Permission Matrix — Fine-Grained Role Claim Policies" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper violet-glow">
+            <mat-icon>lock_person</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">PBAC Matrix</span>
+            <span class="nav-sub-desc">36-Claim Permission Matrix</span>
+          </div>
+          <span class="nav-badge purple" *ngIf="!isCollapsed()">PBAC</span>
+        </a>
+
+        <a routerLink="/users/audit" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="HIPAA Security Audit Trail — Immutable Access & Break-Glass Logs" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper rose-glow">
+            <mat-icon>history_edu</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">HIPAA Audit Trail</span>
+            <span class="nav-sub-desc">EMR Access &amp; Break-Glass Logs</span>
+          </div>
+          <span class="nav-badge danger" *ngIf="!isCollapsed()">HIPAA</span>
+        </a>
+
+        <a routerLink="/users/roster" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Active Duty & Delegations — Clinical Presence & Physician Coverage" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>medical_services</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Duty &amp; Delegations</span>
+            <span class="nav-sub-desc">Active Roster &amp; Physician Coverage</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">{{ adminActiveDutyCount() }} on-duty</span>
+        </a>
+
+        <!-- SECTION 3: HOSPITAL OPERATIONS & OVERSIGHT -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">HOSPITAL OPERATIONS &amp; OVERSIGHT</div>
+
+        <a routerLink="/schedules" routerLinkActive="active" class="nav-item cockpit-item" matTooltip="Doctor Shifts & Availability Roster" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper green-glow">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Doctor Shifts &amp; Roster</span>
+            <span class="nav-sub-desc">Duty Stations &amp; Coverage Map</span>
+          </div>
+          <span class="nav-badge success" *ngIf="!isCollapsed()">Roster</span>
+        </a>
+
+        <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item cockpit-item" matTooltip="Master Patient Index — Administrative Demographic Lookup & Certified EMR Export" [matTooltipDisabled]="!isCollapsed()">
+          <div class="nav-icon-wrapper cyan-glow">
+            <mat-icon>folder_shared</mat-icon>
+          </div>
+          <div class="nav-text-block" *ngIf="!isCollapsed()">
+            <span class="nav-main-title">Master Patient Index</span>
+            <span class="nav-sub-desc">MPI Registry &amp; Certified Export</span>
+          </div>
+          <span class="nav-badge cyan" *ngIf="!isCollapsed()">{{ totalPatientsCount() }} files</span>
+        </a>
+      } @else {
+
+        <!-- STAFF NAVIGATION SECTIONS -->
+        <!-- SECTION: OVERVIEW -->
+        <div class="nav-section-title" *ngIf="!isCollapsed()">OVERVIEW</div>
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()">
+          <mat-icon>dashboard</mat-icon>
+          <span *ngIf="!isCollapsed()">Dashboard</span>
+          <span class="nav-badge live-pulse" *ngIf="!isCollapsed()"><span class="pulse-dot"></span>System</span>
+        </a>
+
+        <!-- SECTION: CLINICAL CARE -->
+        @if (hasAnyPermission(['Patients.View', 'Appointments.View', 'Consultations.View', 'Consultations.Create'])) {
+          <div class="nav-section-title" *ngIf="!isCollapsed()">CLINICAL CARE</div>
+
+          @if (hasPermission('Patients.View')) {
+            <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>{{ activeSimulatedRole() === 'Doctor' ? 'folder_shared' : (activeSimulatedRole() === 'Nurse' ? 'monitor_heart' : 'people') }}</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Nurse' ? 'Triage & Vitals Queue' : (activeSimulatedRole() === 'Doctor' ? 'Patient EMR Records' : 'Patients Directory') }}
+              </span>
+              <span class="nav-badge cyan" *ngIf="!isCollapsed()">{{ totalPatientsCount() }} files</span>
+            </a>
+          }
+
+          @if (hasPermission('Appointments.View')) {
+            <a [routerLink]="activeSimulatedRole() === 'Doctor' ? '/my-consultations' : '/appointments'" routerLinkActive="active" class="nav-item" matTooltip="Appointments Desk" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>{{ activeSimulatedRole() === 'Doctor' ? 'medical_information' : 'event_available' }}</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Doctor' ? 'My Consultations' : 'Appointments Desk' }}
+              </span>
+              <span class="nav-badge info" *ngIf="!isCollapsed()">{{ activeAppointmentsCount() }} total</span>
+            </a>
+          }
+
+          @if (hasAnyPermission(['Appointments.View', 'Consultations.View', 'UserManagement.View', 'StaffDuty.ClockInOut'])) {
+            <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Doctor Shifts & Availability" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>calendar_month</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Doctor' ? 'My Schedule & Shifts' : 'Doctor Availability' }}
+              </span>
+              <span class="nav-badge success" *ngIf="!isCollapsed()">Roster</span>
+            </a>
+          }
+        }
+
+        <!-- SECTION: DIAGNOSTICS & PHARMACY -->
+        @if (hasAnyPermission(['LabOrders.View', 'Prescriptions.View', 'Pharmacy.ManageInventory', 'LabOrders.Create', 'LabOrders.Process'])) {
+          <div class="nav-section-title" *ngIf="!isCollapsed()">DIAGNOSTICS & PHARMACY</div>
+
+          <a routerLink="/radiology" routerLinkActive="active" class="nav-item" matTooltip="Radiology & Diagnostic Imaging" [matTooltipDisabled]="!isCollapsed()">
+            <mat-icon>camera</mat-icon>
+            <span *ngIf="!isCollapsed()">Radiology & Imaging</span>
+          </a>
+
+          @if (hasAnyPermission(['LabOrders.View', 'LabOrders.Create', 'LabOrders.Process', 'LabOrders.Verify'])) {
+            <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Laboratory LIMS" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>biotech</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Doctor' ? 'Lab Requisitions' : (activeSimulatedRole() === 'Nurse' ? 'Specimen Orders' : (activeSimulatedRole() === 'LabTechnician' ? 'Lab Orders & Accession' : 'Laboratory LIMS')) }}
+              </span>
+            </a>
+          }
+
+          @if (hasAnyPermission(['Prescriptions.View', 'Prescriptions.Create', 'Prescriptions.Dispense', 'Pharmacy.ManageInventory'])) {
+            <a [routerLink]="activeSimulatedRole() === 'Doctor' ? '/pharmacy/formulary' : '/pharmacy/prescriptions'" routerLinkActive="active" class="nav-item" matTooltip="Pharmacy & Stock" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>medication</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Doctor' ? 'Medication Formulary' : (activeSimulatedRole() === 'Pharmacist' ? 'Dispensary & Stock' : 'Pharmacy & Stock') }}
+              </span>
+            </a>
+          }
+        }
+
+        <!-- SECTION: FINANCE & ANALYTICS -->
+        @if (activeSimulatedRole() !== 'Doctor' && hasAnyPermission(['Billing.View', 'Billing.CreateInvoice', 'Billing.ProcessPayment', 'Billing.Reports'])) {
+          <div class="nav-section-title" *ngIf="!isCollapsed()">FINANCE & AUDIT</div>
+
+          @if (hasPermission('Billing.View')) {
+            <a routerLink="/billing" routerLinkActive="active" class="nav-item" matTooltip="Billing & Invoicing" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>{{ activeSimulatedRole() === 'Receptionist' ? 'point_of_sale' : 'receipt_long' }}</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Receptionist' ? 'Cashier & Invoicing' : 'Billing & Invoices' }}
+              </span>
+            </a>
+          }
+
+          @if (hasAnyPermission(['Billing.Reports', 'UserManagement.View'])) {
+            <a routerLink="/reports" routerLinkActive="active" class="nav-item" matTooltip="Reports & KPIs" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>insights</mat-icon>
+              <span *ngIf="!isCollapsed()">Reports & KPIs</span>
+            </a>
+          }
+        }
+
+        <!-- SECTION: GOVERNANCE & SECURITY -->
+        @if (hasAnyPermission(['UserManagement.View', 'UserManagement.ManageRoles', 'UserManagement.AuditLogs', 'StaffDuty.ClockInOut', 'ClinicalGovernance.BreakGlass', 'ClinicalGovernance.DelegateAuthority'])) {
+          <div class="nav-section-title" *ngIf="!isCollapsed()">GOVERNANCE & SECURITY</div>
+
+          @if (activeSimulatedRole() !== 'Doctor' && hasPermission('UserManagement.View')) {
+            <a routerLink="/users/directory" routerLinkActive="active" class="nav-item" matTooltip="Staff Directory & Accounts" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>badge</mat-icon>
+              <span *ngIf="!isCollapsed()">Staff Directory</span>
+            </a>
+          }
+
+          @if (activeSimulatedRole() !== 'Doctor' && hasPermission('UserManagement.ManageRoles')) {
+            <a routerLink="/users/pbac" routerLinkActive="active" class="nav-item" matTooltip="PBAC Permission Matrix" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>lock_person</mat-icon>
+              <span *ngIf="!isCollapsed()">PBAC Matrix</span>
+            </a>
+          }
+
+          @if (activeSimulatedRole() !== 'Doctor' && hasPermission('UserManagement.AuditLogs')) {
+            <a routerLink="/users/audit" routerLinkActive="active" class="nav-item" matTooltip="HIPAA Security Audit Logs" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>history_edu</mat-icon>
+              <span *ngIf="!isCollapsed()">HIPAA Audit Trail</span>
+            </a>
+          }
+
+          @if (hasAnyPermission(['StaffDuty.ClockInOut', 'ClinicalGovernance.DelegateAuthority'])) {
+            <a routerLink="/users/roster" routerLinkActive="active" class="nav-item" matTooltip="Active Duty Roster & Delegations" [matTooltipDisabled]="!isCollapsed()">
+              <mat-icon>medical_services</mat-icon>
+              <span *ngIf="!isCollapsed()">
+                {{ activeSimulatedRole() === 'Doctor' ? 'Coverage & Delegations' : 'Duty & Delegations' }}
+              </span>
+            </a>
+          }
+        }
       }
     </nav>
 
+    <!-- SIDEBAR FOOTER -->
     <div class="sidebar-footer">
+      <!-- Active Duty Shift Indicator -->
+      <div class="duty-pill-container" *ngIf="hasPermission('StaffDuty.ClockInOut') && activeSimulatedRole() !== 'Patient'">
+        <div *ngIf="dutyService.currentDuty$ | async as duty; else offDutyPill">
+          <button class="duty-pill on-duty" (click)="openDutyModal('info')" title="Active Duty Shift - Click to manage or Clock Out">
+            <span class="duty-pulse"></span>
+            <span class="duty-text" *ngIf="!isCollapsed()"><strong>ON DUTY</strong> · {{ duty.department }}</span>
+          </button>
+        </div>
+        <ng-template #offDutyPill>
+          <button class="duty-pill off-duty" (click)="openDutyModal('clock-in')" title="Currently Off Duty - Click to Clock In">
+            <span class="duty-dot-off"></span>
+            <span class="duty-text" *ngIf="!isCollapsed()"><strong>OFF DUTY</strong> · Clock In</span>
+          </button>
+        </ng-template>
+      </div>
+
+      <!-- User Profile -->
       <div class="user-profile">
-        <div class="user-avatar">{{ (currentUser()?.username || 'U').slice(0, 1).toUpperCase() }}</div>
-        @if (!isCollapsed()) {
-          <div class="user-details">
-            <span class="user-name">{{ currentUser()?.fullName || currentUser()?.username || 'System User' }}</span>
-            <span class="user-role">{{ (currentUser()?.roles?.[0] || 'Staff') }}</span>
-          </div>
-        }
+        <div class="user-avatar" [attr.data-role]="activeSimulatedRole()">
+          {{ (currentUser()?.username || 'U').slice(0, 1).toUpperCase() }}
+        </div>
+        <div class="user-details" *ngIf="!isCollapsed()">
+          <span class="user-name">{{ currentUser()?.fullName || currentUser()?.username || 'Clinic Staff' }}</span>
+          <span class="user-role">{{ activeSimulatedRole() }}</span>
+        </div>
       </div>
 
       <div class="footer-actions">
@@ -109,25 +1341,43 @@
     </div>
   </aside>
 
+  <!-- MAIN VIEWPORT -->
   <main class="main-viewport">
     <header class="topbar">
       <div class="topbar-left">
         <div class="live-badge">
           <span class="pulse-dot"></span>
-          <span>LIVE CLINIC SYNC</span>
+          <span>LIVE CLINIC ENGINE</span>
+        </div>
+
+        <!-- Role Preview Quick-Switcher for instant evaluation -->
+        <div class="role-switcher-box">
+          <span class="switcher-label">Persona View:</span>
+          <select class="switcher-select" [ngModel]="activeSimulatedRole()" (ngModelChange)="setRolePreview($event)">
+            <option *ngFor="let r of allRoles" [value]="r">{{ r }}</option>
+          </select>
         </div>
       </div>
 
       <div class="topbar-right">
-        @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Patient'])) {
-          <button mat-stroked-button class="quick-action-btn" routerLink="/appointments/book">
-            <mat-icon>add</mat-icon> Quick Book
+        @if (activeSimulatedRole() === 'Admin') {
+          <button mat-stroked-button class="quick-action-btn" routerLink="/users/audit">
+            <mat-icon>history_edu</mat-icon> HIPAA Audit Trail
           </button>
-        }
-        @if (hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist'])) {
-          <button mat-flat-button color="primary" class="quick-patient-btn" routerLink="/patients/new">
-            <mat-icon>person_add</mat-icon> New Patient
+          <button mat-flat-button color="primary" class="quick-patient-btn" routerLink="/users/directory">
+            <mat-icon>person_add</mat-icon> Provision Staff
           </button>
+        } @else {
+          @if ((hasPermission('Appointments.Book') || hasPermission('Appointments.View')) && activeSimulatedRole() !== 'Doctor') {
+            <button mat-stroked-button class="quick-action-btn" routerLink="/appointments/book">
+              <mat-icon>add</mat-icon> Book Appointment
+            </button>
+          }
+          @if (hasPermission('Patients.Create') || (hasPermission('Patients.View') && activeSimulatedRole() !== 'Patient')) {
+            <button mat-flat-button color="primary" class="quick-patient-btn" routerLink="/patients/new">
+              <mat-icon>person_add</mat-icon> New Patient
+            </button>
+          }
         }
       </div>
     </header>
@@ -138,3 +1388,110 @@
   </main>
 </div>
 
+<!-- DUTY MANAGEMENT MODAL -->
+<div class="duty-modal-backdrop" *ngIf="showDutyModal" (click)="closeDutyModal()">
+  <div class="duty-modal-dialog" (click)="$event.stopPropagation()">
+    <!-- Clock In Mode -->
+    <div *ngIf="dutyModalMode === 'clock-in'">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">🟢</span>
+          <div>
+            <h3>Clock In — Active Clinical Roster</h3>
+            <p>Register your active presence for clinical assignments & consultation queue</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeDutyModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Department / Clinical Unit</label>
+          <select class="form-control" [(ngModel)]="dutyDepartment">
+            <option value="General Practice (OPD)">General Practice (OPD)</option>
+            <option value="Emergency Care &amp; Triage">Emergency Care &amp; Triage</option>
+            <option value="Pediatrics">Pediatrics</option>
+            <option value="Cardiology">Cardiology</option>
+            <option value="Laboratory &amp; Diagnostics">Laboratory &amp; Diagnostics</option>
+            <option value="Radiology &amp; Imaging">Radiology &amp; Imaging</option>
+            <option value="Pharmacy Dispensary">Pharmacy Dispensary</option>
+            <option value="Billing &amp; Reception">Billing &amp; Reception</option>
+            <option value="Administration">Administration</option>
+            <option value="ICU / Critical Care">ICU / Critical Care</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Shift Type</label>
+          <select class="form-control" [(ngModel)]="dutyShiftType">
+            <option value="Day Shift (08:00 - 16:00)">Day Shift (08:00 - 16:00)</option>
+            <option value="Evening Shift (16:00 - 00:00)">Evening Shift (16:00 - 00:00)</option>
+            <option value="Night On-Call (00:00 - 08:00)">Night On-Call (00:00 - 08:00)</option>
+            <option value="Emergency Coverage">Emergency Coverage</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Inception Notes (Optional)</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="dutyNotes" placeholder="e.g. Taking over OPD consultations"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeDutyModal()">Cancel</button>
+        <button class="btn btn-success" (click)="handleClockIn()" [disabled]="dutyLoading">
+          <span *ngIf="!dutyLoading">🟢 Clock In Now</span>
+          <span *ngIf="dutyLoading">Clocking In...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Info / Clock Out Mode -->
+    <div *ngIf="dutyModalMode === 'info' || dutyModalMode === 'clock-out'">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">🏥</span>
+          <div>
+            <h3>Active Clinical Duty Shift</h3>
+            <p>Currently logged in active roster</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeDutyModal()">✕</button>
+      </div>
+
+      <div class="modal-body" *ngIf="dutyService.currentDuty$ | async as shift">
+        <div class="duty-summary-card">
+          <div class="summary-row">
+            <span class="label">Staff Member:</span>
+            <span class="val font-semibold">{{ shift.userName }} ({{ shift.role }})</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Department:</span>
+            <span class="val">{{ shift.department }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Shift:</span>
+            <span class="val">{{ shift.shiftType }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Clock In Time:</span>
+            <span class="val text-success">{{ shift.clockInTimeUtc | date:'medium' }}</span>
+          </div>
+        </div>
+
+        <div class="form-group mt-3">
+          <label>Shift Handover Notes (Recommended)</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="dutyHandoverNotes" placeholder="Summary of active cases, pending lab tests, or instructions for the next doctor/nurse on duty..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeDutyModal()">Close</button>
+        <button class="btn btn-danger" (click)="handleClockOut()" [disabled]="dutyLoading">
+          <span *ngIf="!dutyLoading">⏹️ Complete Shift & Clock Out</span>
+          <span *ngIf="dutyLoading">Clocking Out...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

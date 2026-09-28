@@ -1,4 +1,4 @@
-﻿export interface Appointment {
+export interface Appointment {
   id: string;
   patientId: string;
   patientName: string;
@@ -8,7 +8,22 @@
   durationMinutes: number;
   status: string;
   reasonForVisit: string;
+  triageUrgency?: string;
+  roomAssignment?: string;
+  triageNotes?: string;
+  tokenNumber?: string;
+  visitType?: string;
   vitalSigns?: any;
+}
+
+export interface CheckInAppointmentRequest {
+  tokenNumber?: string;
+  visitType?: string;
+}
+
+export interface RescheduleAppointmentRequest {
+  newScheduledDateTime: string;
+  reason?: string;
 }
 
 export interface CreateAppointmentRequest {
@@ -18,3 +33,16 @@ export interface CreateAppointmentRequest {
   durationMinutes: number;
   reasonForVisit: string;
 }
+
+export interface UpdateAppointmentTriageRequest {
+  triageUrgency?: string;
+  roomAssignment?: string;
+  triageNotes?: string;
+  status?: string;
+}
+
+export interface UpdateAppointmentStatusRequest {
+  status: string;
+  roomAssignment?: string;
+}
+

@@ -21,6 +21,10 @@ export class LiveSyncService {
   patientRegistered$ = new Subject<any>();
   lowStockAlert$ = new Subject<any>();
   invoicePaid$ = new Subject<any>();
+  radiologyOrderUpdated$ = new Subject<any>();
+  labOrderUpdated$ = new Subject<any>();
+  breakGlassAlert$ = new Subject<any>();
+  dutyRosterChanged$ = new Subject<any>();
 
   globalActivities = signal<Array<{ icon: string; title: string; time: string; type: string }>>([]);
 
@@ -98,6 +102,40 @@ export class LiveSyncService {
     this.hubConnection.on('InvoicePaid', (data) => {
       this.addGlobalActivity('payments', 'Invoice Paid', `Amount: $${data?.amountPaid || 0}`, 'success');
       this.invoicePaid$.next(data);
+    });
+
+    this.hubConnection.on('RadiologyOrderUpdated', (data) => {
+      const msg = data?.message || `Radiology order ${data?.orderId || ''} updated`;
+      this.addGlobalActivity('image', 'Radiology Study Updated', msg, 'info');
+      this.radiologyOrderUpdated$.next(data);
+    });
+
+    this.hubConnection.on('LabOrderUpdated', (data) => {
+      const isCritical = Boolean(data?.hasCriticalFlag);
+      const msg = data?.message || `Lab order ${data?.orderNumber || ''} updated`;
+      this.addGlobalActivity(
+        'biotech',
+        isCritical ? '🚨 Critical Lab Alert' : 'Laboratory Order Updated',
+        msg,
+        isCritical ? 'warning' : 'info'
+      );
+      if (isCritical) {
+        this.toast.error(msg);
+      }
+      this.labOrderUpdated$.next(data);
+    });
+
+    this.hubConnection.on('BreakGlassAlert', (data) => {
+      const msg = data?.message || 'Emergency record access logged';
+      this.addGlobalActivity('security', '🚨 Break-Glass Emergency Access', msg, 'warning');
+      this.toast.warning(msg);
+      this.breakGlassAlert$.next(data);
+    });
+
+    this.hubConnection.on('DutyRosterChanged', (data) => {
+      const msg = data?.message || 'Staff duty status updated';
+      this.addGlobalActivity('badge', 'Duty Roster Changed', msg, 'primary');
+      this.dutyRosterChanged$.next(data);
     });
 
     this.hubConnection.onclose(() => {

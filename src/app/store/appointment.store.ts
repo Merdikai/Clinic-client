@@ -25,6 +25,7 @@ export const AppointmentStore = signalStore(
   withState(initialMetadataState),
   withComputed((state) => ({
     appointments: computed(() => state.entities()),
+    pendingAppointments: computed(() => state.entities().filter((a) => a.status === 'PendingApproval')),
     scheduledAppointments: computed(() => state.entities().filter((a) => a.status === 'Scheduled')),
     checkedInAppointments: computed(() => state.entities().filter((a) => a.status === 'CheckedIn')),
     completedAppointments: computed(() => state.entities().filter((a) => a.status === 'Completed'))
@@ -59,6 +60,25 @@ export const AppointmentStore = signalStore(
     },
 
     // TMS Pattern: Optimistic check-in with rollback
+    approve(appointmentId: string) {
+      const original = store.entities().find(a => a.id === appointmentId);
+      if (!original) return;
+
+      // Optimistic update
+      patchState(store, updateEntity({ id: appointmentId, changes: { status: 'Scheduled' } }));
+      toast.info('Approving appointment...');
+
+      apptService.approveAppointment(appointmentId).subscribe({
+        next: () => {
+          toast.success('Appointment approved and scheduled!');
+        },
+        error: (err) => {
+          patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
+          toast.error('Approval failed: ' + (err.message || 'Server error'));
+        }
+      });
+    },
+
     checkIn(appointmentId: string) {
       const original = store.entities().find(a => a.id === appointmentId);
       if (!original) return;

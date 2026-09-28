@@ -807,3 +807,343 @@
   50% { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
+
+.workspace-scope-toolbar {
+  padding: 1rem 1.75rem 0.5rem 1.75rem;
+  background: var(--bg-surface, #ffffff);
+
+  .scope-pill-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+
+    .scope-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1.25rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-subtle, #f8fafc);
+      color: var(--text-secondary, #64748b);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover {
+        border-color: var(--primary-color, #0284c7);
+        color: var(--primary-color, #0284c7);
+        background: rgba(2, 132, 199, 0.05);
+      }
+
+      &.active {
+        background: var(--primary-color, #0284c7);
+        color: #ffffff;
+        border-color: var(--primary-color, #0284c7);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+      }
+    }
+  }
+}
+
+/* Clinical status inline chips — theme-aware */
+.room-assignment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary, #475569);
+  background: var(--bg-subtle, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.urgency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* =========================================================================
+   RECEPTIONIST FRONT DESK MODALS — FULLY THEME-AWARE (LIGHT & DARK)
+   ========================================================================= */
+
+.reception-modal,
+.reschedule-modal {
+  max-width: 540px !important;
+  width: 100%;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-xl);
+
+  .modal-header {
+    background: var(--bg-surface-elevated);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .modal-title-box {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+      }
+      p {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin: 0.2rem 0 0;
+      }
+    }
+  }
+
+  // Check-in icon (primary blue)
+  .checkin-icon { color: var(--primary-color); }
+  // Reschedule icon (purple/violet)
+  .reschedule-icon { color: #818cf8; }
+}
+
+.reception-modal-body {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* Patient summary info box in check-in modal */
+.patient-summary-box {
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.patient-checkin-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--info-text);
+}
+
+.patient-checkin-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.queue-token-badge {
+  background: var(--bg-surface);
+  border: 1px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 6px 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.queue-token-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 0.05em;
+}
+.queue-token-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.checkin-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Reschedule patient info box */
+.reschedule-patient-info {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+.reschedule-patient-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.9875rem;
+}
+.reschedule-patient-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.reschedule-date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Themed modal footers */
+.reception-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-surface-elevated);
+}
+
+/* Check-in confirm button — primary blue gradient */
+.checkin-confirm-btn {
+  background: var(--primary-gradient) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35) !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
+  }
+}
+
+/* Reschedule confirm button — violet/indigo gradient */
+.reschedule-confirm-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45) !important;
+  }
+}
+
+/* ── modal-backdrop (shared) ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay, rgba(15, 23, 42, 0.55));
+  backdrop-filter: blur(8px);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Appointment token & visit type badges */
+.appt-token-visit-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 2px;
+  flex-wrap: wrap;
+
+  .token-pill-badge {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(14, 165, 233, 0.25);
+  }
+
+  .visit-type-badge {
+    background: var(--bg-subtle, #f8fafc);
+    color: var(--text-secondary, #475569);
+    font-weight: 600;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color, #e2e8f0);
+  }
+}
+
+/* Isolation chip & chart button */
+.isolation-chip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  .isolated-lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    background: rgba(100, 116, 139, 0.12);
+    color: var(--text-secondary, #475569);
+    font-weight: 700;
+    font-size: 0.76rem;
+    border: 1px solid rgba(100, 116, 139, 0.25);
+
+    .lock-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .chart-btn {
+    font-size: 0.78rem;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+
+    .chart-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+

@@ -1,141 +1,548 @@
-<div class="page-container premium-page">
-  <div class="page-header-card premium-hero-card">
-    <div class="header-left premium-hero-content">
-      <div class="header-icon-box giant-glow-box">
-        <mat-icon>schedule</mat-icon>
+<div class="schedules-page animate-fade-in">
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-icon-box" [class.radiology-theme]="selectedDepartment() === 'Radiology'">
+        <mat-icon>{{ selectedDepartment() === 'Radiology' ? 'biotech' : 'calendar_month' }}</mat-icon>
       </div>
       <div>
-        <h1 class="page-title hero-title">Doctor Availability & Shifts</h1>
-        <p class="page-subtitle hero-subtitle">Configure practice hours, intervals, and recurring weekly shifts.</p>
+        <div class="header-category-badge" *ngIf="selectedDepartment() !== 'ALL'">
+          <span>{{ selectedDepartment() }} Departmental Roster</span>
+        </div>
+        <h1 class="page-title">
+          {{
+            selectedDepartment() === 'Radiology'
+              ? 'Radiology & Modality Suites Coverage Roster'
+              : selectedDepartment() === 'Doctor'
+              ? 'Attending Physician Clinical Shifts'
+              : selectedDepartment() === 'Nurse'
+              ? 'Nursing Staff & Ward Care Duty Shifts'
+              : selectedDepartment() === 'Laboratory'
+              ? 'Laboratory & Phlebotomy Station Roster'
+              : selectedDepartment() === 'Reception'
+              ? 'Front Desk & Patient Admissions Shifts'
+              : 'Hospital Multi-Role & Modality Shift Rostering'
+          }}
+        </h1>
+        <p class="page-subtitle">
+          Manage clinical operating hours, equipment suite coverage, diagnostic reading duties, and inter-role on-duty rotations.
+        </p>
       </div>
     </div>
     <div class="header-actions">
-      <button mat-flat-button color="primary" class="create-btn" (click)="showAddForm.set(!showAddForm())">
-        <mat-icon>{{ showAddForm() ? 'close' : 'add_alarm' }}</mat-icon>
-        <span>{{ showAddForm() ? 'Close Form' : 'Add Shift Schedule' }}</span>
+      <button *ngIf="canManageSchedules()" mat-flat-button color="primary" class="primary-action-btn" (click)="openAddModal()">
+        <mat-icon>add_alarm</mat-icon> Schedule New Working Shift
+      </button>
+      <div *ngIf="!canManageSchedules()" class="readonly-roster-badge" title="Roster management is restricted to authorized clinic administrators">
+        <mat-icon>verified_user</mat-icon>
+        <span>Hospital Shift Coverage Roster (Read-Only)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- DEPARTMENT / ROLE SWITCHER TABS -->
+  <div class="department-nav-strip">
+    <button
+      type="button"
+      class="dept-tab"
+      [class.active]="selectedDepartment() === 'ALL'"
+      (click)="setDepartment('ALL')"
+    >
+      <mat-icon>domain</mat-icon>
+      <span>All Departments</span>
+      <span class="count-pill">{{ allUnifiedShifts().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="dept-tab rad-tab"
+      [class.active]="selectedDepartment() === 'Radiology'"
+      (click)="setDepartment('Radiology')"
+    >
+      <mat-icon>visibility</mat-icon>
+      <span>Radiology & Modalities</span>
+      <span class="count-pill rad-pill">{{ radiologyShiftsCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="dept-tab doc-tab"
+      [class.active]="selectedDepartment() === 'Doctor'"
+      (click)="setDepartment('Doctor')"
+    >
+      <mat-icon>stethoscope</mat-icon>
+      <span>Clinical Doctors</span>
+      <span class="count-pill doc-pill">{{ doctorShiftsCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="dept-tab nurse-tab"
+      [class.active]="selectedDepartment() === 'Nurse'"
+      (click)="setDepartment('Nurse')"
+    >
+      <mat-icon>healing</mat-icon>
+      <span>Nursing Care</span>
+      <span class="count-pill nurse-pill">{{ nurseShiftsCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="dept-tab lab-tab"
+      [class.active]="selectedDepartment() === 'Laboratory'"
+      (click)="setDepartment('Laboratory')"
+    >
+      <mat-icon>biotech</mat-icon>
+      <span>Laboratory</span>
+      <span class="count-pill lab-pill">{{ labShiftsCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="dept-tab rec-tab"
+      [class.active]="selectedDepartment() === 'Reception'"
+      (click)="setDepartment('Reception')"
+    >
+      <mat-icon>badge</mat-icon>
+      <span>Admissions Desk</span>
+      <span class="count-pill rec-pill">{{ receptionShiftsCount() }}</span>
+    </button>
+  </div>
+
+  <!-- TOOLBAR & FILTERS -->
+  <div class="toolbar-card">
+    <div class="filter-row">
+      <!-- Search Input -->
+      <div class="filter-group search-filter">
+        <label class="filter-label">Search Staff or Suite:</label>
+        <div class="search-box">
+          <mat-icon>search</mat-icon>
+          <input
+            type="text"
+            placeholder="Search by name, suite, specialty..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+          <button *ngIf="searchQuery()" (click)="searchQuery.set('')" class="clear-btn">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Day of Week Filter -->
+      <div class="filter-group day-filter">
+        <label class="filter-label">Day of Week:</label>
+        <div class="day-pills">
+          <button class="day-pill" [class.active]="selectedDayFilter() === 'ALL'" (click)="selectedDayFilter.set('ALL')">All</button>
+          <button *ngFor="let d of days" class="day-pill" [class.active]="selectedDayFilter() === d.value" (click)="selectedDayFilter.set(d.value)">
+            {{ d.short }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="filter-group status-filter">
+        <label class="filter-label">Shift Status:</label>
+        <select class="custom-select status-sel" [ngModel]="selectedStatusFilter()" (ngModelChange)="selectedStatusFilter.set($event)">
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active Duty Only</option>
+          <option value="INACTIVE">Suspended Only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       MY SHIFT SCHEDULE — Personal panel. Only visible to non-Admin roles.
+       Shows the current user's own assigned shifts, isolated from the full roster.
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="my-shifts-section" *ngIf="!canManageSchedules()">
+    <div class="my-shifts-header" (click)="myShiftsSectionExpanded.set(!myShiftsSectionExpanded())">
+      <div class="my-shifts-header-left">
+        <div class="my-shifts-icon">
+          <mat-icon>person_pin_circle</mat-icon>
+        </div>
+        <div>
+          <h2 class="my-shifts-title">My Shift Schedule</h2>
+          <p class="my-shifts-subtitle">
+            Your personally assigned working shifts &amp; duty roster
+            <span class="my-shifts-name-tag" *ngIf="currentUserDisplayName()">
+              — {{ currentUserDisplayName() }}
+            </span>
+          </p>
+        </div>
+      </div>
+      <div class="my-shifts-header-right">
+        <span class="my-shifts-count-badge">{{ myShifts().length }} Assigned</span>
+        <mat-icon class="expand-icon" [class.rotated]="!myShiftsSectionExpanded()">expand_more</mat-icon>
+      </div>
+    </div>
+
+    <div class="my-shifts-body" *ngIf="myShiftsSectionExpanded()">
+      <!-- Weekly Overview Strip -->
+      <div class="my-weekly-strip" *ngIf="myShifts().length > 0">
+        <div
+          class="my-week-day"
+          *ngFor="let d of days"
+          [class.has-shift]="myShifts().some(s => s.dayOfWeek === d.value)"
+          [class.active-shift]="myShifts().some(s => s.dayOfWeek === d.value && s.isActive)"
+        >
+          <span class="wday-label">{{ d.short }}</span>
+          <span class="wday-dot" *ngIf="myShifts().some(s => s.dayOfWeek === d.value)"></span>
+          <span class="wday-time" *ngIf="myShifts().some(s => s.dayOfWeek === d.value)">
+            {{ getMyShiftTime(d.value) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- My Shift Cards Grid -->
+      <div class="my-shifts-grid" *ngIf="myShifts().length > 0; else myShiftsEmptyTpl">
+        <div
+          class="my-shift-card"
+          *ngFor="let s of myShifts()"
+          [class.inactive]="!s.isActive"
+          [attr.data-dept]="s.department"
+        >
+          <!-- Card Top Bar -->
+          <div class="my-card-topbar">
+            <div class="my-day-pill">
+              <mat-icon>today</mat-icon>
+              <span>{{ getDayName(s.dayOfWeek) }}</span>
+            </div>
+            <div class="my-dept-chip" [attr.data-dept]="s.department">
+              {{ s.department === 'Radiology' ? '🩻 Radiology Suite' :
+                 s.department === 'Doctor'    ? '🩺 Clinical' :
+                 s.department === 'Nurse'     ? '🏥 Nursing' :
+                 s.department === 'Laboratory'? '🔬 Lab' : '🪑 Reception' }}
+            </div>
+            <div class="my-status-dot" [class.active]="s.isActive" [class.suspended]="!s.isActive">
+              <span class="pulse-dot" *ngIf="s.isActive"></span>
+              {{ s.isActive ? 'On Duty' : 'Suspended' }}
+            </div>
+          </div>
+
+          <!-- Shift Time Block -->
+          <div class="my-time-banner">
+            <div class="my-time-col">
+              <span class="my-time-lbl">Start</span>
+              <span class="my-time-val">{{ s.startTime }}</span>
+            </div>
+            <div class="my-time-divider">
+              <mat-icon>arrow_forward</mat-icon>
+            </div>
+            <div class="my-time-col">
+              <span class="my-time-lbl">End</span>
+              <span class="my-time-val">{{ s.endTime }}</span>
+            </div>
+            <div class="my-shift-type-badge" [attr.data-type]="s.shiftType">
+              {{ s.shiftType }}
+            </div>
+          </div>
+
+          <!-- Suite & Notes -->
+          <div class="my-suite-row">
+            <mat-icon>room</mat-icon>
+            <span>{{ s.departmentSuite }}</span>
+          </div>
+          <div class="my-notes-row" *ngIf="s.notes">
+            <mat-icon>info_outline</mat-icon>
+            <span>{{ s.notes }}</span>
+            <strong *ngIf="s.phoneExtension" class="my-phone">{{ s.phoneExtension }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state when no personal shifts found -->
+      <ng-template #myShiftsEmptyTpl>
+        <div class="my-shifts-empty">
+          <mat-icon>event_available</mat-icon>
+          <p>No shifts have been assigned to your account yet.</p>
+          <span>Contact your clinic administrator to set up your duty schedule.</span>
+        </div>
+      </ng-template>
+    </div>
+  </section>
+
+  <!-- FULL ROSTER DIVIDER (for non-admin roles only) -->
+  <div class="roster-section-divider" *ngIf="!canManageSchedules()">
+    <div class="divider-line"></div>
+    <span class="divider-label">
+      <mat-icon>groups</mat-icon> Full Hospital Shift Roster
+    </span>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- SHIFTS GRID -->
+  <div class="shifts-grid" *ngIf="!isLoading(); else loadingTpl">
+    <div
+      class="shift-card"
+      *ngFor="let s of filteredShifts()"
+      [class.inactive]="!s.isActive"
+      [attr.data-dept]="s.department"
+    >
+      <div class="card-header">
+        <div class="day-badge" [attr.data-day]="s.dayOfWeek">
+          <span class="day-short">{{ getDayName(s.dayOfWeek).slice(0, 3).toUpperCase() }}</span>
+          <span class="day-full">{{ getDayName(s.dayOfWeek) }}</span>
+        </div>
+        <div class="dept-badge-pill" [attr.data-dept]="s.department">
+          {{ s.department === 'Radiology' ? 'Radiology Suite' : s.department }}
+        </div>
+        <div class="status-badge" [class.active]="s.isActive" [class.suspended]="!s.isActive">
+          <span class="pulse-dot" *ngIf="s.isActive"></span>
+          <span>{{ s.isActive ? 'Active Duty' : 'Suspended' }}</span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="doctor-title-box">
+          <div class="doctor-icon-avatar" [attr.data-dept]="s.department">
+            <mat-icon>{{ s.avatarIcon || 'person' }}</mat-icon>
+          </div>
+          <div class="doctor-text-box">
+            <h3 class="doctor-name">{{ s.staffName }}</h3>
+            <span class="doctor-spec">{{ s.staffTitle }}</span>
+            <span class="suite-location">
+              <mat-icon>room</mat-icon> {{ s.departmentSuite }}
+            </span>
+          </div>
+        </div>
+
+        <div class="timing-box">
+          <div class="time-block">
+            <span class="time-label">Shift Start</span>
+            <span class="time-val">{{ s.startTime }}</span>
+          </div>
+          <div class="time-arrow">➔</div>
+          <div class="time-block">
+            <span class="time-label">Shift End</span>
+            <span class="time-val">{{ s.endTime }}</span>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <div class="slot-pill" *ngIf="s.slotDurationMinutes">
+            <mat-icon>schedule</mat-icon>
+            <span>{{ s.slotDurationMinutes }}m Slots (Max {{ s.maxPatients || 20 }})</span>
+          </div>
+          <div class="shift-type-pill" [attr.data-type]="s.shiftType">
+            {{ s.shiftType }}
+          </div>
+        </div>
+
+        <div class="notes-box" *ngIf="s.notes">
+          <mat-icon>info</mat-icon>
+          <span>{{ s.notes }}</span>
+          <strong *ngIf="s.phoneExtension" class="phone-ext">({{ s.phoneExtension }})</strong>
+        </div>
+      </div>
+
+      <div class="card-footer" *ngIf="canManageSchedules()">
+        <button mat-stroked-button class="action-btn-edit" (click)="openEditModal(s)" title="Edit Staff Shift Details">
+          <mat-icon>edit_calendar</mat-icon>
+          <span>Edit Shift</span>
+        </button>
+        <button mat-stroked-button class="action-btn-toggle" [class.suspend]="s.isActive" [class.resume]="!s.isActive" (click)="toggleSchedule(s)">
+          <mat-icon>{{ s.isActive ? 'pause_circle' : 'play_circle' }}</mat-icon>
+          <span>{{ s.isActive ? 'Suspend' : 'Activate' }}</span>
+        </button>
+        <button mat-icon-button color="warn" class="delete-btn" (click)="deleteSchedule(s)" title="Delete Shift">
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state-card" *ngIf="filteredShifts().length === 0">
+      <mat-icon>event_busy</mat-icon>
+      <h3>No Shift Rosters Found</h3>
+      <p>There are no active shifts matching your selected department, day, or search filter.</p>
+      <button mat-stroked-button (click)="selectedDepartment.set('ALL'); selectedDayFilter.set('ALL'); searchQuery.set('')">
+        Clear All Filters
       </button>
     </div>
   </div>
 
-  <div class="content-card doctor-selector-card">
-    <div class="doctor-filter-row">
-      <mat-form-field appearance="outline" class="doctor-dropdown">
-        <mat-label>Select Practicing Physician</mat-label>
-        <mat-select [value]="selectedDoctorId()" (selectionChange)="onDoctorChange($event.value)">
-          @for (doc of doctors(); track doc.id) {
-            <mat-option [value]="doc.id">
-              Dr. {{ doc.firstName }} {{ doc.lastName }} ({{ doc.email }})
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+  <ng-template #loadingTpl>
+    <div class="loading-box">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading hospital shift rosters...</p>
     </div>
-  </div>
+  </ng-template>
 
-  <!-- Add Schedule Shift Drawer -->
-  @if (showAddForm()) {
-    <div class="content-card inline-drawer mat-elevation-z4">
-      <div class="drawer-header">
-        <div class="drawer-title">
-          <mat-icon>add_alarm</mat-icon>
-          <h3>Add Doctor Working Shift</h3>
+  <!-- ADD / EDIT SHIFT MODAL DIALOG -->
+  <div class="modal-backdrop" *ngIf="showAddModal()">
+    <div class="modal-container form-modal">
+      <header class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-title-icon" [class.edit-theme]="isEditMode()">
+            <mat-icon>{{ isEditMode() ? 'edit_calendar' : 'alarm_add' }}</mat-icon>
+          </div>
+          <div>
+            <h3>{{ isEditMode() ? 'Edit Staff Working Shift' : 'Schedule New Working Shift' }}</h3>
+            <span class="modal-subtitle">
+              {{ isEditMode() ? 'Update existing shift assignment, duty timing and suite allocation' : 'Enterprise Staff Roster & Department Suite Allocation' }}
+            </span>
+          </div>
         </div>
-        <p>Set the day of the week, working hours, and consultation duration per patient slot.</p>
-      </div>
+        <button type="button" class="close-x" (click)="closeAddModal()" title="Close dialog">
+          <mat-icon>close</mat-icon>
+        </button>
+      </header>
 
-      <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="drawer-form">
-        <div class="form-grid-three">
-          <mat-form-field appearance="outline">
-            <mat-label>Day of Week</mat-label>
-            <mat-select formControlName="dayOfWeek">
-              @for (d of days; track d.value) {
-                <mat-option [value]="d.value">{{ d.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Shift Start Time</mat-label>
-            <input matInput type="time" formControlName="startTime">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Shift End Time</mat-label>
-            <input matInput type="time" formControlName="endTime">
-          </mat-form-field>
+      <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="modal-body">
+        <!-- Department Selection -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">domain</mat-icon> Department / Suite Division *
+            </label>
+            <select
+              formControlName="department"
+              class="form-control"
+              (change)="onDepartmentModalChange($any($event.target).value)"
+            >
+              <option value="Radiology">Radiology & Modality Suites (CT, MRI, DR, US)</option>
+              <option value="Doctor">Clinical Physicians & Doctors</option>
+              <option value="Nurse">Nursing Care Staff & Triage</option>
+              <option value="Laboratory">Pathology & Clinical Laboratory</option>
+              <option value="Reception">Admissions & Front Desk</option>
+            </select>
+          </div>
         </div>
 
-        <div class="form-grid-two">
-          <mat-form-field appearance="outline">
-            <mat-label>Slot Duration (Minutes)</mat-label>
-            <input matInput type="number" formControlName="slotDurationMinutes" min="5" step="5" placeholder="30">
-          </mat-form-field>
+        <!-- Staff Member Dropdown Selection -->
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label class="form-label">
+              <mat-icon class="label-icon">badge</mat-icon> Select Hospital Staff Member *
+            </label>
+            <select
+              class="form-control staff-select"
+              [ngModel]="selectedStaffDropdown()"
+              (ngModelChange)="onStaffDropdownChange($event)"
+              [ngModelOptions]="{standalone: true}"
+            >
+              <optgroup [label]="scheduleForm.get('department')?.value + ' Department Staff'">
+                <option *ngFor="let st of availableStaffForSelectedDept()" [value]="st.name">
+                  {{ st.name }} — {{ st.title }}
+                </option>
+              </optgroup>
+              <optgroup label="Other Registered Hospital Staff" *ngIf="otherRegisteredStaff().length > 0">
+                <option *ngFor="let st of otherRegisteredStaff()" [value]="st.name">
+                  {{ st.name }} — {{ st.title }} ({{ st.department }})
+                </option>
+              </optgroup>
+              <optgroup label="Custom / External Staff">
+                <option value="__custom__">➕ Custom / Other Staff Member...</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- Custom Staff Name Input if Selected -->
+          <div class="form-group flex-2" *ngIf="customStaffMode()">
+            <label class="form-label">
+              <mat-icon class="label-icon">person</mat-icon> Custom Staff Full Name *
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="staffName"
+              placeholder="e.g. Dr. Alex Vance, MD"
+              required
+            />
+          </div>
         </div>
 
-        <div class="drawer-footer">
-          <button mat-stroked-button type="button" (click)="showAddForm.set(false)">Cancel</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="scheduleForm.invalid || isSaving()">
-            <mat-icon>save</mat-icon> Save Shift Schedule
+        <!-- Professional Title & Suite / Workstation Room -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">medical_services</mat-icon> Professional Designation / Title *
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="staffTitle"
+              placeholder="e.g. Lead Diagnostic Radiologist"
+              required
+            />
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">room</mat-icon> Assigned Suite / Workstation *
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="departmentSuite"
+              placeholder="e.g. Suite 2 — Dual-Source CT"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Day of the Week & Shift Type -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">calendar_today</mat-icon> Day of the Week *
+            </label>
+            <select formControlName="dayOfWeek" class="form-control">
+              <option *ngFor="let d of days" [value]="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">schedule</mat-icon> Shift Duty Type *
+            </label>
+            <select formControlName="shiftType" class="form-control">
+              <option value="Day Shift">Day Shift (Standard Operating Hours)</option>
+              <option value="Diagnostic Read">Diagnostic Read (PACS Reading Room)</option>
+              <option value="Interventional">Interventional Coverage (Procedure Bay)</option>
+              <option value="Evening Call">Evening On-Call</option>
+              <option value="Night STAT">Night Emergency STAT</option>
+              <option value="Rotation">Clinical Rotation</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Timing & Slot Duration -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">access_time</mat-icon> Shift Start Time *
+            </label>
+            <input type="time" class="form-control" formControlName="startTime" required />
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">
+              <mat-icon class="label-icon">timelapse</mat-icon> Shift End Time *
+            </label>
+            <input type="time" class="form-control" formControlName="endTime" required />
+          </div>
+          <div class="form-group flex-1" *ngIf="scheduleForm.get('department')?.value === 'Doctor'">
+            <label class="form-label">
+              <mat-icon class="label-icon">timer</mat-icon> Slot Duration (Mins)
+            </label>
+            <input type="number" class="form-control" formControlName="slotDurationMinutes" min="5" max="120" />
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" mat-stroked-button class="modal-cancel-btn" (click)="closeAddModal()">Cancel</button>
+          <button
+            type="submit"
+            mat-flat-button
+            color="primary"
+            class="modal-submit-btn"
+            [disabled]="scheduleForm.invalid || isSaving()"
+          >
+            <mat-icon>{{ isEditMode() ? 'save' : 'check_circle' }}</mat-icon>
+            {{ isEditMode() ? 'Save Shift Changes' : 'Confirm & Publish Shift' }}
           </button>
-        </div>
+        </footer>
       </form>
     </div>
-  }
-
-  <!-- Shifts Grid -->
-  <div class="shifts-card-grid premium-grid">
-    @for (s of schedules(); track s.id) {
-      <div class="shift-card premium-card" [class.inactive-shift]="!s.isActive">
-        <div class="shift-card-header">
-          <div class="day-badge-pro giant-glow-box accent-glow">
-            <span>{{ getDayName(s.dayOfWeek).substring(0, 3).toUpperCase() }}</span>
-          </div>
-          <div class="shift-status">
-            <span class="status-indicator" [class.pulse]="s.isActive"></span>
-            <span class="status-text">{{ s.isActive ? 'Active Shift' : 'Offline' }}</span>
-          </div>
-        </div>
-
-        <div class="shift-timing-body">
-          <div class="time-block">
-            <mat-icon>login</mat-icon>
-            <div class="time-details">
-              <span class="time-label">Starts</span>
-              <h4 class="time-val">{{ s.startTime }}</h4>
-            </div>
-          </div>
-          <div class="time-divider"></div>
-          <div class="time-block">
-            <mat-icon>logout</mat-icon>
-            <div class="time-details">
-              <span class="time-label">Ends</span>
-              <h4 class="time-val">{{ s.endTime }}</h4>
-            </div>
-          </div>
-        </div>
-        
-        <div class="slot-info-pill">
-          <mat-icon>timer</mat-icon> {{ s.slotDurationMinutes || 30 }}m Consultation Slots
-        </div>
-
-        <div class="shift-card-footer">
-          <button mat-flat-button [color]="s.isActive ? 'warn' : 'primary'" (click)="toggleSchedule(s.id)" class="pro-toggle-btn">
-            <mat-icon>{{ s.isActive ? 'pause' : 'play_arrow' }}</mat-icon>
-            <span>{{ s.isActive ? 'Suspend' : 'Activate' }}</span>
-          </button>
-          <button mat-icon-button class="pro-delete-btn" (click)="deleteSchedule(s.id)" title="Remove Shift">
-            <mat-icon>delete_outline</mat-icon>
-          </button>
-        </div>
-      </div>
-    }
   </div>
-
-  @if (schedules().length === 0) {
-    <div class="content-card empty-state">
-      <mat-icon class="empty-icon">event_busy</mat-icon>
-      <h3>No Active Working Shifts</h3>
-      <p>Click 'Add Shift Schedule' above to configure operating hours for this physician.</p>
-    </div>
-  }
 </div>
