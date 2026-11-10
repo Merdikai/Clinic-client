@@ -128,7 +128,7 @@ export class AuthService {
     return stored ? JSON.parse(stored) : null;
   }
 
-  private clearAuth(): void {
+  clearAuth(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);

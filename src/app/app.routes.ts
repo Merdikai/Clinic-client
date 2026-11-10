@@ -232,6 +232,11 @@ export const routes: Routes = [
         ]
       },
       {
+        path: '403',
+        loadComponent: () => import('./features/access-denied/access-denied.component')
+          .then(m => m.AccessDeniedComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'
@@ -239,7 +244,12 @@ export const routes: Routes = [
     ]
   },
   {
+    path: '404',
+    loadComponent: () => import('./features/not-found/not-found.component')
+      .then(m => m.NotFoundComponent)
+  },
+  {
     path: '**',
-    redirectTo: 'login'
+    redirectTo: '404'
   }
 ];

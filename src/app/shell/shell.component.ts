@@ -23,6 +23,7 @@ import { RadiologyService } from '../services/radiology.service';
 import { NursingService } from '../services/nursing.service';
 import { UserManagementService } from '../services/user-management.service';
 import { EmrAccessService } from '../services/emr-access.service';
+import { environment } from '../../environments/environment';
 import { of } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
 
@@ -61,29 +62,32 @@ export class ShellComponent implements OnInit {
   financeMetrics = signal<FinanceDashboardMetrics | null>(null);
   labMetrics = signal<LabMetrics | null>(null);
 
+  // Environment & Role simulation gating
+  isDevMode = !environment.production;
+
   // Role Counts & Nav Metric Signals
-  totalPatientsCount = signal<number>(8);
-  doctorPanelCount = signal<number>(4);
-  activeAppointmentsCount = signal<number>(5);
-  todayConsultationsCount = signal<number>(5);
-  pendingInvoicesCount = signal<number>(7);
-  inbasketPendingCount = signal<number>(3);
-  labCatalogCount = signal<number>(24);
-  radiologyStudiesCount = signal<number>(4);
-  radiologyUnreportedCount = signal<number>(2);
-  radiologyCriticalCount = signal<number>(1);
-  radiologySafetyCount = signal<number>(14);
+  totalPatientsCount = signal<number>(0);
+  doctorPanelCount = signal<number>(0);
+  activeAppointmentsCount = signal<number>(0);
+  todayConsultationsCount = signal<number>(0);
+  pendingInvoicesCount = signal<number>(0);
+  inbasketPendingCount = signal<number>(0);
+  labCatalogCount = signal<number>(0);
+  radiologyStudiesCount = signal<number>(0);
+  radiologyUnreportedCount = signal<number>(0);
+  radiologyCriticalCount = signal<number>(0);
+  radiologySafetyCount = signal<number>(0);
   private radiologyService = inject(RadiologyService);
   private nursingService = inject(NursingService);
   private userService = inject(UserManagementService);
   private emrAccessService = inject(EmrAccessService);
-  nurseProceduresCount = signal<number>(3);
+  nurseProceduresCount = signal<number>(0);
 
   // Admin IAM & Governance Signals
-  adminStaffUsersCount = signal<number>(11);
-  adminActiveDutyCount = signal<number>(3);
-  adminAuditLogsCount = signal<number>(18);
-  adminDelegationsCount = signal<number>(1);
+  adminStaffUsersCount = signal<number>(0);
+  adminActiveDutyCount = signal<number>(0);
+  adminAuditLogsCount = signal<number>(0);
+  adminDelegationsCount = signal<number>(0);
 
   adminDisplayName = computed(() => {
     const user = this.currentUser();
@@ -97,15 +101,12 @@ export class ShellComponent implements OnInit {
 
   nurseDisplayName = computed(() => {
     const user = this.currentUser();
-    if (!user) return 'Nurse Sarah Jenkins, RN';
+    if (!user) return 'Staff Nurse, RN';
     if (user.fullName && user.fullName !== 'User') return `${user.fullName}, RN`;
     if (user.username) {
-      if (user.username.toLowerCase().includes('sarah') || user.username.toLowerCase().includes('jenkins')) {
-        return 'Nurse Sarah Jenkins, RN';
-      }
       return `Nurse ${user.username}, RN`;
     }
-    return 'Nurse Sarah Jenkins, RN';
+    return 'Staff Nurse, RN';
   });
 
   nurseDepartment = computed(() => 'Triage & Inpatient Nursing Care');
@@ -149,28 +150,30 @@ export class ShellComponent implements OnInit {
 
   patientDisplayName = computed(() => {
     const user = this.currentUser();
-    if (!user) return 'Alice Smith (Patient)';
+    if (!user) return 'Patient';
     if (user.fullName && user.fullName !== 'User') return user.fullName;
     if (user.username) return user.username;
-    return 'Alice Smith (Patient)';
+    return 'Patient';
   });
 
   accountantDisplayName = computed(() => {
     const user = this.currentUser();
-    if (!user) return 'Dave Accountant, CPA';
+    if (!user) return 'Financial Controller';
     if (user.fullName && user.fullName !== 'User') return `${user.fullName}, CPA`;
     if (user.username) {
-      if (user.username.toLowerCase().includes('dave') || user.username.toLowerCase().includes('accountant')) {
-        return 'Dave Accountant, CPA';
-      }
       return `${user.username}, CPA`;
     }
-    return 'Dave Accountant, CPA';
+    return 'Financial Controller';
   });
 
   accountantDepartment = computed(() => 'Financial Control & Revenue Governance');
 
   allRoles = ['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'LabTechnician', 'Radiologist', 'Accountant', 'Patient'];
+  availableRoles = computed(() =>
+    !environment.production
+      ? this.allRoles
+      : (this.authService.userRoles().length > 0 ? this.authService.userRoles() : ['Patient'])
+  );
   activeSimulatedRole = this.permissionService.activeRole;
 
   showDutyModal = false;
@@ -474,6 +477,9 @@ export class ShellComponent implements OnInit {
   }
 
   setRolePreview(role: string) {
+    if (environment.production && !this.authService.userRoles().includes(role)) {
+      return;
+    }
     this.permissionService.setActiveRole(role);
     this.loadPatientCount();
     this.loadAppointmentCount();

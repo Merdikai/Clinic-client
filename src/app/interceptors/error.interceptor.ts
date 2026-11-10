@@ -1,12 +1,17 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, switchMap, filter, take, BehaviorSubject } from 'rxjs';
 import { ToastService } from '../ui/toast/toast.service';
+import { AuthService } from '../services/auth.service';
+
+let isRefreshing = false;
+const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const toast = inject(ToastService);
+  const authService = inject(AuthService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -35,10 +40,58 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
+      const isAuthEndpoint =
+        req.url.includes('/auth/login') ||
+        req.url.includes('/auth/register') ||
+        req.url.includes('/auth/refresh') ||
+        req.url.includes('/auth/forgot-password') ||
+        req.url.includes('/auth/reset-password');
 
+      // 401 Unauthorized Handling with Silent Refresh Token Retry
       if (error.status === 401) {
-        if (!isAuthEndpoint) {
+        if (!isAuthEndpoint && authService.getRefreshToken()) {
+          if (!isRefreshing) {
+            isRefreshing = true;
+            refreshTokenSubject.next(null);
+
+            return authService.refreshToken().pipe(
+              switchMap((res) => {
+                isRefreshing = false;
+                refreshTokenSubject.next(res.token);
+                return next(
+                  req.clone({
+                    setHeaders: {
+                      Authorization: `Bearer ${res.token}`
+                    }
+                  })
+                );
+              }),
+              catchError((refreshErr) => {
+                isRefreshing = false;
+                authService.clearAuth();
+                toast.error('Session expired. Please log in again.');
+                router.navigate(['/login']);
+                return throwError(() => refreshErr);
+              })
+            );
+          } else {
+            // Queue concurrent requests while token refresh is in progress
+            return refreshTokenSubject.pipe(
+              filter((token) => token !== null),
+              take(1),
+              switchMap((token) =>
+                next(
+                  req.clone({
+                    setHeaders: {
+                      Authorization: `Bearer ${token}`
+                    }
+                  })
+                )
+              )
+            );
+          }
+        } else if (!isAuthEndpoint) {
+          authService.clearAuth();
           toast.error('Session expired. Please log in again.');
           router.navigate(['/login']);
         }
