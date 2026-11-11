@@ -74,7 +74,7 @@ export const AppointmentStore = signalStore(
         },
         error: (err) => {
           patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
-          toast.error('Approval failed: ' + (err.message || 'Server error'));
+          toast.error('Approval failed: ' + (err.error?.detail || err.error?.message || err.message || 'Server error'));
         }
       });
     },
@@ -94,7 +94,7 @@ export const AppointmentStore = signalStore(
         error: (err) => {
           // Rollback on error
           patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
-          toast.error(`Check-in failed: ${err.message || 'Server error'}`);
+          toast.error(`Check-in failed: ${err.error?.detail || err.error?.message || err.message || 'Server error'}`);
         }
       });
     },
@@ -115,7 +115,7 @@ export const AppointmentStore = signalStore(
         error: (err) => {
           // Rollback on error
           patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
-          toast.error(`Cancellation failed: ${err.message || 'Server error'}`);
+          toast.error(`Cancellation failed: ${err.error?.detail || err.error?.message || err.message || 'Server error'}`);
         }
       });
     }

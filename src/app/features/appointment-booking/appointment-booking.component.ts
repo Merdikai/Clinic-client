@@ -8,6 +8,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { Subject, of } from 'rxjs';
+import { exhaustMap, catchError } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PatientService } from '../../services/patient.service';
 import { DoctorService, DoctorDto } from '../../services/doctor.service';
 import { AppointmentService } from '../../services/appointment.service';
@@ -55,6 +58,36 @@ export class AppointmentBookingComponent implements OnInit {
   doctors = signal<DoctorDto[]>([]);
   isSubmitting = signal(false);
   errorMessage = signal('');
+
+  // ─── Qiyas M9 Session 3: Defensive RxJS Mutation Pipeline ───
+  private submitClick$ = new Subject<any>();
+
+  constructor() {
+    this.submitClick$.pipe(
+      exhaustMap((request) => {
+        this.isSubmitting.set(true);
+        this.errorMessage.set('');
+        return this.appointmentService.create(request).pipe(
+          catchError((error) => {
+            this.isSubmitting.set(false);
+            this.errorMessage.set(error.error?.detail || error.error?.message || 'Failed to book appointment');
+            return of(null);
+          })
+        );
+      }),
+      takeUntilDestroyed()
+    ).subscribe((response) => {
+      if (response) {
+        this.isSubmitting.set(false);
+        this.snackBar.open('Appointment booked successfully!', 'Close', { duration: 3000 });
+        if (this.isPatient()) {
+          this.router.navigate(['/my-appointments']);
+        } else {
+          this.router.navigate(['/appointments']);
+        }
+      }
+    });
+  }
 
   bookingForm = this.fb.group({
     patientId: ['', Validators.required],
@@ -134,9 +167,6 @@ export class AppointmentBookingComponent implements OnInit {
       return;
     }
 
-    this.isSubmitting.set(true);
-    this.errorMessage.set('');
-
     const date = this.bookingForm.value.date!;
     const time = this.bookingForm.value.time!;
     const scheduledDateTime = new Date(`${date}T${time}:00`).toISOString();
@@ -149,20 +179,7 @@ export class AppointmentBookingComponent implements OnInit {
       reasonForVisit: this.bookingForm.value.reasonForVisit!
     };
 
-    this.appointmentService.create(request).subscribe({
-      next: () => {
-        this.isSubmitting.set(false);
-        this.snackBar.open('Appointment booked successfully!', 'Close', { duration: 3000 });
-        if (this.isPatient()) {
-          this.router.navigate(['/my-appointments']);
-        } else {
-          this.router.navigate(['/appointments']);
-        }
-      },
-      error: (error) => {
-        this.isSubmitting.set(false);
-        this.errorMessage.set(error.error?.detail || error.error?.message || 'Failed to book appointment');
-      }
-    });
+    // Defend against rage-clicks and double submissions via exhaustMap
+    this.submitClick$.next(request);
   }
 }
