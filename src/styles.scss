@@ -289,23 +289,3 @@ h3 {
     outline-offset: 2px;
   }
 }
-
-/* Incremental Refactor Compatibility Aliases (Cleanly retired in Phase 32) */
-:root {
-  --auth-bg-gradient: var(--surface-page);
-  --primary-gradient: var(--action-primary);
-  --secondary-gradient: var(--action-primary);
-  --hero-gradient: var(--surface-card);
-  --radius-lg: var(--radius-md);
-  --radius-xl: var(--radius-md);
-  --radius-full: var(--radius-sm);
-  --shadow-md: var(--shadow-card);
-  --shadow-lg: var(--shadow-card);
-  --shadow-xl: var(--shadow-card);
-  --accent-color: var(--action-primary);
-  --warn-color: var(--semantic-danger-accent);
-  --border-focus: var(--focus-ring-color);
-  --bg-sidebar: var(--surface-sidebar);
-  --bg-sidebar-hover: var(--surface-subtle);
-  --bg-sidebar-active: var(--surface-hover);
-}
