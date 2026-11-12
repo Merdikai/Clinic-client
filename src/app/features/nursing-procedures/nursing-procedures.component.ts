@@ -1,22 +1,22 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { NursingService } from '../../services/nursing.service';
 import { PatientService } from '../../services/patient.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { NursingProcedure, CreateNursingProcedureRequest } from '../../models/nursing.model';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-nursing-procedures',
@@ -24,17 +24,16 @@ import { NursingProcedure, CreateNursingProcedureRequest } from '../../models/nu
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatCardModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './nursing-procedures.component.html',
   styleUrls: ['./nursing-procedures.component.scss']
@@ -94,8 +93,6 @@ export class NursingProceduresComponent implements OnInit {
     'Complication Noted'
   ];
 
-  displayedColumns = ['status', 'performedAt', 'patient', 'procedureType', 'bodySite', 'tolerance', 'nurse', 'notes', 'actions'];
-
   filteredProcedures = computed(() => {
     let list = this.procedures();
     const type = this.filterType();
@@ -123,6 +120,12 @@ export class NursingProceduresComponent implements OnInit {
     return list;
   });
 
+  hasActiveFilters = computed(() =>
+    this.filterType() !== 'ALL' ||
+    this.filterStatus() !== 'ALL' ||
+    this.searchQuery().trim().length > 0
+  );
+
   // KPIs
   totalProceduresCount = computed(() => this.procedures().length);
   orderedCount = computed(() => this.procedures().filter(p => p.status === 'Ordered').length);
@@ -131,26 +134,49 @@ export class NursingProceduresComponent implements OnInit {
   injectionsCount = computed(() => this.procedures().filter(p => p.procedureType.includes('Injection') || p.procedureType.includes('Vaccine')).length);
   ivCount = computed(() => this.procedures().filter(p => p.procedureType.includes('IV')).length);
 
-  ngOnInit() {
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.isCompleteModalOpen()) {
+      this.closeCompleteModal();
+    } else if (this.isModalOpen()) {
+      this.closeModal();
+    }
+  }
+
+  ngOnInit(): void {
     this.loadProcedures();
     this.loadPatients();
   }
 
-  loadProcedures() {
+  clearFilters(): void {
+    this.filterType.set('ALL');
+    this.filterStatus.set('ALL');
+    this.searchQuery.set('');
+  }
+
+  getToleranceTone(tolerance?: string | null): StatusTone {
+    if (!tolerance || tolerance === 'Well Tolerated') return 'success';
+    if (tolerance.includes('Pain') || tolerance.includes('Complication') || tolerance.includes('Dizziness')) {
+      return 'danger';
+    }
+    return 'warning';
+  }
+
+  loadProcedures(): void {
     this.isLoading.set(true);
     this.nursingService.getProcedures().subscribe({
       next: (data) => {
         this.procedures.set(data || []);
         this.isLoading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.isLoading.set(false);
         this.toast.error('Failed to load nursing procedures.');
       }
     });
   }
 
-  loadPatients() {
+  loadPatients(): void {
     this.patientService.getAll(1, 200).subscribe({
       next: (res: any) => {
         const list = res.items || res.data || (Array.isArray(res) ? res : []);
@@ -160,7 +186,7 @@ export class NursingProceduresComponent implements OnInit {
     });
   }
 
-  openNewProcedureModal(patientId?: string) {
+  openNewProcedureModal(patientId?: string): void {
     this.formPatientId.set(patientId || (this.patients().length > 0 ? this.patients()[0].id : ''));
     this.formProcedureType.set('Wound Dressing & Care');
     this.formBodySite.set('');
@@ -170,11 +196,11 @@ export class NursingProceduresComponent implements OnInit {
     this.isModalOpen.set(true);
   }
 
-  closeModal() {
+  closeModal(): void {
     this.isModalOpen.set(false);
   }
 
-  saveProcedure() {
+  saveProcedure(): void {
     if (!this.formPatientId()) {
       this.toast.error('Please select a patient.');
       return;
@@ -197,7 +223,7 @@ export class NursingProceduresComponent implements OnInit {
     };
 
     this.nursingService.createProcedure(request).subscribe({
-      next: (newProc) => {
+      next: () => {
         this.isSubmitting.set(false);
         this.toast.success('Nursing procedure documented successfully.');
         this.closeModal();
@@ -210,7 +236,7 @@ export class NursingProceduresComponent implements OnInit {
     });
   }
 
-  openCompleteModal(proc: NursingProcedure) {
+  openCompleteModal(proc: NursingProcedure): void {
     this.selectedProcedureForCompletion.set(proc);
     this.completeTolerance.set('Well Tolerated');
     this.completeSupplies.set('');
@@ -218,12 +244,12 @@ export class NursingProceduresComponent implements OnInit {
     this.isCompleteModalOpen.set(true);
   }
 
-  closeCompleteModal() {
+  closeCompleteModal(): void {
     this.isCompleteModalOpen.set(false);
     this.selectedProcedureForCompletion.set(null);
   }
 
-  submitCompleteProcedure() {
+  submitCompleteProcedure(): void {
     const proc = this.selectedProcedureForCompletion();
     if (!proc) return;
 
@@ -246,4 +272,3 @@ export class NursingProceduresComponent implements OnInit {
     });
   }
 }
-

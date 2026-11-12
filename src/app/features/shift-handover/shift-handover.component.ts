@@ -1,20 +1,21 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { NursingService } from '../../services/nursing.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { ShiftHandover, CreateShiftHandoverRequest } from '../../models/nursing.model';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-shift-handover',
@@ -22,16 +23,16 @@ import { ShiftHandover, CreateShiftHandoverRequest } from '../../models/nursing.
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
-    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatChipsModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './shift-handover.component.html',
   styleUrls: ['./shift-handover.component.scss']
@@ -68,12 +69,12 @@ export class ShiftHandoverComponent implements OnInit {
     return list.length > 0 ? list[0] : null;
   });
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadHandovers();
     this.detectCurrentShift();
   }
 
-  detectCurrentShift() {
+  detectCurrentShift(): void {
     const hour = new Date().getHours();
     if (hour >= 7 && hour < 15) {
       this.formShiftType.set('Morning Shift (07:00 - 15:00)');
@@ -84,7 +85,7 @@ export class ShiftHandoverComponent implements OnInit {
     }
   }
 
-  loadHandovers() {
+  loadHandovers(): void {
     this.isLoading.set(true);
     this.nursingService.getShiftHandovers().subscribe({
       next: (data) => {
@@ -98,7 +99,7 @@ export class ShiftHandoverComponent implements OnInit {
     });
   }
 
-  submitHandover() {
+  submitHandover(): void {
     if (!this.formSituation().trim()) {
       this.toast.error('Please enter the Situation section for this handover.');
       return;
@@ -120,7 +121,6 @@ export class ShiftHandoverComponent implements OnInit {
       next: () => {
         this.isSubmitting.set(false);
         this.toast.success('SBAR Shift Handover logged and broadcasted.');
-        // Reset form
         this.formSituation.set('');
         this.formBackground.set('');
         this.formAssessment.set('');
@@ -134,7 +134,7 @@ export class ShiftHandoverComponent implements OnInit {
     });
   }
 
-  fillTemplate() {
+  fillTemplate(): void {
     this.formSituation.set('Unit operating normally. 6 patients currently admitted/triaged across bays. 2 discharges planned before 17:00.');
     this.formBackground.set('Patient in Bay A arrived with acute hypertension (BP 165/95), received oral amlodipine at 13:00. Room 2 patient post-minor wound debridement.');
     this.formAssessment.set('All patient vital signs stable. Zero active fall incidents. Blood glucose checks scheduled for 16:00 for Bay B.');

@@ -1,271 +1,216 @@
 <div class="procedures-container">
-  <!-- Page Header -->
-  <header class="page-header">
-    <div class="header-left">
-      <div class="header-icon-box">
-        <mat-icon class="header-icon">healing</mat-icon>
-      </div>
-      <div>
-        <h1 class="page-title">Nursing Procedures & Clinical Interventions</h1>
-        <p class="page-subtitle">Documentation of wound care, immunizations, catheterizations, and therapeutic procedures</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button mat-flat-button color="primary" class="new-proc-btn" (click)="openNewProcedureModal()">
-        <mat-icon>add_circle</mat-icon>
-        <span>Document Procedure</span>
-      </button>
-    </div>
-  </header>
+  <app-page-header
+    title="Nursing Procedures & Clinical Interventions"
+    subtitle="Documentation of wound care, immunizations, catheterizations, and therapeutic procedures"
+  >
+    <button
+      actions
+      mat-flat-button
+      color="primary"
+      type="button"
+      (click)="openNewProcedureModal()"
+    >
+      <mat-icon aria-hidden="true">add</mat-icon>
+      <span>Document Procedure</span>
+    </button>
+  </app-page-header>
 
-  <!-- KPI Metrics Bar -->
-  <div class="metrics-grid">
+  <!-- Summary Metrics -->
+  <section class="metrics-grid" aria-label="Procedure summary counts">
     <div class="metric-card">
-      <div class="metric-icon total">
-        <mat-icon>assessment</mat-icon>
-      </div>
-      <div class="metric-info">
-        <span class="metric-val">{{ totalProceduresCount() }}</span>
-        <span class="metric-lbl">Total Procedures</span>
-      </div>
+      <span class="metric-val">{{ totalProceduresCount() }}</span>
+      <span class="metric-lbl">Total Procedures</span>
     </div>
 
-    <div class="metric-card pending-orders" [class.highlight]="orderedCount() > 0">
-      <div class="metric-icon pending">
-        <mat-icon>pending_actions</mat-icon>
-      </div>
-      <div class="metric-info">
-        <span class="metric-val">{{ orderedCount() }}</span>
-        <span class="metric-lbl">Pending Doctor Orders</span>
-      </div>
+    <div class="metric-card" [class.metric-attention]="orderedCount() > 0">
+      <span class="metric-val">{{ orderedCount() }}</span>
+      <span class="metric-lbl">Pending Doctor Orders</span>
     </div>
 
     <div class="metric-card">
-      <div class="metric-icon wound">
-        <mat-icon>healing</mat-icon>
-      </div>
-      <div class="metric-info">
-        <span class="metric-val">{{ woundCareCount() }}</span>
-        <span class="metric-lbl">Wound Care & Dressing</span>
-      </div>
+      <span class="metric-val">{{ completedCount() }}</span>
+      <span class="metric-lbl">Completed</span>
     </div>
 
     <div class="metric-card">
-      <div class="metric-icon injection">
-        <mat-icon>vaccines</mat-icon>
-      </div>
-      <div class="metric-info">
-        <span class="metric-val">{{ injectionsCount() }}</span>
-        <span class="metric-lbl">Injections & Vaccines</span>
-      </div>
+      <span class="metric-val">{{ woundCareCount() }}</span>
+      <span class="metric-lbl">Wound Care & Dressing</span>
     </div>
 
     <div class="metric-card">
-      <div class="metric-icon iv">
-        <mat-icon>bloodtype</mat-icon>
-      </div>
-      <div class="metric-info">
-        <span class="metric-val">{{ ivCount() }}</span>
-        <span class="metric-lbl">IV Cannulation</span>
-      </div>
+      <span class="metric-val">{{ injectionsCount() }}</span>
+      <span class="metric-lbl">Injections & Vaccines</span>
     </div>
-  </div>
+
+    <div class="metric-card">
+      <span class="metric-val">{{ ivCount() }}</span>
+      <span class="metric-lbl">IV Cannulation</span>
+    </div>
+  </section>
 
   <!-- Filter & Search Controls -->
-  <div class="filters-card mat-elevation-z1">
-    <div class="search-box">
-      <mat-icon class="search-icon">search</mat-icon>
-      <input type="text" placeholder="Search by patient name, doctor, procedure, or body site..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
-    </div>
+  <section class="filters-card" aria-label="Filter procedures">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search procedures</mat-label>
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+      <input
+        matInput
+        type="search"
+        placeholder="Patient, ordering doctor, procedure, or site"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </mat-form-field>
 
     <div class="filter-controls-row">
-      <div class="filter-dropdown">
-        <mat-form-field appearance="outline" class="compact-field">
-          <mat-label>Status</mat-label>
-          <mat-select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
-            <mat-option value="ALL">All Statuses</mat-option>
-            <mat-option value="Ordered">Pending Doctor Orders</mat-option>
-            <mat-option value="Completed">Completed Interventions</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
+          <mat-option value="ALL">All Statuses</mat-option>
+          <mat-option value="Ordered">Pending Doctor Orders</mat-option>
+          <mat-option value="Completed">Completed Interventions</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-      <div class="filter-dropdown">
-        <mat-form-field appearance="outline" class="compact-field">
-          <mat-label>Filter Procedure</mat-label>
-          <mat-select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)">
-            <mat-option value="ALL">All Procedure Categories</mat-option>
-            @for (type of procedureTypesList; track type) {
-              <mat-option [value]="type">{{ type }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Procedure Category</mat-label>
+        <mat-select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)">
+          <mat-option value="ALL">All Categories</mat-option>
+          @for (type of procedureTypesList; track type) {
+            <mat-option [value]="type">{{ type }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
     </div>
-  </div>
+  </section>
 
-  <!-- Procedures Data Table -->
-  <div class="table-container mat-elevation-z2">
+  <!-- Procedures Table -->
+  <div class="table-container">
     @if (isLoading()) {
-      <div class="loading-state">
-        <mat-spinner diameter="42"></mat-spinner>
-        <span>Loading nursing procedure records...</span>
+      <div class="skeleton-wrap">
+        <app-skeleton variant="table" [count]="6" [columns]="8" />
       </div>
+    } @else if (filteredProcedures().length === 0) {
+      <app-empty-state
+        icon="healing"
+        title="No Nursing Procedures Documented"
+        [description]="hasActiveFilters() ? 'No procedure records matched your active filters.' : 'No clinical procedures have been logged yet.'"
+        [actionLabel]="hasActiveFilters() ? 'Clear filters' : 'Document Procedure'"
+        (action)="hasActiveFilters() ? clearFilters() : openNewProcedureModal()"
+      />
     } @else {
-      <table mat-table [dataSource]="filteredProcedures()" class="proc-table">
-        <!-- Status & Workflow -->
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let p">
-            <div class="status-cell">
-              @if (p.status === 'Ordered') {
-                <span class="order-chip pending">
-                  <mat-icon>schedule</mat-icon> Ordered
-                </span>
-                @if (p.orderedByDoctorName) {
-                  <span class="ordered-doctor-text">By Dr. {{ p.orderedByDoctorName }}</span>
-                }
-              } @else {
-                <span class="order-chip completed">
-                  <mat-icon>check_circle</mat-icon> Completed
-                </span>
-              }
-            </div>
-          </td>
-        </ng-container>
+      <div class="table-scroll">
+        <table class="proc-table">
+          <thead>
+            <tr>
+              <th scope="col">Status</th>
+              <th scope="col">Date & Time</th>
+              <th scope="col">Patient</th>
+              <th scope="col">Procedure</th>
+              <th scope="col">Anatomical Site</th>
+              <th scope="col">Tolerance</th>
+              <th scope="col">Documented By</th>
+              <th scope="col">Notes & Supplies</th>
+              <th scope="col" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of filteredProcedures(); track p.id) {
+              <tr>
+                <td>
+                  <div class="status-cell">
+                    @if (p.status === 'Ordered') {
+                      <app-status-chip tone="warning" label="Ordered" />
+                      @if (p.orderedByDoctorName) {
+                        <span class="sub-meta">By Dr. {{ p.orderedByDoctorName }}</span>
+                      }
+                    } @else {
+                      <app-status-chip tone="success" label="Completed" />
+                    }
+                  </div>
+                </td>
 
-        <!-- Date & Time -->
-        <ng-container matColumnDef="performedAt">
-          <th mat-header-cell *matHeaderCellDef>Date & Time</th>
-          <td mat-cell *matCellDef="let p">
-            <div class="time-cell">
-              <span class="time-date">{{ (p.performedAt || p.orderedAt) | date:'mediumDate' }}</span>
-              <span class="time-hour">{{ (p.performedAt || p.orderedAt) | date:'shortTime' }}</span>
-            </div>
-          </td>
-        </ng-container>
+                <td>
+                  <div class="time-cell">
+                    <span class="time-date">{{ (p.performedAt || p.orderedAt) | date:'mediumDate' }}</span>
+                    <span class="sub-meta">{{ (p.performedAt || p.orderedAt) | date:'shortTime' }}</span>
+                  </div>
+                </td>
 
-        <!-- Patient -->
-        <ng-container matColumnDef="patient">
-          <th mat-header-cell *matHeaderCellDef>Patient Name</th>
-          <td mat-cell *matCellDef="let p">
-            <div class="patient-cell">
-              <div class="patient-avatar">
-                <mat-icon>person</mat-icon>
-              </div>
-              <div class="patient-details">
-                <span class="patient-name">{{ p.patientName || 'Patient Record' }}</span>
-              </div>
-            </div>
-          </td>
-        </ng-container>
+                <td class="patient-name">{{ p.patientName || 'Patient Record' }}</td>
 
-        <!-- Procedure Type -->
-        <ng-container matColumnDef="procedureType">
-          <th mat-header-cell *matHeaderCellDef>Procedure</th>
-          <td mat-cell *matCellDef="let p">
-            <span class="proc-badge">{{ p.procedureType }}</span>
-          </td>
-        </ng-container>
+                <td>
+                  <span class="proc-badge">{{ p.procedureType }}</span>
+                </td>
 
-        <!-- Body Site -->
-        <ng-container matColumnDef="bodySite">
-          <th mat-header-cell *matHeaderCellDef>Anatomical Site</th>
-          <td mat-cell *matCellDef="let p">
-            <span class="site-tag">{{ p.bodySite || 'Not specified' }}</span>
-          </td>
-        </ng-container>
+                <td class="site-tag">{{ p.bodySite || 'Not specified' }}</td>
 
-        <!-- Tolerance -->
-        <ng-container matColumnDef="tolerance">
-          <th mat-header-cell *matHeaderCellDef>Patient Tolerance</th>
-          <td mat-cell *matCellDef="let p">
-            @if (p.status === 'Ordered') {
-              <span class="tolerance-chip pending">Awaiting Care</span>
-            } @else {
-              <span class="tolerance-chip" [class.well]="p.patientTolerance === 'Well Tolerated'" [class.mild]="p.patientTolerance === 'Mild Discomfort'" [class.alert]="p.patientTolerance && (p.patientTolerance.includes('Pain') || p.patientTolerance.includes('Complication'))">
-                {{ p.patientTolerance || 'Well Tolerated' }}
-              </span>
+                <td>
+                  @if (p.status === 'Ordered') {
+                    <app-status-chip tone="neutral" label="Awaiting Care" />
+                  } @else {
+                    <app-status-chip
+                      [tone]="getToleranceTone(p.patientTolerance)"
+                      [label]="p.patientTolerance || 'Well Tolerated'"
+                    />
+                  }
+                </td>
+
+                <td>{{ p.performedByUserName || (p.status === 'Ordered' ? 'Unassigned' : 'Staff Nurse') }}</td>
+
+                <td>
+                  <div class="notes-preview">
+                    <span>{{ p.notes || 'No adverse events noted.' }}</span>
+                    @if (p.suppliesUsed) {
+                      <span class="sub-meta">Supplies: {{ p.suppliesUsed }}</span>
+                    }
+                  </div>
+                </td>
+
+                <td class="col-actions">
+                  @if (p.status === 'Ordered') {
+                    <button
+                      mat-flat-button
+                      color="primary"
+                      type="button"
+                      (click)="openCompleteModal(p)"
+                    >
+                      Fulfill Order
+                    </button>
+                  } @else {
+                    <span class="completed-meta">Signed</span>
+                  }
+                </td>
+              </tr>
             }
-          </td>
-        </ng-container>
-
-        <!-- Nurse Performer -->
-        <ng-container matColumnDef="nurse">
-          <th mat-header-cell *matHeaderCellDef>Documented By</th>
-          <td mat-cell *matCellDef="let p">
-            <div class="nurse-cell">
-              <mat-icon class="nurse-icon">medical_services</mat-icon>
-              <span>{{ p.performedByUserName || (p.status === 'Ordered' ? 'Unassigned' : 'Staff Nurse') }}</span>
-            </div>
-          </td>
-        </ng-container>
-
-        <!-- Clinical Notes & Supplies -->
-        <ng-container matColumnDef="notes">
-          <th mat-header-cell *matHeaderCellDef>Clinical Notes & Supplies</th>
-          <td mat-cell *matCellDef="let p">
-            <div class="notes-preview">
-              <span class="notes-text">{{ p.notes || 'No adverse events noted.' }}</span>
-              @if (p.suppliesUsed) {
-                <span class="supplies-text"><mat-icon>inventory_2</mat-icon> {{ p.suppliesUsed }}</span>
-              }
-            </div>
-          </td>
-        </ng-container>
-
-        <!-- Actions -->
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let p">
-            @if (p.status === 'Ordered') {
-              <button mat-flat-button color="accent" class="action-fulfill-btn" (click)="openCompleteModal(p)">
-                <mat-icon>task_alt</mat-icon> Fulfill Order
-              </button>
-            } @else {
-              <span class="fulfilled-tag">
-                <mat-icon>verified</mat-icon> Completed
-              </span>
-            }
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="proc-row"></tr>
-      </table>
-
-      @if (filteredProcedures().length === 0) {
-        <div class="empty-state">
-          <mat-icon class="empty-icon">healing</mat-icon>
-          <h3>No Nursing Procedures Documented</h3>
-          <p>No procedure records matched your search filters. Click "Document Procedure" to log an intervention.</p>
-        </div>
-      }
+          </tbody>
+        </table>
+      </div>
     }
   </div>
 </div>
 
-<!-- ================= DOCUMENT PROCEDURE MODAL ================= -->
+<!-- Document Procedure Dialog -->
 @if (isModalOpen()) {
-  <div class="modal-backdrop fade-in" (click)="closeModal()">
-    <div class="modal-dialog mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
+  <div
+    class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="doc-proc-title"
+    (click)="closeModal()"
+  >
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <div class="header-info">
-          <div class="modal-icon-box">
-            <mat-icon>healing</mat-icon>
-          </div>
-          <div>
-            <h2 class="modal-title">Document Nursing Procedure</h2>
-            <p class="modal-subtitle">Record clinical intervention, site, materials, and patient tolerance</p>
-          </div>
+        <div>
+          <h2 id="doc-proc-title" class="modal-title">Document Nursing Procedure</h2>
+          <p class="modal-subtitle">Record clinical intervention, anatomical site, supplies, and tolerance</p>
         </div>
-        <button mat-icon-button (click)="closeModal()" class="close-btn">
-          <mat-icon>close</mat-icon>
+        <button mat-icon-button type="button" aria-label="Close dialog" (click)="closeModal()">
+          <mat-icon aria-hidden="true">close</mat-icon>
         </button>
       </div>
 
       <div class="modal-body">
-        <!-- Patient Selection -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Select Patient</mat-label>
           <mat-select [ngModel]="formPatientId()" (ngModelChange)="formPatientId.set($event)" required>
@@ -273,11 +218,9 @@
               <mat-option [value]="pt.id">{{ pt.firstName }} {{ pt.lastName }} (DOB: {{ pt.dateOfBirth | date:'shortDate' }})</mat-option>
             }
           </mat-select>
-          <mat-icon matSuffix>person</mat-icon>
         </mat-form-field>
 
         <div class="form-row-2">
-          <!-- Procedure Type -->
           <mat-form-field appearance="outline">
             <mat-label>Procedure Category</mat-label>
             <mat-select [ngModel]="formProcedureType()" (ngModelChange)="formProcedureType.set($event)" required>
@@ -287,16 +230,13 @@
             </mat-select>
           </mat-form-field>
 
-          <!-- Anatomical Site -->
           <mat-form-field appearance="outline">
             <mat-label>Anatomical Body Site</mat-label>
-            <input matInput [ngModel]="formBodySite()" (ngModelChange)="formBodySite.set($event)" placeholder="e.g. Left Deltoid, Right Forearm, Sacrum">
-            <mat-icon matSuffix>place</mat-icon>
+            <input matInput [ngModel]="formBodySite()" (ngModelChange)="formBodySite.set($event)" placeholder="e.g. Left Deltoid, Sacrum" />
           </mat-form-field>
         </div>
 
         <div class="form-row-2">
-          <!-- Patient Tolerance -->
           <mat-form-field appearance="outline">
             <mat-label>Patient Tolerance</mat-label>
             <mat-select [ngModel]="formPatientTolerance()" (ngModelChange)="formPatientTolerance.set($event)">
@@ -306,82 +246,89 @@
             </mat-select>
           </mat-form-field>
 
-          <!-- Supplies & Lot # -->
           <mat-form-field appearance="outline">
-            <mat-label>Supplies & Consumables Used</mat-label>
-            <input matInput [ngModel]="formSuppliesUsed()" (ngModelChange)="formSuppliesUsed.set($event)" placeholder="e.g. 22G IV Catheter, Tegaderm, Normal Saline flush">
-            <mat-icon matSuffix>inventory_2</mat-icon>
+            <mat-label>Supplies & Consumables</mat-label>
+            <input matInput [ngModel]="formSuppliesUsed()" (ngModelChange)="formSuppliesUsed.set($event)" placeholder="e.g. 22G IV Catheter, Saline flush" />
           </mat-form-field>
         </div>
 
-        <!-- Clinical Notes -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Clinical Assessment & Procedure Notes</mat-label>
-          <textarea matInput rows="3" [ngModel]="formNotes()" (ngModelChange)="formNotes.set($event)" placeholder="Wound size, exudate color/odor, skin condition, patient instructions provided..."></textarea>
+          <textarea
+            matInput
+            rows="3"
+            [ngModel]="formNotes()"
+            (ngModelChange)="formNotes.set($event)"
+            placeholder="Wound appearance, tolerance details, instructions provided"
+          ></textarea>
         </mat-form-field>
       </div>
 
       <div class="modal-footer">
-        <button mat-stroked-button (click)="closeModal()" [disabled]="isSubmitting()">Cancel</button>
-        <button mat-flat-button color="primary" class="submit-btn" (click)="saveProcedure()" [disabled]="isSubmitting()">
-          <mat-icon>check_circle</mat-icon>
-          <span>{{ isSubmitting() ? 'Saving Record...' : 'Sign & Complete Procedure' }}</span>
+        <button mat-flat-button color="primary" type="button" (click)="saveProcedure()" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Saving Record...' : 'Sign & Complete Procedure' }}
+        </button>
+        <button mat-stroked-button type="button" (click)="closeModal()" [disabled]="isSubmitting()">
+          Cancel
         </button>
       </div>
     </div>
   </div>
 }
 
-<!-- ================= FULFILL DOCTOR-ORDERED PROCEDURE MODAL ================= -->
+<!-- Fulfill Doctor-Ordered Procedure Dialog -->
 @if (isCompleteModalOpen() && selectedProcedureForCompletion(); as proc) {
-  <div class="modal-backdrop fade-in" (click)="closeCompleteModal()">
-    <div class="modal-dialog mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
+  <div
+    class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="fulfill-proc-title"
+    (click)="closeCompleteModal()"
+  >
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <div class="header-info">
-          <div class="modal-icon-box" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
-            <mat-icon>task_alt</mat-icon>
-          </div>
-          <div>
-            <h2 class="modal-title">Fulfill Doctor-Ordered Procedure</h2>
-            <p class="modal-subtitle">Document execution, supplies, and patient response for ordered care</p>
-          </div>
+        <div>
+          <h2 id="fulfill-proc-title" class="modal-title">Fulfill Doctor-Ordered Procedure</h2>
+          <p class="modal-subtitle">Document execution, supplies used, and patient response</p>
         </div>
-        <button mat-icon-button (click)="closeCompleteModal()" class="close-btn">
-          <mat-icon>close</mat-icon>
+        <button mat-icon-button type="button" aria-label="Close dialog" (click)="closeCompleteModal()">
+          <mat-icon aria-hidden="true">close</mat-icon>
         </button>
       </div>
 
       <div class="modal-body">
-        <!-- Order Summary Card -->
         <div class="order-summary-card">
           <div class="order-summary-row">
             <div>
-              <span class="lbl">Patient:</span>
+              <span class="lbl">Patient</span>
               <strong>{{ proc.patientName }}</strong>
             </div>
             <div>
-              <span class="lbl">Procedure:</span>
+              <span class="lbl">Procedure</span>
               <strong>{{ proc.procedureType }}</strong>
             </div>
           </div>
           <div class="order-summary-row">
             <div>
-              <span class="lbl">Ordered By:</span>
+              <span class="lbl">Ordered By</span>
               <span>Dr. {{ proc.orderedByDoctorName || 'Attending Physician' }}</span>
             </div>
-            <div *ngIf="proc.bodySite">
-              <span class="lbl">Site:</span>
-              <span>{{ proc.bodySite }}</span>
+            @if (proc.bodySite) {
+              <div>
+                <span class="lbl">Site</span>
+                <span>{{ proc.bodySite }}</span>
+              </div>
+            }
+          </div>
+          @if (proc.notes) {
+            <div class="order-notes-box">
+              <span class="lbl">Physician Instructions</span>
+              <p>{{ proc.notes }}</p>
             </div>
-          </div>
-          <div class="order-notes-box" *ngIf="proc.notes">
-            <span class="lbl">Physician's Instructions:</span>
-            <p>{{ proc.notes }}</p>
-          </div>
+          }
         </div>
 
         <div class="form-row-2">
-          <!-- Patient Tolerance -->
           <mat-form-field appearance="outline">
             <mat-label>Patient Tolerance</mat-label>
             <mat-select [ngModel]="completeTolerance()" (ngModelChange)="completeTolerance.set($event)">
@@ -391,29 +338,32 @@
             </mat-select>
           </mat-form-field>
 
-          <!-- Supplies & Lot # -->
           <mat-form-field appearance="outline">
             <mat-label>Supplies & Materials Used</mat-label>
-            <input matInput [ngModel]="completeSupplies()" (ngModelChange)="completeSupplies.set($event)" placeholder="e.g. 21G Needle, Betadine, Sterile Gauze">
-            <mat-icon matSuffix>inventory_2</mat-icon>
+            <input matInput [ngModel]="completeSupplies()" (ngModelChange)="completeSupplies.set($event)" placeholder="e.g. 21G Needle, Sterile Gauze" />
           </mat-form-field>
         </div>
 
-        <!-- Clinical Notes -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nursing Procedure Execution Notes</mat-label>
-          <textarea matInput rows="3" [ngModel]="completeNotes()" (ngModelChange)="completeNotes.set($event)" placeholder="Document procedure completion details, patient vitals response, dressings applied..."></textarea>
+          <textarea
+            matInput
+            rows="3"
+            [ngModel]="completeNotes()"
+            (ngModelChange)="completeNotes.set($event)"
+            placeholder="Document completion details, vitals response, dressings applied"
+          ></textarea>
         </mat-form-field>
       </div>
 
       <div class="modal-footer">
-        <button mat-stroked-button (click)="closeCompleteModal()" [disabled]="isSubmitting()">Cancel</button>
-        <button mat-flat-button color="primary" class="submit-btn fulfill-submit" (click)="submitCompleteProcedure()" [disabled]="isSubmitting()">
-          <mat-icon>check_circle</mat-icon>
-          <span>{{ isSubmitting() ? 'Fulfilling...' : 'Sign & Complete Order' }}</span>
+        <button mat-flat-button color="primary" type="button" (click)="submitCompleteProcedure()" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Fulfilling...' : 'Sign & Complete Order' }}
+        </button>
+        <button mat-stroked-button type="button" (click)="closeCompleteModal()" [disabled]="isSubmitting()">
+          Cancel
         </button>
       </div>
     </div>
   </div>
 }
-
