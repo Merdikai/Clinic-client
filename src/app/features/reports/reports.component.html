@@ -1,167 +1,162 @@
-<div class="reports-container premium-page">
-  <!-- Page Header -->
-  <div class="reports-header">
-    <div class="title-area">
-      <div class="title-icon-badge">
-        <mat-icon>analytics</mat-icon>
-      </div>
-      <div>
-        <h1 class="page-title">P&L & Financial Reports</h1>
-        <p class="page-subtitle">Hospital executive financial statements, revenue cycles, cashier drawer audits, and timeframe data exports</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button mat-flat-button class="export-btn-primary" (click)="openExportModal('patients')">
-        <mat-icon>people</mat-icon>
+<div class="reports-page">
+  <app-page-header
+    title="P&L & Financial Reports"
+    subtitle="Executive financial statements, revenue cycles, cashier drawer audits, and timeframe data exports">
+    <div actions class="header-actions">
+      <button mat-stroked-button type="button" (click)="openExportModal('patients')">
+        <mat-icon aria-hidden="true">download</mat-icon>
         <span>Export Patients (.CSV)</span>
       </button>
-      <button mat-flat-button class="export-btn-accent" (click)="openExportModal('invoices')">
-        <mat-icon>receipt_long</mat-icon>
+      <button mat-flat-button type="button" (click)="openExportModal('invoices')">
+        <mat-icon aria-hidden="true">download</mat-icon>
         <span>Export Invoices (.CSV)</span>
       </button>
     </div>
-  </div>
+  </app-page-header>
 
-  <!-- Real-World Executive P&L Financial KPI Grid -->
-  <div class="stats-grid">
-    <div class="stat-card emerald">
-      <div class="stat-icon rev-icon"><mat-icon>payments</mat-icon></div>
-      <div class="stat-content">
-        <span class="stat-label">Total Revenue Collected</span>
-        <h3 class="stat-value">{{ (financeMetrics()?.totalRevenue ?? summary()?.dailyRevenue ?? 0) | currency:'USD' }}</h3>
-        <span class="stat-trend positive">
-          <mat-icon>check_circle</mat-icon> Today's Intake: {{ (financeMetrics()?.todayRevenue ?? 0) | currency:'USD' }}
+  <!-- Executive P&L KPI Grid -->
+  @if (isLoading() || metricsLoading()) {
+    <app-skeleton variant="card" [count]="4" label="Loading financial metrics" />
+  } @else {
+    <section class="kpi-grid" aria-label="Financial summary metrics">
+      <article class="kpi-card">
+        <span class="kpi-label">Total Revenue Collected</span>
+        <p class="kpi-value">{{ (financeMetrics()?.totalRevenue ?? summary()?.dailyRevenue ?? 0) | currency:'USD' }}</p>
+        <span class="kpi-meta tone-success">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          <span>Today's intake: {{ (financeMetrics()?.todayRevenue ?? 0) | currency:'USD' }}</span>
         </span>
-      </div>
-    </div>
+      </article>
 
-    <div class="stat-card rose">
-      <div class="stat-icon exp-icon"><mat-icon>shopping_bag</mat-icon></div>
-      <div class="stat-content">
-        <span class="stat-label">Operating Expenses (AP)</span>
-        <h3 class="stat-value">{{ (financeMetrics()?.totalExpenses ?? 0) | currency:'USD' }}</h3>
-        <span class="stat-trend neutral">
-          <mat-icon>pending</mat-icon> Pending AP: {{ (financeMetrics()?.pendingPayablesAmount ?? 0) | currency:'USD' }}
+      <article class="kpi-card">
+        <span class="kpi-label">Operating Expenses (AP)</span>
+        <p class="kpi-value">{{ (financeMetrics()?.totalExpenses ?? 0) | currency:'USD' }}</p>
+        <span class="kpi-meta tone-neutral">
+          <mat-icon aria-hidden="true">pending</mat-icon>
+          <span>Pending AP: {{ (financeMetrics()?.pendingPayablesAmount ?? 0) | currency:'USD' }}</span>
         </span>
-      </div>
-    </div>
+      </article>
 
-    <div class="stat-card amber">
-      <div class="stat-icon ar-icon"><mat-icon>account_balance_wallet</mat-icon></div>
-      <div class="stat-content">
-        <span class="stat-label">Accounts Receivable (AR)</span>
-        <h3 class="stat-value">{{ (financeMetrics()?.pendingReceivables ?? 0) | currency:'USD' }}</h3>
-        <span class="stat-trend warning">
-          <mat-icon>hourglass_top</mat-icon> {{ financeMetrics()?.pendingClaimsCount ?? 0 }} claims pending settlement
+      <article class="kpi-card">
+        <span class="kpi-label">Accounts Receivable (AR)</span>
+        <p class="kpi-value">{{ (financeMetrics()?.pendingReceivables ?? 0) | currency:'USD' }}</p>
+        <span class="kpi-meta tone-warning">
+          <mat-icon aria-hidden="true">hourglass_top</mat-icon>
+          <span>{{ financeMetrics()?.pendingClaimsCount ?? 0 }} claims pending settlement</span>
         </span>
-      </div>
-    </div>
+      </article>
 
-    <div class="stat-card purple">
-      <div class="stat-icon float-icon"><mat-icon>local_atm</mat-icon></div>
-      <div class="stat-content">
-        <span class="stat-label">Petty Cash Vault Float</span>
-        <h3 class="stat-value">{{ (financeMetrics()?.pettyCashCurrentBalance ?? 0) | currency:'USD' }}</h3>
-        <span class="stat-trend positive">
-          <mat-icon>verified</mat-icon> Reconciled vault balance
+      <article class="kpi-card">
+        <span class="kpi-label">Petty Cash Vault Float</span>
+        <p class="kpi-value">{{ (financeMetrics()?.pettyCashCurrentBalance ?? 0) | currency:'USD' }}</p>
+        <span class="kpi-meta tone-success">
+          <mat-icon aria-hidden="true">verified</mat-icon>
+          <span>Reconciled vault balance</span>
         </span>
-      </div>
-    </div>
-  </div>
+      </article>
+    </section>
+  }
 
   <!-- Departmental P&L Performance & Monthly Trend -->
-  <div class="dept-pnl-grid">
+  <div class="two-col-grid">
     <!-- Department Revenue Allocation -->
-    <div class="report-panel premium-card">
+    <section class="report-panel" aria-labelledby="dept-allocation-heading">
       <div class="panel-header">
-        <div class="panel-title-wrap">
-          <mat-icon style="color: #0284c7;">donut_large</mat-icon>
-          <div>
-            <h3>Departmental Revenue Allocation</h3>
-            <p class="panel-sub">Contribution share across clinical consultation, pharmacy dispensary, and lab testing</p>
-          </div>
+        <div>
+          <h2 id="dept-allocation-heading">Departmental Revenue Allocation</h2>
+          <p class="panel-sub">Contribution share across clinical consultation, pharmacy dispensary, and lab testing</p>
         </div>
-        <span class="badge-pill blue">Audited Split</span>
+        <app-status-chip tone="info" label="Audited Split" />
       </div>
 
-      <div class="department-list">
-        @for (dept of financeMetrics()?.departmentRevenue || []; track dept.department) {
-          <div class="dept-item">
-            <div class="dept-info-line">
-              <span class="dept-title">
-                <mat-icon class="dept-icon" [ngClass]="dept.department.toLowerCase()">
-                  @if (dept.department === 'Pharmacy') { medication }
-                  @else if (dept.department === 'Laboratory') { biotech }
-                  @else if (dept.department === 'Consultation') { stethoscope }
-                  @else { medical_services }
-                </mat-icon>
-                {{ dept.department }}
-              </span>
-              <span class="dept-val">{{ dept.revenue | currency:'USD' }}</span>
+      @if (metricsLoading()) {
+        <app-skeleton variant="row" [count]="3" label="Loading departmental breakdown" />
+      } @else if ((financeMetrics()?.departmentRevenue?.length ?? 0) === 0) {
+        <app-empty-state
+          icon="analytics"
+          title="No Departmental Revenue Recorded"
+          message="Department revenue breakdown will appear once paid clinical, pharmacy, or laboratory invoices are posted." />
+      } @else {
+        <div class="department-list">
+          @for (dept of financeMetrics()?.departmentRevenue || []; track dept.department) {
+            <div class="dept-item">
+              <div class="dept-info-line">
+                <span class="dept-title">{{ dept.department }}</span>
+                <span class="dept-val">{{ dept.revenue | currency:'USD' }}</span>
+              </div>
+              <div class="progress-bar-track" role="progressbar" [attr.aria-valuenow]="dept.percentage" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="dept.department + ' revenue share'">
+                <div
+                  class="progress-bar-fill"
+                  [style.width.%]="dept.percentage"
+                  [class.dept-pharmacy]="getDepartmentKey(dept.department) === 'pharmacy'"
+                  [class.dept-laboratory]="getDepartmentKey(dept.department) === 'laboratory'"
+                  [class.dept-consultation]="getDepartmentKey(dept.department) === 'consultation'">
+                </div>
+              </div>
+              <div class="dept-footer-line">
+                <span>{{ dept.invoicesCount }} Paid Invoices</span>
+                <span class="pct-bold">{{ dept.percentage }}% of total</span>
+              </div>
             </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" [style.width.%]="dept.percentage" [ngClass]="dept.department.toLowerCase()"></div>
-            </div>
-            <div class="dept-footer-line">
-              <span>{{ dept.invoicesCount }} Paid Invoices</span>
-              <span class="pct-bold">{{ dept.percentage }}% of total</span>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
+          }
+        </div>
+      }
+    </section>
 
     <!-- Monthly Revenue & Expense Trend -->
-    <div class="report-panel premium-card">
+    <section class="report-panel" aria-labelledby="monthly-trend-heading">
       <div class="panel-header">
-        <div class="panel-title-wrap">
-          <mat-icon style="color: #10b981;">trending_up</mat-icon>
-          <div>
-            <h3>Financial Performance Overview</h3>
-            <p class="panel-sub">Monthly trajectory of clinic billings, supplier payables, and net margin</p>
-          </div>
+        <div>
+          <h2 id="monthly-trend-heading">Financial Performance Overview</h2>
+          <p class="panel-sub">Monthly trajectory of clinic billings, supplier payables, and net margin</p>
         </div>
-        <span class="badge-pill green">Fiscal Year 2026</span>
+        <app-status-chip tone="success" label="Fiscal Year 2026" />
       </div>
 
-      <div class="trend-table-wrapper">
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th>Fiscal Month</th>
-              <th class="text-right">Billed Revenue</th>
-              <th class="text-right">Operating AP</th>
-              <th class="text-right">Net Operating Margin</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (t of financeMetrics()?.monthlyRevenueTrend || []; track t.monthName) {
+      @if (metricsLoading()) {
+        <app-skeleton variant="table" [count]="4" [columns]="4" label="Loading monthly performance" />
+      } @else if ((financeMetrics()?.monthlyRevenueTrend?.length ?? 0) === 0) {
+        <app-empty-state
+          icon="bar_chart"
+          title="No Monthly Trend Data"
+          message="Monthly revenue and operating payable figures will appear once fiscal periods contain posted ledger activity." />
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
               <tr>
-                <td class="font-bold">{{ t.monthName }}</td>
-                <td class="text-right color-emerald">{{ t.revenue | currency:'USD' }}</td>
-                <td class="text-right color-rose">{{ t.expenses | currency:'USD' }}</td>
-                <td class="text-right font-bold" [class.color-emerald]="t.netIncome >= 0" [class.color-rose]="t.netIncome < 0">
-                  {{ t.netIncome | currency:'USD' }}
-                </td>
+                <th scope="col">Fiscal Month</th>
+                <th scope="col" class="text-right">Billed Revenue</th>
+                <th scope="col" class="text-right">Operating AP</th>
+                <th scope="col" class="text-right">Net Operating Margin</th>
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              @for (t of financeMetrics()?.monthlyRevenueTrend || []; track t.monthName) {
+                <tr>
+                  <td class="cell-strong">{{ t.monthName }}</td>
+                  <td class="text-right tone-success">{{ t.revenue | currency:'USD' }}</td>
+                  <td class="text-right tone-danger">{{ t.expenses | currency:'USD' }}</td>
+                  <td class="text-right cell-strong" [class.tone-success]="t.netIncome >= 0" [class.tone-danger]="t.netIncome < 0">
+                    {{ t.netIncome | currency:'USD' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
   </div>
 
   <!-- Analytics Two-Column Section (Daily Audit & Physician Workload) -->
-  <div class="analytics-grid">
+  <div class="two-col-grid">
     <!-- Daily Revenue Date Picker & Calculator -->
-    <div class="report-panel premium-card">
+    <section class="report-panel" aria-labelledby="daily-audit-heading">
       <div class="panel-header">
-        <div class="panel-title-wrap">
-          <mat-icon style="color: #0284c7;">calendar_today</mat-icon>
-          <div>
-            <h3>Daily Revenue Audit Calculator</h3>
-            <p class="panel-sub">Select any date to compute point-in-time revenue, consultation volume, and registrations</p>
-          </div>
+        <div>
+          <h2 id="daily-audit-heading">Daily Revenue Audit Calculator</h2>
+          <p class="panel-sub">Select any date to compute point-in-time revenue, consultation volume, and registrations</p>
         </div>
       </div>
 
@@ -172,139 +167,112 @@
         <mat-datepicker #picker></mat-datepicker>
       </mat-form-field>
 
-      <div class="revenue-summary-box">
-        <div class="summary-line">
-          <span class="lbl">Date Audited:</span>
-          <strong>{{ (dailyRevenue()?.date || selectedDate) | date:'mediumDate' }}</strong>
+      @if (dailyRevenueLoading()) {
+        <app-skeleton variant="text" [count]="4" label="Computing daily revenue summary" />
+      } @else {
+        <div class="revenue-summary-box">
+          <div class="summary-line">
+            <span class="lbl">Date Audited</span>
+            <strong>{{ (dailyRevenue()?.date || selectedDate) | date:'mediumDate' }}</strong>
+          </div>
+          <div class="summary-line">
+            <span class="lbl">Total Consultations</span>
+            <strong>{{ dailyRevenue()?.totalAppointments ?? 0 }} visits</strong>
+          </div>
+          <div class="summary-line">
+            <span class="lbl">New Registered Patients</span>
+            <strong>{{ dailyRevenue()?.totalPatients ?? 0 }} patients</strong>
+          </div>
+          <div class="summary-line total-line">
+            <span class="lbl-main">Net Revenue Collected</span>
+            <strong class="total-val">{{ (dailyRevenue()?.totalRevenue ?? 0) | currency:'USD' }}</strong>
+          </div>
         </div>
-        <div class="summary-line">
-          <span class="lbl">Total Consultations:</span>
-          <strong>{{ dailyRevenue()?.totalAppointments ?? 0 }} visits</strong>
-        </div>
-        <div class="summary-line">
-          <span class="lbl">New Registered Patients:</span>
-          <strong>{{ dailyRevenue()?.totalPatients ?? 0 }} patients</strong>
-        </div>
-        <div class="summary-line total-line">
-          <span class="lbl-main">Net Revenue Collected:</span>
-          <strong class="total-val">{{ (dailyRevenue()?.totalRevenue ?? 0) | currency:'USD' }}</strong>
-        </div>
-      </div>
-    </div>
+      }
+    </section>
 
     <!-- Doctor Consultation Volume -->
-    <div class="report-panel premium-card">
+    <section class="report-panel" aria-labelledby="physician-volume-heading">
       <div class="panel-header">
-        <div class="panel-title-wrap">
-          <mat-icon style="color: #6366f1;">stethoscope</mat-icon>
-          <div>
-            <h3>Physician Consultation Volume</h3>
-            <p class="panel-sub">Workload distribution and consultation counts per doctor</p>
-          </div>
+        <div>
+          <h2 id="physician-volume-heading">Physician Consultation Volume</h2>
+          <p class="panel-sub">Workload distribution and consultation counts per doctor</p>
         </div>
-        <span class="badge-pill indigo">{{ doctorAppointments().length }} Active Doctors</span>
+        <app-status-chip tone="info" [label]="doctorAppointments().length + ' Active Doctors'" />
       </div>
 
-      <div class="doc-counts-list">
-        @for (doc of doctorAppointments(); track doc.doctorId) {
-          <div class="doc-count-item">
-            <div class="doc-meta">
-              <div class="doc-avatar"><mat-icon>person</mat-icon></div>
-              <div>
+      @if (doctorsLoading()) {
+        <app-skeleton variant="row" [count]="4" label="Loading physician consultation counts" />
+      } @else if (doctorAppointments().length === 0) {
+        <app-empty-state
+          icon="event_busy"
+          title="No Physician Consultations"
+          message="No physician appointments recorded in the current active window." />
+      } @else {
+        <div class="doc-counts-list">
+          @for (doc of doctorAppointments(); track doc.doctorId) {
+            <div class="doc-count-item">
+              <div class="doc-meta">
                 <strong>Dr. {{ doc.doctorName }}</strong>
-                <div class="sub-text">Specialist Physician</div>
+                <span class="sub-text">Specialist Physician</span>
               </div>
+              <app-status-chip tone="info" [label]="doc.appointmentCount + ' consultations'" />
             </div>
-            <span class="count-badge">
-              {{ doc.appointmentCount }} consultations
-            </span>
-          </div>
-        }
-
-        @if (doctorAppointments().length === 0) {
-          <div class="empty-state-box">
-            <mat-icon>event_busy</mat-icon>
-            <p>No physician appointments recorded in the current active window.</p>
-          </div>
-        }
-      </div>
-    </div>
+          }
+        </div>
+      }
+    </section>
   </div>
 
   <!-- Front-Desk Cash Register Drawer & Shift Reconciliations Ledger -->
-  <div class="report-panel premium-card">
+  <section class="report-panel" aria-labelledby="reconciliations-heading">
     <div class="panel-header">
       <div>
-        <h3 class="panel-title-icon">
-          <mat-icon style="color: #10b981;">point_of_sale</mat-icon>
-          Front-Desk Cash Register Drawer & Shift Reconciliations Ledger
-        </h3>
-        <p class="panel-sub">
-          Daily cashier shift audit records, counted cash balancing, and variance discrepancy tracking audited by Accounting.
-        </p>
+        <h2 id="reconciliations-heading">Front-Desk Cash Register Drawer & Shift Reconciliations Ledger</h2>
+        <p class="panel-sub">Daily cashier shift audit records, counted cash balancing, and variance discrepancy tracking</p>
       </div>
-      <span class="badge-pill green">
-        {{ reconciliations().length }} Shift Logs
-      </span>
+      <app-status-chip tone="neutral" [label]="reconciliations().length + ' Shift Logs'" />
     </div>
 
-    @if (reconciliations().length > 0) {
+    @if (reconciliationsLoading()) {
+      <app-skeleton variant="table" [count]="5" [columns]="9" label="Loading shift reconciliations" />
+    } @else if (reconciliations().length > 0) {
       <div class="table-responsive">
-        <table class="report-table">
+        <table class="data-table">
           <thead>
             <tr>
-              <th>Shift & Date</th>
-              <th>Receptionist</th>
-              <th>Cash Collected</th>
-              <th>Card / Digital</th>
-              <th>Total Invoiced</th>
-              <th>Counted Cash</th>
-              <th>Variance / Discrepancy</th>
-              <th>Audit Status</th>
-              <th>Closing Notes</th>
+              <th scope="col">Shift & Date</th>
+              <th scope="col">Receptionist</th>
+              <th scope="col" class="text-right">Cash Collected</th>
+              <th scope="col" class="text-right">Card / Digital</th>
+              <th scope="col" class="text-right">Total Invoiced</th>
+              <th scope="col" class="text-right">Counted Cash</th>
+              <th scope="col">Variance / Discrepancy</th>
+              <th scope="col">Audit Status</th>
+              <th scope="col">Closing Notes</th>
             </tr>
           </thead>
           <tbody>
             @for (row of reconciliations(); track row.id) {
               <tr>
                 <td>
-                  <div class="font-bold">{{ row.shift }} Shift</div>
+                  <div class="cell-strong">{{ row.shift }} Shift</div>
                   <div class="sub-date">{{ row.reconciliationDate | date:'mediumDate' }}</div>
                 </td>
-                <td class="font-medium">
-                  {{ row.receptionistName || 'Front Desk' }}
-                </td>
-                <td class="font-bold color-emerald">
-                  {{ row.cashCollected | currency:'USD' }}
-                </td>
-                <td class="color-muted">
-                  {{ (row.cardCollected + row.digitalCollected) | currency:'USD' }}
-                </td>
-                <td class="font-bold">
-                  {{ row.totalCollected | currency:'USD' }}
-                </td>
-                <td class="font-bold">
-                  {{ row.closingCashCounted | currency:'USD' }}
+                <td>{{ row.receptionistName || 'Front Desk' }}</td>
+                <td class="text-right cell-strong tone-success">{{ row.cashCollected | currency:'USD' }}</td>
+                <td class="text-right tone-neutral">{{ (row.cardCollected + row.digitalCollected) | currency:'USD' }}</td>
+                <td class="text-right cell-strong">{{ row.totalCollected | currency:'USD' }}</td>
+                <td class="text-right cell-strong">{{ row.closingCashCounted | currency:'USD' }}</td>
+                <td>
+                  <app-status-chip
+                    [tone]="getVarianceTone(row.discrepancyAmount)"
+                    [label]="getVarianceLabel(row.discrepancyAmount)" />
                 </td>
                 <td>
-                  @if (row.discrepancyAmount === 0) {
-                    <span class="variance-tag balanced">
-                      <mat-icon>check_circle</mat-icon> Exact $0.00
-                    </span>
-                  } @else if (row.discrepancyAmount < 0) {
-                    <span class="variance-tag short">
-                      <mat-icon>trending_down</mat-icon> -{{ (-row.discrepancyAmount) | currency:'USD' }} Short
-                    </span>
-                  } @else {
-                    <span class="variance-tag over">
-                      <mat-icon>trending_up</mat-icon> +{{ row.discrepancyAmount | currency:'USD' }} Over
-                    </span>
-                  }
-                </td>
-                <td>
-                  <span class="audit-status-tag" [ngClass]="(row.auditStatus || row.status)?.toLowerCase()">
-                    {{ row.auditStatus || row.status }}
-                  </span>
+                  <app-status-chip
+                    [tone]="getAuditStatusTone(row.auditStatus || row.status)"
+                    [label]="row.auditStatus || row.status" />
                 </td>
                 <td class="notes-cell" [title]="row.notes || ''">
                   {{ row.notes || 'Shift register closed.' }}
@@ -315,64 +283,58 @@
         </table>
       </div>
     } @else {
-      <div class="empty-state-box">
-        <mat-icon>point_of_sale</mat-icon>
-        <h4>No Shift Drawer Reconciliations Yet</h4>
-        <p>When receptionists close shifts at the Front Desk Operations Center, their reconciled cash drawer logs will appear here.</p>
-      </div>
+      <app-empty-state
+        icon="point_of_sale"
+        title="No Shift Drawer Reconciliations Yet"
+        message="When receptionists close shifts at the Front Desk Operations Center, their reconciled cash drawer logs will appear here." />
     }
-  </div>
+  </section>
 
   <!-- Front-Desk Visitor & Inquiry Tickets Log -->
-  <div class="report-panel premium-card">
+  <section class="report-panel" aria-labelledby="inquiries-heading">
     <div class="panel-header">
       <div>
-        <h3 class="panel-title-icon">
-          <mat-icon style="color: #6366f1;">support_agent</mat-icon>
-          Front-Desk Visitor & Phone Inquiries Log
-        </h3>
-        <p class="panel-sub">
-          Visitor information requests, telephone intake tickets, and department triage inquiries logged at reception.
-        </p>
+        <h2 id="inquiries-heading">Front-Desk Visitor & Phone Inquiries Log</h2>
+        <p class="panel-sub">Visitor information requests, telephone intake tickets, and department triage inquiries logged at reception</p>
       </div>
-      <span class="badge-pill indigo">
-        {{ inquiries().length }} Total Tickets
-      </span>
+      <app-status-chip tone="neutral" [label]="inquiries().length + ' Total Tickets'" />
     </div>
 
-    @if (inquiries().length > 0) {
+    @if (inquiriesLoading()) {
+      <app-skeleton variant="table" [count]="5" [columns]="8" label="Loading visitor inquiries" />
+    } @else if (inquiries().length > 0) {
       <div class="table-responsive">
-        <table class="report-table">
+        <table class="data-table">
           <thead>
             <tr>
-              <th>Visitor / Caller</th>
-              <th>Phone Number</th>
-              <th>Inquiry Type</th>
-              <th>Target Unit</th>
-              <th>Handled By</th>
-              <th>Date Logged</th>
-              <th>Status</th>
-              <th>Resolution Notes</th>
+              <th scope="col">Visitor / Caller</th>
+              <th scope="col">Phone Number</th>
+              <th scope="col">Inquiry Type</th>
+              <th scope="col">Target Unit</th>
+              <th scope="col">Handled By</th>
+              <th scope="col">Date Logged</th>
+              <th scope="col">Status</th>
+              <th scope="col">Resolution Notes</th>
             </tr>
           </thead>
           <tbody>
             @for (ticket of inquiries(); track ticket.id) {
               <tr>
-                <td class="font-bold">{{ ticket.visitorName }}</td>
-                <td class="color-muted">{{ ticket.phoneNumber || '--' }}</td>
+                <td class="cell-strong">{{ ticket.visitorName }}</td>
+                <td class="tone-neutral">{{ ticket.phoneNumber || '--' }}</td>
                 <td>
-                  <span class="type-pill">{{ ticket.inquiryType }}</span>
+                  <app-status-chip tone="neutral" [label]="ticket.inquiryType" />
                 </td>
                 <td>{{ ticket.departmentTarget || 'Reception' }}</td>
-                <td class="color-muted">{{ ticket.handledByUserName || 'Front Desk' }}</td>
+                <td class="tone-neutral">{{ ticket.handledByUserName || 'Front Desk' }}</td>
                 <td class="sub-date">{{ ticket.createdAt | date:'short' }}</td>
                 <td>
-                  <span class="ticket-status-pill" [ngClass]="ticket.status?.toLowerCase()">
-                    {{ ticket.status }}
-                  </span>
+                  <app-status-chip
+                    [tone]="getTicketStatusTone(ticket.status)"
+                    [label]="ticket.status" />
                 </td>
                 <td class="notes-cell" [title]="ticket.notes || ''">
-                  {{ ticket.notes }}
+                  {{ ticket.notes || '--' }}
                 </td>
               </tr>
             }
@@ -380,113 +342,105 @@
         </table>
       </div>
     } @else {
-      <div class="empty-state-box">
-        <mat-icon>support_agent</mat-icon>
-        <h4>No Visitor Inquiries Logged Yet</h4>
-        <p>Walk-in and telephone inquiries recorded at the reception desk will synchronize here for administrative oversight.</p>
-      </div>
+      <app-empty-state
+        icon="support_agent"
+        title="No Visitor Inquiries Logged Yet"
+        message="Walk-in and telephone inquiries recorded at the reception desk will synchronize here for administrative oversight." />
     }
-  </div>
-
-  <!-- Export Quick Bar at bottom -->
-  <div class="export-section premium-card">
-    <div class="export-header-premium">
-      <div class="icon-glow-box primary-glow"><mat-icon>cloud_download</mat-icon></div>
-      <div>
-        <h3>On-Demand Database Export Hub</h3>
-        <p>Generate precise Microsoft Excel spreadsheet files streaming directly from the database engine with flexible timeframe filtering.</p>
-      </div>
-    </div>
-    <div class="export-buttons-group">
-      <button mat-stroked-button color="primary" (click)="openExportModal('patients')">
-        <mat-icon>file_download</mat-icon>
-        <span>Export Patient Registry (Excel .CSV)</span>
-      </button>
-      <button mat-stroked-button color="accent" (click)="openExportModal('invoices')">
-        <mat-icon>file_download</mat-icon>
-        <span>Export Invoices & AR Ledger (Excel .CSV)</span>
-      </button>
-    </div>
-  </div>
+  </section>
 
   <!-- ========================================================================= -->
   <!-- MODAL: TIMEFRAME EXCEL EXPORT DIALOG (Daily, Weekly, Monthly, Yearly)     -->
   <!-- ========================================================================= -->
   @if (showExportModal()) {
-    <div class="modal-backdrop">
-      <div class="modal-card">
+    <div
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-modal-title"
+      (click)="closeExportModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon style="color: #10b981; font-size: 28px; width: 28px; height: 28px;">table_view</mat-icon>
-            <div>
-              <h3>
-                Export {{ exportTarget() === 'patients' ? 'Patient Registry' : 'Financial Invoices & Ledger' }}
-              </h3>
-              <p class="modal-sub">
-                Choose your desired reporting timeframe to generate an RFC-4180 Excel-ready CSV spreadsheet.
-              </p>
-            </div>
+          <div>
+            <h2 id="export-modal-title">
+              Export {{ exportTarget() === 'patients' ? 'Patient Registry' : 'Financial Invoices & Ledger' }}
+            </h2>
+            <p class="modal-sub">
+              Choose a reporting timeframe to download an Excel-compatible CSV file.
+            </p>
           </div>
-          <button mat-icon-button (click)="closeExportModal()">
-            <mat-icon>close</mat-icon>
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Close export modal"
+            (click)="closeExportModal()"
+            [disabled]="isExporting()">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
-          <div class="timeframe-selector-label">Select Reporting Period:</div>
+          <div class="timeframe-selector-label">Reporting Period</div>
 
-          <!-- Timeframe Choice Cards -->
-          <div class="timeframe-cards-grid">
-            <!-- 1. Daily -->
-            <div class="timeframe-card" [class.active]="selectedTimeframe() === 'daily'" (click)="setTimeframe('daily')">
-              <div class="tf-icon"><mat-icon>today</mat-icon></div>
-              <div class="tf-text">
-                <strong>Daily</strong>
-                <span>Specific single day</span>
-              </div>
-            </div>
+          <div class="timeframe-cards-grid" role="group" aria-label="Reporting timeframe">
+            <button
+              type="button"
+              class="timeframe-card"
+              [class.active]="selectedTimeframe() === 'daily'"
+              [attr.aria-pressed]="selectedTimeframe() === 'daily'"
+              (click)="setTimeframe('daily')">
+              <mat-icon aria-hidden="true">today</mat-icon>
+              <strong>Daily</strong>
+              <span>Single day</span>
+            </button>
 
-            <!-- 2. Weekly -->
-            <div class="timeframe-card" [class.active]="selectedTimeframe() === 'weekly'" (click)="setTimeframe('weekly')">
-              <div class="tf-icon"><mat-icon>date_range</mat-icon></div>
-              <div class="tf-text">
-                <strong>Weekly</strong>
-                <span>Past 7 business days</span>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="timeframe-card"
+              [class.active]="selectedTimeframe() === 'weekly'"
+              [attr.aria-pressed]="selectedTimeframe() === 'weekly'"
+              (click)="setTimeframe('weekly')">
+              <mat-icon aria-hidden="true">date_range</mat-icon>
+              <strong>Weekly</strong>
+              <span>Past 7 days</span>
+            </button>
 
-            <!-- 3. Monthly -->
-            <div class="timeframe-card" [class.active]="selectedTimeframe() === 'monthly'" (click)="setTimeframe('monthly')">
-              <div class="tf-icon"><mat-icon>calendar_month</mat-icon></div>
-              <div class="tf-text">
-                <strong>Monthly</strong>
-                <span>Specific calendar month</span>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="timeframe-card"
+              [class.active]="selectedTimeframe() === 'monthly'"
+              [attr.aria-pressed]="selectedTimeframe() === 'monthly'"
+              (click)="setTimeframe('monthly')">
+              <mat-icon aria-hidden="true">calendar_month</mat-icon>
+              <strong>Monthly</strong>
+              <span>Calendar month</span>
+            </button>
 
-            <!-- 4. Yearly -->
-            <div class="timeframe-card" [class.active]="selectedTimeframe() === 'yearly'" (click)="setTimeframe('yearly')">
-              <div class="tf-icon"><mat-icon>calendar_today</mat-icon></div>
-              <div class="tf-text">
-                <strong>Yearly</strong>
-                <span>Full fiscal year</span>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="timeframe-card"
+              [class.active]="selectedTimeframe() === 'yearly'"
+              [attr.aria-pressed]="selectedTimeframe() === 'yearly'"
+              (click)="setTimeframe('yearly')">
+              <mat-icon aria-hidden="true">calendar_today</mat-icon>
+              <strong>Yearly</strong>
+              <span>Fiscal year</span>
+            </button>
 
-            <!-- 5. All Records -->
-            <div class="timeframe-card" [class.active]="selectedTimeframe() === 'all'" (click)="setTimeframe('all')">
-              <div class="tf-icon"><mat-icon>all_inclusive</mat-icon></div>
-              <div class="tf-text">
-                <strong>All Records</strong>
-                <span>Complete archive</span>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="timeframe-card"
+              [class.active]="selectedTimeframe() === 'all'"
+              [attr.aria-pressed]="selectedTimeframe() === 'all'"
+              (click)="setTimeframe('all')">
+              <mat-icon aria-hidden="true">all_inclusive</mat-icon>
+              <strong>All Records</strong>
+              <span>Full archive</span>
+            </button>
           </div>
 
-          <!-- Conditional Parameters based on selected timeframe -->
           @if (selectedTimeframe() === 'daily') {
             <div class="timeframe-param-box">
-              <label>Select Target Day:</label>
               <mat-form-field appearance="outline" class="w-full">
                 <mat-label>Target Day</mat-label>
                 <input matInput [matDatepicker]="exportPicker" [(ngModel)]="customDate">
@@ -497,50 +451,60 @@
           }
 
           @if (selectedTimeframe() === 'monthly') {
-            <div class="timeframe-param-box">
-              <div class="row-two-inputs">
-                <div class="input-col">
-                  <label>Select Month:</label>
-                  <select class="timeframe-select" [(ngModel)]="customMonth">
-                    @for (m of months; track m.value) {
-                      <option [value]="m.value">{{ m.name }}</option>
-                    }
-                  </select>
-                </div>
-                <div class="input-col">
-                  <label>Select Year:</label>
-                  <select class="timeframe-select" [(ngModel)]="customYear">
-                    @for (y of years; track y) {
-                      <option [value]="y">{{ y }}</option>
-                    }
-                  </select>
-                </div>
-              </div>
+            <div class="timeframe-param-box row-two-inputs">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Select Month</mat-label>
+                <mat-select [(ngModel)]="customMonth">
+                  @for (m of months; track m.value) {
+                    <mat-option [value]="m.value">{{ m.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Select Year</mat-label>
+                <mat-select [(ngModel)]="customYear">
+                  @for (y of years; track y) {
+                    <mat-option [value]="y">{{ y }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             </div>
           }
 
           @if (selectedTimeframe() === 'yearly') {
             <div class="timeframe-param-box">
-              <label>Select Fiscal Year:</label>
-              <select class="timeframe-select" [(ngModel)]="customYear">
-                @for (y of years; track y) {
-                  <option [value]="y">{{ y }}</option>
-                }
-              </select>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Select Fiscal Year</mat-label>
+                <mat-select [(ngModel)]="customYear">
+                  @for (y of years; track y) {
+                    <mat-option [value]="y">{{ y }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             </div>
           }
 
           <div class="format-note-box">
-            <mat-icon>info</mat-icon>
-            <span>The file is automatically formatted with UTF-8 BOM encoding for seamless display in Microsoft Excel, Apple Numbers, and Google Sheets.</span>
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <span>Files are encoded as UTF-8 with BOM for direct compatibility with spreadsheet software.</span>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="closeExportModal()" [disabled]="isExporting()">Cancel</button>
-          <button mat-flat-button class="btn-confirm-export" (click)="executeExport()" [disabled]="isExporting()">
-            <mat-icon>download</mat-icon>
+          <button
+            mat-flat-button
+            type="button"
+            (click)="executeExport()"
+            [disabled]="isExporting()">
+            <mat-icon aria-hidden="true">download</mat-icon>
             <span>{{ isExporting() ? 'Generating Export...' : 'Download Excel CSV' }}</span>
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="closeExportModal()"
+            [disabled]="isExporting()">
+            Cancel
           </button>
         </div>
       </div>

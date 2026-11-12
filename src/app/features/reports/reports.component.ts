@@ -1,22 +1,23 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatTableModule } from '@angular/material/table';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { ReportService } from '../../services/report.service';
 import { ReceptionService } from '../../services/reception.service';
 import { FinanceService } from '../../services/finance.service';
 import { DailyCashReconciliation, VisitorInquiry } from '../../models/reception.model';
 import { FinanceDashboardMetrics } from '../../models/finance.model';
 import { ToastService } from '../../ui/toast/toast.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-reports',
@@ -24,16 +25,17 @@ import { ToastService } from '../../ui/toast/toast.service';
   imports: [
     CommonModule,
     FormsModule,
-    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatTableModule,
-    MatProgressSpinnerModule,
-    MatTooltipModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.scss']
@@ -51,7 +53,14 @@ export class ReportsComponent implements OnInit {
   doctorAppointments = signal<any[]>([]);
   reconciliations = signal<DailyCashReconciliation[]>([]);
   inquiries = signal<VisitorInquiry[]>([]);
+
   isLoading = signal(true);
+  metricsLoading = signal(true);
+  dailyRevenueLoading = signal(true);
+  doctorsLoading = signal(true);
+  reconciliationsLoading = signal(true);
+  inquiriesLoading = signal(true);
+
   selectedDate = new Date();
 
   // Timeframe Export Modal State
@@ -80,12 +89,23 @@ export class ReportsComponent implements OnInit {
 
   years = [2024, 2025, 2026, 2027];
 
-  ngOnInit() {
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showExportModal() && !this.isExporting()) {
+      this.closeExportModal();
+    }
+  }
+
+  ngOnInit(): void {
     this.loadAllReports();
   }
 
-  loadAllReports() {
+  loadAllReports(): void {
     this.isLoading.set(true);
+    this.metricsLoading.set(true);
+    this.doctorsLoading.set(true);
+    this.reconciliationsLoading.set(true);
+    this.inquiriesLoading.set(true);
 
     this.reportService.getDashboardSummary().subscribe({
       next: (data) => {
@@ -96,8 +116,13 @@ export class ReportsComponent implements OnInit {
     });
 
     this.financeService.getMetrics().subscribe({
-      next: (m) => this.financeMetrics.set(m),
-      error: () => {}
+      next: (m) => {
+        this.financeMetrics.set(m);
+        this.metricsLoading.set(false);
+      },
+      error: () => {
+        this.metricsLoading.set(false);
+      }
     });
 
     this.loadRevenueForDate(this.selectedDate);
@@ -108,50 +133,105 @@ export class ReportsComponent implements OnInit {
     });
 
     this.reportService.getDoctorAppointments().subscribe({
-      next: (docs) => this.doctorAppointments.set(docs || []),
-      error: () => this.doctorAppointments.set([])
+      next: (docs) => {
+        this.doctorAppointments.set(docs || []);
+        this.doctorsLoading.set(false);
+      },
+      error: () => {
+        this.doctorAppointments.set([]);
+        this.doctorsLoading.set(false);
+      }
     });
 
     this.receptionService.getReconciliations(50).subscribe({
-      next: (items) => this.reconciliations.set(items || []),
-      error: () => this.reconciliations.set([])
+      next: (items) => {
+        this.reconciliations.set(items || []);
+        this.reconciliationsLoading.set(false);
+      },
+      error: () => {
+        this.reconciliations.set([]);
+        this.reconciliationsLoading.set(false);
+      }
     });
 
     this.receptionService.getInquiries().subscribe({
-      next: (items) => this.inquiries.set(items || []),
-      error: () => this.inquiries.set([])
+      next: (items) => {
+        this.inquiries.set(items || []);
+        this.inquiriesLoading.set(false);
+      },
+      error: () => {
+        this.inquiries.set([]);
+        this.inquiriesLoading.set(false);
+      }
     });
   }
 
-  onDateChange(newDate: Date) {
+  onDateChange(newDate: Date): void {
     if (newDate) {
       this.selectedDate = newDate;
       this.loadRevenueForDate(newDate);
     }
   }
 
-  loadRevenueForDate(date: Date) {
+  loadRevenueForDate(date: Date): void {
+    this.dailyRevenueLoading.set(true);
     const iso = date.toISOString();
     this.reportService.getRevenueReport(iso).subscribe({
-      next: (rev) => this.dailyRevenue.set(rev),
-      error: () => this.dailyRevenue.set(null)
+      next: (rev) => {
+        this.dailyRevenue.set(rev);
+        this.dailyRevenueLoading.set(false);
+      },
+      error: () => {
+        this.dailyRevenue.set(null);
+        this.dailyRevenueLoading.set(false);
+      }
     });
   }
 
-  openExportModal(target: 'patients' | 'invoices') {
+  openExportModal(target: 'patients' | 'invoices'): void {
     this.exportTarget.set(target);
     this.showExportModal.set(true);
   }
 
-  closeExportModal() {
+  closeExportModal(): void {
     this.showExportModal.set(false);
   }
 
-  setTimeframe(tf: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all') {
+  setTimeframe(tf: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all'): void {
     this.selectedTimeframe.set(tf);
   }
 
-  executeExport() {
+  getDepartmentKey(department: string): string {
+    return (department || '').trim().toLowerCase();
+  }
+
+  getVarianceTone(amount: number): StatusTone {
+    if (amount === 0) return 'success';
+    return amount < 0 ? 'danger' : 'info';
+  }
+
+  getVarianceLabel(amount: number): string {
+    if (amount === 0) return 'Exact $0.00';
+    const formatted = Math.abs(amount).toFixed(2);
+    return amount < 0 ? `-$${formatted} Short` : `+$${formatted} Over`;
+  }
+
+  getAuditStatusTone(status?: string): StatusTone {
+    const normalized = (status || '').trim().toLowerCase();
+    if (normalized === 'verifiedbalanced' || normalized === 'balanced') return 'success';
+    if (normalized === 'discrepancyapproved') return 'warning';
+    if (normalized === 'disputed') return 'danger';
+    return 'neutral';
+  }
+
+  getTicketStatusTone(status?: string): StatusTone {
+    const normalized = (status || '').trim().toLowerCase();
+    if (normalized === 'resolved') return 'success';
+    if (normalized === 'inprogress') return 'warning';
+    return 'info';
+  }
+
+  executeExport(): void {
     this.isExporting.set(true);
     const target = this.exportTarget();
     const tf = this.selectedTimeframe();
