@@ -1,95 +1,82 @@
-<div class="login-container">
-  <div class="theme-switch-floating">
-    <button mat-icon-button (click)="toggleTheme()" [matTooltip]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
-      <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-    </button>
-  </div>
+<main id="main-content" class="auth-page">
+  <mat-card class="auth-card">
+    <header class="auth-header">
+      <div class="wordmark">MedFlow ClinicOS</div>
+      <h1>Sign in to workspace</h1>
+      <p>Enter your clinical credentials to access patient and operational records.</p>
+    </header>
 
-  <mat-card class="login-card mat-elevation-z12">
-    <div class="brand-banner">
-      <div class="brand-icon-wrapper">
-        <mat-icon>health_and_safety</mat-icon>
-      </div>
-      <h1>MedFlow Clinical OS</h1>
-      <p>Sign in to your healthcare provider workspace</p>
-    </div>
-
-    <!-- Quick Demo Accounts for All Clinical Roles -->
-    <div class="demo-section-label">Quick Demo Profiles (Click to Auto-Fill):</div>
-    <div class="quick-demo-roles">
-      <button type="button" class="demo-chip chip-doctor" (click)="fillCredentials('dr.smith', 'Doctor@12345!')" matTooltip="Dr. John Smith (Attending Physician A)">
-        🩺 Dr. Smith (MD)
-      </button>
-      <button type="button" class="demo-chip chip-doctor-b" (click)="fillCredentials('dr.james', 'Doctor@12345!')" matTooltip="Dr. Sarah James (Isolated Attending Physician B)">
-        🩺 Dr. James (MD)
-      </button>
-      <button type="button" class="demo-chip chip-nurse" (click)="fillCredentials('nurse.joy', 'Nurse@123456!')" matTooltip="Nurse Joy (Triage & Procedures)">
-        🩹 Nurse Joy
-      </button>
-      <button type="button" class="demo-chip chip-rad" (click)="fillCredentials('radiologist.ray', 'Radiology@123!')" matTooltip="Ray Radiologist (PACS & Imaging)">
-        🩻 Dr. Ray (Rad)
-      </button>
-      <button type="button" class="demo-chip chip-lab" (click)="fillCredentials('lab.tech', 'LabTech@123!')" matTooltip="Leo Technician (Pathology & Lab)">
-        🔬 Leo (Lab)
-      </button>
-      <button type="button" class="demo-chip chip-pharma" (click)="fillCredentials('pharmacist.sam', 'Pharmacist@1!')" matTooltip="Sam Pharmacist (Dispensary & Formulary)">
-        💊 Sam (Pharma)
-      </button>
-      <button type="button" class="demo-chip chip-finance" (click)="fillCredentials('accountant.dave', 'Accountant@1!')" matTooltip="Dave Accountant (Revenue & Billing)">
-        💵 Dave (Finance)
-      </button>
-      <button type="button" class="demo-chip chip-reception" (click)="fillCredentials('receptionist.clara', 'Receptionist@12!')" matTooltip="Clara Receptionist (Front Desk)">
-        📋 Clara (Front Desk)
-      </button>
-      <button type="button" class="demo-chip chip-admin" (click)="fillCredentials('admin', 'Admin@123456!')" matTooltip="Enterprise Administrator (IAM & Governance)">
-        ⚡ Admin
-      </button>
-      <button type="button" class="demo-chip chip-patient" (click)="fillCredentials('patient.alice', 'Patient@1234!')" matTooltip="Alice Patient (Patient Portal)">
-        👤 Patient Alice
-      </button>
-    </div>
-
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Username or Email</mat-label>
-        <input matInput formControlName="username" placeholder="e.g. admin or dr.smith@clinic.com" autocomplete="username">
-        <mat-icon matPrefix>badge</mat-icon>
+        <input matInput formControlName="username" placeholder="e.g. admin or dr.smith@clinic.com"
+          autocomplete="username"
+          [attr.aria-describedby]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched ? 'login-username-error' : null">
         @if (loginForm.get('username')?.hasError('required') && loginForm.get('username')?.touched) {
-          <mat-error>Username or Email is required</mat-error>
+        <mat-error id="login-username-error">Username or Email is required</mat-error>
+        } @else if (loginForm.get('username')?.hasError('minlength') && loginForm.get('username')?.touched) {
+        <mat-error id="login-username-error">Minimum 3 characters required</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Password</mat-label>
-        <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password" placeholder="Enter your password" autocomplete="current-password">
-        <mat-icon matPrefix>lock</mat-icon>
-        <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())" tabindex="-1">
-          <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password"
+          placeholder="Enter your password" autocomplete="current-password"
+          [attr.aria-describedby]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched ? 'login-password-error' : null">
+        <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())"
+          [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'" [attr.aria-pressed]="!hidePassword()">
+          <mat-icon aria-hidden="true">{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
         @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
-          <mat-error>Password is required</mat-error>
+        <mat-error id="login-password-error">Password is required</mat-error>
+        } @else if (loginForm.get('password')?.hasError('minlength') && loginForm.get('password')?.touched) {
+        <mat-error id="login-password-error">Minimum 6 characters required</mat-error>
         }
       </mat-form-field>
 
       @if (errorMessage()) {
-        <div class="error-alert">
-          <mat-icon>error</mat-icon>
-          <span>{{ errorMessage() }}</span>
-        </div>
+      <div class="auth-error-alert" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ errorMessage() }}</span>
+      </div>
       }
 
-      <button mat-raised-button color="primary" type="submit" [disabled]="loginForm.invalid || isSubmitting()" class="full-width submit-btn">
-        @if (isSubmitting()) {
-          <span>Authenticating...</span>
-        } @else {
-          <span>Sign In to Workspace</span>
-        }
+      <button mat-flat-button color="primary" type="submit" [disabled]="loginForm.invalid || isSubmitting()"
+        [attr.aria-busy]="isSubmitting()" class="full-width submit-btn">
+        {{ isSubmitting() ? 'Signing in...' : 'Sign In' }}
       </button>
 
-      <div class="extra-links">
+      <nav class="auth-links" aria-label="Account assistance">
         <a routerLink="/forgot-password">Forgot password?</a>
         <a routerLink="/register">Register New Account</a>
-      </div>
+      </nav>
     </form>
+
+    <details class="demo-accounts-panel">
+      <summary class="demo-summary">Demo role quick-fill</summary>
+      <div class="demo-grid">
+        <button type="button" mat-stroked-button (click)="fillCredentials('dr.smith', 'Doctor@12345!')">Dr. Smith
+          (MD)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('dr.james', 'Doctor@12345!')">Dr. James
+          (MD)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('nurse.joy', 'Nurse@123456!')">Nurse Joy
+          (RN)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('radiologist.ray', 'Radiology@123!')">Dr. Ray
+          (Rad)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('lab.tech', 'LabTech@123!')">Leo (Lab
+          Tech)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('pharmacist.sam', 'Pharmacist@1!')">Sam
+          (Pharmacist)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('accountant.dave', 'Accountant@1!')">Dave
+          (Accountant)</button>
+        <button type="button" mat-stroked-button
+          (click)="fillCredentials('receptionist.clara', 'Receptionist@12!')">Clara (Reception)</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('admin', 'Admin@123456!')">System
+          Admin</button>
+        <button type="button" mat-stroked-button (click)="fillCredentials('patient.alice', 'Patient@1234!')">Patient
+          Alice</button>
+      </div>
+    </details>
   </mat-card>
-</div>
+</main>

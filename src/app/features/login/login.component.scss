@@ -1,220 +1,134 @@
-.login-container {
-  min-height: 100vh;
+.auth-page {
+  min-block-size: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--auth-bg-gradient);
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
+  background-color: var(--surface-page);
+  padding: var(--space-24) var(--space-16);
+}
 
-  .theme-switch-floating {
-    position: absolute;
-    top: 24px;
-    right: 24px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    box-shadow: var(--shadow-md);
-    z-index: 10;
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-32) var(--space-24);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
 
-    button {
-      color: var(--text-primary);
+.auth-header {
+  margin-bottom: var(--space-24);
+
+  .wordmark {
+    font-size: var(--text-12);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-8);
+  }
+
+  h1 {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--text-24);
+    line-height: var(--leading-tight);
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--text-14);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+  }
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.submit-btn {
+  min-block-size: 44px;
+  font-size: var(--text-14);
+  font-weight: 600;
+  margin-top: var(--space-4);
+}
+
+.auth-error-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--semantic-danger-border);
+  background-color: var(--semantic-danger-bg);
+  color: var(--semantic-danger-text);
+  font-size: var(--text-14);
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--semantic-danger-accent);
+    flex-shrink: 0;
+  }
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+  font-size: var(--text-14);
+
+  a {
+    color: var(--action-primary);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 }
 
-.login-card {
-  width: 100%;
-  max-width: 460px;
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-xl) !important;
-  padding: 36px 30px;
-  box-shadow: var(--shadow-xl) !important;
-  z-index: 1;
+.demo-accounts-panel {
+  margin-top: var(--space-24);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--border-subtle);
+}
 
-  .brand-banner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
-    text-align: center;
+.demo-summary {
+  cursor: pointer;
+  font-size: var(--text-12);
+  font-weight: 600;
+  color: var(--text-secondary);
+  user-select: none;
+  padding: var(--space-4) 0;
+}
 
-    .brand-icon-wrapper {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 14px;
-      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8);
+  margin-top: var(--space-12);
 
-      mat-icon {
-        color: #ffffff !important;
-        font-size: 32px;
-        width: 32px;
-        height: 32px;
-      }
-    }
-
-    h1 {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--text-primary);
-      margin: 0;
-      letter-spacing: -0.5px;
-    }
-
-    p {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin-top: 6px;
-    }
+  @media (max-width: 420px) {
+    grid-template-columns: 1fr;
   }
 
-  .demo-section-label {
-    font-size: 11.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-bottom: 8px;
-  }
-
-  .quick-demo-roles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 20px;
-    justify-content: center;
-
-    .demo-chip {
-      border: 1px solid transparent;
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 0.74rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      background: var(--bg-hover);
-      color: var(--text-primary);
-
-      &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-      }
-
-      &.chip-doctor {
-        background: rgba(2, 132, 199, 0.12);
-        border-color: rgba(2, 132, 199, 0.35);
-        color: #0284c7;
-      }
-      &.chip-doctor-b {
-        background: rgba(168, 85, 247, 0.12);
-        border-color: rgba(168, 85, 247, 0.35);
-        color: #9333ea;
-      }
-      &.chip-nurse {
-        background: rgba(16, 185, 129, 0.12);
-        border-color: rgba(16, 185, 129, 0.35);
-        color: #059669;
-      }
-      &.chip-rad {
-        background: rgba(14, 165, 233, 0.12);
-        border-color: rgba(14, 165, 233, 0.35);
-        color: #0284c7;
-      }
-      &.chip-lab {
-        background: rgba(13, 148, 136, 0.12);
-        border-color: rgba(13, 148, 136, 0.35);
-        color: #0d9488;
-      }
-      &.chip-pharma {
-        background: rgba(245, 158, 11, 0.12);
-        border-color: rgba(245, 158, 11, 0.35);
-        color: #d97706;
-      }
-      &.chip-finance {
-        background: rgba(99, 102, 241, 0.12);
-        border-color: rgba(99, 102, 241, 0.35);
-        color: #6366f1;
-      }
-      &.chip-reception {
-        background: rgba(236, 72, 153, 0.12);
-        border-color: rgba(236, 72, 153, 0.35);
-        color: #db2777;
-      }
-      &.chip-admin {
-        background: rgba(239, 68, 68, 0.12);
-        border-color: rgba(239, 68, 68, 0.35);
-        color: #dc2626;
-      }
-      &.chip-patient {
-        background: rgba(100, 116, 139, 0.12);
-        border-color: rgba(100, 116, 139, 0.35);
-        color: #64748b;
-      }
-    }
-  }
-
-  .login-form {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .full-width {
-    width: 100%;
-    margin-bottom: 16px;
-  }
-
-  .submit-btn {
-    height: 48px;
-    border-radius: var(--radius-md);
-    font-size: 15px;
-    font-weight: 700;
-    margin-top: 8px;
-    background: linear-gradient(135deg, #0284c7, #0369a1) !important;
-    color: #ffffff !important;
-  }
-
-  .extra-links {
-    margin-top: 22px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-
-    a {
-      color: var(--primary-600);
-      text-decoration: none;
-      font-weight: 600;
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-
-  .error-alert {
-    background: var(--danger-bg);
-    color: var(--danger-text);
-    border: 1px solid var(--danger-border);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
+  button {
+    font-size: var(--text-12);
+    justify-content: flex-start;
   }
 }
