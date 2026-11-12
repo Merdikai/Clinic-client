@@ -1,25 +1,30 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
+
 import { PatientService } from '../../../services/patient.service';
 import { RadiologyService } from '../../../services/radiology.service';
 import { Patient } from '../../../models/patient.model';
 import { RadiologyOrder } from '../../../models/radiology.model';
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-my-medical-file',
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatIconModule,
     MatButtonModule,
-    MatChipsModule,
-    RouterLink
+    MatIconModule,
+    RouterLink,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './my-medical-file.component.html',
   styleUrls: ['./my-medical-file.component.scss']
@@ -32,6 +37,11 @@ export class MyMedicalFileComponent implements OnInit {
   medicalHistory = signal<any | null>(null);
   radiologyOrders = signal<RadiologyOrder[]>([]);
   isLoading = signal(true);
+
+  pageSubtitle = computed(() => {
+    const mrn = this.patient()?.medicalRecordNumber || 'PAT-ALICE-001';
+    return `Confidential EHR · MRN: ${mrn} · Official health chart, recorded vitals, and diagnostic findings`;
+  });
 
   ngOnInit() {
     this.loadPatientMedicalFile();
@@ -77,7 +87,6 @@ export class MyMedicalFileComponent implements OnInit {
       error: () => this.isLoading.set(false)
     });
 
-    // Also directly load active radiology orders for this patient
     this.radiologyService.getOrders(patientId).subscribe({
       next: (orders) => {
         if (orders && orders.length > 0) {

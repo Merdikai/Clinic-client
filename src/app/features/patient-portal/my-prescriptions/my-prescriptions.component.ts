@@ -1,24 +1,29 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
+
 import { PrescriptionService } from '../../../services/prescription.service';
 import { PatientService } from '../../../services/patient.service';
 import { Patient } from '../../../models/patient.model';
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-my-prescriptions',
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatIconModule,
     MatButtonModule,
-    MatChipsModule,
-    RouterLink
+    MatIconModule,
+    RouterLink,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './my-prescriptions.component.html',
   styleUrls: ['./my-prescriptions.component.scss']
@@ -35,12 +40,24 @@ export class MyPrescriptionsComponent implements OnInit {
   isDetailModalOpen = signal(false);
   selectedPrescription = signal<any | null>(null);
 
+  pageSubtitle = computed(() => {
+    const mrn = this.patient()?.medicalRecordNumber || 'PAT-ALICE-001';
+    return `MRN: ${mrn} · Track prescribed medications, dosage instructions, and dispensing statuses`;
+  });
+
   totalMedicines = computed(() => {
     return this.prescriptions().reduce((sum, rx) => sum + (rx.items?.length || 1), 0);
   });
 
   ngOnInit() {
     this.loadPatientData();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isDetailModalOpen()) {
+      this.closeDetailModal();
+    }
   }
 
   openDetailModal(rx: any) {

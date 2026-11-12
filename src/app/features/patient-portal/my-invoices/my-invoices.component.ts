@@ -1,24 +1,29 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+
 import { BillingService } from '../../../services/billing.service';
 import { PatientService } from '../../../services/patient.service';
 import { Invoice } from '../../../models/billing.model';
 import { Patient } from '../../../models/patient.model';
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-my-invoices',
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatIconModule,
     MatButtonModule,
-    MatChipsModule,
-    ],
+    MatIconModule,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
+  ],
   templateUrl: './my-invoices.component.html',
   styleUrls: ['./my-invoices.component.scss']
 })
@@ -34,18 +39,30 @@ export class MyInvoicesComponent implements OnInit {
   isDetailModalOpen = signal(false);
   selectedInvoice = signal<Invoice | null>(null);
 
-  totalBilled = computed(() => 
+  pageSubtitle = computed(() => {
+    const mrn = this.patient()?.medicalRecordNumber || 'PAT-ALICE-001';
+    return `MRN: ${mrn} · Track consultation bills, pharmacy invoices, payments made, and current balance`;
+  });
+
+  totalBilled = computed(() =>
     this.invoices().reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
   );
-  totalPaid = computed(() => 
+  totalPaid = computed(() =>
     this.invoices().reduce((sum, inv) => sum + (inv.paidAmount || 0), 0)
   );
-  totalOutstanding = computed(() => 
+  totalOutstanding = computed(() =>
     this.invoices().reduce((sum, inv) => sum + (inv.balanceDue || 0), 0)
   );
 
   ngOnInit() {
     this.loadPatientInvoices();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isDetailModalOpen()) {
+      this.closeDetailModal();
+    }
   }
 
   openDetailModal(inv: Invoice) {
