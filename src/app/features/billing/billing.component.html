@@ -1,1661 +1,1505 @@
 <div class="finance-workspace-container">
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- 1. EXECUTIVE HEADER & ACTIONS                             -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <header class="finance-header">
-    <div class="header-titles">
+  <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()">
+    <ng-container actions>
       @if (isPharmacist()) {
-        <div class="badge-tag" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.25);">
-          <mat-icon>local_pharmacy</mat-icon>
-          <span>Dispensary Pharmacy Billing & AR Ledger</span>
-        </div>
-        <h1>Dispensary Invoices & Pharmacy Collections</h1>
-        <p class="subtitle">
-          Real-time prescription dispensing invoices, OTC point-of-sale receipts, patient copays, and pharmacy revenue ledger.
-        </p>
+        <a mat-flat-button color="primary" routerLink="/pharmacy/pos">Open POS Register</a>
       } @else if (isLabTech()) {
-        <div class="badge-tag" style="background: rgba(13, 148, 136, 0.12); color: #0d9488; border: 1px solid rgba(13, 148, 136, 0.25);">
-          <mat-icon>biotech</mat-icon>
-          <span>Pathology Laboratory Billing & AR Ledger</span>
-        </div>
-        <h1>Laboratory Invoices & Pathology Collections</h1>
-        <p class="subtitle">
-          Real-time diagnostic pathology test invoices, clinical accession billing, doctor requisition charges, and laboratory revenue ledger.
-        </p>
-      } @else {
-        <div class="badge-tag">
-          <mat-icon>account_balance</mat-icon>
-          <span>Financial Operations & Revenue Control</span>
-        </div>
-        <h1>Financial Control Center</h1>
-        <p class="subtitle">
-          Enterprise AR billing, insurance clearinghouse claims, accounts payable, petty cash float, doctor commissions payroll, and receptionist drawer audit.
-        </p>
-      }
-    </div>
-
-    <div class="header-actions">
-      @if (isPharmacist()) {
-        <a mat-flat-button class="action-btn-primary" routerLink="/pharmacy/pos">
-          <mat-icon>point_of_sale</mat-icon>
-          <span>Open POS Register</span>
-        </a>
-      } @else if (isLabTech()) {
-        <a mat-flat-button class="action-btn-primary" routerLink="/laboratory" [queryParams]="{tab: 'worklist'}">
-          <mat-icon>science</mat-icon>
-          <span>Open Laboratory</span>
-        </a>
+        <a mat-flat-button color="primary" routerLink="/laboratory" [queryParams]="{tab: 'worklist'}">Open Laboratory</a>
       } @else {
         @if (canManageBilling()) {
-          <button mat-flat-button class="action-btn-primary" (click)="showNewInvoiceModal.set(true)">
-            <mat-icon>add_card</mat-icon>
-            <span>New Invoice</span>
+          <button mat-flat-button color="primary" type="button" (click)="showNewInvoiceModal.set(true)">
+            New Invoice
           </button>
         }
 
         @if (canManageAccounting()) {
-          <button mat-stroked-button class="action-btn-outline" (click)="openNewClaimModal()">
-            <mat-icon>health_and_safety</mat-icon>
-            <span>Submit Claim</span>
+          <button mat-stroked-button type="button" (click)="openNewClaimModal()">
+            Submit Claim
           </button>
-
-          <button mat-stroked-button class="action-btn-outline" (click)="showNewExpenseModal.set(true)">
-            <mat-icon>receipt</mat-icon>
-            <span>Record AP Expense</span>
+          <button mat-stroked-button type="button" (click)="showNewExpenseModal.set(true)">
+            Record AP Expense
           </button>
-
-          <button mat-stroked-button class="action-btn-outline" (click)="showNewPettyCashModal.set(true)">
-            <mat-icon>payments</mat-icon>
-            <span>Petty Cash</span>
+          <button mat-stroked-button type="button" (click)="showNewPettyCashModal.set(true)">
+            Petty Cash
           </button>
         }
       }
-    </div>
-  </header>
+    </ng-container>
+  </app-page-header>
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- 2. FINANCIAL KPI CARDS RIBBON                             -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Summary Metrics -->
   @if (!isPatient()) {
     @if (isPharmacist()) {
-      <section class="kpi-ribbon">
-        <div class="kpi-card teal">
-          <div class="kpi-icon-wrap"><mat-icon>paid</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Dispensary Revenue</span>
-            <h2 class="kpi-value">{{ dispensaryRevenue() | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Settled pharmacy receipts</span>
-          </div>
+      <section class="kpi-ribbon" aria-label="Dispensary financial metrics">
+        <div class="kpi-card">
+          <span class="kpi-title">Dispensary Revenue</span>
+          <strong class="kpi-value">{{ dispensaryRevenue() | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Settled pharmacy receipts</span>
         </div>
 
-        <div class="kpi-card amber">
-          <div class="kpi-icon-wrap"><mat-icon>pending_actions</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Pending Dispensary AR</span>
-            <h2 class="kpi-value">{{ dispensaryOutstanding() | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Unpaid prescription balances</span>
-          </div>
+        <div class="kpi-card" [class.kpi-attention]="dispensaryOutstanding() > 0">
+          <span class="kpi-title">Pending Dispensary AR</span>
+          <strong class="kpi-value">{{ dispensaryOutstanding() | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Unpaid prescription balances</span>
         </div>
 
-        <div class="kpi-card blue">
-          <div class="kpi-icon-wrap"><mat-icon>receipt_long</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Dispensary Invoices</span>
-            <h2 class="kpi-value">{{ dispensaryInvoiceCount() }}</h2>
-            <span class="kpi-meta">Total prescription & OTC invoices</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Dispensary Invoices</span>
+          <strong class="kpi-value">{{ dispensaryInvoiceCount() }}</strong>
+          <span class="kpi-meta">Total prescription & OTC invoices</span>
         </div>
 
-        <div class="kpi-card purple">
-          <div class="kpi-icon-wrap"><mat-icon>task_alt</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Settled Rx Invoices</span>
-            <h2 class="kpi-value">{{ dispensaryPaidCount() }}</h2>
-            <span class="kpi-meta">Fully paid & dispensed</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Settled Rx Invoices</span>
+          <strong class="kpi-value">{{ dispensaryPaidCount() }}</strong>
+          <span class="kpi-meta">Fully paid & dispensed</span>
         </div>
       </section>
     } @else if (isLabTech()) {
-      <section class="kpi-ribbon">
-        <div class="kpi-card teal">
-          <div class="kpi-icon-wrap"><mat-icon>paid</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Pathology Revenue</span>
-            <h2 class="kpi-value">{{ labRevenue() | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Settled lab diagnostic fees</span>
-          </div>
+      <section class="kpi-ribbon" aria-label="Laboratory financial metrics">
+        <div class="kpi-card">
+          <span class="kpi-title">Pathology Revenue</span>
+          <strong class="kpi-value">{{ labRevenue() | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Settled lab diagnostic fees</span>
         </div>
 
-        <div class="kpi-card amber">
-          <div class="kpi-icon-wrap"><mat-icon>pending_actions</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Pending Pathology AR</span>
-            <h2 class="kpi-value">{{ labOutstanding() | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Unpaid laboratory balances</span>
-          </div>
+        <div class="kpi-card" [class.kpi-attention]="labOutstanding() > 0">
+          <span class="kpi-title">Pending Pathology AR</span>
+          <strong class="kpi-value">{{ labOutstanding() | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Unpaid laboratory balances</span>
         </div>
 
-        <div class="kpi-card blue">
-          <div class="kpi-icon-wrap"><mat-icon>receipt_long</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Diagnostic Invoices</span>
-            <h2 class="kpi-value">{{ labInvoiceCount() }}</h2>
-            <span class="kpi-meta">Total pathology invoices</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Diagnostic Invoices</span>
+          <strong class="kpi-value">{{ labInvoiceCount() }}</strong>
+          <span class="kpi-meta">Total pathology invoices</span>
         </div>
 
-        <div class="kpi-card purple">
-          <div class="kpi-icon-wrap"><mat-icon>task_alt</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Settled Lab Orders</span>
-            <h2 class="kpi-value">{{ labPaidCount() }}</h2>
-            <span class="kpi-meta">Fully paid diagnostic tests</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Settled Lab Orders</span>
+          <strong class="kpi-value">{{ labPaidCount() }}</strong>
+          <span class="kpi-meta">Fully paid diagnostic tests</span>
         </div>
       </section>
     } @else {
-      <section class="kpi-ribbon">
-        <div class="kpi-card teal">
-          <div class="kpi-icon-wrap"><mat-icon>paid</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Total Revenue Collected</span>
-            <h2 class="kpi-value">{{ totalRevenue() | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Lifetime settled receipts</span>
-          </div>
+      <section class="kpi-ribbon" aria-label="Financial control summary metrics">
+        <div class="kpi-card">
+          <span class="kpi-title">Revenue Collected</span>
+          <strong class="kpi-value">{{ totalRevenue() | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Lifetime settled receipts</span>
         </div>
 
-        <div class="kpi-card amber">
-          <div class="kpi-icon-wrap"><mat-icon>pending_actions</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Pending AR Receivables</span>
-            <h2 class="kpi-value">{{ outstandingBalance() | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Patient & insurer balances</span>
-          </div>
+        <div class="kpi-card" [class.kpi-attention]="outstandingBalance() > 0">
+          <span class="kpi-title">Pending AR</span>
+          <strong class="kpi-value">{{ outstandingBalance() | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Patient & insurer balances</span>
         </div>
 
-        <div class="kpi-card blue">
-          <div class="kpi-icon-wrap"><mat-icon>health_and_safety</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Active Insurance Claims</span>
-            <h2 class="kpi-value">{{ metrics()?.pendingClaimsAmount || 0 | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">{{ metrics()?.pendingClaimsCount || 0 }} claims pending clearinghouse</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Active Claims</span>
+          <strong class="kpi-value">{{ (metrics()?.pendingClaimsAmount || 0) | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">{{ metrics()?.pendingClaimsCount || 0 }} pending clearinghouse</span>
         </div>
 
-        <div class="kpi-card rose">
-          <div class="kpi-icon-wrap"><mat-icon>account_balance_wallet</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Accounts Payable (AP)</span>
-            <h2 class="kpi-value">{{ metrics()?.pendingPayablesAmount || 0 | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Supplier & vendor invoices due</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Accounts Payable</span>
+          <strong class="kpi-value">{{ (metrics()?.pendingPayablesAmount || 0) | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Vendor invoices due</span>
         </div>
 
-        <div class="kpi-card purple">
-          <div class="kpi-icon-wrap"><mat-icon>savings</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Petty Cash Float</span>
-            <h2 class="kpi-value">{{ metrics()?.pettyCashCurrentBalance || 402.50 | currency:'USD':'symbol':'1.2-2' }}</h2>
-            <span class="kpi-meta">Vault cash on hand</span>
-          </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Petty Cash Float</span>
+          <strong class="kpi-value">{{ (metrics()?.pettyCashCurrentBalance ?? 402.50) | currency:'USD':'symbol':'1.2-2' }}</strong>
+          <span class="kpi-meta">Vault cash on hand</span>
         </div>
 
-        <div class="kpi-card orange">
-          <div class="kpi-icon-wrap"><mat-icon>fact_check</mat-icon></div>
-          <div class="kpi-content">
-            <span class="kpi-title">Drawer Shift Audits</span>
-            <h2 class="kpi-value">{{ metrics()?.unreconciledDrawersCount || 0 }} Shifts</h2>
-            <span class="kpi-meta">Receptionist drawers pending audit</span>
-          </div>
+        <div class="kpi-card" [class.kpi-attention]="(metrics()?.unreconciledDrawersCount || 0) > 0">
+          <span class="kpi-title">Drawer Audits</span>
+          <strong class="kpi-value">{{ metrics()?.unreconciledDrawersCount || 0 }} Shifts</strong>
+          <span class="kpi-meta">Drawers pending audit</span>
         </div>
       </section>
     }
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- 3. WORKSPACE TAB NAVIGATION                               -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Workspace Tabs -->
   @if (!isPatient() && !isPharmacist() && !isLabTech()) {
-    <nav class="finance-nav-tabs">
-      <button class="nav-tab-btn" [class.active]="activeTab() === 'invoices'" (click)="setTab('invoices')">
-        <mat-icon>receipt_long</mat-icon>
-        <span>Invoices &amp; AR Ledger</span>
+    <div class="finance-nav-tabs" role="tablist" aria-label="Billing and financial sections">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeTab() === 'invoices'"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'invoices'"
+        (click)="setTab('invoices')"
+      >
+        Invoices & AR Ledger
       </button>
 
       @if (!isReceptionist()) {
-        <button class="nav-tab-btn" [class.active]="activeTab() === 'claims'" (click)="setTab('claims')">
-          <mat-icon>health_and_safety</mat-icon>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'claims'"
+          class="nav-tab-btn"
+          [class.active]="activeTab() === 'claims'"
+          (click)="setTab('claims')"
+        >
           <span>Insurance Claims</span>
           @if ((metrics()?.pendingClaimsCount || 0) > 0) {
-            <span class="tab-badge blue">{{ metrics()?.pendingClaimsCount }}</span>
+            <span class="tab-badge">{{ metrics()?.pendingClaimsCount }}</span>
           }
         </button>
 
-        <button class="nav-tab-btn" [class.active]="activeTab() === 'adjustments'" (click)="setTab('adjustments')">
-          <mat-icon>price_check</mat-icon>
-          <span>Discounts &amp; Refunds</span>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'adjustments'"
+          class="nav-tab-btn"
+          [class.active]="activeTab() === 'adjustments'"
+          (click)="setTab('adjustments')"
+        >
+          <span>Discounts & Refunds</span>
           @if ((metrics()?.pendingAdjustmentsCount || 0) > 0) {
-            <span class="tab-badge amber">{{ metrics()?.pendingAdjustmentsCount }}</span>
+            <span class="tab-badge badge-warning">{{ metrics()?.pendingAdjustmentsCount }}</span>
           }
         </button>
 
-        <button class="nav-tab-btn" [class.active]="activeTab() === 'expenses'" (click)="setTab('expenses')">
-          <mat-icon>account_balance_wallet</mat-icon>
-          <span>Supplier Payables (AP)</span>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'expenses'"
+          class="nav-tab-btn"
+          [class.active]="activeTab() === 'expenses'"
+          (click)="setTab('expenses')"
+        >
+          Supplier Payables (AP)
         </button>
       }
 
-      <button class="nav-tab-btn" [class.active]="activeTab() === 'petty-cash'" (click)="setTab('petty-cash')">
-        <mat-icon>payments</mat-icon>
-        <span>{{ isReceptionist() ? 'Cash Float &amp; Drawers' : 'Petty Cash Float' }}</span>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeTab() === 'petty-cash'"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'petty-cash'"
+        (click)="setTab('petty-cash')"
+      >
+        {{ isReceptionist() ? 'Cash Float & Drawers' : 'Petty Cash Float' }}
       </button>
 
       @if (!isReceptionist()) {
-        <button class="nav-tab-btn" [class.active]="activeTab() === 'payroll'" (click)="setTab('payroll')">
-          <mat-icon>badge</mat-icon>
-          <span>Staff Payroll &amp; Commissions</span>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'payroll'"
+          class="nav-tab-btn"
+          [class.active]="activeTab() === 'payroll'"
+          (click)="setTab('payroll')"
+        >
+          Staff Payroll & Commissions
         </button>
       }
 
-      <button class="nav-tab-btn" [class.active]="activeTab() === 'reconciliation'" (click)="setTab('reconciliation')">
-        <mat-icon>fact_check</mat-icon>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeTab() === 'reconciliation'"
+        class="nav-tab-btn"
+        [class.active]="activeTab() === 'reconciliation'"
+        (click)="setTab('reconciliation')"
+      >
         <span>Reception Drawer Audits</span>
         @if ((metrics()?.unreconciledDrawersCount || 0) > 0) {
-          <span class="tab-badge rose">{{ metrics()?.unreconciledDrawersCount }} pend</span>
+          <span class="tab-badge badge-danger">{{ metrics()?.unreconciledDrawersCount }}</span>
         }
       </button>
-    </nav>
+    </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 1: INVOICES & AR LEDGER                               -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: INVOICES & AR LEDGER -->
   @if (activeTab() === 'invoices' || isPatient()) {
-    <section class="tab-pane-content">
+    <section class="tab-pane-content" role="tabpanel" aria-label="Invoices and AR ledger">
       <div class="pane-toolbar">
         <div class="filter-group">
-          <span class="filter-label">Payment Status:</span>
-          <div class="chip-filter-row">
-            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'All'" (click)="invoiceStatusFilter.set('All')">All Invoices</button>
-            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'Unpaid'" (click)="invoiceStatusFilter.set('Unpaid')">Unpaid</button>
-            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'PartiallyPaid'" (click)="invoiceStatusFilter.set('PartiallyPaid')">Partially Paid</button>
-            <button class="chip-filter" [class.active]="invoiceStatusFilter() === 'Paid'" (click)="invoiceStatusFilter.set('Paid')">Paid</button>
+          <span class="filter-label">Payment Status</span>
+          <div class="chip-filter-row" role="group" aria-label="Filter invoices by payment status">
+            <button type="button" class="chip-filter" [class.active]="invoiceStatusFilter() === 'All'" [attr.aria-pressed]="invoiceStatusFilter() === 'All'" (click)="invoiceStatusFilter.set('All')">All Invoices</button>
+            <button type="button" class="chip-filter" [class.active]="invoiceStatusFilter() === 'Unpaid'" [attr.aria-pressed]="invoiceStatusFilter() === 'Unpaid'" (click)="invoiceStatusFilter.set('Unpaid')">Unpaid</button>
+            <button type="button" class="chip-filter" [class.active]="invoiceStatusFilter() === 'PartiallyPaid'" [attr.aria-pressed]="invoiceStatusFilter() === 'PartiallyPaid'" (click)="invoiceStatusFilter.set('PartiallyPaid')">Partially Paid</button>
+            <button type="button" class="chip-filter" [class.active]="invoiceStatusFilter() === 'Paid'" [attr.aria-pressed]="invoiceStatusFilter() === 'Paid'" (click)="invoiceStatusFilter.set('Paid')">Paid</button>
           </div>
         </div>
 
-        <div class="toolbar-stats">
-          <span>Showing <strong>{{ filteredInvoices().length }}</strong> invoices</span>
-        </div>
+        <span class="toolbar-stats">
+          Showing <strong>{{ filteredInvoices().length }}</strong> invoices
+        </span>
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Invoice #</th>
-              <th>Patient Name</th>
-              <th>Date Issued</th>
-              <th>Due Date</th>
-              <th>Total Amount</th>
-              <th>Balance Due</th>
-              <th>Status</th>
-              <th class="text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (filteredInvoices().length === 0) {
-              <tr>
-                <td colspan="8" class="empty-row">
-                  <mat-icon>receipt</mat-icon>
-                  <p>No billing invoices matching the current criteria.</p>
-                </td>
-              </tr>
-            }
-            @for (inv of filteredInvoices(); track inv.id) {
-              <tr>
-                <td>
-                  <span class="code-badge">{{ inv.invoiceNumber }}</span>
-                  @if (inv.department === 'Pharmacy' || (inv.invoiceNumber && inv.invoiceNumber.startsWith('INV-RX'))) {
-                    <span class="status-tag pharmacy-tag" style="margin-left: 6px; font-size: 0.68rem; padding: 2px 6px; background: rgba(2, 132, 199, 0.12); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 4px; font-weight: 600;">Rx Dispensary</span>
-                  }
-                </td>
-                <td>
-                  <div class="patient-cell">
-                    <mat-icon class="subtle-icon">person</mat-icon>
-                    <strong>{{ inv.patientName || 'Outpatient Client' }}</strong>
-                  </div>
-                </td>
-                <td>{{ inv.issueDate | date:'mediumDate' }}</td>
-                <td>{{ inv.dueDate | date:'mediumDate' }}</td>
-                <td>
-                  <span class="amount-val">{{ inv.totalAmount | currency:'USD' }}</span>
-                </td>
-                <td>
-                  <span class="amount-val" [class.danger]="inv.balanceDue > 0">
-                    {{ inv.balanceDue | currency:'USD' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="status-tag" [ngClass]="inv.status?.toLowerCase()">
-                    {{ inv.status }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  <div class="btn-group-row">
-                    @if (inv.balanceDue > 0 && (canManageBilling() || isPharmacist() || isLabTech())) {
-                      <button mat-flat-button class="btn-sm btn-primary" (click)="openPaymentDialog(inv)" matTooltip="Collect Payment (Cash/POS/Insurance)">
-                        <mat-icon>point_of_sale</mat-icon>
-                        <span>Settle</span>
-                      </button>
-                    }
+      <div class="table-card">
+        @if (billingStore.isLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="6" [columns]="8" />
+          </div>
+        } @else if (filteredInvoices().length === 0) {
+          <app-empty-state
+            icon="receipt"
+            title="No Invoices Found"
+            description="No billing invoices matched the selected payment status filter."
+            [actionLabel]="invoiceStatusFilter() !== 'All' ? 'Show all invoices' : undefined"
+            (action)="invoiceStatusFilter.set('All')"
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Invoice #</th>
+                  <th scope="col">Patient Name</th>
+                  <th scope="col">Date Issued</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Total Amount</th>
+                  <th scope="col">Balance Due</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (inv of filteredInvoices(); track inv.id) {
+                  <tr>
+                    <td>
+                      <div class="code-row">
+                        <span class="code-badge">{{ inv.invoiceNumber }}</span>
+                        @if (inv.department === 'Pharmacy' || (inv.invoiceNumber && inv.invoiceNumber.startsWith('INV-RX'))) {
+                          <app-status-chip tone="info" label="Rx Dispensary" />
+                        }
+                      </div>
+                    </td>
+                    <td><strong>{{ inv.patientName || 'Outpatient Client' }}</strong></td>
+                    <td>{{ inv.issueDate | date:'mediumDate' }}</td>
+                    <td>{{ inv.dueDate | date:'mediumDate' }}</td>
+                    <td class="amount-val">{{ inv.totalAmount | currency:'USD' }}</td>
+                    <td>
+                      <span class="amount-val" [class.text-danger]="inv.balanceDue > 0">
+                        {{ inv.balanceDue | currency:'USD' }}
+                      </span>
+                    </td>
+                    <td>
+                      <app-status-chip [tone]="getStatusTone(inv.status)" [label]="inv.status" />
+                    </td>
+                    <td class="text-right">
+                      <div class="btn-group-row">
+                        @if (inv.balanceDue > 0 && (canManageBilling() || isPharmacist() || isLabTech())) {
+                          <button mat-button color="primary" type="button" (click)="openPaymentDialog(inv)">
+                            Settle
+                          </button>
+                        }
 
-                    <button mat-icon-button class="icon-btn-subtle" (click)="downloadPdf(inv.id)" matTooltip="Download Official PDF Receipt">
-                      <mat-icon>picture_as_pdf</mat-icon>
-                    </button>
+                        <button
+                          mat-icon-button
+                          type="button"
+                          aria-label="Download PDF receipt"
+                          matTooltip="Download PDF Receipt"
+                          (click)="downloadPdf(inv.id)"
+                        >
+                          <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
+                        </button>
 
-                    @if (canManageAccounting()) {
-                      <button mat-icon-button class="icon-btn-subtle" (click)="openNewClaimModal(inv)" matTooltip="Submit Insurance Claim">
-                        <mat-icon>health_and_safety</mat-icon>
-                      </button>
+                        @if (canManageAccounting()) {
+                          <button
+                            mat-icon-button
+                            type="button"
+                            aria-label="Submit insurance claim"
+                            matTooltip="Submit Insurance Claim"
+                            (click)="openNewClaimModal(inv)"
+                          >
+                            <mat-icon aria-hidden="true">health_and_safety</mat-icon>
+                          </button>
 
-                      <button mat-icon-button class="icon-btn-subtle" (click)="openNewAdjustmentModal(inv)" matTooltip="Request Discount or Refund">
-                        <mat-icon>price_check</mat-icon>
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+                          <button
+                            mat-icon-button
+                            type="button"
+                            aria-label="Request discount or refund"
+                            matTooltip="Request Discount or Refund"
+                            (click)="openNewAdjustmentModal(inv)"
+                          >
+                            <mat-icon aria-hidden="true">price_check</mat-icon>
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 2: INSURANCE CLAIMS & TPAs                            -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: INSURANCE CLAIMS & TPAS -->
   @if (activeTab() === 'claims' && !isPatient()) {
-    <section class="tab-pane-content">
+    <section class="tab-pane-content" role="tabpanel" aria-label="Insurance claims">
       <div class="pane-toolbar">
         <div class="filter-group">
-          <span class="filter-label">Clearinghouse Status:</span>
-          <div class="chip-filter-row">
-            <button class="chip-filter" [class.active]="claimStatusFilter() === 'All'" (click)="claimStatusFilter.set('All')">All Claims</button>
-            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Submitted'" (click)="claimStatusFilter.set('Submitted')">Submitted</button>
-            <button class="chip-filter" [class.active]="claimStatusFilter() === 'InReview'" (click)="claimStatusFilter.set('InReview')">In Review</button>
-            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Approved'" (click)="claimStatusFilter.set('Approved')">Approved</button>
-            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Remitted'" (click)="claimStatusFilter.set('Remitted')">Remitted</button>
-            <button class="chip-filter" [class.active]="claimStatusFilter() === 'Denied'" (click)="claimStatusFilter.set('Denied')">Denied</button>
+          <span class="filter-label">Clearinghouse Status</span>
+          <div class="chip-filter-row" role="group" aria-label="Filter claims by status">
+            <button type="button" class="chip-filter" [class.active]="claimStatusFilter() === 'All'" [attr.aria-pressed]="claimStatusFilter() === 'All'" (click)="claimStatusFilter.set('All')">All Claims</button>
+            <button type="button" class="chip-filter" [class.active]="claimStatusFilter() === 'Submitted'" [attr.aria-pressed]="claimStatusFilter() === 'Submitted'" (click)="claimStatusFilter.set('Submitted')">Submitted</button>
+            <button type="button" class="chip-filter" [class.active]="claimStatusFilter() === 'InReview'" [attr.aria-pressed]="claimStatusFilter() === 'InReview'" (click)="claimStatusFilter.set('InReview')">In Review</button>
+            <button type="button" class="chip-filter" [class.active]="claimStatusFilter() === 'Approved'" [attr.aria-pressed]="claimStatusFilter() === 'Approved'" (click)="claimStatusFilter.set('Approved')">Approved</button>
+            <button type="button" class="chip-filter" [class.active]="claimStatusFilter() === 'Remitted'" [attr.aria-pressed]="claimStatusFilter() === 'Remitted'" (click)="claimStatusFilter.set('Remitted')">Remitted</button>
+            <button type="button" class="chip-filter" [class.active]="claimStatusFilter() === 'Denied'" [attr.aria-pressed]="claimStatusFilter() === 'Denied'" (click)="claimStatusFilter.set('Denied')">Denied</button>
           </div>
         </div>
 
         @if (canManageAccounting()) {
-          <button mat-flat-button class="action-btn-primary btn-sm" (click)="openNewClaimModal()">
-            <mat-icon>add</mat-icon>
-            <span>Submit New Claim</span>
+          <button mat-flat-button color="primary" type="button" (click)="openNewClaimModal()">
+            Submit New Claim
           </button>
         }
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Claim #</th>
-              <th>Invoice #</th>
-              <th>Patient</th>
-              <th>Payer / TPA</th>
-              <th>Policy / Group</th>
-              <th>Claimed Amount</th>
-              <th>Covered Amount</th>
-              <th>Patient Copay</th>
-              <th>Status</th>
-              <th class="text-right">Remittance Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (filteredClaims().length === 0) {
-              <tr>
-                <td colspan="10" class="empty-row">
-                  <mat-icon>health_and_safety</mat-icon>
-                  <p>No insurance claims found in this view.</p>
-                </td>
-              </tr>
-            }
-            @for (claim of filteredClaims(); track claim.id) {
-              <tr>
-                <td><span class="code-badge">{{ claim.claimNumber }}</span></td>
-                <td>{{ claim.invoiceNumber }}</td>
-                <td><strong>{{ claim.patientName }}</strong></td>
-                <td>
-                  <div class="tpa-badge">
-                    <mat-icon class="subtle-icon">verified</mat-icon>
-                    <span>{{ claim.insuranceProvider }}</span>
-                  </div>
-                </td>
-                <td>
-                  <span class="policy-text">{{ claim.policyNumber }}</span>
-                  @if (claim.groupNumber) {
-                    <small class="group-sub">({{ claim.groupNumber }})</small>
-                  }
-                </td>
-                <td><strong>{{ claim.claimAmount | currency:'USD' }}</strong></td>
-                <td>
-                  <span [class.text-success]="claim.coveredAmount > 0">
-                    {{ claim.coveredAmount | currency:'USD' }}
-                  </span>
-                </td>
-                <td>{{ claim.patientCopay | currency:'USD' }}</td>
-                <td>
-                  <span class="status-tag" [ngClass]="claim.status.toLowerCase()">
-                    {{ claim.status }}
-                  </span>
-                  @if (claim.denialReason) {
-                    <div class="denial-warning" [matTooltip]="claim.denialReason">
-                      <mat-icon>warning</mat-icon>
-                      <span>Reason: {{ claim.denialReason | slice:0:25 }}...</span>
-                    </div>
-                  }
-                </td>
-                <td class="text-right">
-                  @if (canManageAccounting()) {
-                    <button mat-flat-button class="btn-sm btn-primary" (click)="openReconcileClaimModal(claim)">
-                      <mat-icon>sync_alt</mat-icon>
-                      <span>Reconcile Remittance</span>
-                    </button>
-                  } @else {
-                    <span class="audited-text">Audited & Logged</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-card">
+        @if (claimsLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="5" [columns]="8" />
+          </div>
+        } @else if (filteredClaims().length === 0) {
+          <app-empty-state
+            icon="health_and_safety"
+            title="No Insurance Claims Found"
+            description="No electronic claims matched this clearinghouse status filter."
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Claim #</th>
+                  <th scope="col">Invoice #</th>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Payer / TPA</th>
+                  <th scope="col">Policy / Group</th>
+                  <th scope="col">Claimed</th>
+                  <th scope="col">Covered</th>
+                  <th scope="col">Copay</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (claim of filteredClaims(); track claim.id) {
+                  <tr>
+                    <td><span class="code-badge">{{ claim.claimNumber }}</span></td>
+                    <td>{{ claim.invoiceNumber }}</td>
+                    <td><strong>{{ claim.patientName }}</strong></td>
+                    <td>{{ claim.insuranceProvider }}</td>
+                    <td>
+                      <span>{{ claim.policyNumber }}</span>
+                      @if (claim.groupNumber) {
+                        <span class="sub-meta"> ({{ claim.groupNumber }})</span>
+                      }
+                    </td>
+                    <td class="amount-val">{{ claim.claimAmount | currency:'USD' }}</td>
+                    <td [class.text-success]="claim.coveredAmount > 0">{{ claim.coveredAmount | currency:'USD' }}</td>
+                    <td>{{ claim.patientCopay | currency:'USD' }}</td>
+                    <td>
+                      <div class="status-stack">
+                        <app-status-chip [tone]="getStatusTone(claim.status)" [label]="claim.status" />
+                        @if (claim.denialReason) {
+                          <span class="denial-warning" [matTooltip]="claim.denialReason">
+                            {{ claim.denialReason | slice:0:28 }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+                    <td class="text-right">
+                      @if (canManageAccounting()) {
+                        <button mat-button color="primary" type="button" (click)="openReconcileClaimModal(claim)">
+                          Reconcile
+                        </button>
+                      } @else {
+                        <span class="sub-meta">Audited</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 3: BILLING ADJUSTMENTS & REFUNDS                      -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: BILLING ADJUSTMENTS & REFUNDS -->
   @if (activeTab() === 'adjustments' && !isPatient()) {
-    <section class="tab-pane-content">
+    <section class="tab-pane-content" role="tabpanel" aria-label="Discounts and refunds">
       <div class="pane-toolbar">
         <div class="filter-group">
-          <span class="filter-label">Approval Status:</span>
-          <div class="chip-filter-row">
-            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'All'" (click)="adjustmentStatusFilter.set('All')">All</button>
-            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'PendingApproval'" (click)="adjustmentStatusFilter.set('PendingApproval')">Pending Approval</button>
-            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'Approved'" (click)="adjustmentStatusFilter.set('Approved')">Approved</button>
-            <button class="chip-filter" [class.active]="adjustmentStatusFilter() === 'Rejected'" (click)="adjustmentStatusFilter.set('Rejected')">Rejected</button>
+          <span class="filter-label">Approval Status</span>
+          <div class="chip-filter-row" role="group" aria-label="Filter adjustments by approval status">
+            <button type="button" class="chip-filter" [class.active]="adjustmentStatusFilter() === 'All'" [attr.aria-pressed]="adjustmentStatusFilter() === 'All'" (click)="adjustmentStatusFilter.set('All')">All</button>
+            <button type="button" class="chip-filter" [class.active]="adjustmentStatusFilter() === 'PendingApproval'" [attr.aria-pressed]="adjustmentStatusFilter() === 'PendingApproval'" (click)="adjustmentStatusFilter.set('PendingApproval')">Pending Approval</button>
+            <button type="button" class="chip-filter" [class.active]="adjustmentStatusFilter() === 'Approved'" [attr.aria-pressed]="adjustmentStatusFilter() === 'Approved'" (click)="adjustmentStatusFilter.set('Approved')">Approved</button>
+            <button type="button" class="chip-filter" [class.active]="adjustmentStatusFilter() === 'Rejected'" [attr.aria-pressed]="adjustmentStatusFilter() === 'Rejected'" (click)="adjustmentStatusFilter.set('Rejected')">Rejected</button>
           </div>
         </div>
 
         @if (canManageAccounting()) {
-          <button mat-flat-button class="action-btn-primary btn-sm" (click)="openNewAdjustmentModal()">
-            <mat-icon>add</mat-icon>
-            <span>Request Adjustment</span>
+          <button mat-flat-button color="primary" type="button" (click)="openNewAdjustmentModal()">
+            Request Adjustment
           </button>
         }
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Adjustment #</th>
-              <th>Invoice #</th>
-              <th>Patient</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Reason & Justification</th>
-              <th>Requested By</th>
-              <th>Approver</th>
-              <th>Status</th>
-              <th class="text-right">Sign-Off</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (filteredAdjustments().length === 0) {
-              <tr>
-                <td colspan="10" class="empty-row">
-                  <mat-icon>price_check</mat-icon>
-                  <p>No billing adjustments logged.</p>
-                </td>
-              </tr>
-            }
-            @for (adj of filteredAdjustments(); track adj.id) {
-              <tr>
-                <td><span class="code-badge">{{ adj.adjustmentNumber }}</span></td>
-                <td>{{ adj.invoiceNumber }}</td>
-                <td><strong>{{ adj.patientName }}</strong></td>
-                <td>
-                  <span class="type-pill" [ngClass]="adj.type.toLowerCase()">{{ adj.type }}</span>
-                </td>
-                <td><strong class="amount-val">{{ adj.amount | currency:'USD' }}</strong></td>
-                <td><span class="reason-cell">{{ adj.reason }}</span></td>
-                <td>{{ adj.requestedByUserName }}</td>
-                <td>{{ adj.approvedByUserName || '—' }}</td>
-                <td>
-                  <span class="status-tag" [ngClass]="adj.status.toLowerCase()">
-                    {{ adj.status }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  @if (adj.status === 'PendingApproval' && canManageAccounting()) {
-                    <div class="btn-group-row">
-                      <button mat-flat-button class="btn-sm btn-success" (click)="openReviewAdjustmentModal(adj)">
-                        <mat-icon>verified</mat-icon>
-                        <span>Review</span>
-                      </button>
-                    </div>
-                  } @else {
-                    <span class="audited-text">Locked & Audited</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-card">
+        @if (adjustmentsLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="5" [columns]="8" />
+          </div>
+        } @else if (filteredAdjustments().length === 0) {
+          <app-empty-state
+            icon="price_check"
+            title="No Billing Adjustments Logged"
+            description="No discount requests, refunds, or write-offs found in this view."
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Adjustment #</th>
+                  <th scope="col">Invoice #</th>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Justification</th>
+                  <th scope="col">Requested By</th>
+                  <th scope="col">Approver</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-right">Sign-Off</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (adj of filteredAdjustments(); track adj.id) {
+                  <tr>
+                    <td><span class="code-badge">{{ adj.adjustmentNumber }}</span></td>
+                    <td>{{ adj.invoiceNumber }}</td>
+                    <td><strong>{{ adj.patientName }}</strong></td>
+                    <td><app-status-chip [tone]="getStatusTone(adj.type)" [label]="adj.type" /></td>
+                    <td class="amount-val">{{ adj.amount | currency:'USD' }}</td>
+                    <td>{{ adj.reason }}</td>
+                    <td>{{ adj.requestedByUserName }}</td>
+                    <td>{{ adj.approvedByUserName || '—' }}</td>
+                    <td><app-status-chip [tone]="getStatusTone(adj.status)" [label]="adj.status" /></td>
+                    <td class="text-right">
+                      @if (adj.status === 'PendingApproval' && canManageAccounting()) {
+                        <button mat-button color="primary" type="button" (click)="openReviewAdjustmentModal(adj)">
+                          Review
+                        </button>
+                      } @else {
+                        <span class="sub-meta">Locked</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 4: ACCOUNTS PAYABLE & SUPPLIER EXPENSES               -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 4: SUPPLIER PAYABLES (AP) -->
   @if (activeTab() === 'expenses' && !isPatient()) {
-    <section class="tab-pane-content">
+    <section class="tab-pane-content" role="tabpanel" aria-label="Supplier payables">
       <div class="pane-toolbar">
         <div class="filter-group">
-          <span class="filter-label">Vendor Category:</span>
-          <div class="chip-filter-row">
-            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'All'" (click)="expenseCategoryFilter.set('All')">All Categories</button>
-            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'PharmaceuticalSupplier'" (click)="expenseCategoryFilter.set('PharmaceuticalSupplier')">Pharma Supplier</button>
-            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'MedicalSupplies'" (click)="expenseCategoryFilter.set('MedicalSupplies')">Medical Supplies</button>
-            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'EquipmentMaintenance'" (click)="expenseCategoryFilter.set('EquipmentMaintenance')">Equipment</button>
-            <button class="chip-filter" [class.active]="expenseCategoryFilter() === 'WasteDisposal'" (click)="expenseCategoryFilter.set('WasteDisposal')">Bio-Waste</button>
+          <span class="filter-label">Vendor Category</span>
+          <div class="chip-filter-row" role="group" aria-label="Filter expenses by category">
+            <button type="button" class="chip-filter" [class.active]="expenseCategoryFilter() === 'All'" [attr.aria-pressed]="expenseCategoryFilter() === 'All'" (click)="expenseCategoryFilter.set('All')">All Categories</button>
+            <button type="button" class="chip-filter" [class.active]="expenseCategoryFilter() === 'PharmaceuticalSupplier'" [attr.aria-pressed]="expenseCategoryFilter() === 'PharmaceuticalSupplier'" (click)="expenseCategoryFilter.set('PharmaceuticalSupplier')">Pharma Supplier</button>
+            <button type="button" class="chip-filter" [class.active]="expenseCategoryFilter() === 'MedicalSupplies'" [attr.aria-pressed]="expenseCategoryFilter() === 'MedicalSupplies'" (click)="expenseCategoryFilter.set('MedicalSupplies')">Medical Supplies</button>
+            <button type="button" class="chip-filter" [class.active]="expenseCategoryFilter() === 'EquipmentMaintenance'" [attr.aria-pressed]="expenseCategoryFilter() === 'EquipmentMaintenance'" (click)="expenseCategoryFilter.set('EquipmentMaintenance')">Equipment</button>
+            <button type="button" class="chip-filter" [class.active]="expenseCategoryFilter() === 'WasteDisposal'" [attr.aria-pressed]="expenseCategoryFilter() === 'WasteDisposal'" (click)="expenseCategoryFilter.set('WasteDisposal')">Bio-Waste</button>
           </div>
         </div>
 
         @if (canManageAccounting()) {
-          <button mat-flat-button class="action-btn-primary btn-sm" (click)="showNewExpenseModal.set(true)">
-            <mat-icon>add</mat-icon>
-            <span>Record Vendor Invoice</span>
+          <button mat-flat-button color="primary" type="button" (click)="showNewExpenseModal.set(true)">
+            Record Vendor Invoice
           </button>
         }
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Expense #</th>
-              <th>Category</th>
-              <th>Vendor Name</th>
-              <th>Invoice Reference</th>
-              <th>Description</th>
-              <th>Net Amount</th>
-              <th>Due Date</th>
-              <th>Dispensary PO Link</th>
-              <th>Status</th>
-              <th class="text-right">AP Settle</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (filteredExpenses().length === 0) {
-              <tr>
-                <td colspan="10" class="empty-row">
-                  <mat-icon>receipt</mat-icon>
-                  <p>No supplier invoices found in this category.</p>
-                </td>
-              </tr>
-            }
-            @for (exp of filteredExpenses(); track exp.id) {
-              <tr>
-                <td><span class="code-badge">{{ exp.expenseNumber }}</span></td>
-                <td><span class="category-pill">{{ exp.category }}</span></td>
-                <td><strong>{{ exp.vendorName }}</strong></td>
-                <td>{{ exp.invoiceReference }}</td>
-                <td>{{ exp.description }}</td>
-                <td><strong>{{ exp.amount + exp.taxAmount | currency:'USD' }}</strong></td>
-                <td>{{ exp.dueDate | date:'mediumDate' }}</td>
-                <td>
-                  @if (exp.pharmacyRequisitionNumber) {
-                    <span class="po-badge" matTooltip="Linked to Dispensary Purchase Order">
-                      <mat-icon>local_pharmacy</mat-icon>
-                      {{ exp.pharmacyRequisitionNumber }}
-                    </span>
-                  } @else {
-                    <span class="text-muted">N/A</span>
-                  }
-                </td>
-                <td>
-                  <span class="status-tag" [ngClass]="exp.status.toLowerCase()">
-                    {{ exp.status }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  @if (exp.status !== 'Paid' && canManageAccounting()) {
-                    <button mat-flat-button class="btn-sm btn-primary" (click)="openSettleExpenseModal(exp)">
-                      <mat-icon>payment</mat-icon>
-                      <span>Pay Vendor</span>
-                    </button>
-                  } @else if (exp.status === 'Paid') {
-                    <span class="paid-date-badge">Paid {{ exp.paidDate | date:'shortDate' }}</span>
-                  } @else {
-                    <span class="audited-text">Audited & Logged</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-card">
+        @if (expensesLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="5" [columns]="8" />
+          </div>
+        } @else if (filteredExpenses().length === 0) {
+          <app-empty-state
+            icon="receipt"
+            title="No Supplier Invoices Found"
+            description="No accounts payable vendor invoices matched the selected category."
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Expense #</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Vendor Name</th>
+                  <th scope="col">Invoice Ref</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Net Amount</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">PO Link</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (exp of filteredExpenses(); track exp.id) {
+                  <tr>
+                    <td><span class="code-badge">{{ exp.expenseNumber }}</span></td>
+                    <td><span class="category-pill">{{ exp.category }}</span></td>
+                    <td><strong>{{ exp.vendorName }}</strong></td>
+                    <td>{{ exp.invoiceReference }}</td>
+                    <td>{{ exp.description }}</td>
+                    <td class="amount-val">{{ (exp.amount + exp.taxAmount) | currency:'USD' }}</td>
+                    <td>{{ exp.dueDate | date:'mediumDate' }}</td>
+                    <td>
+                      @if (exp.pharmacyRequisitionNumber) {
+                        <span class="code-badge" matTooltip="Linked to Dispensary Purchase Order">{{ exp.pharmacyRequisitionNumber }}</span>
+                      } @else {
+                        <span class="sub-meta">—</span>
+                      }
+                    </td>
+                    <td><app-status-chip [tone]="getStatusTone(exp.status)" [label]="exp.status" /></td>
+                    <td class="text-right">
+                      @if (exp.status !== 'Paid' && canManageAccounting()) {
+                        <button mat-button color="primary" type="button" (click)="openSettleExpenseModal(exp)">
+                          Pay Vendor
+                        </button>
+                      } @else if (exp.status === 'Paid') {
+                        <span class="sub-meta">Paid {{ exp.paidDate | date:'shortDate' }}</span>
+                      } @else {
+                        <span class="sub-meta">Audited</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 5: PETTY CASH FLOAT LEDGER                            -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 5: PETTY CASH FLOAT LEDGER -->
   @if (activeTab() === 'petty-cash' && !isPatient()) {
-    <section class="tab-pane-content">
-      <div class="petty-cash-banner">
-        <div class="banner-left">
-          <div class="float-circle">
-            <mat-icon>savings</mat-icon>
-          </div>
-          <div class="float-info">
-            <span class="banner-sub">Current Vault Cash Balance</span>
-            <h2 class="float-amount">{{ metrics()?.pettyCashCurrentBalance || 402.50 | currency:'USD' }}</h2>
-            <p class="float-note">Authorized monthly replenishment float: $500.00 • Vault Custodian: Dave Accountant</p>
-          </div>
+    <section class="tab-pane-content" role="tabpanel" aria-label="Petty cash float">
+      <div class="summary-banner">
+        <div>
+          <span class="banner-sub">Current Vault Cash Balance</span>
+          <div class="banner-amount">{{ (metrics()?.pettyCashCurrentBalance ?? 402.50) | currency:'USD' }}</div>
+          <p class="banner-note">Authorized monthly replenishment float: $500.00</p>
         </div>
 
-        <div class="banner-right">
-          @if (canManageAccounting()) {
-            <button mat-flat-button class="action-btn-primary" (click)="showNewPettyCashModal.set(true)">
-              <mat-icon>add</mat-icon>
-              <span>Record Voucher / Float</span>
-            </button>
-          }
-        </div>
+        @if (canManageAccounting()) {
+          <button mat-flat-button color="primary" type="button" (click)="showNewPettyCashModal.set(true)">
+            Record Voucher
+          </button>
+        }
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Voucher #</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th>Payee / Source</th>
-              <th>Description</th>
-              <th>Amount</th>
-              <th>Remaining Balance</th>
-              <th>Disbursed By</th>
-              <th>Date</th>
-              <th>Receipt Ref</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (pettyCashVouchers().length === 0) {
-              <tr>
-                <td colspan="10" class="empty-row">
-                  <mat-icon>payments</mat-icon>
-                  <p>No petty cash vouchers recorded.</p>
-                </td>
-              </tr>
-            }
-            @for (v of pettyCashVouchers(); track v.id) {
-              <tr>
-                <td><span class="code-badge">{{ v.voucherNumber }}</span></td>
-                <td>
-                  <span class="type-pill" [class.replenish]="v.type === 'Replenishment'">
-                    {{ v.type }}
-                  </span>
-                </td>
-                <td>{{ v.category }}</td>
-                <td><strong>{{ v.payee }}</strong></td>
-                <td>{{ v.description }}</td>
-                <td>
-                  <strong [class.text-success]="v.type === 'Replenishment'" [class.text-danger]="v.type === 'Disbursement'">
-                    {{ v.type === 'Replenishment' ? '+' : '-' }}{{ v.amount | currency:'USD' }}
-                  </strong>
-                </td>
-                <td><strong>{{ v.remainingBalance | currency:'USD' }}</strong></td>
-                <td>{{ v.disbursedByUserName }}</td>
-                <td>{{ v.createdAt | date:'short' }}</td>
-                <td>
-                  @if (v.receiptRef) {
-                    <span class="receipt-ref-badge">{{ v.receiptRef }}</span>
-                  } @else {
-                    <span class="text-muted">None</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-card">
+        @if (pettyCashLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="5" [columns]="8" />
+          </div>
+        } @else if (pettyCashVouchers().length === 0) {
+          <app-empty-state
+            icon="payments"
+            title="No Petty Cash Vouchers"
+            description="No cash disbursements or float replenishments have been recorded yet."
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Voucher #</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Payee / Source</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Remaining Balance</th>
+                  <th scope="col">Disbursed By</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Receipt Ref</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of pettyCashVouchers(); track v.id) {
+                  <tr>
+                    <td><span class="code-badge">{{ v.voucherNumber }}</span></td>
+                    <td><app-status-chip [tone]="v.type === 'Replenishment' ? 'success' : 'neutral'" [label]="v.type" /></td>
+                    <td>{{ v.category }}</td>
+                    <td><strong>{{ v.payee }}</strong></td>
+                    <td>{{ v.description }}</td>
+                    <td>
+                      <strong [class.text-success]="v.type === 'Replenishment'" [class.text-danger]="v.type === 'Disbursement'">
+                        {{ v.type === 'Replenishment' ? '+' : '-' }}{{ v.amount | currency:'USD' }}
+                      </strong>
+                    </td>
+                    <td class="amount-val">{{ v.remainingBalance | currency:'USD' }}</td>
+                    <td>{{ v.disbursedByUserName }}</td>
+                    <td>{{ v.createdAt | date:'short' }}</td>
+                    <td>
+                      @if (v.receiptRef) {
+                        <span class="code-badge">{{ v.receiptRef }}</span>
+                      } @else {
+                        <span class="sub-meta">None</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 6: STAFF PAYROLL & COMMISSIONS                        -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 6: STAFF PAYROLL & COMMISSIONS -->
   @if (activeTab() === 'payroll' && !isPatient()) {
-    <section class="tab-pane-content">
-      <div class="payroll-summary-banner">
-        <div class="stat-box">
-          <span class="stat-label">Staff Count</span>
-          <h3 class="stat-val">{{ payrollTotals().count }} Staff</h3>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Base Salaries</span>
-          <h3 class="stat-val">{{ payrollTotals().base | currency:'USD' }}</h3>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Doctor Commissions</span>
-          <h3 class="stat-val text-success">+{{ payrollTotals().comms | currency:'USD' }}</h3>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Overtime Pay</span>
-          <h3 class="stat-val">+{{ payrollTotals().ot | currency:'USD' }}</h3>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Tax Deductions (15%)</span>
-          <h3 class="stat-val text-danger">-{{ payrollTotals().tax | currency:'USD' }}</h3>
-        </div>
-        <div class="stat-box highlight">
-          <span class="stat-label">Net Payable</span>
-          <h3 class="stat-val">{{ payrollTotals().net | currency:'USD' }}</h3>
+    <section class="tab-pane-content" role="tabpanel" aria-label="Staff payroll and commissions">
+      <div class="summary-banner">
+        <div class="payroll-stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Staff Count</span>
+            <strong class="stat-val">{{ payrollTotals().count }} Staff</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Base Salaries</span>
+            <strong class="stat-val">{{ payrollTotals().base | currency:'USD' }}</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Doctor Commissions</span>
+            <strong class="stat-val text-success">+{{ payrollTotals().comms | currency:'USD' }}</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Overtime Pay</span>
+            <strong class="stat-val">+{{ payrollTotals().ot | currency:'USD' }}</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Tax (15%)</span>
+            <strong class="stat-val text-danger">-{{ payrollTotals().tax | currency:'USD' }}</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Net Payable</span>
+            <strong class="stat-val">{{ payrollTotals().net | currency:'USD' }}</strong>
+          </div>
         </div>
 
-        <div class="banner-action-wrap">
-          @if (canManageAccounting()) {
-            <button mat-flat-button class="action-btn-primary" (click)="showGeneratePayrollModal.set(true)">
-              <mat-icon>auto_awesome</mat-icon>
-              <span>Run Monthly Batch</span>
-            </button>
-          }
-        </div>
+        @if (canManageAccounting()) {
+          <button mat-flat-button color="primary" type="button" (click)="showGeneratePayrollModal.set(true)">
+            Run Monthly Batch
+          </button>
+        }
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Payroll #</th>
-              <th>Staff Member</th>
-              <th>Role</th>
-              <th>Period</th>
-              <th>Base Salary</th>
-              <th>Doctor Consults & Commission</th>
-              <th>Overtime</th>
-              <th>Tax (15%)</th>
-              <th>Net Salary</th>
-              <th>Status</th>
-              <th class="text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (payrollRecords().length === 0) {
-              <tr>
-                <td colspan="11" class="empty-row">
-                  <mat-icon>badge</mat-icon>
-                  <p>No payroll records for this period. Click "Run Monthly Batch" to calculate salaries and doctor commissions.</p>
-                </td>
-              </tr>
-            }
-            @for (rec of payrollRecords(); track rec.id) {
-              <tr>
-                <td><span class="code-badge">{{ rec.payrollNumber }}</span></td>
-                <td><strong>{{ rec.staffName }}</strong></td>
-                <td><span class="role-pill">{{ rec.role }}</span></td>
-                <td>{{ rec.periodMonth }}/{{ rec.periodYear }}</td>
-                <td>{{ rec.baseSalary | currency:'USD' }}</td>
-                <td>
-                  @if (rec.role === 'Doctor') {
-                    <span class="comm-highlight">
-                      {{ rec.consultationsCount }} visits = {{ rec.doctorCommissionShare | currency:'USD' }}
-                    </span>
-                  } @else {
-                    <span class="text-muted">—</span>
-                  }
-                </td>
-                <td>
-                  @if (rec.overtimeHours > 0) {
-                    <span>{{ rec.overtimeHours }}h ({{ rec.overtimePay | currency:'USD' }})</span>
-                  } @else {
-                    <span class="text-muted">0h</span>
-                  }
-                </td>
-                <td class="text-danger">-{{ rec.taxDeductions | currency:'USD' }}</td>
-                <td><strong class="net-salary">{{ rec.netSalaryPayable | currency:'USD' }}</strong></td>
-                <td>
-                  <span class="status-tag" [ngClass]="rec.status.toLowerCase()">
-                    {{ rec.status }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  @if (rec.status !== 'Disbursed' && canManageAccounting()) {
-                    <button mat-flat-button class="btn-sm btn-primary" (click)="openDisbursePayrollModal(rec)">
-                      <mat-icon>send</mat-icon>
-                      <span>Disburse</span>
-                    </button>
-                  } @else if (rec.status === 'Disbursed') {
-                    <span class="paid-date-badge">Disbursed</span>
-                  } @else {
-                    <span class="audited-text">Audited & Logged</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-card">
+        @if (payrollLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="5" [columns]="8" />
+          </div>
+        } @else if (payrollRecords().length === 0) {
+          <app-empty-state
+            icon="badge"
+            title="No Payroll Records for Period"
+            description="Run the monthly payroll batch to calculate salaries and physician commissions."
+            [actionLabel]="canManageAccounting() ? 'Run Monthly Batch' : undefined"
+            (action)="showGeneratePayrollModal.set(true)"
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Payroll #</th>
+                  <th scope="col">Staff Member</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Period</th>
+                  <th scope="col">Base Salary</th>
+                  <th scope="col">Doctor Commission</th>
+                  <th scope="col">Overtime</th>
+                  <th scope="col">Tax (15%)</th>
+                  <th scope="col">Net Salary</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rec of payrollRecords(); track rec.id) {
+                  <tr>
+                    <td><span class="code-badge">{{ rec.payrollNumber }}</span></td>
+                    <td><strong>{{ rec.staffName }}</strong></td>
+                    <td><span class="category-pill">{{ rec.role }}</span></td>
+                    <td>{{ rec.periodMonth }}/{{ rec.periodYear }}</td>
+                    <td>{{ rec.baseSalary | currency:'USD' }}</td>
+                    <td>
+                      @if (rec.role === 'Doctor') {
+                        <span class="text-success">{{ rec.consultationsCount }} visits ({{ rec.doctorCommissionShare | currency:'USD' }})</span>
+                      } @else {
+                        <span class="sub-meta">—</span>
+                      }
+                    </td>
+                    <td>
+                      @if (rec.overtimeHours > 0) {
+                        <span>{{ rec.overtimeHours }}h ({{ rec.overtimePay | currency:'USD' }})</span>
+                      } @else {
+                        <span class="sub-meta">0h</span>
+                      }
+                    </td>
+                    <td class="text-danger">-{{ rec.taxDeductions | currency:'USD' }}</td>
+                    <td class="amount-val">{{ rec.netSalaryPayable | currency:'USD' }}</td>
+                    <td><app-status-chip [tone]="getStatusTone(rec.status)" [label]="rec.status" /></td>
+                    <td class="text-right">
+                      @if (rec.status !== 'Disbursed' && canManageAccounting()) {
+                        <button mat-button color="primary" type="button" (click)="openDisbursePayrollModal(rec)">
+                          Disburse
+                        </button>
+                      } @else if (rec.status === 'Disbursed') {
+                        <span class="sub-meta">Disbursed</span>
+                      } @else {
+                        <span class="sub-meta">Audited</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 7: RECEPTION DRAWER SHIFT AUDITS (FRONT DESK CONNECTION)-->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TAB 7: RECEPTION DRAWER SHIFT AUDITS -->
   @if (activeTab() === 'reconciliation' && !isPatient()) {
-    <section class="tab-pane-content">
+    <section class="tab-pane-content" role="tabpanel" aria-label="Reception drawer audits">
       <div class="pane-toolbar">
         <div class="filter-group">
-          <span class="filter-label">Audit Status:</span>
-          <div class="chip-filter-row">
-            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'All'" (click)="reconciliationAuditFilter.set('All')">All Drawer Shifts</button>
-            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'Pending'" (click)="reconciliationAuditFilter.set('Pending')">Pending Audit</button>
-            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'VerifiedBalanced'" (click)="reconciliationAuditFilter.set('VerifiedBalanced')">Verified Balanced</button>
-            <button class="chip-filter" [class.active]="reconciliationAuditFilter() === 'DiscrepancyApproved'" (click)="reconciliationAuditFilter.set('DiscrepancyApproved')">Discrepancy Approved</button>
+          <span class="filter-label">Audit Status</span>
+          <div class="chip-filter-row" role="group" aria-label="Filter drawer audits">
+            <button type="button" class="chip-filter" [class.active]="reconciliationAuditFilter() === 'All'" [attr.aria-pressed]="reconciliationAuditFilter() === 'All'" (click)="reconciliationAuditFilter.set('All')">All Shifts</button>
+            <button type="button" class="chip-filter" [class.active]="reconciliationAuditFilter() === 'Pending'" [attr.aria-pressed]="reconciliationAuditFilter() === 'Pending'" (click)="reconciliationAuditFilter.set('Pending')">Pending Audit</button>
+            <button type="button" class="chip-filter" [class.active]="reconciliationAuditFilter() === 'VerifiedBalanced'" [attr.aria-pressed]="reconciliationAuditFilter() === 'VerifiedBalanced'" (click)="reconciliationAuditFilter.set('VerifiedBalanced')">Verified Balanced</button>
+            <button type="button" class="chip-filter" [class.active]="reconciliationAuditFilter() === 'DiscrepancyApproved'" [attr.aria-pressed]="reconciliationAuditFilter() === 'DiscrepancyApproved'" (click)="reconciliationAuditFilter.set('DiscrepancyApproved')">Discrepancy Approved</button>
           </div>
-        </div>
-
-        <div class="toolbar-stats">
-          <mat-icon class="info-icon">info</mat-icon>
-          <span>Front-desk receptionists submit cash drawer closing reports at shift end. Accountant verifies counted cash against register receipts.</span>
         </div>
       </div>
 
-      <div class="table-card mat-elevation-z1">
-        <table class="finance-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Shift</th>
-              <th>Receptionist</th>
-              <th>Total Collected</th>
-              <th>Cash Counted</th>
-              <th>Discrepancy</th>
-              <th>Invoices Settled</th>
-              <th>Drawer Status</th>
-              <th>Accountant Audit</th>
-              <th class="text-right">Verification Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (filteredReconciliations().length === 0) {
-              <tr>
-                <td colspan="10" class="empty-row">
-                  <mat-icon>fact_check</mat-icon>
-                  <p>No receptionist shift drawer reports found in this filter.</p>
-                </td>
-              </tr>
-            }
-            @for (recon of filteredReconciliations(); track recon.id) {
-              <tr>
-                <td>{{ recon.reconciliationDate | date:'mediumDate' }}</td>
-                <td><strong>{{ recon.shift }}</strong></td>
-                <td>
-                  <div class="receptionist-meta">
-                    <mat-icon class="subtle-icon">badge</mat-icon>
-                    <span>{{ recon.receptionistName }}</span>
-                  </div>
-                </td>
-                <td><strong>{{ recon.totalCollected | currency:'USD' }}</strong></td>
-                <td>{{ recon.closingCashCounted | currency:'USD' }}</td>
-                <td>
-                  <span [class.text-danger]="recon.discrepancyAmount !== 0" [class.text-success]="recon.discrepancyAmount === 0">
-                    {{ recon.discrepancyAmount === 0 ? '$0.00 (Balanced)' : (recon.discrepancyAmount | currency:'USD') }}
-                  </span>
-                </td>
-                <td>{{ recon.invoicesSettledCount }} receipts</td>
-                <td>
-                  <span class="status-tag" [ngClass]="recon.status.toLowerCase()">
-                    {{ recon.status }}
-                  </span>
-                </td>
-                <td>
-                  @if (recon.auditStatus && recon.auditStatus !== 'Pending') {
-                    <div class="audit-badge verified">
-                      <mat-icon>verified</mat-icon>
-                      <span>{{ recon.auditStatus }} ({{ recon.auditedByUserName }})</span>
-                    </div>
-                  } @else {
-                    <span class="audit-badge pending">
-                      <mat-icon>hourglass_empty</mat-icon>
-                      <span>Pending Audit</span>
-                    </span>
-                  }
-                </td>
-                <td class="text-right">
-                  @if (canManageAccounting()) {
-                    <button mat-flat-button class="btn-sm btn-primary" (click)="openAuditDrawerModal(recon)">
-                      <mat-icon>rule</mat-icon>
-                      <span>Audit Shift Drawer</span>
-                    </button>
-                  } @else {
-                    <span class="audited-text">Audited & Logged</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-card">
+        @if (reconciliationsLoading()) {
+          <div class="skeleton-wrap">
+            <app-skeleton variant="table" [count]="5" [columns]="8" />
+          </div>
+        } @else if (filteredReconciliations().length === 0) {
+          <app-empty-state
+            icon="fact_check"
+            title="No Shift Drawer Reports Found"
+            description="No receptionist shift closing reports matched this audit filter."
+          />
+        } @else {
+          <div class="table-scroll">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Shift</th>
+                  <th scope="col">Receptionist</th>
+                  <th scope="col">Registered Total</th>
+                  <th scope="col">Cash Counted</th>
+                  <th scope="col">Discrepancy</th>
+                  <th scope="col">Receipts</th>
+                  <th scope="col">Drawer Status</th>
+                  <th scope="col">Accountant Audit</th>
+                  <th scope="col" class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (recon of filteredReconciliations(); track recon.id) {
+                  <tr>
+                    <td>{{ recon.reconciliationDate | date:'mediumDate' }}</td>
+                    <td><strong>{{ recon.shift }}</strong></td>
+                    <td>{{ recon.receptionistName }}</td>
+                    <td class="amount-val">{{ recon.totalCollected | currency:'USD' }}</td>
+                    <td>{{ recon.closingCashCounted | currency:'USD' }}</td>
+                    <td>
+                      <span [class.text-danger]="recon.discrepancyAmount !== 0" [class.text-success]="recon.discrepancyAmount === 0">
+                        {{ recon.discrepancyAmount === 0 ? '$0.00 (Balanced)' : (recon.discrepancyAmount | currency:'USD') }}
+                      </span>
+                    </td>
+                    <td>{{ recon.invoicesSettledCount }} receipts</td>
+                    <td><app-status-chip [tone]="getStatusTone(recon.status)" [label]="recon.status" /></td>
+                    <td>
+                      <app-status-chip
+                        [tone]="recon.auditStatus && recon.auditStatus !== 'Pending' ? getStatusTone(recon.auditStatus) : 'warning'"
+                        [label]="recon.auditStatus && recon.auditStatus !== 'Pending' ? (recon.auditStatus + (recon.auditedByUserName ? ' · ' + recon.auditedByUserName : '')) : 'Pending Audit'"
+                      />
+                    </td>
+                    <td class="text-right">
+                      @if (canManageAccounting()) {
+                        <button mat-button color="primary" type="button" (click)="openAuditDrawerModal(recon)">
+                          Audit Drawer
+                        </button>
+                      } @else {
+                        <span class="sub-meta">Logged</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </section>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: SETTLE INVOICE PAYMENT                              -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SETTLE INVOICE PAYMENT -->
   @if (selectedInvoiceForPay()) {
-    <div class="modal-overlay" (click)="selectedInvoiceForPay.set(null)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settle-pay-title" (click)="selectedInvoiceForPay.set(null)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>point_of_sale</mat-icon>
-            <h3>Settle Invoice Payment</h3>
-          </div>
-          <button mat-icon-button (click)="selectedInvoiceForPay.set(null)">
-            <mat-icon>close</mat-icon>
+          <h3 id="settle-pay-title">Settle Invoice Payment</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="selectedInvoiceForPay.set(null)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
-          <div class="invoice-pay-meta">
-            <div class="meta-item">
-              <span class="label">Invoice Number:</span>
-              <strong>{{ selectedInvoiceForPay()?.invoiceNumber }}</strong>
-            </div>
-            <div class="meta-item">
-              <span class="label">Patient Name:</span>
-              <strong>{{ selectedInvoiceForPay()?.patientName }}</strong>
-            </div>
-            <div class="meta-item">
-              <span class="label">Balance Outstanding:</span>
-              <strong class="text-danger">{{ selectedInvoiceForPay()?.balanceDue | currency:'USD' }}</strong>
-            </div>
+          <div class="claim-info-banner">
+            <div><span class="sub-label">Invoice</span><strong>{{ selectedInvoiceForPay()?.invoiceNumber }}</strong></div>
+            <div><span class="sub-label">Patient</span><strong>{{ selectedInvoiceForPay()?.patientName }}</strong></div>
+            <div><span class="sub-label">Balance Due</span><strong class="text-danger">{{ selectedInvoiceForPay()?.balanceDue | currency:'USD' }}</strong></div>
           </div>
 
-          <div class="form-group">
-            <label>Payment Amount ($):</label>
-            <input type="number" class="finance-input" [(ngModel)]="paymentAmountInput" [max]="selectedInvoiceForPay()?.balanceDue || 9999" />
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Payment Amount ($)</mat-label>
+              <input matInput type="number" [(ngModel)]="paymentAmountInput" [max]="selectedInvoiceForPay()?.balanceDue || 9999" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Payment Method</mat-label>
+              <mat-select [(ngModel)]="paymentMethodInput">
+                <mat-option value="Cash">Cash (Front Desk Drawer)</mat-option>
+                <mat-option value="Credit Card">Credit / Debit Card</mat-option>
+                <mat-option value="Bank Transfer">Bank Transfer (ACH / EFT)</mat-option>
+                <mat-option value="Insurance Copay">Insurance Copay Benefit</mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Settlement Payment Method:</label>
-            <select class="finance-select" [(ngModel)]="paymentMethodInput">
-              <option value="Cash">Cash (Front Desk Drawer)</option>
-              <option value="Credit Card">Credit / Debit Card (POS Terminal)</option>
-              <option value="Bank Transfer">Bank Transfer (ACH / EFT)</option>
-              <option value="Insurance Copay">Insurance Copay Benefit</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Transaction / Merchant Reference:</label>
-            <input type="text" class="finance-input" [(ngModel)]="paymentReferenceInput" placeholder="e.g. POS-AUTH-89210 or CASH-RCP" />
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Transaction / Merchant Reference</mat-label>
+            <input matInput [(ngModel)]="paymentReferenceInput" placeholder="e.g. POS-AUTH-89210" />
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="selectedInvoiceForPay.set(null)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitPayment()" [disabled]="isProcessing() || paymentAmountInput <= 0">
-            <mat-icon>check_circle</mat-icon>
-            <span>Confirm Settlement</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitPayment()" [disabled]="isProcessing() || paymentAmountInput <= 0">
+            Confirm Settlement
           </button>
+          <button mat-stroked-button type="button" (click)="selectedInvoiceForPay.set(null)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: RECONCILE INSURANCE CLAIM (TPA / REMITTANCE)       -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RECONCILE INSURANCE CLAIM -->
   @if (selectedClaimForReconcile()) {
-    <div class="modal-overlay" (click)="selectedClaimForReconcile.set(null)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reconcile-claim-title" (click)="selectedClaimForReconcile.set(null)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>health_and_safety</mat-icon>
-            <h3>Reconcile Insurance Claim Remittance</h3>
-          </div>
-          <button mat-icon-button (click)="selectedClaimForReconcile.set(null)">
-            <mat-icon>close</mat-icon>
+          <h3 id="reconcile-claim-title">Reconcile Insurance Claim</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="selectedClaimForReconcile.set(null)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body" [formGroup]="reconcileClaimForm">
           <div class="claim-info-banner">
-            <div>Claim #: <strong>{{ selectedClaimForReconcile()?.claimNumber }}</strong></div>
-            <div>Payer: <strong>{{ selectedClaimForReconcile()?.insuranceProvider }}</strong></div>
-            <div>Claimed: <strong>{{ selectedClaimForReconcile()?.claimAmount | currency:'USD' }}</strong></div>
+            <div><span class="sub-label">Claim #</span><strong>{{ selectedClaimForReconcile()?.claimNumber }}</strong></div>
+            <div><span class="sub-label">Payer</span><strong>{{ selectedClaimForReconcile()?.insuranceProvider }}</strong></div>
+            <div><span class="sub-label">Claimed</span><strong>{{ selectedClaimForReconcile()?.claimAmount | currency:'USD' }}</strong></div>
           </div>
 
-          <div class="form-group">
-            <label>Clearinghouse Adjudication Decision:</label>
-            <select class="finance-select" formControlName="status">
-              <option value="Remitted">Remitted (Payment Disbursed via EFT)</option>
-              <option value="Approved">Approved (Awaiting Clearinghouse Settlement)</option>
-              <option value="Denied">Denied / Rejected (Non-covered or Prior Auth missing)</option>
-              <option value="InReview">Under Additional Clinical Review</option>
-            </select>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Adjudication Decision</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="Remitted">Remitted (EFT Disbursed)</mat-option>
+              <mat-option value="Approved">Approved (Awaiting Settlement)</mat-option>
+              <mat-option value="Denied">Denied / Rejected</mat-option>
+              <mat-option value="InReview">Under Clinical Review</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Covered Amount ($)</mat-label>
+              <input matInput type="number" formControlName="coveredAmount" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>EFT Trace Reference</mat-label>
+              <input matInput formControlName="remittanceReference" placeholder="e.g. EFT-BCBS-89312" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Covered / Reimbursed Amount ($):</label>
-            <input type="number" class="finance-input" formControlName="coveredAmount" />
-          </div>
+          @if (reconcileClaimForm.get('status')?.value === 'Denied') {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Denial Reason Code (CARC / RARC)</mat-label>
+              <input matInput formControlName="denialReason" placeholder="e.g. CO-16: Prior authorization missing" />
+            </mat-form-field>
+          }
 
-          <div class="form-group">
-            <label>Remittance Advice Reference (EFT Trace #):</label>
-            <input type="text" class="finance-input" formControlName="remittanceReference" placeholder="e.g. EFT-BCBS-89312" />
-          </div>
-
-          <div class="form-group" *ngIf="reconcileClaimForm.get('status')?.value === 'Denied'">
-            <label class="text-danger">Denial Reason Code (CARC / RARC):</label>
-            <input type="text" class="finance-input" formControlName="denialReason" placeholder="e.g. CO-16: Prior authorization missing" />
-          </div>
-
-          <div class="form-group">
-            <label>Audit & Clinical Notes:</label>
-            <textarea class="finance-textarea" formControlName="notes" rows="3" placeholder="Additional remarks regarding remittance or appeal..."></textarea>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Audit & Clinical Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3"></textarea>
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="selectedClaimForReconcile.set(null)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitReconcileClaim()" [disabled]="isProcessing()">
-            <mat-icon>sync_alt</mat-icon>
-            <span>Save Adjudication</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitReconcileClaim()" [disabled]="isProcessing()">
+            Save Adjudication
           </button>
+          <button mat-stroked-button type="button" (click)="selectedClaimForReconcile.set(null)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: REVIEW BILLING ADJUSTMENT / REFUND                 -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: REVIEW BILLING ADJUSTMENT -->
   @if (selectedAdjustmentForReview()) {
-    <div class="modal-overlay" (click)="selectedAdjustmentForReview.set(null)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="review-adj-title" (click)="selectedAdjustmentForReview.set(null)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>price_check</mat-icon>
-            <h3>Review Billing Adjustment / Refund</h3>
-          </div>
-          <button mat-icon-button (click)="selectedAdjustmentForReview.set(null)">
-            <mat-icon>close</mat-icon>
+          <h3 id="review-adj-title">Review Billing Adjustment</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="selectedAdjustmentForReview.set(null)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
           <div class="claim-info-banner">
-            <div>Adjustment: <strong>{{ selectedAdjustmentForReview()?.adjustmentNumber }}</strong></div>
-            <div>Type: <strong>{{ selectedAdjustmentForReview()?.type }}</strong></div>
-            <div>Amount: <strong class="text-danger">{{ selectedAdjustmentForReview()?.amount | currency:'USD' }}</strong></div>
+            <div><span class="sub-label">Adjustment</span><strong>{{ selectedAdjustmentForReview()?.adjustmentNumber }}</strong></div>
+            <div><span class="sub-label">Type</span><strong>{{ selectedAdjustmentForReview()?.type }}</strong></div>
+            <div><span class="sub-label">Amount</span><strong class="text-danger">{{ selectedAdjustmentForReview()?.amount | currency:'USD' }}</strong></div>
           </div>
 
-          <p><strong>Reason:</strong> {{ selectedAdjustmentForReview()?.reason }}</p>
+          <p class="reason-summary"><strong>Reason:</strong> {{ selectedAdjustmentForReview()?.reason }}</p>
 
-          <div class="form-group">
-            <label>Approver Audit Notes:</label>
-            <textarea class="finance-textarea" [(ngModel)]="reviewAdjustmentNotes" rows="3" placeholder="Enter approval rationale or rejection explanation..."></textarea>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Approver Audit Notes</mat-label>
+            <textarea matInput [(ngModel)]="reviewAdjustmentNotes" rows="3"></textarea>
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="selectedAdjustmentForReview.set(null)">Cancel</button>
-          <button mat-stroked-button color="warn" (click)="submitReviewAdjustment('Rejected')" [disabled]="isProcessing()">
-            <mat-icon>cancel</mat-icon>
-            <span>Reject</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitReviewAdjustment('Approved')" [disabled]="isProcessing()">
+            Approve & Apply
           </button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitReviewAdjustment('Approved')" [disabled]="isProcessing()">
-            <mat-icon>verified</mat-icon>
-            <span>Approve & Apply</span>
+          <button mat-stroked-button color="warn" type="button" (click)="submitReviewAdjustment('Rejected')" [disabled]="isProcessing()">
+            Reject
           </button>
+          <button mat-button type="button" (click)="selectedAdjustmentForReview.set(null)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: SETTLE SUPPLIER EXPENSE (AP)                       -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SETTLE SUPPLIER EXPENSE -->
   @if (selectedExpenseForSettle()) {
-    <div class="modal-overlay" (click)="selectedExpenseForSettle.set(null)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settle-exp-title" (click)="selectedExpenseForSettle.set(null)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>payment</mat-icon>
-            <h3>Settle Accounts Payable Expense</h3>
-          </div>
-          <button mat-icon-button (click)="selectedExpenseForSettle.set(null)">
-            <mat-icon>close</mat-icon>
+          <h3 id="settle-exp-title">Settle Supplier Expense</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="selectedExpenseForSettle.set(null)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
           <div class="claim-info-banner">
-            <div>Expense: <strong>{{ selectedExpenseForSettle()?.expenseNumber }}</strong></div>
-            <div>Vendor: <strong>{{ selectedExpenseForSettle()?.vendorName }}</strong></div>
-            <div>Payable: <strong class="text-success">{{ (selectedExpenseForSettle()?.amount || 0) + (selectedExpenseForSettle()?.taxAmount || 0) | currency:'USD' }}</strong></div>
+            <div><span class="sub-label">Expense</span><strong>{{ selectedExpenseForSettle()?.expenseNumber }}</strong></div>
+            <div><span class="sub-label">Vendor</span><strong>{{ selectedExpenseForSettle()?.vendorName }}</strong></div>
+            <div><span class="sub-label">Payable</span><strong class="text-success">{{ ((selectedExpenseForSettle()?.amount || 0) + (selectedExpenseForSettle()?.taxAmount || 0)) | currency:'USD' }}</strong></div>
           </div>
 
-          <div class="form-group">
-            <label>Payment Method:</label>
-            <select class="finance-select" [(ngModel)]="settlePaymentMethod">
-              <option value="BankTransfer">Bank Wire / ACH Direct Debit</option>
-              <option value="CorporateCard">Corporate Credit Card</option>
-              <option value="Cheque">Corporate Check</option>
-              <option value="Cash">Cash Voucher</option>
-            </select>
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Payment Method</mat-label>
+              <mat-select [(ngModel)]="settlePaymentMethod">
+                <mat-option value="BankTransfer">Bank Wire / ACH</mat-option>
+                <mat-option value="CorporateCard">Corporate Credit Card</mat-option>
+                <mat-option value="Cheque">Corporate Check</mat-option>
+                <mat-option value="Cash">Cash Voucher</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Payment Trace Reference</mat-label>
+              <input matInput [(ngModel)]="settlePaymentRef" placeholder="e.g. ACH-MCK-20260901" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Bank Payment Trace Reference:</label>
-            <input type="text" class="finance-input" [(ngModel)]="settlePaymentRef" placeholder="e.g. ACH-MCK-20260901" />
-          </div>
-
-          <div class="form-group">
-            <label>Settlement Notes:</label>
-            <textarea class="finance-textarea" [(ngModel)]="settlePaymentNotes" rows="2" placeholder="Warehouse delivery receipt verification..."></textarea>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Settlement Notes</mat-label>
+            <textarea matInput [(ngModel)]="settlePaymentNotes" rows="2"></textarea>
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="selectedExpenseForSettle.set(null)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitSettleExpense()" [disabled]="isProcessing()">
-            <mat-icon>check_circle</mat-icon>
-            <span>Mark as Paid</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitSettleExpense()" [disabled]="isProcessing()">
+            Mark as Paid
           </button>
+          <button mat-stroked-button type="button" (click)="selectedExpenseForSettle.set(null)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: AUDIT RECEPTIONIST DRAWER SHIFT                    -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: AUDIT RECEPTIONIST DRAWER -->
   @if (selectedReconciliationForAudit()) {
-    <div class="modal-overlay" (click)="selectedReconciliationForAudit.set(null)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="audit-drawer-title" (click)="selectedReconciliationForAudit.set(null)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>rule</mat-icon>
-            <h3>Audit Receptionist Cash Drawer</h3>
-          </div>
-          <button mat-icon-button (click)="selectedReconciliationForAudit.set(null)">
-            <mat-icon>close</mat-icon>
+          <h3 id="audit-drawer-title">Audit Receptionist Cash Drawer</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="selectedReconciliationForAudit.set(null)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
-          <div class="drawer-audit-summary">
-            <div class="summary-col">
-              <span class="sub-label">Receptionist:</span>
-              <strong>{{ selectedReconciliationForAudit()?.receptionistName }}</strong>
-            </div>
-            <div class="summary-col">
-              <span class="sub-label">Shift:</span>
-              <strong>{{ selectedReconciliationForAudit()?.shift }}</strong>
-            </div>
-            <div class="summary-col">
-              <span class="sub-label">Total Registered:</span>
-              <strong>{{ selectedReconciliationForAudit()?.totalCollected | currency:'USD' }}</strong>
-            </div>
-            <div class="summary-col">
-              <span class="sub-label">Counted Physical Cash:</span>
-              <strong>{{ selectedReconciliationForAudit()?.closingCashCounted | currency:'USD' }}</strong>
-            </div>
-            <div class="summary-col">
-              <span class="sub-label">Discrepancy:</span>
+          <div class="claim-info-banner">
+            <div><span class="sub-label">Receptionist</span><strong>{{ selectedReconciliationForAudit()?.receptionistName }}</strong></div>
+            <div><span class="sub-label">Shift</span><strong>{{ selectedReconciliationForAudit()?.shift }}</strong></div>
+            <div><span class="sub-label">Registered</span><strong>{{ selectedReconciliationForAudit()?.totalCollected | currency:'USD' }}</strong></div>
+            <div><span class="sub-label">Counted Cash</span><strong>{{ selectedReconciliationForAudit()?.closingCashCounted | currency:'USD' }}</strong></div>
+            <div>
+              <span class="sub-label">Discrepancy</span>
               <strong [class.text-danger]="selectedReconciliationForAudit()?.discrepancyAmount !== 0" [class.text-success]="selectedReconciliationForAudit()?.discrepancyAmount === 0">
                 {{ selectedReconciliationForAudit()?.discrepancyAmount | currency:'USD' }}
               </strong>
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Accountant Audit Verdict:</label>
-            <select class="finance-select" [(ngModel)]="auditStatusInput">
-              <option value="VerifiedBalanced">Verified Balanced (Physical Cash matches POS Ledger)</option>
-              <option value="DiscrepancyApproved">Discrepancy Approved (Tolerable rounding/float variance)</option>
-              <option value="Disputed">Disputed (Cash shortage under investigation)</option>
-            </select>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Accountant Audit Verdict</mat-label>
+            <mat-select [(ngModel)]="auditStatusInput">
+              <mat-option value="VerifiedBalanced">Verified Balanced</mat-option>
+              <mat-option value="DiscrepancyApproved">Discrepancy Approved</mat-option>
+              <mat-option value="Disputed">Disputed (Under Investigation)</mat-option>
+            </mat-select>
+          </mat-form-field>
 
-          <div class="form-group">
-            <label>Audit Sign-Off Notes:</label>
-            <textarea class="finance-textarea" [(ngModel)]="auditNotesInput" rows="3" placeholder="State verification steps, physical drawer count, safe deposit envelope ID..."></textarea>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Audit Sign-Off Notes</mat-label>
+            <textarea matInput [(ngModel)]="auditNotesInput" rows="3"></textarea>
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="selectedReconciliationForAudit.set(null)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitAuditDrawer()" [disabled]="isProcessing()">
-            <mat-icon>verified</mat-icon>
-            <span>Sign Off Audit</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitAuditDrawer()" [disabled]="isProcessing()">
+            Sign Off Audit
           </button>
+          <button mat-stroked-button type="button" (click)="selectedReconciliationForAudit.set(null)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: RECORD PETTY CASH VOUCHER                          -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RECORD PETTY CASH VOUCHER -->
   @if (showNewPettyCashModal()) {
-    <div class="modal-overlay" (click)="showNewPettyCashModal.set(false)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="petty-cash-title" (click)="showNewPettyCashModal.set(false)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>payments</mat-icon>
-            <h3>Record Petty Cash Voucher</h3>
-          </div>
-          <button mat-icon-button (click)="showNewPettyCashModal.set(false)">
-            <mat-icon>close</mat-icon>
+          <h3 id="petty-cash-title">Record Petty Cash Voucher</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="showNewPettyCashModal.set(false)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body" [formGroup]="newPettyCashForm">
-          <div class="form-group">
-            <label>Transaction Type:</label>
-            <select class="finance-select" formControlName="type">
-              <option value="Disbursement">Disbursement (Cash Outflow)</option>
-              <option value="Replenishment">Replenishment (Bank Float Cash Inflow)</option>
-            </select>
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Transaction Type</mat-label>
+              <mat-select formControlName="type">
+                <mat-option value="Disbursement">Disbursement (Outflow)</mat-option>
+                <mat-option value="Replenishment">Replenishment (Inflow)</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Amount ($)</mat-label>
+              <input matInput type="number" formControlName="amount" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Amount ($):</label>
-            <input type="number" class="finance-input" formControlName="amount" />
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Expense Category</mat-label>
+              <mat-select formControlName="category">
+                <mat-option value="OfficeSupplies">Office Supplies</mat-option>
+                <mat-option value="UrgentCourier">Urgent Specimen Courier</mat-option>
+                <mat-option value="Breakroom">Patient Refreshments</mat-option>
+                <mat-option value="LocalTravel">Patient Transport</mat-option>
+                <mat-option value="MinorRepairs">Minor Facility Repairs</mat-option>
+                <mat-option value="PettyCashReplenish">Float Replenishment</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Receipt Reference #</mat-label>
+              <input matInput formControlName="receiptRef" placeholder="Optional" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Expense Category:</label>
-            <select class="finance-select" formControlName="category">
-              <option value="OfficeSupplies">Office Supplies</option>
-              <option value="UrgentCourier">Urgent Specimen Courier</option>
-              <option value="Breakroom">Waiting Area Patient Refreshments</option>
-              <option value="LocalTravel">Emergency Patient Taxi Transport</option>
-              <option value="MinorRepairs">Facility Minor Repairs</option>
-              <option value="PettyCashReplenish">Float Bank Cashier Replenishment</option>
-            </select>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Payee / Vendor Name</mat-label>
+            <input matInput formControlName="payee" placeholder="e.g. Metro Courier Express" />
+          </mat-form-field>
 
-          <div class="form-group">
-            <label>Payee / Vendor Name:</label>
-            <input type="text" class="finance-input" formControlName="payee" placeholder="e.g. Metro Courier Express or Costco" />
-          </div>
-
-          <div class="form-group">
-            <label>Purpose / Description:</label>
-            <input type="text" class="finance-input" formControlName="description" placeholder="e.g. Urgent courier delivery of biopsy specimen" />
-          </div>
-
-          <div class="form-group">
-            <label>Receipt Reference # (Optional):</label>
-            <input type="text" class="finance-input" formControlName="receiptRef" placeholder="e.g. REC-MTR-991" />
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Purpose / Description</mat-label>
+            <input matInput formControlName="description" placeholder="e.g. Urgent specimen delivery" />
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="showNewPettyCashModal.set(false)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitPettyCash()" [disabled]="isProcessing() || newPettyCashForm.invalid">
-            <mat-icon>check</mat-icon>
-            <span>Save Voucher</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitPettyCash()" [disabled]="isProcessing() || newPettyCashForm.invalid">
+            Save Voucher
           </button>
+          <button mat-stroked-button type="button" (click)="showNewPettyCashModal.set(false)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: RECORD SUPPLIER INVOICE (AP)                       -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RECORD SUPPLIER INVOICE (AP) -->
   @if (showNewExpenseModal()) {
-    <div class="modal-overlay" (click)="showNewExpenseModal.set(false)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="new-expense-title" (click)="showNewExpenseModal.set(false)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>receipt</mat-icon>
-            <h3>Record Supplier Invoice (AP)</h3>
-          </div>
-          <button mat-icon-button (click)="showNewExpenseModal.set(false)">
-            <mat-icon>close</mat-icon>
+          <h3 id="new-expense-title">Record Supplier Invoice (AP)</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="showNewExpenseModal.set(false)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body" [formGroup]="newExpenseForm">
-          <div class="form-group">
-            <label>Category:</label>
-            <select class="finance-select" formControlName="category">
-              <option value="PharmaceuticalSupplier">Pharmaceutical Supplier (McKesson, Pfizer)</option>
-              <option value="MedicalSupplies">Medical Supplies & PPE (Medline)</option>
-              <option value="EquipmentMaintenance">Equipment Maintenance & Calibration</option>
-              <option value="WasteDisposal">Hazardous Waste Disposal (Stericycle)</option>
-              <option value="FacilityRent">Facility Rent & Utilities</option>
-              <option value="Miscellaneous">Miscellaneous Operations</option>
-            </select>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              <mat-option value="PharmaceuticalSupplier">Pharmaceutical Supplier</mat-option>
+              <mat-option value="MedicalSupplies">Medical Supplies & PPE</mat-option>
+              <mat-option value="EquipmentMaintenance">Equipment Maintenance</mat-option>
+              <mat-option value="WasteDisposal">Hazardous Waste Disposal</mat-option>
+              <mat-option value="FacilityRent">Facility Rent & Utilities</mat-option>
+              <mat-option value="Miscellaneous">Miscellaneous Operations</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Vendor / Supplier Name</mat-label>
+              <input matInput formControlName="vendorName" placeholder="e.g. McKesson Medical" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Supplier Invoice Ref #</mat-label>
+              <input matInput formControlName="invoiceReference" placeholder="e.g. INV-MCK-881920" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Vendor / Supplier Name:</label>
-            <input type="text" class="finance-input" formControlName="vendorName" placeholder="e.g. McKesson Medical-Surgical" />
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Invoice Description</mat-label>
+            <input matInput formControlName="description" />
+          </mat-form-field>
+
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Net Amount ($)</mat-label>
+              <input matInput type="number" formControlName="amount" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Tax Amount ($)</mat-label>
+              <input matInput type="number" formControlName="taxAmount" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Supplier Invoice Reference #:</label>
-            <input type="text" class="finance-input" formControlName="invoiceReference" placeholder="e.g. INV-MCK-881920" />
-          </div>
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Payment Due Date</mat-label>
+              <input matInput type="date" formControlName="dueDate" />
+            </mat-form-field>
 
-          <div class="form-group">
-            <label>Invoice Description:</label>
-            <input type="text" class="finance-input" formControlName="description" placeholder="e.g. Monthly antibiotic & consumable replenishment" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Net Amount ($):</label>
-              <input type="number" class="finance-input" formControlName="amount" />
-            </div>
-            <div class="form-group half">
-              <label>Tax Amount ($):</label>
-              <input type="number" class="finance-input" formControlName="taxAmount" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Payment Due Date:</label>
-              <input type="date" class="finance-input" formControlName="dueDate" />
-            </div>
-            <div class="form-group half">
-              <label>Payment Method:</label>
-              <select class="finance-select" formControlName="paymentMethod">
-                <option value="BankTransfer">Bank Wire / ACH</option>
-                <option value="CorporateCard">Corporate Card</option>
-                <option value="Cheque">Check</option>
-              </select>
-            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Payment Method</mat-label>
+              <mat-select formControlName="paymentMethod">
+                <mat-option value="BankTransfer">Bank Wire / ACH</mat-option>
+                <mat-option value="CorporateCard">Corporate Card</mat-option>
+                <mat-option value="Cheque">Check</mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="showNewExpenseModal.set(false)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitExpense()" [disabled]="isProcessing() || newExpenseForm.invalid">
-            <mat-icon>check</mat-icon>
-            <span>Save to AP Ledger</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitExpense()" [disabled]="isProcessing() || newExpenseForm.invalid">
+            Save to AP Ledger
           </button>
+          <button mat-stroked-button type="button" (click)="showNewExpenseModal.set(false)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: RUN MONTHLY PAYROLL BATCH                          -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: RUN MONTHLY PAYROLL BATCH -->
   @if (showGeneratePayrollModal()) {
-    <div class="modal-overlay" (click)="showGeneratePayrollModal.set(false)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="gen-payroll-title" (click)="showGeneratePayrollModal.set(false)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>auto_awesome</mat-icon>
-            <h3>Run Monthly Payroll & Commission Batch</h3>
-          </div>
-          <button mat-icon-button (click)="showGeneratePayrollModal.set(false)">
-            <mat-icon>close</mat-icon>
+          <h3 id="gen-payroll-title">Run Monthly Payroll Batch</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="showGeneratePayrollModal.set(false)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
-          <p>
-            This automated calculation pulls all active clinical staff, computes base salaries, adds doctor consultation commissions ($20.00 per consultation completed during this period), calculates overtime pay, and withholds estimated tax deductions (15%).
+          <p class="modal-note">
+            Calculates base salaries, doctor consultation commissions ($20.00 per completed visit), overtime pay, and 15% tax withholdings for active staff.
           </p>
 
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Period Month (1-12):</label>
-              <input type="number" class="finance-input" [(ngModel)]="payrollMonthInput" min="1" max="12" />
-            </div>
-            <div class="form-group half">
-              <label>Period Year:</label>
-              <input type="number" class="finance-input" [(ngModel)]="payrollYearInput" min="2020" max="2030" />
-            </div>
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Period Month (1–12)</mat-label>
+              <input matInput type="number" [(ngModel)]="payrollMonthInput" min="1" max="12" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Period Year</mat-label>
+              <input matInput type="number" [(ngModel)]="payrollYearInput" min="2020" max="2030" />
+            </mat-form-field>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="showGeneratePayrollModal.set(false)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitGeneratePayroll()" [disabled]="isProcessing()">
-            <mat-icon>play_arrow</mat-icon>
-            <span>Execute Calculation</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitGeneratePayroll()" [disabled]="isProcessing()">
+            Execute Calculation
           </button>
+          <button mat-stroked-button type="button" (click)="showGeneratePayrollModal.set(false)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: DISBURSE PAYROLL SALARY                            -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: DISBURSE PAYROLL SALARY -->
   @if (selectedPayrollForDisburse()) {
-    <div class="modal-overlay" (click)="selectedPayrollForDisburse.set(null)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="disburse-payroll-title" (click)="selectedPayrollForDisburse.set(null)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>send</mat-icon>
-            <h3>Disburse Staff Salary</h3>
-          </div>
-          <button mat-icon-button (click)="selectedPayrollForDisburse.set(null)">
-            <mat-icon>close</mat-icon>
+          <h3 id="disburse-payroll-title">Disburse Staff Salary</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="selectedPayrollForDisburse.set(null)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body">
           <div class="claim-info-banner">
-            <div>Staff: <strong>{{ selectedPayrollForDisburse()?.staffName }}</strong></div>
-            <div>Role: <strong>{{ selectedPayrollForDisburse()?.role }}</strong></div>
-            <div>Net Payable: <strong class="text-success">{{ selectedPayrollForDisburse()?.netSalaryPayable | currency:'USD' }}</strong></div>
+            <div><span class="sub-label">Staff</span><strong>{{ selectedPayrollForDisburse()?.staffName }}</strong></div>
+            <div><span class="sub-label">Role</span><strong>{{ selectedPayrollForDisburse()?.role }}</strong></div>
+            <div><span class="sub-label">Net Payable</span><strong class="text-success">{{ selectedPayrollForDisburse()?.netSalaryPayable | currency:'USD' }}</strong></div>
           </div>
 
-          <div class="form-group">
-            <label>Direct Deposit ACH / Bank Wire Trace Number:</label>
-            <input type="text" class="finance-input" [(ngModel)]="disbursePaymentRef" placeholder="e.g. ACH-PR-202609-SMITH" />
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Direct Deposit ACH / Bank Wire Trace #</mat-label>
+            <input matInput [(ngModel)]="disbursePaymentRef" placeholder="e.g. ACH-PR-202609-SMITH" />
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="selectedPayrollForDisburse.set(null)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitDisbursePayroll()" [disabled]="isProcessing() || !disbursePaymentRef">
-            <mat-icon>check_circle</mat-icon>
-            <span>Confirm Disbursement</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitDisbursePayroll()" [disabled]="isProcessing() || !disbursePaymentRef">
+            Confirm Disbursement
           </button>
+          <button mat-stroked-button type="button" (click)="selectedPayrollForDisburse.set(null)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: SUBMIT INSURANCE CLAIM                             -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SUBMIT INSURANCE CLAIM -->
   @if (showNewClaimModal()) {
-    <div class="modal-overlay" (click)="showNewClaimModal.set(false)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="new-claim-title" (click)="showNewClaimModal.set(false)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>health_and_safety</mat-icon>
-            <h3>Submit Electronic Insurance Claim</h3>
-          </div>
-          <button mat-icon-button (click)="showNewClaimModal.set(false)">
-            <mat-icon>close</mat-icon>
+          <h3 id="new-claim-title">Submit Electronic Insurance Claim</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="showNewClaimModal.set(false)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body" [formGroup]="newClaimForm">
-          <div class="form-group">
-            <label>Select Patient Invoice to Claim:</label>
-            <select class="finance-select" formControlName="invoiceId">
-              <option value="" disabled>-- Select Invoice --</option>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select Patient Invoice</mat-label>
+            <mat-select formControlName="invoiceId">
               @for (inv of invoices(); track inv.id) {
-                <option [value]="inv.id">{{ inv.invoiceNumber }} — {{ inv.patientName }} ({{ inv.totalAmount | currency:'USD' }})</option>
+                <mat-option [value]="inv.id">{{ inv.invoiceNumber }} — {{ inv.patientName }} ({{ inv.totalAmount | currency:'USD' }})</mat-option>
               }
-            </select>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Insurance Payer / TPA</mat-label>
+            <mat-select formControlName="insuranceProvider">
+              <mat-option value="BlueCross BlueShield">BlueCross BlueShield</mat-option>
+              <mat-option value="Aetna Health">Aetna Health</mat-option>
+              <mat-option value="Cigna Global">Cigna Global</mat-option>
+              <mat-option value="UnitedHealthcare">UnitedHealthcare</mat-option>
+              <mat-option value="Medicare Part B">Medicare Part B</mat-option>
+              <mat-option value="Medicaid State">Medicaid State Plan</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Policy Number</mat-label>
+              <input matInput formControlName="policyNumber" placeholder="e.g. BCBS-994821" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Group Number (Optional)</mat-label>
+              <input matInput formControlName="groupNumber" placeholder="e.g. GRP-TECH-44" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Insurance Payer / TPA:</label>
-            <select class="finance-select" formControlName="insuranceProvider">
-              <option value="BlueCross BlueShield">BlueCross BlueShield</option>
-              <option value="Aetna Health">Aetna Health</option>
-              <option value="Cigna Global">Cigna Global</option>
-              <option value="UnitedHealthcare">UnitedHealthcare</option>
-              <option value="Medicare Part B">Medicare Part B</option>
-              <option value="Medicaid State">Medicaid State Plan</option>
-            </select>
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Claim Amount ($)</mat-label>
+              <input matInput type="number" formControlName="claimAmount" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Patient Copay ($)</mat-label>
+              <input matInput type="number" formControlName="patientCopay" />
+            </mat-form-field>
           </div>
 
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Policy Number:</label>
-              <input type="text" class="finance-input" formControlName="policyNumber" placeholder="e.g. BCBS-994821" />
-            </div>
-            <div class="form-group half">
-              <label>Group Number (Optional):</label>
-              <input type="text" class="finance-input" formControlName="groupNumber" placeholder="e.g. GRP-TECH-44" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Claim Amount ($):</label>
-              <input type="number" class="finance-input" formControlName="claimAmount" />
-            </div>
-            <div class="form-group half">
-              <label>Patient Copay ($):</label>
-              <input type="number" class="finance-input" formControlName="patientCopay" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Clinical Justification & Notes:</label>
-            <textarea class="finance-textarea" formControlName="notes" rows="2" placeholder="Primary diagnostic ICD-10 or encounter description..."></textarea>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Clinical Justification & Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="2"></textarea>
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="showNewClaimModal.set(false)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitClaim()" [disabled]="isProcessing() || newClaimForm.invalid">
-            <mat-icon>send</mat-icon>
-            <span>Submit to Clearinghouse</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitClaim()" [disabled]="isProcessing() || newClaimForm.invalid">
+            Submit to Clearinghouse
           </button>
+          <button mat-stroked-button type="button" (click)="showNewClaimModal.set(false)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: REQUEST BILLING ADJUSTMENT / DISCOUNT               -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: REQUEST BILLING ADJUSTMENT -->
   @if (showNewAdjustmentModal()) {
-    <div class="modal-overlay" (click)="showNewAdjustmentModal.set(false)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="new-adj-title" (click)="showNewAdjustmentModal.set(false)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>price_check</mat-icon>
-            <h3>Request Billing Adjustment or Refund</h3>
-          </div>
-          <button mat-icon-button (click)="showNewAdjustmentModal.set(false)">
-            <mat-icon>close</mat-icon>
+          <h3 id="new-adj-title">Request Billing Adjustment</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="showNewAdjustmentModal.set(false)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body" [formGroup]="newAdjustmentForm">
-          <div class="form-group">
-            <label>Select Target Invoice:</label>
-            <select class="finance-select" formControlName="invoiceId">
-              <option value="" disabled>-- Select Invoice --</option>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Target Invoice</mat-label>
+            <mat-select formControlName="invoiceId">
               @for (inv of invoices(); track inv.id) {
-                <option [value]="inv.id">{{ inv.invoiceNumber }} — {{ inv.patientName }} ({{ inv.totalAmount | currency:'USD' }})</option>
+                <mat-option [value]="inv.id">{{ inv.invoiceNumber }} — {{ inv.patientName }} ({{ inv.totalAmount | currency:'USD' }})</mat-option>
               }
-            </select>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Adjustment Type</mat-label>
+              <mat-select formControlName="type">
+                <mat-option value="Discount">Courtesy / Staff Discount</mat-option>
+                <mat-option value="Refund">Duplicate Charge Refund</mat-option>
+                <mat-option value="BadDebtWriteOff">Bad Debt Write-Off</mat-option>
+                <mat-option value="CourtesyWaiver">Administrative Waiver</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Adjustment Amount ($)</mat-label>
+              <input matInput type="number" formControlName="amount" />
+            </mat-form-field>
           </div>
 
-          <div class="form-group">
-            <label>Adjustment Type:</label>
-            <select class="finance-select" formControlName="type">
-              <option value="Discount">Courtesy / Senior / Staff Discount</option>
-              <option value="Refund">Duplicate Charge Refund</option>
-              <option value="BadDebtWriteOff">Indigent / Bad Debt Write-Off</option>
-              <option value="CourtesyWaiver">Administrative Courtesy Waiver</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Adjustment Amount ($):</label>
-            <input type="number" class="finance-input" formControlName="amount" />
-          </div>
-
-          <div class="form-group">
-            <label>Detailed Clinical / Billing Reason:</label>
-            <textarea class="finance-textarea" formControlName="reason" rows="3" placeholder="Provide justification for finance audit review..."></textarea>
-          </div>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Detailed Reason</mat-label>
+            <textarea matInput formControlName="reason" rows="3"></textarea>
+          </mat-form-field>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="showNewAdjustmentModal.set(false)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitAdjustment()" [disabled]="isProcessing() || newAdjustmentForm.invalid">
-            <mat-icon>send</mat-icon>
-            <span>Submit for Review</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitAdjustment()" [disabled]="isProcessing() || newAdjustmentForm.invalid">
+            Submit for Review
           </button>
+          <button mat-stroked-button type="button" (click)="showNewAdjustmentModal.set(false)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- MODAL: CREATE INVOICE                                      -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: CREATE INVOICE -->
   @if (showNewInvoiceModal()) {
-    <div class="modal-overlay" (click)="showNewInvoiceModal.set(false)">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="new-inv-title" (click)="showNewInvoiceModal.set(false)">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon>add_card</mat-icon>
-            <h3>Generate Outpatient Billing Invoice</h3>
-          </div>
-          <button mat-icon-button (click)="showNewInvoiceModal.set(false)">
-            <mat-icon>close</mat-icon>
+          <h3 id="new-inv-title">Generate Outpatient Invoice</h3>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="showNewInvoiceModal.set(false)">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body" [formGroup]="invoiceForm">
-          <div class="form-group">
-            <label>Patient:</label>
-            <select class="finance-select" formControlName="patientId">
-              <option value="" disabled>-- Select Patient --</option>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Patient</mat-label>
+            <mat-select formControlName="patientId">
               @for (p of patients(); track p.id) {
-                <option [value]="p.id">{{ p.firstName }} {{ p.lastName }} ({{ p.medicalRecordNumber }})</option>
+                <mat-option [value]="p.id">{{ p.firstName }} {{ p.lastName }} ({{ p.medicalRecordNumber }})</mat-option>
               }
-            </select>
-          </div>
+            </mat-select>
+          </mat-form-field>
 
           <div class="preset-pill-row">
             <span class="preset-label">Quick Presets:</span>
@@ -1666,122 +1510,94 @@
             }
           </div>
 
-          <div class="form-group">
-            <label>Service Description:</label>
-            <input type="text" class="finance-input" formControlName="description" />
-          </div>
+          <div class="form-row-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Service Description</mat-label>
+              <input matInput formControlName="description" />
+            </mat-form-field>
 
-          <div class="form-group">
-            <label>Total Price ($):</label>
-            <input type="number" class="finance-input" formControlName="amount" />
+            <mat-form-field appearance="outline">
+              <mat-label>Total Price ($)</mat-label>
+              <input matInput type="number" formControlName="amount" />
+            </mat-form-field>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button mat-button (click)="showNewInvoiceModal.set(false)">Cancel</button>
-          <button mat-flat-button class="action-btn-primary" (click)="submitInvoice()" [disabled]="isProcessing() || invoiceForm.invalid">
-            <mat-icon>check_circle</mat-icon>
-            <span>Create Invoice</span>
+          <button mat-flat-button color="primary" type="button" (click)="submitInvoice()" [disabled]="isProcessing() || invoiceForm.invalid">
+            Create Invoice
           </button>
+          <button mat-stroked-button type="button" (click)="showNewInvoiceModal.set(false)">Cancel</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- ===================================== -->
-  <!-- MODAL: PDF DESIGN THEME CHOOSER      -->
-  <!-- ===================================== -->
+  <!-- MODAL: PDF DESIGN TEMPLATE -->
   @if (showPdfDesignModal()) {
-    <div class="modal-overlay" (click)="closePdfDesignModal()">
-      <div class="modal-card modal-lg" style="max-width: 820px;" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pdf-design-title" (click)="closePdfDesignModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title-wrap">
-            <mat-icon style="color: #ef4444; font-size: 28px; width: 28px; height: 28px;">picture_as_pdf</mat-icon>
-            <div>
-              <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Choose Invoice PDF Design Theme</h3>
-              <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-secondary);">
-                Select a designer layout to render this official clinical billing document.
-              </p>
-            </div>
+          <div>
+            <h3 id="pdf-design-title">Select Invoice PDF Layout</h3>
+            <p class="modal-sub">Choose an official template to render the invoice PDF</p>
           </div>
-          <button mat-icon-button (click)="closePdfDesignModal()">
-            <mat-icon>close</mat-icon>
+          <button mat-icon-button type="button" aria-label="Close dialog" (click)="closePdfDesignModal()">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
-        <div class="modal-body" style="padding: 20px;">
-          <div class="design-theme-cards-grid">
-            <!-- Theme 1: Executive Navy & Gold -->
-            <div class="theme-card" [class.selected]="selectedPdfDesign() === 'ExecutiveNavy'" (click)="selectPdfDesign('ExecutiveNavy')">
-              <div class="theme-header-bar navy">
-                <span class="theme-tag">Executive Standard</span>
+        <div class="modal-body">
+          <div class="design-options-list" role="radiogroup" aria-label="PDF design templates">
+            <button
+              type="button"
+              class="design-option-btn"
+              [class.selected]="selectedPdfDesign() === 'ExecutiveNavy'"
+              [attr.aria-pressed]="selectedPdfDesign() === 'ExecutiveNavy'"
+              (click)="selectPdfDesign('ExecutiveNavy')"
+            >
+              <div class="design-option-head">
+                <strong>Executive Navy</strong>
+                <span class="design-tag">Standard Statement</span>
               </div>
-              <div class="theme-card-body">
-                <div class="theme-title-row">
-                  <h4>👔 Executive Navy & Gold</h4>
-                  @if (selectedPdfDesign() === 'ExecutiveNavy') {
-                    <mat-icon class="check-icon">check_circle</mat-icon>
-                  }
-                </div>
-                <p class="theme-desc">Formal hospital statement with dark slate navy headers, gold amber accents, and serif typography.</p>
-                <div class="theme-palette-dots">
-                  <span class="dot" style="background: #0F172A;" title="Dark Navy"></span>
-                  <span class="dot" style="background: #D97706;" title="Amber Gold"></span>
-                  <span class="dot" style="background: #F8FAFC;" title="Clean Slate"></span>
-                </div>
-              </div>
-            </div>
+              <p class="design-desc">Formal statement layout with navy headers and serif typography.</p>
+            </button>
 
-            <!-- Theme 2: Modern Emerald & Mint -->
-            <div class="theme-card" [class.selected]="selectedPdfDesign() === 'ModernEmerald'" (click)="selectPdfDesign('ModernEmerald')">
-              <div class="theme-header-bar emerald">
-                <span class="theme-tag">Clinical Tech</span>
+            <button
+              type="button"
+              class="design-option-btn"
+              [class.selected]="selectedPdfDesign() === 'ModernEmerald'"
+              [attr.aria-pressed]="selectedPdfDesign() === 'ModernEmerald'"
+              (click)="selectPdfDesign('ModernEmerald')"
+            >
+              <div class="design-option-head">
+                <strong>Modern Clinical</strong>
+                <span class="design-tag">Outpatient Care</span>
               </div>
-              <div class="theme-card-body">
-                <div class="theme-title-row">
-                  <h4>🌿 Modern Emerald & Mint</h4>
-                  @if (selectedPdfDesign() === 'ModernEmerald') {
-                    <mat-icon class="check-icon">check_circle</mat-icon>
-                  }
-                </div>
-                <p class="theme-desc">Fresh, clean clinical healthcare look with forest emerald headers, crisp mint accents, and modern layout.</p>
-                <div class="theme-palette-dots">
-                  <span class="dot" style="background: #065F46;" title="Forest Emerald"></span>
-                  <span class="dot" style="background: #059669;" title="Vibrant Mint"></span>
-                  <span class="dot" style="background: #F0FDF4;" title="Soft Mint Tint"></span>
-                </div>
-              </div>
-            </div>
+              <p class="design-desc">Structured healthcare invoice summary with emerald header bars.</p>
+            </button>
 
-            <!-- Theme 3: Clinical Cyan & Cobalt -->
-            <div class="theme-card" [class.selected]="selectedPdfDesign() === 'ClinicalCyan'" (click)="selectPdfDesign('ClinicalCyan')">
-              <div class="theme-header-bar cyan">
-                <span class="theme-tag">Diagnostic Center</span>
+            <button
+              type="button"
+              class="design-option-btn"
+              [class.selected]="selectedPdfDesign() === 'ClinicalCyan'"
+              [attr.aria-pressed]="selectedPdfDesign() === 'ClinicalCyan'"
+              (click)="selectPdfDesign('ClinicalCyan')"
+            >
+              <div class="design-option-head">
+                <strong>Diagnostic Center</strong>
+                <span class="design-tag">High Contrast</span>
               </div>
-              <div class="theme-card-body">
-                <div class="theme-title-row">
-                  <h4>💎 Clinical Cyan & Cobalt</h4>
-                  @if (selectedPdfDesign() === 'ClinicalCyan') {
-                    <mat-icon class="check-icon">check_circle</mat-icon>
-                  }
-                </div>
-                <p class="theme-desc">High-tech digital care center design with deep hospital sky blue, cyan highlights, and bold contrast.</p>
-                <div class="theme-palette-dots">
-                  <span class="dot" style="background: #0369A1;" title="Hospital Blue"></span>
-                  <span class="dot" style="background: #0284C7;" title="Cyan Accent"></span>
-                  <span class="dot" style="background: #F0F9FF;" title="Ice White"></span>
-                </div>
-              </div>
-            </div>
+              <p class="design-desc">High-contrast hospital billing breakdown for lab and imaging items.</p>
+            </button>
           </div>
         </div>
 
-        <div class="modal-footer" style="padding: 16px 20px; display: flex; justify-content: flex-end; gap: 12px;">
-          <button mat-button (click)="closePdfDesignModal()">Cancel</button>
-          <button mat-flat-button color="primary" (click)="confirmDownloadPdf()" class="action-btn-primary" style="background: #0284c7; color: #fff; font-weight: 700; border-radius: 8px; padding: 0 20px;">
-            <mat-icon>file_download</mat-icon>
-            <span>Download Invoice PDF</span>
+        <div class="modal-footer">
+          <button mat-flat-button color="primary" type="button" (click)="confirmDownloadPdf()">
+            Download Invoice PDF
           </button>
+          <button mat-stroked-button type="button" (click)="closePdfDesignModal()">Cancel</button>
         </div>
       </div>
     </div>

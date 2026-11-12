@@ -1,17 +1,15 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTabsModule } from '@angular/material/tabs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
 import { BillingStore } from '../../store/billing.store';
@@ -28,7 +26,10 @@ import {
   PayrollRecord
 } from '../../models/finance.model';
 import { DailyCashReconciliationResponse } from '../../models/reception.model';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-billing',
@@ -38,16 +39,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-    MatTableModule,
-    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatTooltipModule,
-    MatProgressSpinnerModule,
-    MatTabsModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './billing.component.html',
   styleUrls: ['./billing.component.scss']
@@ -71,6 +72,22 @@ export class BillingComponent implements OnInit {
   isLabTech = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'labtechnician' || this.authService.hasRole('LabTechnician'));
   canManageBilling = computed(() => this.isAccountant() || this.isReceptionist());
   canManageAccounting = computed(() => this.isAccountant());
+
+  pageTitle = computed(() => {
+    if (this.isPharmacist()) return 'Dispensary Invoices & Collections';
+    if (this.isLabTech()) return 'Laboratory Invoices & Collections';
+    return 'Financial Control Center';
+  });
+
+  pageSubtitle = computed(() => {
+    if (this.isPharmacist()) {
+      return 'Prescription dispensing invoices, OTC receipts, patient copays, and pharmacy ledger';
+    }
+    if (this.isLabTech()) {
+      return 'Diagnostic pathology invoices, accession billing, requisition charges, and laboratory ledger';
+    }
+    return 'Accounts receivable, insurance claims, supplier payables, petty cash, payroll, and shift audits';
+  });
 
   // Active Tab
   activeTab = signal<string>('invoices');
@@ -127,6 +144,14 @@ export class BillingComponent implements OnInit {
   payrollRecords = signal<PayrollRecord[]>([]);
   dailyReconciliations = signal<DailyCashReconciliationResponse[]>([]);
 
+  // Per-tab loading flags
+  claimsLoading = signal(false);
+  adjustmentsLoading = signal(false);
+  expensesLoading = signal(false);
+  pettyCashLoading = signal(false);
+  payrollLoading = signal(false);
+  reconciliationsLoading = signal(false);
+
   // Patients list for selects
   patients = signal<any[]>([]);
 
@@ -137,9 +162,8 @@ export class BillingComponent implements OnInit {
   expenseStatusFilter = signal<string>('All');
   reconciliationAuditFilter = signal<string>('All');
 
-  // Loading & Processing
+  // Processing state
   isProcessing = signal(false);
-  isLoadingData = signal(false);
 
   // Modals & Drawers
   showNewInvoiceModal = signal(false);
@@ -220,6 +244,11 @@ export class BillingComponent implements OnInit {
   auditStatusInput = 'VerifiedBalanced';
   auditNotesInput = '';
 
+  // PDF Design Modal
+  showPdfDesignModal = signal(false);
+  activePdfInvoiceId = signal<string | null>(null);
+  selectedPdfDesign = signal<'ExecutiveNavy' | 'ModernEmerald' | 'ClinicalCyan'>('ExecutiveNavy');
+
   servicePresets = [
     { label: 'General Consultation ($50.00)', desc: 'General Medical Consultation', price: 50 },
     { label: 'Comprehensive Diagnostic Lab ($120.00)', desc: 'Diagnostic Laboratory Screening', price: 120 },
@@ -240,7 +269,6 @@ export class BillingComponent implements OnInit {
     const status = this.invoiceStatusFilter();
     const dept = this.invoiceDeptFilter();
 
-    // Pharmacist role or dept=Pharmacy: strictly restrict to Dispensary invoices
     if (this.isPharmacist() || (dept || '').toLowerCase() === 'pharmacy') {
       list = list.filter(i =>
         (i.department || '').toLowerCase() === 'pharmacy' ||
@@ -262,19 +290,19 @@ export class BillingComponent implements OnInit {
   });
 
   filteredClaims = computed(() => {
-    let list = this.claims();
+    const list = this.claims();
     const status = this.claimStatusFilter();
     if (status !== 'All') {
-      list = list.filter(c => c.status.toLowerCase() === status.toLowerCase());
+      return list.filter(c => c.status.toLowerCase() === status.toLowerCase());
     }
     return list;
   });
 
   filteredAdjustments = computed(() => {
-    let list = this.adjustments();
+    const list = this.adjustments();
     const status = this.adjustmentStatusFilter();
     if (status !== 'All') {
-      list = list.filter(a => a.status.toLowerCase() === status.toLowerCase());
+      return list.filter(a => a.status.toLowerCase() === status.toLowerCase());
     }
     return list;
   });
@@ -294,17 +322,16 @@ export class BillingComponent implements OnInit {
   });
 
   filteredReconciliations = computed(() => {
-    let list = this.dailyReconciliations();
+    const list = this.dailyReconciliations();
     const filter = this.reconciliationAuditFilter();
     if (filter === 'Pending') {
-      list = list.filter(r => !r.auditStatus || r.auditStatus === 'Pending' || r.auditStatus === 'PendingAudit');
+      return list.filter(r => !r.auditStatus || r.auditStatus === 'Pending' || r.auditStatus === 'PendingAudit');
     } else if (filter !== 'All') {
-      list = list.filter(r => (r.auditStatus || '').toLowerCase() === filter.toLowerCase());
+      return list.filter(r => (r.auditStatus || '').toLowerCase() === filter.toLowerCase());
     }
     return list;
   });
 
-  // Payroll summary totals
   payrollTotals = computed(() => {
     const records = this.payrollRecords();
     const base = records.reduce((acc, r) => acc + (r.baseSalary || 0), 0);
@@ -314,6 +341,23 @@ export class BillingComponent implements OnInit {
     const net = records.reduce((acc, r) => acc + (r.netSalaryPayable || 0), 0);
     return { base, comms, ot, tax, net, count: records.length };
   });
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showPdfDesignModal()) this.closePdfDesignModal();
+    else if (this.selectedInvoiceForPay()) this.selectedInvoiceForPay.set(null);
+    else if (this.selectedClaimForReconcile()) this.selectedClaimForReconcile.set(null);
+    else if (this.selectedAdjustmentForReview()) this.selectedAdjustmentForReview.set(null);
+    else if (this.selectedExpenseForSettle()) this.selectedExpenseForSettle.set(null);
+    else if (this.selectedReconciliationForAudit()) this.selectedReconciliationForAudit.set(null);
+    else if (this.showNewPettyCashModal()) this.showNewPettyCashModal.set(false);
+    else if (this.showNewExpenseModal()) this.showNewExpenseModal.set(false);
+    else if (this.showGeneratePayrollModal()) this.showGeneratePayrollModal.set(false);
+    else if (this.selectedPayrollForDisburse()) this.selectedPayrollForDisburse.set(null);
+    else if (this.showNewClaimModal()) this.showNewClaimModal.set(false);
+    else if (this.showNewAdjustmentModal()) this.showNewAdjustmentModal.set(false);
+    else if (this.showNewInvoiceModal()) this.showNewInvoiceModal.set(false);
+  }
 
   constructor() {
     this.liveSyncService.invoicePaid$.pipe(
@@ -328,11 +372,10 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.billingStore.loadInvoices();
     this.loadPatients();
 
-    // Listen to queryParams for tab navigation & department scoping
     this.route.queryParams.subscribe(params => {
       const dept = params['dept'];
       if (dept === 'Pharmacy' || this.isPharmacist()) {
@@ -352,7 +395,6 @@ export class BillingComponent implements OnInit {
       }
     });
 
-    // Guard accounting-only API calls from running for Pharmacist and Lab Technician roles
     if (!this.isPharmacist() && !this.isLabTech()) {
       this.loadFinanceMetrics();
       this.loadClaims();
@@ -364,7 +406,24 @@ export class BillingComponent implements OnInit {
     }
   }
 
-  setTab(tab: string) {
+  getStatusTone(status?: string | null): StatusTone {
+    const normalized = (status || '').toLowerCase();
+    if (['paid', 'approved', 'remitted', 'balanced', 'verifiedbalanced', 'disbursed', 'replenishment'].includes(normalized)) {
+      return 'success';
+    }
+    if (['unpaid', 'denied', 'rejected', 'disputed', 'baddebtwriteoff'].includes(normalized)) {
+      return 'danger';
+    }
+    if (['partiallypaid', 'inreview', 'pendingapproval', 'discrepancy', 'discrepancyapproved', 'pending', 'pendingaudit', 'draft'].includes(normalized)) {
+      return 'warning';
+    }
+    if (['submitted', 'discount', 'pharmacy'].includes(normalized)) {
+      return 'info';
+    }
+    return 'neutral';
+  }
+
+  setTab(tab: string): void {
     this.activeTab.set(tab);
     this.router.navigate([], {
       relativeTo: this.route,
@@ -374,7 +433,7 @@ export class BillingComponent implements OnInit {
     this.loadTabData(tab);
   }
 
-  loadTabData(tab: string) {
+  loadTabData(tab: string): void {
     switch (tab) {
       case 'invoices':
         this.billingStore.loadInvoices();
@@ -400,7 +459,7 @@ export class BillingComponent implements OnInit {
     }
   }
 
-  loadPatients() {
+  loadPatients(): void {
     this.patientService.getAll(1, 100).subscribe({
       next: (res: any) => {
         const list = res.items || (Array.isArray(res) ? res : []);
@@ -410,57 +469,81 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  loadFinanceMetrics() {
+  loadFinanceMetrics(): void {
     this.financeService.getMetrics().subscribe({
       next: (m) => this.metrics.set(m),
       error: () => {}
     });
   }
 
-  loadClaims() {
+  loadClaims(): void {
+    this.claimsLoading.set(true);
     this.financeService.getClaims().subscribe({
-      next: (c) => this.claims.set(c),
-      error: () => {}
+      next: (c) => {
+        this.claims.set(c);
+        this.claimsLoading.set(false);
+      },
+      error: () => this.claimsLoading.set(false)
     });
   }
 
-  loadAdjustments() {
+  loadAdjustments(): void {
+    this.adjustmentsLoading.set(true);
     this.financeService.getAdjustments().subscribe({
-      next: (a) => this.adjustments.set(a),
-      error: () => {}
+      next: (a) => {
+        this.adjustments.set(a);
+        this.adjustmentsLoading.set(false);
+      },
+      error: () => this.adjustmentsLoading.set(false)
     });
   }
 
-  loadExpenses() {
+  loadExpenses(): void {
+    this.expensesLoading.set(true);
     this.financeService.getExpenses().subscribe({
-      next: (e) => this.expenses.set(e),
-      error: () => {}
+      next: (e) => {
+        this.expenses.set(e);
+        this.expensesLoading.set(false);
+      },
+      error: () => this.expensesLoading.set(false)
     });
   }
 
-  loadPettyCash() {
+  loadPettyCash(): void {
+    this.pettyCashLoading.set(true);
     this.financeService.getPettyCash().subscribe({
-      next: (v) => this.pettyCashVouchers.set(v),
-      error: () => {}
+      next: (v) => {
+        this.pettyCashVouchers.set(v);
+        this.pettyCashLoading.set(false);
+      },
+      error: () => this.pettyCashLoading.set(false)
     });
   }
 
-  loadPayroll() {
+  loadPayroll(): void {
+    this.payrollLoading.set(true);
     this.financeService.getPayroll(this.payrollMonthInput, this.payrollYearInput).subscribe({
-      next: (p) => this.payrollRecords.set(p),
-      error: () => {}
+      next: (p) => {
+        this.payrollRecords.set(p);
+        this.payrollLoading.set(false);
+      },
+      error: () => this.payrollLoading.set(false)
     });
   }
 
-  loadReconciliations() {
+  loadReconciliations(): void {
+    this.reconciliationsLoading.set(true);
     this.financeService.getDailyReconciliations().subscribe({
-      next: (r) => this.dailyReconciliations.set(r),
-      error: () => {}
+      next: (r) => {
+        this.dailyReconciliations.set(r);
+        this.reconciliationsLoading.set(false);
+      },
+      error: () => this.reconciliationsLoading.set(false)
     });
   }
 
-  // ─── Invoice Operations ───
-  applyPreset(preset: any) {
+  // Invoice Operations
+  applyPreset(preset: any): void {
     if (preset.desc) {
       this.invoiceForm.patchValue({
         description: preset.desc,
@@ -469,14 +552,14 @@ export class BillingComponent implements OnInit {
     }
   }
 
-  openPaymentDialog(invoice: any) {
+  openPaymentDialog(invoice: any): void {
     this.selectedInvoiceForPay.set(invoice);
     this.paymentAmountInput = invoice.balanceDue;
     this.paymentMethodInput = 'Cash';
     this.paymentReferenceInput = '';
   }
 
-  submitPayment() {
+  submitPayment(): void {
     const inv = this.selectedInvoiceForPay();
     if (!inv) return;
 
@@ -492,7 +575,7 @@ export class BillingComponent implements OnInit {
     this.loadFinanceMetrics();
   }
 
-  submitInvoice() {
+  submitInvoice(): void {
     if (this.invoiceForm.invalid) {
       this.invoiceForm.markAllAsTouched();
       return;
@@ -516,37 +599,33 @@ export class BillingComponent implements OnInit {
     this.loadFinanceMetrics();
   }
 
-  showPdfDesignModal = signal(false);
-  activePdfInvoiceId = signal<string | null>(null);
-  selectedPdfDesign = signal<'ExecutiveNavy' | 'ModernEmerald' | 'ClinicalCyan'>('ExecutiveNavy');
-
-  openPdfDesignModal(invoiceId: string) {
+  openPdfDesignModal(invoiceId: string): void {
     this.activePdfInvoiceId.set(invoiceId);
     this.showPdfDesignModal.set(true);
   }
 
-  closePdfDesignModal() {
+  closePdfDesignModal(): void {
     this.showPdfDesignModal.set(false);
     this.activePdfInvoiceId.set(null);
   }
 
-  selectPdfDesign(design: 'ExecutiveNavy' | 'ModernEmerald' | 'ClinicalCyan') {
+  selectPdfDesign(design: 'ExecutiveNavy' | 'ModernEmerald' | 'ClinicalCyan'): void {
     this.selectedPdfDesign.set(design);
   }
 
-  confirmDownloadPdf() {
+  confirmDownloadPdf(): void {
     const id = this.activePdfInvoiceId();
     if (!id) return;
     this.billingStore.downloadInvoicePdf(id, this.selectedPdfDesign());
     this.closePdfDesignModal();
   }
 
-  downloadPdf(invoiceId: string) {
+  downloadPdf(invoiceId: string): void {
     this.openPdfDesignModal(invoiceId);
   }
 
-  // ─── Claims Operations ───
-  openNewClaimModal(invoice?: any) {
+  // Claims Operations
+  openNewClaimModal(invoice?: any): void {
     if (invoice) {
       this.newClaimForm.patchValue({
         invoiceId: invoice.id,
@@ -557,7 +636,7 @@ export class BillingComponent implements OnInit {
     this.showNewClaimModal.set(true);
   }
 
-  submitClaim() {
+  submitClaim(): void {
     if (this.newClaimForm.invalid) {
       this.newClaimForm.markAllAsTouched();
       return;
@@ -588,7 +667,7 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  openReconcileClaimModal(claim: InsuranceClaim) {
+  openReconcileClaimModal(claim: InsuranceClaim): void {
     this.selectedClaimForReconcile.set(claim);
     this.reconcileClaimForm.patchValue({
       status: 'Remitted',
@@ -599,7 +678,7 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  submitReconcileClaim() {
+  submitReconcileClaim(): void {
     const claim = this.selectedClaimForReconcile();
     if (!claim || this.reconcileClaimForm.invalid) return;
 
@@ -627,8 +706,8 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  // ─── Adjustments Operations ───
-  openNewAdjustmentModal(invoice?: any) {
+  // Adjustments Operations
+  openNewAdjustmentModal(invoice?: any): void {
     if (invoice) {
       this.newAdjustmentForm.patchValue({
         invoiceId: invoice.id,
@@ -639,7 +718,7 @@ export class BillingComponent implements OnInit {
     this.showNewAdjustmentModal.set(true);
   }
 
-  submitAdjustment() {
+  submitAdjustment(): void {
     if (this.newAdjustmentForm.invalid) {
       this.newAdjustmentForm.markAllAsTouched();
       return;
@@ -667,12 +746,12 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  openReviewAdjustmentModal(adj: BillingAdjustment) {
+  openReviewAdjustmentModal(adj: BillingAdjustment): void {
     this.selectedAdjustmentForReview.set(adj);
     this.reviewAdjustmentNotes = '';
   }
 
-  submitReviewAdjustment(decision: 'Approved' | 'Rejected') {
+  submitReviewAdjustment(decision: 'Approved' | 'Rejected'): void {
     const adj = this.selectedAdjustmentForReview();
     if (!adj) return;
 
@@ -696,8 +775,8 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  // ─── Expenses Operations ───
-  submitExpense() {
+  // Expenses Operations
+  submitExpense(): void {
     if (this.newExpenseForm.invalid) {
       this.newExpenseForm.markAllAsTouched();
       return;
@@ -730,14 +809,14 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  openSettleExpenseModal(exp: ExpenseTransaction) {
+  openSettleExpenseModal(exp: ExpenseTransaction): void {
     this.selectedExpenseForSettle.set(exp);
     this.settlePaymentMethod = exp.paymentMethod || 'BankTransfer';
     this.settlePaymentRef = `PAY-VND-${Date.now().toString().slice(-6)}`;
     this.settlePaymentNotes = '';
   }
 
-  submitSettleExpense() {
+  submitSettleExpense(): void {
     const exp = this.selectedExpenseForSettle();
     if (!exp) return;
 
@@ -761,8 +840,8 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  // ─── Petty Cash Operations ───
-  submitPettyCash() {
+  // Petty Cash Operations
+  submitPettyCash(): void {
     if (this.newPettyCashForm.invalid) {
       this.newPettyCashForm.markAllAsTouched();
       return;
@@ -792,8 +871,8 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  // ─── Payroll Operations ───
-  submitGeneratePayroll() {
+  // Payroll Operations
+  submitGeneratePayroll(): void {
     this.isProcessing.set(true);
     this.financeService.generatePayroll({
       periodMonth: Number(this.payrollMonthInput),
@@ -813,12 +892,12 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  openDisbursePayrollModal(record: PayrollRecord) {
+  openDisbursePayrollModal(record: PayrollRecord): void {
     this.selectedPayrollForDisburse.set(record);
     this.disbursePaymentRef = `ACH-PR-${record.periodYear}${record.periodMonth.toString().padStart(2, '0')}-${Date.now().toString().slice(-4)}`;
   }
 
-  submitDisbursePayroll() {
+  submitDisbursePayroll(): void {
     const record = this.selectedPayrollForDisburse();
     if (!record) return;
 
@@ -840,14 +919,14 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  // ─── Receptionist Drawer Reconciliation Audit ───
-  openAuditDrawerModal(recon: DailyCashReconciliationResponse) {
+  // Receptionist Drawer Reconciliation Audit
+  openAuditDrawerModal(recon: DailyCashReconciliationResponse): void {
     this.selectedReconciliationForAudit.set(recon);
     this.auditStatusInput = recon.discrepancyAmount === 0 ? 'VerifiedBalanced' : 'DiscrepancyApproved';
     this.auditNotesInput = recon.auditNotes || '';
   }
 
-  submitAuditDrawer() {
+  submitAuditDrawer(): void {
     const recon = this.selectedReconciliationForAudit();
     if (!recon) return;
 
