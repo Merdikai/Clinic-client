@@ -1,24 +1,24 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { UserManagementService, UserDto, CreateUserDto } from '../../services/user-management.service';
-import { PermissionService, RolePermissionMatrixDto } from '../../services/permission.service';
+import { PermissionService } from '../../services/permission.service';
 import { EmrAccessService, EmrAccessAuditLog } from '../../services/emr-access.service';
 import { StaffDutyService, StaffDutyShift, DoctorDelegation } from '../../services/staff-duty.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../ui/toast/toast.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 export interface PermissionItem {
   key: string;
@@ -34,16 +34,15 @@ export interface PermissionItem {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatTooltipModule,
-    MatSnackBarModule,
-    MatProgressSpinnerModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss']
@@ -53,13 +52,14 @@ export class UserManagementComponent implements OnInit {
   private permissionService = inject(PermissionService);
   private emrAccessService = inject(EmrAccessService);
   public dutyService = inject(StaffDutyService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public authService = inject(AuthService);
 
   activeTab = signal<'directory' | 'pbac' | 'audit' | 'roster'>('directory');
   availableRoles: string[] = ['Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'Accountant', 'LabTechnician', 'Radiologist', 'Admin', 'Patient'];
+  availableModules: string[] = ['Clinical', 'Appointments', 'Pharmacy', 'Laboratory', 'Radiology', 'Billing', 'Governance', 'Security'];
 
   // --- TAB 1: USERS DIRECTORY ---
   users = signal<UserDto[]>([]);
@@ -379,6 +379,21 @@ export class UserManagementComponent implements OnInit {
     notes: ''
   };
 
+  delegationReasons: string[] = [
+    'Clinical Coverage / On-Call Rotation',
+    'Maternity / Paternity Leave',
+    'Medical Leave of Absence',
+    'Conference / CME Training',
+    'Emergency Coverage'
+  ];
+
+  availableDoctors = computed(() =>
+    this.users().filter(u => {
+      const roles = u.roles || (u.role ? [u.role] : []);
+      return roles.some(r => r.toLowerCase() === 'doctor');
+    })
+  );
+
   constructor() {
     this.router.events
       .pipe(
@@ -388,6 +403,15 @@ export class UserManagementComponent implements OnInit {
       .subscribe(() => {
         this.syncTabWithRoute();
       });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showCreateModal()) this.closeCreateUserModal();
+    else if (this.showRoleModal()) this.closeRoleModal();
+    else if (this.showResetPasswordModal() && !this.isResettingPassword()) this.closeResetPasswordModal();
+    else if (this.showAuditDetailModal()) this.closeAuditDetailModal();
+    else if (this.showDelegationModal()) this.closeDelegationModal();
   }
 
   ngOnInit(): void {
@@ -417,14 +441,14 @@ export class UserManagementComponent implements OnInit {
     else if (tab === 'roster') this.loadDutyRoster();
   }
 
-  setTab(tab: 'directory' | 'pbac' | 'audit' | 'roster') {
+  setTab(tab: 'directory' | 'pbac' | 'audit' | 'roster'): void {
     this.activeTab.set(tab);
     this.router.navigate(['/users', tab]);
     this.loadTabData(tab);
   }
 
   // --- TAB 1 METHODS ---
-  loadUsers() {
+  loadUsers(): void {
     this.loadingUsers.set(true);
     this.userService.getUsers().subscribe({
       next: (res) => {
@@ -450,13 +474,13 @@ export class UserManagementComponent implements OnInit {
         this.loadingUsers.set(false);
       },
       error: () => {
-        this.snackBar.open('Failed to load users directory.', 'Close', { duration: 3000 });
+        this.toast.error('Failed to load users directory.');
         this.loadingUsers.set(false);
       }
     });
   }
 
-  openCreateUserModal() {
+  openCreateUserModal(): void {
     this.newUser = {
       userName: '',
       email: '',
@@ -469,132 +493,132 @@ export class UserManagementComponent implements OnInit {
     this.showCreateModal.set(true);
   }
 
-  closeCreateUserModal() {
+  closeCreateUserModal(): void {
     this.showCreateModal.set(false);
   }
 
-  submitCreateUser() {
+  submitCreateUser(): void {
     if (!this.newUser.userName || !this.newUser.email || !this.newUser.password) {
-      this.snackBar.open('Please fill out all required fields.', 'Close', { duration: 3000 });
+      this.toast.warning('Please fill out all required fields.');
       return;
     }
 
     this.userService.createUser(this.newUser).subscribe({
       next: () => {
-        this.snackBar.open(`Staff member '${this.newUser.userName}' provisioned with role '${this.newUser.role}'.`, 'Close', { duration: 3500 });
+        this.toast.success(`Staff member '${this.newUser.userName}' provisioned with role '${this.newUser.role}'.`);
         this.showCreateModal.set(false);
         this.loadUsers();
       },
       error: (err) => {
         const msg = err.error?.detail || err.error?.message || 'Failed to create staff member.';
-        this.snackBar.open(msg, 'Close', { duration: 4000 });
+        this.toast.error(msg);
       }
     });
   }
 
-  openRoleModal(user: UserDto) {
+  openRoleModal(user: UserDto): void {
     this.selectedUserForRole.set(user);
     this.newRoleToAssign.set('Doctor');
     this.showRoleModal.set(true);
   }
 
-  closeRoleModal() {
+  closeRoleModal(): void {
     this.showRoleModal.set(false);
     this.selectedUserForRole.set(null);
   }
 
-  assignRoleToUser() {
+  assignRoleToUser(): void {
     const user = this.selectedUserForRole();
     if (!user) return;
 
     this.userService.assignRole(user.id || '', this.newRoleToAssign()).subscribe({
       next: () => {
-        this.snackBar.open(`Role '${this.newRoleToAssign()}' assigned to ${user.userName}.`, 'Close', { duration: 3000 });
+        this.toast.success(`Role '${this.newRoleToAssign()}' assigned to ${user.userName}.`);
         this.closeRoleModal();
         this.loadUsers();
       },
       error: (err) => {
-        this.snackBar.open(err.error?.message || 'Failed to assign role.', 'Close', { duration: 3000 });
+        this.toast.error(err.error?.message || 'Failed to assign role.');
       }
     });
   }
 
-  removeRoleFromUser(user: UserDto, roleName: string) {
+  removeRoleFromUser(user: UserDto, roleName: string): void {
     if (!confirm(`Remove role '${roleName}' from ${user.userName || user.firstName}?`)) return;
     this.userService.removeRole(user.id || '', roleName).subscribe({
       next: () => {
-        this.snackBar.open(`Role '${roleName}' removed.`, 'Close', { duration: 2500 });
+        this.toast.success(`Role '${roleName}' removed.`);
         this.loadUsers();
       },
       error: (err) => {
-        this.snackBar.open(err.error?.message || 'Failed to remove role.', 'Close', { duration: 3000 });
+        this.toast.error(err.error?.message || 'Failed to remove role.');
       }
     });
   }
 
-  toggleUserActive(user: UserDto) {
+  toggleUserActive(user: UserDto): void {
     this.userService.toggleUserStatus(user.id || '').subscribe({
       next: () => {
         user.isActive = !user.isActive;
-        this.snackBar.open(`User ${user.userName} is now ${user.isActive ? 'Active' : 'Deactivated'}.`, 'Close', { duration: 2500 });
+        this.toast.info(`User ${user.userName} is now ${user.isActive ? 'Active' : 'Deactivated'}.`);
       },
       error: () => {
-        this.snackBar.open('Failed to update user status.', 'Close', { duration: 3000 });
+        this.toast.error('Failed to update user status.');
       }
     });
   }
 
   // --- RESET PASSWORD MODAL ---
-  openResetPasswordModal(user: UserDto) {
+  openResetPasswordModal(user: UserDto): void {
     this.selectedUserForReset.set(user);
     this.newPasswordValue.set('');
     this.confirmPasswordValue.set('');
     this.showResetPasswordModal.set(true);
   }
 
-  closeResetPasswordModal() {
+  closeResetPasswordModal(): void {
     this.showResetPasswordModal.set(false);
     this.selectedUserForReset.set(null);
     this.newPasswordValue.set('');
     this.confirmPasswordValue.set('');
   }
 
-  submitResetPassword() {
+  submitResetPassword(): void {
     const user = this.selectedUserForReset();
     if (!user) return;
     const pwd = this.newPasswordValue();
     const confirm = this.confirmPasswordValue();
 
     if (!pwd || pwd.length < 8) {
-      this.snackBar.open('Password must be at least 8 characters.', 'Close', { duration: 3000 });
+      this.toast.warning('Password must be at least 8 characters.');
       return;
     }
     if (pwd !== confirm) {
-      this.snackBar.open('Passwords do not match.', 'Close', { duration: 3000 });
+      this.toast.warning('Passwords do not match.');
       return;
     }
 
     this.isResettingPassword.set(true);
     this.userService.resetPassword(user.id || '', pwd).subscribe({
       next: () => {
-        this.snackBar.open(`Password for ${user.userName} has been reset successfully.`, 'Close', { duration: 3000 });
+        this.toast.success(`Password for ${user.userName} has been reset successfully.`);
         this.isResettingPassword.set(false);
         this.closeResetPasswordModal();
       },
       error: (err) => {
-        this.snackBar.open(err.error?.detail || 'Failed to reset password.', 'Close', { duration: 3500 });
+        this.toast.error(err.error?.detail || 'Failed to reset password.');
         this.isResettingPassword.set(false);
       }
     });
   }
 
   // --- TAB 2 PBAC METHODS ---
-  onMatrixRoleChange(role: string) {
+  onMatrixRoleChange(role: string): void {
     this.selectedMatrixRole.set(role);
     this.loadMatrixPermissions(role);
   }
 
-  loadMatrixPermissions(role: string) {
+  loadMatrixPermissions(role: string): void {
     this.loadingMatrix.set(true);
     this.permissionService.getRolePermissions(role).subscribe({
       next: (res: any) => {
@@ -634,11 +658,11 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  applyStandardDefaults() {
+  applyStandardDefaults(): void {
     const role = this.selectedMatrixRole();
     const defaults = this.defaultRolePermissionsMap[role] || [];
     this.matrixPermissions.set([...defaults]);
-    this.snackBar.open(`Applied standard clinical permissions preset for '${role}'. Click 'Save Policy Matrix' to commit changes to database.`, 'Close', { duration: 3500 });
+    this.toast.info(`Applied standard clinical permissions preset for '${role}'. Click 'Save Policy Matrix' to commit changes.`);
   }
 
   isPermissionChecked(permKey: string): boolean {
@@ -655,12 +679,11 @@ export class UserManagementComponent implements OnInit {
     this.matrixPermissions.set(Array.from(permsSet));
   }
 
-  saveRolePermissions() {
+  saveRolePermissions(): void {
     this.isSavingMatrix.set(true);
     const role = this.selectedMatrixRole();
     const canonicalPerms = this.matrixPermissions();
 
-    // Expand canonical keys with necessary backend aliases for comprehensive database security
     const toSaveSet = new Set<string>(canonicalPerms);
     for (const perm of canonicalPerms) {
       const aliases = this.canonicalToBackendAliases[perm];
@@ -672,20 +695,19 @@ export class UserManagementComponent implements OnInit {
 
     this.permissionService.updateRolePermissions(role, permissionsToSave).subscribe({
       next: () => {
-        this.snackBar.open(`PBAC permission matrix for '${role}' saved successfully in database.`, 'Close', { duration: 3000 });
+        this.toast.success(`PBAC permission matrix for '${role}' saved successfully.`);
         this.isSavingMatrix.set(false);
-        // Refresh live cache across services
         this.permissionService.loadAllPermissions();
       },
       error: (err: any) => {
-        this.snackBar.open(err.error?.message || 'Failed to update role permissions in database.', 'Close', { duration: 3000 });
+        this.toast.error(err.error?.message || 'Failed to update role permissions.');
         this.isSavingMatrix.set(false);
       }
     });
   }
 
   // --- TAB 3 HIPAA AUDIT METHODS ---
-  loadAuditLogs() {
+  loadAuditLogs(): void {
     this.loadingAudit.set(true);
     this.emrAccessService.getAuditLogs(1, 50, undefined, this.emergencyOnlyFilter()).subscribe({
       next: (res) => {
@@ -704,25 +726,25 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  toggleEmergencyFilter() {
+  toggleEmergencyFilter(): void {
     this.emergencyOnlyFilter.set(!this.emergencyOnlyFilter());
     this.loadAuditLogs();
   }
 
-  viewAuditDetail(record: EmrAccessAuditLog) {
+  viewAuditDetail(record: EmrAccessAuditLog): void {
     this.selectedAuditRecord.set(record);
     this.showAuditDetailModal.set(true);
   }
 
-  closeAuditDetailModal() {
+  closeAuditDetailModal(): void {
     this.showAuditDetailModal.set(false);
     this.selectedAuditRecord.set(null);
   }
 
-  exportAuditCsv() {
+  exportAuditCsv(): void {
     const logs = this.filteredAuditLogs();
     if (!logs.length) {
-      this.snackBar.open('No audit records to export.', 'Close', { duration: 2500 });
+      this.toast.warning('No audit records to export.');
       return;
     }
 
@@ -747,11 +769,11 @@ export class UserManagementComponent implements OnInit {
     link.click();
     URL.revokeObjectURL(url);
 
-    this.snackBar.open(`Exported ${logs.length} audit records to CSV.`, 'Close', { duration: 3000 });
+    this.toast.success(`Exported ${logs.length} audit records to CSV.`);
   }
 
   // --- TAB 4 ROSTER & DELEGATIONS METHODS ---
-  loadDutyRoster() {
+  loadDutyRoster(): void {
     this.loadingRoster.set(true);
 
     let staffDone = false;
@@ -769,21 +791,14 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  availableDoctors = computed(() => 
-    this.users().filter(u => {
-      const roles = u.roles || (u.role ? [u.role] : []);
-      return roles.some(r => r.toLowerCase() === 'doctor');
-    })
-  );
-
-  openDelegationModal() {
+  openDelegationModal(): void {
     if (this.users().length === 0) {
       this.loadUsers();
     }
 
     const currentUser = this.authService.currentUserValue;
     const isDoc = (currentUser?.roles || []).includes('Doctor');
-    const defaultDelegator = isDoc 
+    const defaultDelegator = isDoc
       ? (currentUser?.fullName ? `Dr. ${currentUser.fullName}` : `Dr. ${currentUser?.username}`)
       : 'Dr. John Smith';
 
@@ -798,13 +813,13 @@ export class UserManagementComponent implements OnInit {
     this.showDelegationModal.set(true);
   }
 
-  closeDelegationModal() {
+  closeDelegationModal(): void {
     this.showDelegationModal.set(false);
   }
 
-  submitDelegation() {
+  submitDelegation(): void {
     if (!this.newDelegation.coveringDoctorName || !this.newDelegation.reason) {
-      this.snackBar.open('Covering doctor and reason are required.', 'Close', { duration: 3000 });
+      this.toast.warning('Covering doctor and reason are required.');
       return;
     }
 
@@ -828,16 +843,16 @@ export class UserManagementComponent implements OnInit {
     let startDateIso: string;
     let endDateIso: string;
     try {
-      startDateIso = this.newDelegation.startDateUtc 
-        ? new Date(this.newDelegation.startDateUtc).toISOString() 
+      startDateIso = this.newDelegation.startDateUtc
+        ? new Date(this.newDelegation.startDateUtc).toISOString()
         : new Date().toISOString();
     } catch {
       startDateIso = new Date().toISOString();
     }
 
     try {
-      endDateIso = this.newDelegation.endDateUtc 
-        ? new Date(this.newDelegation.endDateUtc).toISOString() 
+      endDateIso = this.newDelegation.endDateUtc
+        ? new Date(this.newDelegation.endDateUtc).toISOString()
         : new Date(Date.now() + 86400000 * 3).toISOString();
     } catch {
       endDateIso = new Date(Date.now() + 86400000 * 3).toISOString();
@@ -851,36 +866,36 @@ export class UserManagementComponent implements OnInit {
       startDateUtc: startDateIso,
       endDateUtc: endDateIso,
       reason: this.newDelegation.reason,
-      notes: this.newDelegation.notes,
+      notes: this.newDelegation.notes
     }).subscribe({
       next: () => {
-        this.snackBar.open('Doctor coverage delegation authorized.', 'Close', { duration: 3000 });
+        this.toast.success('Doctor coverage delegation authorized.');
         this.showDelegationModal.set(false);
         this.loadDutyRoster();
       },
       error: (err) => {
-        this.snackBar.open(err.error?.detail || err.error?.message || 'Failed to create delegation.', 'Close', { duration: 4000 });
+        this.toast.error(err.error?.detail || err.error?.message || 'Failed to create delegation.');
       }
     });
   }
 
-  revokeDelegation(id: string) {
+  revokeDelegation(id: string): void {
     if (confirm('Revoke this doctor coverage delegation?')) {
       this.dutyService.revokeDelegation(id).subscribe({
         next: () => {
-          this.snackBar.open('Delegation revoked.', 'Close', { duration: 2500 });
+          this.toast.success('Delegation revoked.');
           this.loadDutyRoster();
         },
-        error: () => this.snackBar.open('Failed to revoke.', 'Close', { duration: 3000 })
+        error: () => this.toast.error('Failed to revoke.')
       });
     }
   }
 
-  // Utility helpers
+  // --- SEMANTIC HELPERS ---
   formatAccessType(accessType: string): string {
     const map: Record<string, string> = {
-      'BreakGlassEmergencyOverride': '🚨 Break-Glass Override',
-      'BREAKGLASSEMERGENCYOVERRIDE': '🚨 Break-Glass Override',
+      'BreakGlassEmergencyOverride': 'Break-Glass Override',
+      'BREAKGLASSEMERGENCYOVERRIDE': 'Break-Glass Override',
       'ViewChart': 'View Chart',
       'VIEWCHART': 'View Chart',
       'ViewProfile': 'View Profile',
@@ -891,8 +906,8 @@ export class UserManagementComponent implements OnInit {
       'ViewLabResults': 'View Lab Results',
       'EMR Chart View': 'View Chart',
       'Vitals Entry': 'Vitals Entry',
-      'Emergency Override': '🚨 Emergency Override',
-      'Prescription Verification': 'Rx Verification',
+      'Emergency Override': 'Emergency Override',
+      'Prescription Verification': 'Rx Verification'
     };
     return map[accessType] || accessType;
   }
@@ -907,5 +922,23 @@ export class UserManagementComponent implements OnInit {
   getPrimaryRole(user: UserDto): string {
     const roles = user.roles || (user.role ? [user.role] : []);
     return roles[0] || 'No Role';
+  }
+
+  getRoleTone(role?: string): StatusTone {
+    const normalized = (role || '').trim().toLowerCase();
+    if (normalized === 'admin') return 'info';
+    if (normalized === 'doctor') return 'success';
+    if (normalized === 'accountant') return 'warning';
+    return 'neutral';
+  }
+
+  getSecurityTone(isEmergency?: boolean): StatusTone {
+    return isEmergency ? 'danger' : 'success';
+  }
+
+  getPasswordStrength(length: number): { label: string; tone: StatusTone } {
+    if (length < 8) return { label: 'Too short (minimum 8 characters)', tone: 'danger' };
+    if (length < 12) return { label: 'Acceptable strength', tone: 'warning' };
+    return { label: 'Strong password', tone: 'success' };
   }
 }
