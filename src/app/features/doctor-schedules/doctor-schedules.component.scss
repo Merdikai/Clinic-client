@@ -10,8 +10,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-8);
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-8);
 
@@ -23,14 +23,14 @@
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     background-color: transparent;
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: var(--text-14);
     font-weight: 600;
     cursor: pointer;
 
     &:hover {
-      background-color: var(--color-bg-subtle);
-      color: var(--color-text-primary);
+      background-color: var(--surface-subtle);
+      color: var(--text-primary);
     }
 
     &.active {
@@ -42,18 +42,18 @@
     .count-pill {
       padding: 2px var(--space-8);
       border-radius: var(--radius-sm);
-      background-color: var(--color-bg-subtle);
-      border: 1px solid var(--color-border);
+      background-color: var(--surface-subtle);
+      border: 1px solid var(--border-default);
       font-size: var(--text-12);
       font-weight: 700;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
   }
 }
 
 .toolbar-card {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-12) var(--space-16);
 
@@ -80,9 +80,9 @@
     .day-pill {
       padding: var(--space-8) var(--space-12);
       border-radius: var(--radius-sm);
-      border: 1px solid var(--color-border);
-      background-color: var(--color-bg-surface);
-      color: var(--color-text-secondary);
+      border: 1px solid var(--border-default);
+      background-color: var(--surface-card);
+      color: var(--text-secondary);
       font-size: var(--text-12);
       font-weight: 600;
       cursor: pointer;
@@ -97,15 +97,15 @@
 }
 
 .my-shifts-section {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   overflow: hidden;
 
   .my-shifts-toggle {
     inline-size: 100%;
     border: none;
-    background-color: var(--color-bg-subtle);
+    background-color: var(--surface-subtle);
     padding: var(--space-12) var(--space-16);
     display: flex;
     justify-content: space-between;
@@ -119,13 +119,13 @@
         margin: 0;
         font-size: var(--text-16);
         font-weight: 600;
-        color: var(--color-text-primary);
+        color: var(--text-primary);
       }
 
       p {
         margin: 2px 0 0;
         font-size: var(--text-12);
-        color: var(--color-text-muted);
+        color: var(--text-muted);
       }
     }
 
@@ -133,7 +133,7 @@
       display: flex;
       align-items: center;
       gap: var(--space-8);
-      color: var(--color-text-secondary);
+      color: var(--text-secondary);
     }
   }
 
@@ -157,8 +157,8 @@
   .my-week-day {
     padding: var(--space-8);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    background-color: var(--color-bg-subtle);
+    border: 1px solid var(--border-default);
+    background-color: var(--surface-subtle);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -177,13 +177,13 @@
     .wday-label {
       font-size: var(--text-12);
       font-weight: 700;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
 
     .wday-time,
     .wday-off {
       font-size: var(--text-12);
-      color: var(--color-text-muted);
+      color: var(--text-muted);
     }
   }
 }
@@ -195,7 +195,7 @@
 }
 
 .my-shift-card {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: var(--space-12);
   display: flex;
@@ -203,7 +203,7 @@
   gap: var(--space-8);
 
   &.inactive {
-    background-color: var(--color-bg-subtle);
+    background-color: var(--surface-subtle);
   }
 
   .my-card-topbar {
@@ -215,7 +215,7 @@
     .day-label {
       font-size: var(--text-14);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
       margin-inline-end: auto;
     }
   }
@@ -226,13 +226,13 @@
     align-items: center;
     padding: var(--space-8) var(--space-12);
     border-radius: var(--radius-sm);
-    background-color: var(--color-bg-subtle);
+    background-color: var(--surface-subtle);
 
     .time-range {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: var(--text-16);
       font-weight: 700;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
   }
 
@@ -240,7 +240,7 @@
   .notes-line {
     margin: 0;
     font-size: var(--text-12);
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
   }
 }
 
@@ -255,8 +255,8 @@
 }
 
 .shift-card {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-16);
@@ -265,7 +265,7 @@
   gap: var(--space-12);
 
   &.inactive {
-    background-color: var(--color-bg-subtle);
+    background-color: var(--surface-subtle);
   }
 
   .card-header {
@@ -275,7 +275,7 @@
     flex-wrap: wrap;
     gap: var(--space-8);
     padding-block-end: var(--space-8);
-    border-block-end: 1px solid var(--color-border-subtle);
+    border-block-end: 1px solid var(--border-subtle);
 
     .day-cluster {
       display: flex;
@@ -283,13 +283,13 @@
       gap: var(--space-8);
       font-size: var(--text-14);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
 
       .day-short {
         padding: 2px var(--space-8);
         border-radius: var(--radius-sm);
-        background-color: var(--color-bg-subtle);
-        border: 1px solid var(--color-border);
+        background-color: var(--surface-subtle);
+        border: 1px solid var(--border-default);
         font-size: var(--text-12);
       }
     }
@@ -310,7 +310,7 @@
       margin: 0;
       font-size: var(--text-16);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
 
     .staff-title,
@@ -318,7 +318,7 @@
     .slot-meta {
       margin: 0;
       font-size: var(--text-14);
-      color: var(--color-text-secondary);
+      color: var(--text-secondary);
     }
 
     .timing-box {
@@ -326,8 +326,8 @@
       align-items: center;
       gap: var(--space-12);
       flex-wrap: wrap;
-      background-color: var(--color-bg-subtle);
-      border: 1px solid var(--color-border-subtle);
+      background-color: var(--surface-subtle);
+      border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
       padding: var(--space-8) var(--space-12);
 
@@ -337,19 +337,19 @@
 
         .time-label {
           font-size: var(--text-12);
-          color: var(--color-text-muted);
+          color: var(--text-muted);
         }
 
         .time-val {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           font-size: var(--text-16);
           font-weight: 700;
-          color: var(--color-text-primary);
+          color: var(--text-primary);
         }
       }
 
       .time-separator {
-        color: var(--color-text-muted);
+        color: var(--text-muted);
       }
 
       app-status-chip {
@@ -360,8 +360,8 @@
     .notes-box {
       margin: 0;
       font-size: var(--text-12);
-      color: var(--color-text-muted);
-      background-color: var(--color-bg-subtle);
+      color: var(--text-muted);
+      background-color: var(--surface-subtle);
       padding: var(--space-8);
       border-radius: var(--radius-sm);
     }
@@ -370,7 +370,7 @@
   .card-footer {
     margin-block-start: auto;
     padding-block-start: var(--space-12);
-    border-block-start: 1px solid var(--color-border-subtle);
+    border-block-start: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     gap: var(--space-8);
@@ -385,7 +385,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background-color: var(--color-bg-overlay);
+  background-color: var(--modal-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -396,8 +396,8 @@
   inline-size: 100%;
   max-inline-size: 480px;
   max-block-size: 90vh;
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   display: flex;
@@ -406,8 +406,8 @@
 
   .modal-header {
     padding: var(--space-16) var(--space-24);
-    background-color: var(--color-bg-subtle);
-    border-block-end: 1px solid var(--color-border);
+    background-color: var(--surface-subtle);
+    border-block-end: 1px solid var(--border-default);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -417,13 +417,13 @@
       margin: 0;
       font-size: var(--text-20);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
 
     .modal-subtitle {
       margin: var(--space-4) 0 0;
       font-size: var(--text-12);
-      color: var(--color-text-muted);
+      color: var(--text-muted);
     }
   }
 
@@ -454,6 +454,6 @@
     justify-content: flex-end;
     gap: var(--space-8);
     padding-block-start: var(--space-12);
-    border-block-start: 1px solid var(--color-border-subtle);
+    border-block-start: 1px solid var(--border-subtle);
   }
 }

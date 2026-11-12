@@ -20,8 +20,8 @@
 }
 
 .kpi-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-16);
@@ -32,16 +32,16 @@
   cursor: pointer;
 
   &:hover {
-    background: var(--bg-subtle);
+    background: var(--surface-subtle);
   }
 
   &.active-kpi {
-    border-color: var(--color-primary);
+    border-color: var(--action-primary);
     background: var(--semantic-info-bg);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
+    outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
   }
 
@@ -66,8 +66,8 @@
 }
 
 .section-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-24);
@@ -137,34 +137,34 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
-  background: var(--bg-surface);
+  background: var(--surface-card);
   color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   font-size: var(--text-14);
   font-weight: 500;
   cursor: pointer;
 
   &:hover {
-    background: var(--bg-subtle);
+    background: var(--surface-subtle);
     color: var(--text-primary);
   }
 
   &.active {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    border-color: var(--color-primary);
+    background: var(--action-primary);
+    color: var(--text-inverse);
+    border-color: var(--action-primary);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
+    outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
   }
 }
 
 .tab-count {
   padding: 2px var(--space-8);
-  background: var(--bg-subtle);
+  background: var(--surface-subtle);
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   font-size: var(--text-12);
@@ -173,7 +173,7 @@
 
 .workspace-tab.active .tab-count {
   background: rgba(255, 255, 255, 0.22);
-  color: var(--color-on-primary);
+  color: var(--text-inverse);
 }
 
 .formulary-workspace,
@@ -184,8 +184,8 @@
 }
 
 .toolbar-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-16);
@@ -236,8 +236,8 @@
 .med-card,
 .rx-card,
 .pos-med-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-16);
@@ -295,8 +295,8 @@
 
 .meta-badge {
   padding: var(--space-4) var(--space-8);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   font-size: var(--text-12);
   color: var(--text-primary);
@@ -336,21 +336,21 @@
 .stock-progress-track {
   inline-size: 100%;
   block-size: 8px;
-  background: var(--bg-subtle);
+  background: var(--surface-subtle);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .stock-progress-fill {
   block-size: 100%;
-  background: var(--semantic-success-fg);
+  background: var(--semantic-success-text);
 
   &.warn-fill {
-    background: var(--semantic-warning-fg);
+    background: var(--semantic-warning-text);
   }
 
   &.danger-fill {
-    background: var(--semantic-danger-fg);
+    background: var(--semantic-danger-text);
   }
 }
 
@@ -360,8 +360,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-8);
   padding: var(--space-8) var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
 
   .pricing-box {
@@ -383,7 +383,7 @@
   }
 
   .near-expiry {
-    color: var(--semantic-danger-fg);
+    color: var(--semantic-danger-text);
   }
 }
 
@@ -400,7 +400,7 @@
   align-items: center;
   gap: var(--space-8);
   padding-top: var(--space-8);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-default);
 }
 
 /* Prescription Cards */
@@ -409,8 +409,8 @@
   flex-direction: column;
   gap: var(--space-8);
   padding: var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
 }
 
@@ -454,8 +454,8 @@
   align-items: flex-start;
   gap: var(--space-12);
   padding: var(--space-8) var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
 
   .item-title-row {
@@ -517,8 +517,8 @@
 }
 
 .pos-register-panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-24);
@@ -559,8 +559,8 @@
   justify-content: space-between;
   gap: var(--space-8);
   padding: var(--space-8) var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
 
   .item-desc {
@@ -586,18 +586,18 @@
 .step-btn {
   inline-size: 28px;
   block-size: 28px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
-  background: var(--bg-surface);
+  background: var(--surface-card);
   color: var(--text-primary);
   cursor: pointer;
 
   &:hover {
-    background: var(--bg-subtle);
+    background: var(--surface-subtle);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
+    outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
   }
 }
@@ -633,7 +633,7 @@
   flex-direction: column;
   gap: var(--space-8);
   padding-top: var(--space-12);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-default);
 }
 
 .breakdown-row {
@@ -666,7 +666,7 @@
   td {
     padding: var(--space-12);
     text-align: start;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-default);
     color: var(--text-primary);
   }
 
@@ -676,14 +676,14 @@
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    background: var(--bg-subtle);
+    background: var(--surface-subtle);
   }
 
   tbody tr {
     min-block-size: 48px;
 
     &:hover {
-      background: var(--bg-subtle);
+      background: var(--surface-subtle);
     }
   }
 }
@@ -715,8 +715,8 @@
 }
 
 .modal-dialog {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   inline-size: 100%;
@@ -733,7 +733,7 @@
   align-items: flex-start;
   gap: var(--space-12);
   padding: var(--space-16) var(--space-24);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-default);
 
   h2 {
     margin: 0 0 var(--space-4) 0;
@@ -764,8 +764,8 @@
 .modal-summary-list {
   margin: 0;
   padding: var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
@@ -808,17 +808,17 @@
   justify-content: space-between;
   gap: var(--space-12);
   padding: var(--space-8) var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   font-size: var(--text-14);
 }
 
 .thermal-label-card {
   padding: var(--space-16);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
-  background: var(--bg-surface);
+  background: var(--surface-card);
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
@@ -831,7 +831,7 @@
   }
 
   .label-divider {
-    border-top: 1px dashed var(--border-color);
+    border-top: 1px dashed var(--border-default);
   }
 
   .label-drug-box,
@@ -840,7 +840,7 @@
     flex-direction: column;
     gap: var(--space-4);
     padding: var(--space-8);
-    background: var(--bg-subtle);
+    background: var(--surface-subtle);
     border-radius: var(--radius-sm);
   }
 
@@ -861,7 +861,7 @@
   flex-wrap: wrap;
   gap: var(--space-8);
   padding: var(--space-16) var(--space-24);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-default);
 }
 
 @media (max-width: 960px) {

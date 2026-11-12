@@ -121,7 +121,7 @@
           title="No Monthly Trend Data"
           message="Monthly revenue and operating payable figures will appear once fiscal periods contain posted ledger activity." />
       } @else {
-        <div class="table-responsive">
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Monthly financial performance table">
           <table class="data-table">
             <thead>
               <tr>
@@ -237,7 +237,7 @@
     @if (reconciliationsLoading()) {
       <app-skeleton variant="table" [count]="5" [columns]="9" label="Loading shift reconciliations" />
     } @else if (reconciliations().length > 0) {
-      <div class="table-responsive">
+      <div class="table-responsive" tabindex="0" role="region" aria-label="Cash register drawer and shift reconciliations table">
         <table class="data-table">
           <thead>
             <tr>
@@ -303,7 +303,7 @@
     @if (inquiriesLoading()) {
       <app-skeleton variant="table" [count]="5" [columns]="8" label="Loading visitor inquiries" />
     } @else if (inquiries().length > 0) {
-      <div class="table-responsive">
+      <div class="table-responsive" tabindex="0" role="region" aria-label="Visitor and phone inquiries log table">
         <table class="data-table">
           <thead>
             <tr>

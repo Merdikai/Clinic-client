@@ -1,39 +1,43 @@
 <div class="ehr-page patient-detail-page">
+  <app-page-header [title]="patientFullName()"
+    [subtitle]="patient() ? ('MRN: ' + (patient()?.medicalRecordNumber || 'Pending Assignment')) : 'Patient Clinical Record'"
+    backLink="/patients"
+    backLabel="Patient Directory">
+    @if (patient()) {
+      @if (canEditPatient()) {
+      <button mat-flat-button color="primary" type="button" (click)="openEditModal()">
+        Edit Patient File
+      </button>
+      }
+      @if (canCreateAppointment()) {
+      <a mat-stroked-button routerLink="/appointments/book" [queryParams]="{patientId: id()}">
+        Schedule Visit
+      </a>
+      }
+      @if (isDoctor()) {
+      <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">
+        Order Imaging
+      </a>
+      } @else if (isRadiologist() && canOpenRadiology()) {
+      <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'viewer'}">
+        PACS Viewer
+      </a>
+      }
+      @if (isDoctor() || isNurse() || isAdmin() || permissionService.hasPermission('ClinicalGovernance.BreakGlass')) {
+      <button type="button" mat-stroked-button class="break-glass-trigger" (click)="isBreakGlassModalOpen.set(true)"
+        matTooltip="Emergency override with mandatory HIPAA audit logging">
+        Break-Glass Override
+      </button>
+      }
+    }
+  </app-page-header>
+
   @if (isLoading()) {
   <div class="detail-skeleton-stack">
     <app-skeleton variant="card" [count]="1" height="120px" label="Loading patient header"></app-skeleton>
     <app-skeleton variant="table" [count]="6" [columns]="4" label="Loading clinical records"></app-skeleton>
   </div>
   } @else if (patient()) {
-  <app-page-header [title]="patientFullName()"
-    [subtitle]="'MRN: ' + (patient()?.medicalRecordNumber || 'Pending Assignment')" backLink="/patients"
-    backLabel="Patient Directory">
-    @if (canEditPatient()) {
-    <button mat-flat-button color="primary" type="button" (click)="openEditModal()">
-      Edit Patient File
-    </button>
-    }
-    @if (canCreateAppointment()) {
-    <a mat-stroked-button routerLink="/appointments/book" [queryParams]="{patientId: id()}">
-      Schedule Visit
-    </a>
-    }
-    @if (isDoctor()) {
-    <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">
-      Order Imaging
-    </a>
-    } @else if (isRadiologist() && canOpenRadiology()) {
-    <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'viewer'}">
-      PACS Viewer
-    </a>
-    }
-    @if (isDoctor() || isNurse() || isAdmin() || permissionService.hasPermission('ClinicalGovernance.BreakGlass')) {
-    <button type="button" mat-stroked-button class="break-glass-trigger" (click)="isBreakGlassModalOpen.set(true)"
-      matTooltip="Emergency override with mandatory HIPAA audit logging">
-      Break-Glass Override
-    </button>
-    }
-  </app-page-header>
 
   <section class="patient-summary-bar" aria-label="Patient key clinical demographics">
     <div class="summary-meta-row">
@@ -549,6 +553,12 @@
       </mat-tab>
     </mat-tab-group>
   </section>
+  } @else {
+  <app-empty-state
+    icon="person_off"
+    title="Patient Record Not Found"
+    message="Unable to load the requested clinical chart or your current role lacks chart access.">
+  </app-empty-state>
   }
 </div>
 

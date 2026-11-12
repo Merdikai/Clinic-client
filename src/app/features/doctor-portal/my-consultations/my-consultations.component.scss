@@ -21,8 +21,8 @@
 }
 
 .metric-card {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-16);
   display: flex;
@@ -32,7 +32,7 @@
   .metric-label {
     font-size: var(--text-12);
     font-weight: 600;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -40,7 +40,7 @@
   .metric-value {
     font-size: var(--text-24);
     font-weight: 700;
-    color: var(--color-text-primary);
+    color: var(--text-primary);
     line-height: 1.2;
   }
 }
@@ -51,8 +51,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-16);
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-12) var(--space-16);
 }
@@ -66,16 +66,16 @@
 .tab-pill {
   padding: var(--space-8) var(--space-12);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg-surface);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-secondary);
   font-size: var(--text-14);
   font-weight: 600;
   cursor: pointer;
 
   &:hover {
-    background-color: var(--color-bg-subtle);
-    color: var(--color-text-primary);
+    background-color: var(--surface-subtle);
+    color: var(--text-primary);
   }
 
   &.active {
@@ -105,8 +105,8 @@
 }
 
 .appt-card {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-16);
@@ -120,7 +120,7 @@
     align-items: flex-start;
     gap: var(--space-12);
     padding-block-end: var(--space-12);
-    border-block-end: 1px solid var(--color-border-subtle);
+    border-block-end: 1px solid var(--border-subtle);
   }
 
   .patient-cluster {
@@ -134,7 +134,7 @@
     margin: 0;
     font-size: var(--text-16);
     font-weight: 600;
-    color: var(--color-text-primary);
+    color: var(--text-primary);
   }
 
   .patient-meta-row {
@@ -143,16 +143,16 @@
     gap: var(--space-8);
     align-items: center;
     font-size: var(--text-12);
-    color: var(--color-text-muted);
+    color: var(--text-muted);
   }
 
   .mrn-tag {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     padding: 2px var(--space-8);
     border-radius: var(--radius-sm);
-    background-color: var(--color-bg-subtle);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-secondary);
+    background-color: var(--surface-subtle);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
   }
 
   .card-body {
@@ -170,12 +170,12 @@
       dt {
         min-inline-size: 80px;
         font-weight: 600;
-        color: var(--color-text-muted);
+        color: var(--text-muted);
       }
 
       dd {
         margin: 0;
-        color: var(--color-text-primary);
+        color: var(--text-primary);
       }
     }
   }
@@ -192,7 +192,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background-color: var(--color-bg-overlay);
+  background-color: var(--modal-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -203,8 +203,8 @@
   inline-size: 100%;
   max-inline-size: 960px;
   max-block-size: 92vh;
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   display: flex;
@@ -214,8 +214,8 @@
 
 .encounter-header {
   padding: var(--space-16) var(--space-24);
-  background-color: var(--color-bg-subtle);
-  border-block-end: 1px solid var(--color-border);
+  background-color: var(--surface-subtle);
+  border-block-end: 1px solid var(--border-default);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -225,19 +225,19 @@
     margin: 0;
     font-size: var(--text-20);
     font-weight: 700;
-    color: var(--color-text-primary);
+    color: var(--text-primary);
   }
 
   .modal-patient-meta {
     margin: var(--space-4) 0 0;
     font-size: var(--text-14);
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-8);
 
     strong {
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
   }
 }
@@ -248,7 +248,7 @@
   align-items: center;
   gap: var(--space-12);
   font-size: var(--text-14);
-  border-block-end: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--border-default);
 
   &.alert-danger {
     background-color: var(--semantic-danger-bg);
@@ -278,8 +278,8 @@
 }
 
 .triage-vitals-cockpit {
-  background-color: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-16);
   display: flex;
@@ -296,7 +296,7 @@
       margin: 0;
       font-size: var(--text-16);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
   }
 }
@@ -307,8 +307,8 @@
   gap: var(--space-12);
 
   .vital-tile {
-    background-color: var(--color-bg-surface);
-    border: 1px solid var(--color-border);
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     padding: var(--space-12);
     display: flex;
@@ -323,18 +323,18 @@
     .vital-label {
       font-size: var(--text-12);
       font-weight: 600;
-      color: var(--color-text-muted);
+      color: var(--text-muted);
     }
 
     .vital-value {
       font-size: var(--text-20);
       font-weight: 700;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
 
     .vital-unit {
       font-size: var(--text-12);
-      color: var(--color-text-muted);
+      color: var(--text-muted);
     }
   }
 }
@@ -348,12 +348,12 @@
 .no-vitals-notice {
   margin: 0;
   font-size: var(--text-14);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .vitals-entry-form {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: var(--space-16);
   display: flex;
@@ -377,8 +377,8 @@
 }
 
 .soap-card {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-16);
   display: flex;
@@ -409,13 +409,13 @@
       margin: 0;
       font-size: var(--text-16);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
 
     p {
       margin: 2px 0 0;
       font-size: var(--text-12);
-      color: var(--color-text-muted);
+      color: var(--text-muted);
     }
   }
 }
@@ -431,16 +431,16 @@
   .presets-label {
     font-size: var(--text-12);
     font-weight: 600;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
   }
 
   .macro-btn,
   .preset-pill {
     padding: var(--space-4) var(--space-8);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    background-color: var(--color-bg-subtle);
-    color: var(--color-text-secondary);
+    border: 1px solid var(--border-default);
+    background-color: var(--surface-subtle);
+    color: var(--text-secondary);
     font-size: var(--text-12);
     font-weight: 600;
     cursor: pointer;
@@ -464,8 +464,8 @@
 }
 
 .order-submodule {
-  background-color: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: var(--space-16);
   display: flex;
@@ -482,22 +482,22 @@
       margin: 0;
       font-size: var(--text-14);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
   }
 
   .empty-submodule {
     margin: 0;
     font-size: var(--text-14);
-    color: var(--color-text-muted);
+    color: var(--text-muted);
   }
 }
 
 .rx-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
-  background-color: var(--color-bg-surface);
+  background-color: var(--surface-card);
 }
 
 .rx-table {
@@ -508,32 +508,32 @@
   th,
   td {
     padding: var(--space-8) var(--space-12);
-    border-block-end: 1px solid var(--color-border-subtle);
+    border-block-end: 1px solid var(--border-subtle);
     text-align: start;
   }
 
   th {
-    background-color: var(--color-bg-subtle);
+    background-color: var(--surface-subtle);
     font-size: var(--text-12);
     font-weight: 600;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
   }
 
   tbody tr {
     min-block-size: 48px;
 
     &:hover {
-      background-color: var(--color-bg-subtle);
+      background-color: var(--surface-subtle);
     }
   }
 
   .native-control {
     inline-size: 100%;
     padding: var(--space-8);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
-    background-color: var(--color-bg-surface);
-    color: var(--color-text-primary);
+    background-color: var(--surface-card);
+    color: var(--text-primary);
     font-size: var(--text-14);
   }
 
@@ -552,8 +552,8 @@
   }
 
   .catalog-card {
-    background-color: var(--color-bg-surface);
-    border: 1px solid var(--color-border);
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     padding: var(--space-8) var(--space-12);
     display: flex;
@@ -574,12 +574,12 @@
       .tmpl-name {
         font-size: var(--text-14);
         font-weight: 600;
-        color: var(--color-text-primary);
+        color: var(--text-primary);
       }
 
       .tmpl-sub {
         font-size: var(--text-12);
-        color: var(--color-text-muted);
+        color: var(--text-muted);
       }
     }
   }
@@ -591,8 +591,8 @@
   gap: var(--space-8);
 
   .queued-order-item {
-    background-color: var(--color-bg-surface);
-    border: 1px solid var(--color-border);
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     padding: var(--space-8) var(--space-12);
     display: flex;
@@ -607,19 +607,19 @@
 
       strong {
         font-size: var(--text-14);
-        color: var(--color-text-primary);
+        color: var(--text-primary);
       }
 
       span {
         font-size: var(--text-12);
-        color: var(--color-text-muted);
+        color: var(--text-muted);
       }
     }
 
     .order-pricing {
       font-size: var(--text-14);
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--text-primary);
     }
   }
 }
@@ -642,8 +642,8 @@
 
 .encounter-footer {
   padding: var(--space-16) var(--space-24);
-  background-color: var(--color-bg-subtle);
-  border-block-start: 1px solid var(--color-border);
+  background-color: var(--surface-subtle);
+  border-block-start: 1px solid var(--border-default);
   display: flex;
   justify-content: flex-end;
   align-items: center;

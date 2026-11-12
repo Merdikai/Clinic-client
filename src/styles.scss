@@ -217,37 +217,62 @@ h3 {
 }
 
 /* Standardized Semantic Toast Snackbars (3000ms, bottom-center, polite) */
-.mat-mdc-snack-bar-container.toast-success .mdc-snackbar__surface {
-  background-color: var(--semantic-success-bg);
-  color: var(--semantic-success-text);
-  border: 1px solid var(--semantic-success-accent);
-  border-radius: var(--radius-sm);
+.mat-mdc-snack-bar-container.toast-success {
+  --mat-snack-bar-button-color: var(--semantic-success-text);
+  --mdc-snack-bar-supporting-text-color: var(--semantic-success-text);
+  --mdc-text-button-label-text-color: var(--semantic-success-text);
+
+  .mdc-snackbar__surface {
+    background-color: var(--semantic-success-bg);
+    color: var(--semantic-success-text);
+    border: 1px solid var(--semantic-success-accent);
+    border-radius: var(--radius-sm);
+  }
 }
 
-.mat-mdc-snack-bar-container.toast-error .mdc-snackbar__surface {
-  background-color: var(--semantic-danger-bg);
-  color: var(--semantic-danger-text);
-  border: 1px solid var(--semantic-danger-accent);
-  border-radius: var(--radius-sm);
+.mat-mdc-snack-bar-container.toast-error {
+  --mat-snack-bar-button-color: var(--semantic-danger-text);
+  --mdc-snack-bar-supporting-text-color: var(--semantic-danger-text);
+  --mdc-text-button-label-text-color: var(--semantic-danger-text);
+
+  .mdc-snackbar__surface {
+    background-color: var(--semantic-danger-bg);
+    color: var(--semantic-danger-text);
+    border: 1px solid var(--semantic-danger-accent);
+    border-radius: var(--radius-sm);
+  }
 }
 
-.mat-mdc-snack-bar-container.toast-warning .mdc-snackbar__surface {
-  background-color: var(--semantic-warning-bg);
-  color: var(--semantic-warning-text);
-  border: 1px solid var(--semantic-warning-accent);
-  border-radius: var(--radius-sm);
+.mat-mdc-snack-bar-container.toast-warning {
+  --mat-snack-bar-button-color: var(--semantic-warning-text);
+  --mdc-snack-bar-supporting-text-color: var(--semantic-warning-text);
+  --mdc-text-button-label-text-color: var(--semantic-warning-text);
+
+  .mdc-snackbar__surface {
+    background-color: var(--semantic-warning-bg);
+    color: var(--semantic-warning-text);
+    border: 1px solid var(--semantic-warning-accent);
+    border-radius: var(--radius-sm);
+  }
 }
 
-.mat-mdc-snack-bar-container.toast-info .mdc-snackbar__surface {
-  background-color: var(--semantic-info-bg);
-  color: var(--semantic-info-text);
-  border: 1px solid var(--semantic-info-accent);
-  border-radius: var(--radius-sm);
+.mat-mdc-snack-bar-container.toast-info {
+  --mat-snack-bar-button-color: var(--semantic-info-text);
+  --mdc-snack-bar-supporting-text-color: var(--semantic-info-text);
+  --mdc-text-button-label-text-color: var(--semantic-info-text);
+
+  .mdc-snackbar__surface {
+    background-color: var(--semantic-info-bg);
+    color: var(--semantic-info-text);
+    border: 1px solid var(--semantic-info-accent);
+    border-radius: var(--radius-sm);
+  }
 }
 
 .mat-mdc-snack-bar-container .mat-mdc-snack-bar-label,
+.mat-mdc-snack-bar-container .mat-mdc-snack-bar-action,
 .mat-mdc-snack-bar-container .mdc-button__label {
-  color: inherit;
+  color: inherit !important;
   font-weight: 600;
 }
 

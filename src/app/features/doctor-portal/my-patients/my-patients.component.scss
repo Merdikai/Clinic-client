@@ -12,8 +12,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-16);
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-12) var(--space-16);
 }
@@ -50,8 +50,8 @@
 }
 
 .patient-card {
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-16);
@@ -69,7 +69,7 @@
     margin: 0;
     font-size: var(--text-16);
     font-weight: 600;
-    color: var(--color-text-primary);
+    color: var(--text-primary);
   }
 
   .patient-meta-row {
@@ -78,16 +78,16 @@
     align-items: center;
     gap: var(--space-8);
     font-size: var(--text-12);
-    color: var(--color-text-muted);
+    color: var(--text-muted);
   }
 
   .mrn-tag {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     padding: 2px var(--space-8);
     border-radius: var(--radius-sm);
-    background-color: var(--color-bg-subtle);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-secondary);
+    background-color: var(--surface-subtle);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
   }
 
   .safety-status {
@@ -99,8 +99,8 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-8);
-    background-color: var(--color-bg-subtle);
-    border: 1px solid var(--color-border-subtle);
+    background-color: var(--surface-subtle);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     padding: var(--space-8) var(--space-12);
 
@@ -112,14 +112,14 @@
       dt {
         font-size: var(--text-12);
         font-weight: 600;
-        color: var(--color-text-muted);
+        color: var(--text-muted);
       }
 
       dd {
         margin: 0;
         font-size: var(--text-14);
         font-weight: 600;
-        color: var(--color-text-primary);
+        color: var(--text-primary);
       }
     }
   }
@@ -127,7 +127,7 @@
   .contact-info {
     margin: 0;
     font-size: var(--text-14);
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
   }
 
   .card-bottom {

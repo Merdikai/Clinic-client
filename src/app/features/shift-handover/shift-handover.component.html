@@ -147,7 +147,7 @@
           description="Complete the SBAR form to document shift continuity for oncoming nursing staff."
         />
       } @else {
-        <div class="handover-cards-list">
+        <div class="handover-cards-list" tabindex="0" role="region" aria-label="Recent shift handovers list">
           @for (h of handovers(); track h.id) {
             <article class="handover-log-card">
               <div class="log-top">

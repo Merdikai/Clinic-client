@@ -16,27 +16,27 @@
 .filter-tab {
   min-block-size: 40px;
   padding: var(--space-8) var(--space-16);
-  background: var(--bg-surface);
+  background: var(--surface-card);
   color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   font-size: var(--text-14);
   font-weight: 500;
   cursor: pointer;
 
   &:hover {
-    background: var(--bg-subtle);
+    background: var(--surface-subtle);
     color: var(--text-primary);
   }
 
   &.active {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    border-color: var(--color-primary);
+    background: var(--action-primary);
+    color: var(--text-inverse);
+    border-color: var(--action-primary);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
+    outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
   }
 }
@@ -54,8 +54,8 @@
 }
 
 .appt-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-24);
@@ -102,8 +102,8 @@
   flex-wrap: wrap;
   gap: var(--space-16);
   padding: var(--space-12) var(--space-16);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
 }
 
@@ -134,7 +134,7 @@
   background: var(--semantic-warning-bg);
   border: 1px solid var(--semantic-warning-border);
   border-radius: var(--radius-sm);
-  color: var(--semantic-warning-fg);
+  color: var(--semantic-warning-text);
 
   mat-icon {
     font-size: 20px;
@@ -157,7 +157,7 @@
 }
 
 .results-box {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-default);
   padding-top: var(--space-16);
   display: flex;
   flex-direction: column;
@@ -179,8 +179,8 @@
 
 .finding-card,
 .notes-block {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: var(--space-12);
 
@@ -210,8 +210,8 @@
 }
 
 .vital-badge {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: var(--space-8) var(--space-12);
   display: flex;
@@ -240,7 +240,7 @@
   border: 1px solid var(--semantic-info-border);
   border-radius: var(--radius-sm);
   font-size: var(--text-14);
-  color: var(--semantic-info-fg);
+  color: var(--semantic-info-text);
 
   .rx-label {
     font-weight: 600;
@@ -260,8 +260,8 @@
 }
 
 .modal-dialog {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   inline-size: 100%;
@@ -276,7 +276,7 @@
   align-items: flex-start;
   gap: var(--space-12);
   padding: var(--space-16) var(--space-24);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-default);
 
   h2 {
     margin: 0 0 var(--space-4) 0;
@@ -302,8 +302,8 @@
 .appt-preview-summary {
   margin: 0;
   padding: var(--space-12);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
@@ -338,7 +338,7 @@
   background: var(--semantic-danger-bg);
   border: 1px solid var(--semantic-danger-border);
   border-radius: var(--radius-sm);
-  color: var(--semantic-danger-fg);
+  color: var(--semantic-danger-text);
   font-size: var(--text-14);
 
   mat-icon {
@@ -354,7 +354,7 @@
   flex-wrap: wrap;
   gap: var(--space-8);
   padding: var(--space-16) var(--space-24);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-default);
 }
 
 @media (max-width: 768px) {
