@@ -1,16 +1,14 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { ThemeService } from '../../services/theme.service';
 
 export function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('newPassword')?.value;
@@ -29,8 +27,7 @@ export function passwordMatchValidator(control: AbstractControl): ValidationErro
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule,
-    MatTooltipModule
+    MatIconModule
   ],
   templateUrl: './reset-password.component.html',
   styleUrls: ['./reset-password.component.scss']
@@ -38,13 +35,10 @@ export function passwordMatchValidator(control: AbstractControl): ValidationErro
 export class ResetPasswordComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private authService = inject(AuthService);
-  themeService = inject(ThemeService);
 
   private subs = new Subscription();
 
-  isDarkMode = computed(() => this.themeService.isDarkMode());
   hidePassword = signal(true);
   hideConfirm = signal(true);
 
@@ -71,7 +65,6 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     { validators: [passwordMatchValidator] }
   );
 
-  // Real-time reactive HIPAA password validation checklist
   hasMinLength = computed(() => (this.passwordValue()?.length ?? 0) >= 12);
   hasUpperCase = computed(() => /[A-Z]/.test(this.passwordValue()));
   hasLowerCase = computed(() => /[a-z]/.test(this.passwordValue()));
@@ -84,7 +77,6 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Sync reactive signals with form inputs on every keystroke
     const passSub = this.resetForm.get('newPassword')?.valueChanges.subscribe(v => {
       this.passwordValue.set(v || '');
     });
@@ -95,7 +87,6 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     });
     if (confSub) this.subs.add(confSub);
 
-    // Read token from query params reactively
     const routeSub = this.route.queryParamMap.subscribe(params => {
       const tokenParam = params.get('token');
       if (tokenParam) {
@@ -109,10 +100,6 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
   }
 
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
-  }
-
   fillDemoPassword(password: string): void {
     this.resetForm.patchValue({
       newPassword: password,
@@ -124,7 +111,10 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
-    if (this.resetForm.invalid || !this.token()) return;
+    if (this.resetForm.invalid || !this.token()) {
+      this.resetForm.markAllAsTouched();
+      return;
+    }
 
     this.isSubmitting.set(true);
     this.errorMessage.set('');

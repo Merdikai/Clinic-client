@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,9 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../services/auth.service';
-import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -22,8 +20,7 @@ import { ThemeService } from '../../services/theme.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule,
-    MatTooltipModule
+    MatIconModule
   ],
   templateUrl: './forgot-password.component.html',
   styleUrls: ['./forgot-password.component.scss']
@@ -31,13 +28,11 @@ import { ThemeService } from '../../services/theme.service';
 export class ForgotPasswordComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
-  themeService = inject(ThemeService);
 
-  isDarkMode = computed(() => this.themeService.isDarkMode());
   isSubmitting = signal(false);
   isSubmitted = signal(false);
   errorMessage = signal('');
-  
+
   resetToken = signal<string | null>(null);
   resetLink = signal<string | null>(null);
   copied = signal(false);
@@ -46,17 +41,16 @@ export class ForgotPasswordComponent {
     email: ['', [Validators.required, Validators.email]]
   });
 
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
-  }
-
   fillEmail(email: string): void {
     this.forgotForm.patchValue({ email });
     this.forgotForm.markAsDirty();
   }
 
   onSubmit(): void {
-    if (this.forgotForm.invalid) return;
+    if (this.forgotForm.invalid) {
+      this.forgotForm.markAllAsTouched();
+      return;
+    }
 
     this.isSubmitting.set(true);
     this.errorMessage.set('');
