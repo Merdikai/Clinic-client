@@ -289,7 +289,7 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
               this.openEncounter(appt);
             }
           },
-          error: () => {}
+          error: () => { }
         });
       }
     }

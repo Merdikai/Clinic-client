@@ -1,23 +1,26 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { DoctorScheduleService } from '../../services/doctor-schedule.service';
 import { DoctorService } from '../../services/doctor.service';
-import { UserManagementService, UserDto } from '../../services/user-management.service';
-import { DoctorSchedule, CreateDoctorScheduleRequest } from '../../models/doctor-schedule.model';
+import { UserDto, UserManagementService } from '../../services/user-management.service';
+import { CreateDoctorScheduleRequest, DoctorSchedule } from '../../models/doctor-schedule.model';
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
+import { ToastService } from '../../ui/toast/toast.service';
+
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 export interface UnifiedShiftItem {
   id: string;
@@ -47,16 +50,16 @@ export interface UnifiedShiftItem {
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-    MatCardModule,
     MatButtonModule,
-    MatIconModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSelectModule,
-    MatChipsModule,
-    MatSnackBarModule,
-    MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './doctor-schedules.component.html',
   styleUrls: ['./doctor-schedules.component.scss']
@@ -66,7 +69,7 @@ export class DoctorSchedulesComponent implements OnInit {
   private scheduleService = inject(DoctorScheduleService);
   private doctorService = inject(DoctorService);
   private userService = inject(UserManagementService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public authService = inject(AuthService);
@@ -77,15 +80,33 @@ export class DoctorSchedulesComponent implements OnInit {
   isReceptionistRole = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'receptionist' || this.authService.hasRole('Receptionist'));
   currentUserId = computed(() => this.authService.currentUserId());
 
-  // Strictly restricted to authorized Admin management role.
-  // Unauthorized roles (Radiologists, Doctors, Nurses, etc.) cannot schedule or alter staff shift times.
   canManageSchedules = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
     return role === 'admin' || this.authService.hasRole('Admin');
   });
 
-  // Department / Role Filter: 'ALL' | 'Radiology' | 'Doctor' | 'Nurse' | 'Laboratory' | 'Reception'
   selectedDepartment = signal<'ALL' | 'Radiology' | 'Doctor' | 'Nurse' | 'Laboratory' | 'Reception'>('ALL');
+
+  pageTitle = computed(() => {
+    switch (this.selectedDepartment()) {
+      case 'Radiology':
+        return 'Radiology & Modality Suites Coverage';
+      case 'Doctor':
+        return 'Attending Physician Clinical Shifts';
+      case 'Nurse':
+        return 'Nursing Staff & Ward Duty Shifts';
+      case 'Laboratory':
+        return 'Laboratory & Phlebotomy Station Roster';
+      case 'Reception':
+        return 'Front Desk & Admissions Shifts';
+      default:
+        return 'Hospital Shift Rostering';
+    }
+  });
+
+  pageSubtitle = computed(() =>
+    'Manage clinical operating hours, equipment suite coverage, diagnostic reading duties, and on-duty rotations'
+  );
 
   schedules = signal<DoctorSchedule[]>([]);
   doctors = signal<any[]>([]);
@@ -99,15 +120,15 @@ export class DoctorSchedulesComponent implements OnInit {
   searchQuery = signal<string>('');
   isLoading = signal<boolean>(false);
   isSaving = signal<boolean>(false);
-  // Enterprise Staff Directory for Shift Scheduling
+
   departmentStaffDirectory: Record<string, { name: string; title: string; suite: string; phone?: string; shift?: string }[]> = {
     Radiology: [
-      { name: 'Dr. Ray Radiologist, MD, FACR', title: 'Lead Diagnostic Radiologist & RSO', suite: 'Reading Room Alpha — High-Resolution PACS Workstation', phone: 'Ext. 4101', shift: 'Diagnostic Read' },
+      { name: 'Dr. Ray Radiologist, MD, FACR', title: 'Lead Diagnostic Radiologist & RSO', suite: 'Reading Room Alpha — PACS Workstation', phone: 'Ext. 4101', shift: 'Diagnostic Read' },
       { name: 'Dr. Elena Rostova, MD', title: 'Interventional Radiologist & C-Arm Lead', suite: 'Suite 5 — Interventional C-Arm Suite', phone: 'Ext. 4105', shift: 'Interventional' },
-      { name: 'Marcus Wright, RT(R)(CT)', title: 'Lead CT Technologist', suite: 'Suite 2 — Siemens SOMATOM Force Dual-Source CT', phone: 'Ext. 4102', shift: 'Day Shift' },
-      { name: 'Sarah Jenkins, RT(R)', title: 'Senior Diagnostic Radiographer', suite: 'Suite 1 — Siemens Multix Impact Digital Radiography (DR)', phone: 'Ext. 4103', shift: 'Day Shift' },
-      { name: 'David Lin, RT(R)(MR)', title: 'Superconducting MRI Specialist', suite: 'Suite 3 — GE SIGNA 1.5T Superconducting MRI', phone: 'Ext. 4104', shift: 'Day Shift' },
-      { name: 'Angela Davis, RDMS', title: 'Diagnostic Medical Sonographer', suite: 'Suite 4 — Philips EPIQ 7G Color Doppler Ultrasound', phone: 'Ext. 4106', shift: 'Day Shift' }
+      { name: 'Marcus Wright, RT(R)(CT)', title: 'Lead CT Technologist', suite: 'Suite 2 — Dual-Source CT', phone: 'Ext. 4102', shift: 'Day Shift' },
+      { name: 'Sarah Jenkins, RT(R)', title: 'Senior Diagnostic Radiographer', suite: 'Suite 1 — Digital Radiography (DR)', phone: 'Ext. 4103', shift: 'Day Shift' },
+      { name: 'David Lin, RT(R)(MR)', title: 'Superconducting MRI Specialist', suite: 'Suite 3 — 1.5T Superconducting MRI', phone: 'Ext. 4104', shift: 'Day Shift' },
+      { name: 'Angela Davis, RDMS', title: 'Diagnostic Medical Sonographer', suite: 'Suite 4 — Color Doppler Ultrasound', phone: 'Ext. 4106', shift: 'Day Shift' }
     ],
     Doctor: [
       { name: 'Dr. John Smith, MD', title: 'Attending Cardiologist', suite: 'Cardiology Suite — Exam 1', phone: 'Ext. 2001', shift: 'Day Shift' },
@@ -134,14 +155,13 @@ export class DoctorSchedulesComponent implements OnInit {
 
   customStaffMode = signal<boolean>(false);
   selectedStaffDropdown = signal<string>('');
-
   showAddModal = signal<boolean>(false);
 
   scheduleForm: FormGroup = this.fb.group({
     department: ['Radiology', Validators.required],
     staffName: ['', Validators.required],
     staffTitle: ['Lead Diagnostic Radiologist & RSO', Validators.required],
-    departmentSuite: ['Reading Room Alpha — High-Resolution PACS Workstation', Validators.required],
+    departmentSuite: ['Reading Room Alpha — PACS Workstation', Validators.required],
     dayOfWeek: [1, Validators.required],
     startTime: ['07:30', Validators.required],
     endTime: ['16:00', Validators.required],
@@ -161,6 +181,13 @@ export class DoctorSchedulesComponent implements OnInit {
 
   private readonly STAFF_SHIFTS_STORAGE_KEY = 'clinic_hospital_staff_shifts';
 
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showAddModal() && !this.isSaving()) {
+      this.closeAddModal();
+    }
+  }
+
   private loadHospitalStaffShiftsFromStorage(): UnifiedShiftItem[] {
     try {
       const stored = localStorage.getItem(this.STAFF_SHIFTS_STORAGE_KEY);
@@ -170,8 +197,8 @@ export class DoctorSchedulesComponent implements OnInit {
           return parsed;
         }
       }
-    } catch (e) {
-      console.warn('Could not read stored staff shifts:', e);
+    } catch {
+      // Fallback to seeded schedule defaults
     }
     return this.getDefaultHospitalStaffShifts();
   }
@@ -179,14 +206,13 @@ export class DoctorSchedulesComponent implements OnInit {
   private saveHospitalStaffShiftsToStorage(shifts: UnifiedShiftItem[]): void {
     try {
       localStorage.setItem(this.STAFF_SHIFTS_STORAGE_KEY, JSON.stringify(shifts));
-    } catch (e) {
-      console.warn('Could not write staff shifts to storage:', e);
+    } catch {
+      // Ignore storage quota error
     }
   }
 
   getDefaultHospitalStaffShifts(): UnifiedShiftItem[] {
     return [
-      // === RADIOLOGY & MODALITY SUITES ===
       {
         id: 'rad-s1',
         department: 'Radiology',
@@ -199,7 +225,7 @@ export class DoctorSchedulesComponent implements OnInit {
         endTime: '16:00',
         shiftType: 'Diagnostic Read',
         isActive: true,
-        notes: 'Primary Thoracic, Neuro CT/MRI Sign-Off & STAT Emergency Siren Desk',
+        notes: 'Primary Thoracic, Neuro CT/MRI Sign-Off & STAT Desk',
         phoneExtension: 'Ext. 4101'
       },
       {
@@ -214,7 +240,7 @@ export class DoctorSchedulesComponent implements OnInit {
         endTime: '16:00',
         shiftType: 'Diagnostic Read',
         isActive: true,
-        notes: 'Primary Thoracic, Neuro CT/MRI Sign-Off & STAT Emergency Siren Desk',
+        notes: 'Primary Thoracic, Neuro CT/MRI Sign-Off & STAT Desk',
         phoneExtension: 'Ext. 4101'
       },
       {
@@ -229,7 +255,7 @@ export class DoctorSchedulesComponent implements OnInit {
         endTime: '16:00',
         shiftType: 'Diagnostic Read',
         isActive: true,
-        notes: 'Primary Thoracic, Neuro CT/MRI Sign-Off & STAT Emergency Siren Desk',
+        notes: 'Primary Thoracic, Neuro CT/MRI Sign-Off & STAT Desk',
         phoneExtension: 'Ext. 4101'
       },
       {
@@ -252,7 +278,7 @@ export class DoctorSchedulesComponent implements OnInit {
         department: 'Radiology',
         staffName: 'Marcus Wright, RT(R)(CT)',
         staffTitle: 'Lead CT Technologist',
-        departmentSuite: 'Suite 2 — Siemens SOMATOM Force Dual-Source CT',
+        departmentSuite: 'Suite 2 — Dual-Source CT',
         avatarIcon: 'settings_remote',
         dayOfWeek: 1,
         startTime: '07:00',
@@ -267,7 +293,7 @@ export class DoctorSchedulesComponent implements OnInit {
         department: 'Radiology',
         staffName: 'Marcus Wright, RT(R)(CT)',
         staffTitle: 'Lead CT Technologist',
-        departmentSuite: 'Suite 2 — Siemens SOMATOM Force Dual-Source CT',
+        departmentSuite: 'Suite 2 — Dual-Source CT',
         avatarIcon: 'settings_remote',
         dayOfWeek: 2,
         startTime: '07:00',
@@ -282,7 +308,7 @@ export class DoctorSchedulesComponent implements OnInit {
         department: 'Radiology',
         staffName: 'Sarah Jenkins, RT(R)',
         staffTitle: 'Senior Diagnostic Radiographer',
-        departmentSuite: 'Suite 1 — Siemens Multix Impact Digital Radiography (DR)',
+        departmentSuite: 'Suite 1 — Digital Radiography (DR)',
         avatarIcon: 'filter_frames',
         dayOfWeek: 1,
         startTime: '08:00',
@@ -297,7 +323,7 @@ export class DoctorSchedulesComponent implements OnInit {
         department: 'Radiology',
         staffName: 'David Lin, RT(R)(MR)',
         staffTitle: 'Superconducting MRI Specialist',
-        departmentSuite: 'Suite 3 — GE SIGNA 1.5T Superconducting MRI',
+        departmentSuite: 'Suite 3 — 1.5T Superconducting MRI',
         avatarIcon: 'donut_large',
         dayOfWeek: 4,
         startTime: '08:00',
@@ -312,7 +338,7 @@ export class DoctorSchedulesComponent implements OnInit {
         department: 'Radiology',
         staffName: 'Angela Davis, RDMS',
         staffTitle: 'Diagnostic Medical Sonographer',
-        departmentSuite: 'Suite 4 — Philips EPIQ 7G Color Doppler Ultrasound',
+        departmentSuite: 'Suite 4 — Color Doppler Ultrasound',
         avatarIcon: 'waves',
         dayOfWeek: 2,
         startTime: '08:30',
@@ -322,8 +348,6 @@ export class DoctorSchedulesComponent implements OnInit {
         notes: 'Abdominal, Small Parts, Carotid Doppler & Pelvic sonography',
         phoneExtension: 'Ext. 4106'
       },
-
-      // === NURSING STAFF ===
       {
         id: 'nur-s1',
         department: 'Nurse',
@@ -354,8 +378,6 @@ export class DoctorSchedulesComponent implements OnInit {
         notes: 'IV Cannulation, medication administration, wound dressing',
         phoneExtension: 'Ext. 3102'
       },
-
-      // === LABORATORY & PHLEBOTOMY ===
       {
         id: 'lab-s1',
         department: 'Laboratory',
@@ -386,8 +408,6 @@ export class DoctorSchedulesComponent implements OnInit {
         notes: 'STAT blood collections, pediatric draws & specimen accessioning',
         phoneExtension: 'Ext. 5102'
       },
-
-      // === RECEPTION & ADMISSIONS ===
       {
         id: 'rec-s0',
         department: 'Reception',
@@ -436,15 +456,12 @@ export class DoctorSchedulesComponent implements OnInit {
     ];
   }
 
-  // Enterprise Hospital Shift Roster Data for Radiology, Nursing, Lab, Reception
   hospitalStaffShifts = signal<UnifiedShiftItem[]>(this.loadHospitalStaffShiftsFromStorage());
 
-  // Unified list combining live Database schedules + hospital department shifts
   allUnifiedShifts = computed<UnifiedShiftItem[]>(() => {
     const dbUsers = this.realClinicUsers();
 
     const dbShifts: UnifiedShiftItem[] = this.schedules().map(s => {
-      // Find matching user from realClinicUsers by doctorId or doctorName
       const matchedUser = dbUsers.find(u =>
         (u.id && u.id.toLowerCase() === (s.doctorId || '').toLowerCase()) ||
         (u.userId && u.userId.toLowerCase() === (s.doctorId || '').toLowerCase())
@@ -459,7 +476,6 @@ export class DoctorSchedulesComponent implements OnInit {
         staffName = this.getDoctorName(s.doctorId, s.doctorName);
       }
 
-      // Determine department, role details, icon, and suite from user's roles
       let department: 'Radiology' | 'Doctor' | 'Nurse' | 'Laboratory' | 'Reception' = 'Doctor';
       let staffTitle = 'Attending Clinical Physician';
       let departmentSuite = `Exam Suite ${(parseInt((s.id || '').replace(/[^0-9a-f]/gi, '').slice(-2) || '1', 16) % 5) + 1}`;
@@ -473,13 +489,11 @@ export class DoctorSchedulesComponent implements OnInit {
           staffTitle = 'Patient Admissions & Financial Counselor';
           departmentSuite = 'Main Lobby Registration Desk 1';
           avatarIcon = 'badge';
-          shiftType = 'Day Shift';
         } else if (roles.includes('nurse')) {
           department = 'Nurse';
           staffTitle = 'Registered Care Nurse (RN)';
           departmentSuite = 'Central Triage & Clinical Vitals Intake Bay';
           avatarIcon = 'healing';
-          shiftType = 'Day Shift';
         } else if (roles.includes('radiologist') || roles.includes('radiology')) {
           department = 'Radiology';
           staffTitle = 'Diagnostic Radiologist & Modality Specialist';
@@ -491,16 +505,13 @@ export class DoctorSchedulesComponent implements OnInit {
           staffTitle = 'Medical Laboratory Scientist (MLS)';
           departmentSuite = 'Core Pathology & Automated Analyzers Lab';
           avatarIcon = 'biotech';
-          shiftType = 'Day Shift';
         } else if (roles.includes('doctor') || roles.includes('physician')) {
           department = 'Doctor';
           staffTitle = 'Attending Clinical Physician';
           departmentSuite = 'Clinical Consultation Exam Suite 1';
           avatarIcon = 'stethoscope';
-          shiftType = 'Day Shift';
         }
       } else {
-        // Fallback by staff name keywords
         const lowerName = staffName.toLowerCase();
         if (lowerName.includes('reception') || lowerName.includes('clara') || lowerName.includes('vance') || lowerName.includes('kapoor')) {
           department = 'Reception';
@@ -549,7 +560,6 @@ export class DoctorSchedulesComponent implements OnInit {
       };
     });
 
-    // Deduplicate against local hospital staff shifts (database shifts take precedence for same person & day)
     const dbKeys = new Set(dbShifts.map(d => `${d.staffName.toLowerCase()}-${d.dayOfWeek}`));
     const nonDuplicatedHospitalShifts = this.hospitalStaffShifts().filter(
       h => !dbKeys.has(`${h.staffName.toLowerCase()}-${h.dayOfWeek}`)
@@ -592,23 +602,15 @@ export class DoctorSchedulesComponent implements OnInit {
     return list;
   });
 
-  // Department counts for filter badges
   radiologyShiftsCount = computed(() => this.allUnifiedShifts().filter(s => s.department === 'Radiology').length);
   doctorShiftsCount = computed(() => this.allUnifiedShifts().filter(s => s.department === 'Doctor').length);
   nurseShiftsCount = computed(() => this.allUnifiedShifts().filter(s => s.department === 'Nurse').length);
   labShiftsCount = computed(() => this.allUnifiedShifts().filter(s => s.department === 'Laboratory').length);
   receptionShiftsCount = computed(() => this.allUnifiedShifts().filter(s => s.department === 'Reception').length);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // MY SHIFTS — Personal schedule panel for the currently logged-in account.
-  // Visible only to non-Admin roles (Radiologist, Doctor, Nurse, Lab, etc.).
-  // Matches the user's name against all roster entries (name tokens, Dr. prefix).
-  // ──────────────────────────────────────────────────────────────────────────
-
   currentUserDisplayName = computed<string>(() => {
     const user = this.authService.currentUser();
     if (!user) return '';
-    // Build candidate names from stored user info
     const fullName = (user as any).fullName || '';
     const firstName = (user as any).firstName || '';
     const lastName = (user as any).lastName || '';
@@ -618,7 +620,7 @@ export class DoctorSchedulesComponent implements OnInit {
   });
 
   myShifts = computed<UnifiedShiftItem[]>(() => {
-    if (this.canManageSchedules()) return [];   // Admins use the full roster
+    if (this.canManageSchedules()) return [];
     const rawName = this.currentUserDisplayName().toLowerCase().trim();
     const userId = (this.currentUserId() || '').toLowerCase();
     const user = this.authService.currentUser();
@@ -626,11 +628,9 @@ export class DoctorSchedulesComponent implements OnInit {
     const userRoles = (this.authService.userRoles() || []).map(r => r.toLowerCase());
     const isReceptionist = userRoles.includes('receptionist');
 
-    // Strip common prefixes for flexible matching
     const stripped = rawName.replace(/^(dr\.|dr |prof\.|nurse |rn |rt\(r\)|mls |mlt )/i, '').trim();
 
     return this.allUnifiedShifts().filter(s => {
-      // 1. Direct doctorId / userId match
       if (userId && s.doctorId && s.doctorId.toLowerCase() === userId) {
         return true;
       }
@@ -638,7 +638,6 @@ export class DoctorSchedulesComponent implements OnInit {
       const sn = s.staffName.toLowerCase().trim();
       const snStripped = sn.replace(/^(dr\.|dr |prof\.|nurse |rn |rt\(r\)|mls |mlt )/i, '').trim();
 
-      // 2. Exact or substring name match
       if (rawName && (sn === rawName || sn.includes(rawName) || rawName.includes(sn))) {
         return true;
       }
@@ -649,7 +648,6 @@ export class DoctorSchedulesComponent implements OnInit {
         return true;
       }
 
-      // 3. Receptionist role match
       if (isReceptionist && s.department === 'Reception') {
         if (sn.includes('clara') || username.includes('clara') || rawName.includes('clara')) {
           return true;
@@ -662,6 +660,21 @@ export class DoctorSchedulesComponent implements OnInit {
 
   myShiftsSectionExpanded = signal<boolean>(true);
 
+  hasMyShiftOnDay(dayValue: number): boolean {
+    return this.myShifts().some(s => s.dayOfWeek === dayValue);
+  }
+
+  hasActiveMyShiftOnDay(dayValue: number): boolean {
+    return this.myShifts().some(s => s.dayOfWeek === dayValue && s.isActive);
+  }
+
+  clearFilters(): void {
+    this.selectedDepartment.set('ALL');
+    this.selectedDayFilter.set('ALL');
+    this.selectedStatusFilter.set('ALL');
+    this.searchQuery.set('');
+  }
+
   loadAllRealClinicStaff(): void {
     this.userService.getUsers().subscribe({
       next: (res: any) => {
@@ -672,7 +685,7 @@ export class DoctorSchedulesComponent implements OnInit {
 
         this.realClinicUsers.set(list);
       },
-      error: () => console.warn('Could not load real clinic staff from users API')
+      error: () => { }
     });
   }
 
@@ -765,7 +778,6 @@ export class DoctorSchedulesComponent implements OnInit {
     return [...realRoleStaff, ...unseededBase];
   });
 
-  // All registered clinic staff across all roles for complete hospital directory selection
   allRegisteredStaff = computed(() => {
     const dbUsers = this.realClinicUsers();
     return dbUsers.map(u => {
@@ -784,30 +796,25 @@ export class DoctorSchedulesComponent implements OnInit {
         roleDept = 'Doctor';
         defaultTitle = 'Attending Physician';
         defaultSuite = 'Consultation Exam Suite 1';
-        defaultShift = 'Day Shift';
       } else if (roles.includes('nurse')) {
         roleDept = 'Nurse';
         defaultTitle = 'Registered Nurse (RN)';
         defaultSuite = 'Clinical Care Bay A — Triage Station';
-        defaultShift = 'Day Shift';
       } else if (roles.includes('laboratorist') || roles.includes('lab') || roles.includes('laboratory')) {
         roleDept = 'Laboratory';
         defaultTitle = 'Medical Laboratory Scientist (MLS)';
         defaultSuite = 'Diagnostic Pathology Core Lab — Station 1';
-        defaultShift = 'Day Shift';
       } else if (roles.includes('receptionist') || roles.includes('reception')) {
         roleDept = 'Reception';
         defaultTitle = 'Patient Admissions Coordinator';
         defaultSuite = 'Main Lobby Registration Desk 1';
-        defaultShift = 'Day Shift';
       } else if (roles.includes('admin')) {
         roleDept = 'Doctor';
         defaultTitle = 'Hospital Clinic Administrator';
         defaultSuite = 'Administration Suite 101';
-        defaultShift = 'Day Shift';
       }
 
-      const rawName = u.fullName || 
+      const rawName = u.fullName ||
         ((u.firstName || u.lastName) ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') ||
         u.userName || 'Staff Member';
 
@@ -889,7 +896,6 @@ export class DoctorSchedulesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Read query params snapshot on initial load
     const initialDept = (this.route.snapshot.queryParams['dept'] || this.route.snapshot.queryParams['role'] || '').toLowerCase();
     if (initialDept === 'radiology') {
       this.selectedDepartment.set('Radiology');
@@ -903,16 +909,14 @@ export class DoctorSchedulesComponent implements OnInit {
       this.selectedDepartment.set('Reception');
     } else if (initialDept === 'all') {
       this.selectedDepartment.set('ALL');
+    } else if (this.isRadiologistRole()) {
+      this.selectedDepartment.set('Radiology');
+    } else if (this.isDoctorRole()) {
+      this.selectedDepartment.set('Doctor');
+    } else if (this.isReceptionistRole()) {
+      this.selectedDepartment.set('Reception');
     } else {
-      if (this.isRadiologistRole()) {
-        this.selectedDepartment.set('Radiology');
-      } else if (this.isDoctorRole()) {
-        this.selectedDepartment.set('Doctor');
-      } else if (this.isReceptionistRole()) {
-        this.selectedDepartment.set('Reception');
-      } else {
-        this.selectedDepartment.set('ALL');
-      }
+      this.selectedDepartment.set('ALL');
     }
 
     this.loadAllRealClinicStaff();
@@ -933,7 +937,7 @@ export class DoctorSchedulesComponent implements OnInit {
   loadDoctors(): void {
     this.doctorService.getAllDoctors().subscribe({
       next: (docs) => {
-        let docList = docs || [];
+        const docList = docs || [];
         if (docList.length > 0) {
           this.doctors.set(docList);
           if (!this.scheduleForm.get('staffName')?.value) {
@@ -970,7 +974,7 @@ export class DoctorSchedulesComponent implements OnInit {
           this.scheduleForm.patchValue({ staffName: `Dr. ${docUsers[0].firstName} ${docUsers[0].lastName}` });
         }
       },
-      error: () => console.warn('Could not load user doctors list')
+      error: () => { }
     });
   }
 
@@ -1038,13 +1042,11 @@ export class DoctorSchedulesComponent implements OnInit {
     this.isSaving.set(true);
     const val = this.scheduleForm.value;
 
-    // Handle Edit Mode
     if (this.isEditMode()) {
       const editId = this.editingShiftId();
       const dbShift = this.schedules().find(s => s.id === editId);
 
       if (dbShift) {
-        // Delete old shift and re-create updated in database
         this.scheduleService.delete(editId!).subscribe({
           next: () => {
             const rawStaffName = (val.staffName || '').trim().toLowerCase();
@@ -1071,24 +1073,23 @@ export class DoctorSchedulesComponent implements OnInit {
                 this.isSaving.set(false);
                 this.showAddModal.set(false);
                 this.editingShiftId.set(null);
-                this.snackBar.open(`Working shift updated successfully for ${val.staffName}.`, 'Close', { duration: 3000 });
+                this.toast.success(`Working shift updated for ${val.staffName}.`);
                 this.loadSchedules();
               },
               error: (err) => {
                 this.isSaving.set(false);
-                this.snackBar.open(err.error?.detail || err.error?.message || 'Failed to update shift.', 'Close', { duration: 4000 });
+                this.toast.error(err.error?.detail || err.error?.message || 'Failed to update shift.');
                 this.loadSchedules();
               }
             });
           },
           error: () => {
             this.isSaving.set(false);
-            this.snackBar.open('Failed to update shift.', 'Close', { duration: 3000 });
+            this.toast.error('Failed to update shift.');
           }
         });
         return;
       } else {
-        // Update local hospitalStaffShifts
         this.hospitalStaffShifts.update(prev => {
           const updated = prev.map(s => {
             if (s.id === editId) {
@@ -1114,13 +1115,11 @@ export class DoctorSchedulesComponent implements OnInit {
         this.isSaving.set(false);
         this.showAddModal.set(false);
         this.editingShiftId.set(null);
-        this.snackBar.open(`Working shift updated successfully for ${val.staffName}.`, 'Close', { duration: 3000 });
+        this.toast.success(`Working shift updated for ${val.staffName}.`);
         return;
       }
     }
 
-    // CREATE MODE:
-    // Match staff to database user
     const rawStaffName = (val.staffName || '').trim().toLowerCase();
     const cleanStaffName = rawStaffName.replace(/^dr\.\s*/i, '').trim();
 
@@ -1129,8 +1128,8 @@ export class DoctorSchedulesComponent implements OnInit {
       const uClean = uFull.replace(/^dr\.\s*/i, '').trim();
       const uName = (u.userName || u.username || '').toLowerCase();
       return uFull === rawStaffName || uClean === cleanStaffName ||
-             uFull.includes(cleanStaffName) || cleanStaffName.includes(uClean) ||
-             uName === cleanStaffName;
+        uFull.includes(cleanStaffName) || cleanStaffName.includes(uClean) ||
+        uName === cleanStaffName;
     });
 
     const matchedDoctor = val.department === 'Doctor'
@@ -1140,7 +1139,6 @@ export class DoctorSchedulesComponent implements OnInit {
     const targetUserId = matchedUser?.id || matchedUser?.userId || matchedDoctor?.id;
 
     if (targetUserId) {
-      // SAVE DIRECTLY TO DATABASE VIA BACKEND API
       const payload: CreateDoctorScheduleRequest = {
         doctorId: targetUserId,
         dayOfWeek: Number(val.dayOfWeek),
@@ -1152,7 +1150,7 @@ export class DoctorSchedulesComponent implements OnInit {
 
       this.scheduleService.create(payload).subscribe({
         next: () => {
-          this.snackBar.open(`${val.department} shift schedule successfully saved to database.`, 'Close', { duration: 3500 });
+          this.toast.success(`${val.department} shift schedule saved.`);
           this.isSaving.set(false);
           this.showAddModal.set(false);
           this.editingShiftId.set(null);
@@ -1160,12 +1158,11 @@ export class DoctorSchedulesComponent implements OnInit {
         },
         error: (err) => {
           const detail = err.error?.detail || err.error?.message || 'Failed to save shift to database.';
-          this.snackBar.open(detail, 'Close', { duration: 4000 });
+          this.toast.error(detail);
           this.isSaving.set(false);
         }
       });
     } else {
-      // Custom / External staff member not in DB: persist to hospitalStaffShifts with localStorage
       const newShift: UnifiedShiftItem = {
         id: `shift-${Date.now()}`,
         department: val.department,
@@ -1189,7 +1186,7 @@ export class DoctorSchedulesComponent implements OnInit {
       });
       this.isSaving.set(false);
       this.showAddModal.set(false);
-      this.snackBar.open(`${val.department} staff shift rostered successfully.`, 'Close', { duration: 3000 });
+      this.toast.success(`${val.department} staff shift rostered.`);
     }
   }
 
@@ -1197,10 +1194,10 @@ export class DoctorSchedulesComponent implements OnInit {
     if (item.isCustomDoctorShift) {
       this.scheduleService.toggleStatus(item.id).subscribe({
         next: () => {
-          this.snackBar.open('Shift status toggled.', 'Close', { duration: 2500 });
+          this.toast.success('Shift status toggled.');
           this.loadSchedules();
         },
-        error: () => this.snackBar.open('Failed to update shift status.', 'Close', { duration: 3000 })
+        error: () => this.toast.error('Failed to update shift status.')
       });
     } else {
       this.hospitalStaffShifts.update(list => {
@@ -1208,7 +1205,7 @@ export class DoctorSchedulesComponent implements OnInit {
         this.saveHospitalStaffShiftsToStorage(updated);
         return updated;
       });
-      this.snackBar.open('Staff shift status toggled.', 'Close', { duration: 2500 });
+      this.toast.success('Staff shift status toggled.');
     }
   }
 
@@ -1217,10 +1214,10 @@ export class DoctorSchedulesComponent implements OnInit {
       if (item.isCustomDoctorShift) {
         this.scheduleService.delete(item.id).subscribe({
           next: () => {
-            this.snackBar.open('Shift removed from roster.', 'Close', { duration: 2500 });
+            this.toast.success('Shift removed from roster.');
             this.loadSchedules();
           },
-          error: () => this.snackBar.open('Failed to delete shift.', 'Close', { duration: 3000 })
+          error: () => this.toast.error('Failed to delete shift.')
         });
       } else {
         this.hospitalStaffShifts.update(list => {
@@ -1228,7 +1225,7 @@ export class DoctorSchedulesComponent implements OnInit {
           this.saveHospitalStaffShiftsToStorage(updated);
           return updated;
         });
-        this.snackBar.open('Shift removed from roster.', 'Close', { duration: 2500 });
+        this.toast.success('Shift removed from roster.');
       }
     }
   }
@@ -1247,10 +1244,9 @@ export class DoctorSchedulesComponent implements OnInit {
     return 'Attending Physician';
   }
 
-  /** Returns a compact start–end label for a given day's personal shift in the weekly strip */
   getMyShiftTime(dayValue: number): string {
     const shift = this.myShifts().find(s => s.dayOfWeek === dayValue);
     if (!shift) return '';
-    return `${shift.startTime}–${shift.endTime}`;
+    return `${shift.startTime} - ${shift.endTime}`;
   }
 }
