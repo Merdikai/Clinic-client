@@ -1,163 +1,142 @@
-<div class="appointment-booking-page">
-  <div class="booking-wrapper">
-    
-    <!-- Top Action Bar -->
-    <div class="booking-top-bar">
-      <button mat-button (click)="goBack()" class="back-link-btn">
-        <mat-icon>arrow_back</mat-icon> {{ isDoctor() ? 'Back to Consultations' : (isPatient() ? 'Back to My Appointments' : 'Back to Master Schedule') }}
-      </button>
-      <span class="step-badge"><span class="dot"></span> Online Consultation Intake</span>
+<div class="ehr-page appointment-booking-page">
+  <app-page-header
+    title="Schedule Consultation"
+    subtitle="Select patient, specialist physician, timeslot, and clinical reason for visit"
+    [backLink]="isPatient() ? '/my-appointments' : '/appointments'"
+    [backLabel]="isPatient() ? 'My Appointments' : 'Appointment Schedule'">
+  </app-page-header>
+
+  @if (isLoadingPatients() || isLoadingDoctors()) {
+    <div class="booking-skeleton-stack">
+      <app-skeleton variant="card" [count]="3" height="140px" label="Loading patient and physician directory"></app-skeleton>
     </div>
+  } @else {
+    <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()" class="booking-form">
+      <!-- SECTION 1: PATIENT & PHYSICIAN -->
+      <section class="form-card" aria-labelledby="booking-step-1">
+        <header class="section-header">
+          <h2 id="booking-step-1">1. Patient &amp; Attending Physician</h2>
+        </header>
 
-    <!-- Main Glassmorphic Booking Card -->
-    <div class="booking-card premium-card">
-      <div class="card-hero-header">
-        <div class="hero-icon-box">
-          <mat-icon>calendar_month</mat-icon>
-        </div>
-        <div class="hero-title-box">
-          <h2>Schedule Patient Consultation</h2>
-          <p>Select verified clinical patient, specialist physician, and preferred consultation timeslot.</p>
-        </div>
-      </div>
-
-      <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()" class="booking-form-grid">
-        
-        <!-- Step 1: Patient & Doctor Selection -->
-        <div class="form-section-title">
-          <mat-icon>person_pin</mat-icon>
-          <span>1. Patient & Physician Selection</span>
-        </div>
-
-        <div class="two-col-row">
+        <div class="form-grid">
           @if (isPatient()) {
-            <div class="patient-identity-card">
-              <div class="patient-avatar">
-                <mat-icon>account_circle</mat-icon>
+            <div class="patient-identity-box">
+              <div class="identity-meta">
+                <span class="identity-label">Patient</span>
+                <strong class="identity-name">{{ currentPatient()?.firstName }} {{ currentPatient()?.lastName }}</strong>
+                <span class="identity-sub">
+                  MRN: {{ currentPatient()?.medicalRecordNumber || 'PAT-ALICE-001' }}
+                  @if (currentPatient()?.email) {
+                    · {{ currentPatient()?.email }}
+                  }
+                </span>
               </div>
-              <div class="patient-meta-wrap">
-                <span class="patient-role-badge">Verified Patient</span>
-                <h4 class="patient-name">{{ currentPatient()?.firstName }} {{ currentPatient()?.lastName }}</h4>
-                <p class="patient-sub-info">
-                  <span><strong>MRN:</strong> {{ currentPatient()?.medicalRecordNumber || 'PAT-ALICE-001' }}</span>
-                  <span *ngIf="currentPatient()?.email"> · {{ currentPatient()?.email }}</span>
-                </p>
-              </div>
-              <div class="patient-status-chip">
-                <mat-icon>verified</mat-icon> Verified
-              </div>
+              <app-status-chip status="Verified" tone="success"></app-status-chip>
             </div>
           } @else {
-            <mat-form-field appearance="outline" class="glass-field">
-              <mat-label>Select Patient</mat-label>
+            <mat-form-field appearance="outline" class="field-full">
+              <mat-label>Patient</mat-label>
               <mat-select formControlName="patientId">
                 @for (p of patients(); track p.id) {
                   <mat-option [value]="p.id">
-                    <div class="option-row">
-                      <strong>{{ p.firstName }} {{ p.lastName }}</strong>
-                      <span class="mrn-badge">MRN: {{ p.medicalRecordNumber }}</span>
-                    </div>
+                    {{ p.firstName }} {{ p.lastName }} (MRN: {{ p.medicalRecordNumber }})
                   </mat-option>
                 }
               </mat-select>
-              <mat-icon matPrefix>person</mat-icon>
               @if (bookingForm.get('patientId')?.hasError('required') && bookingForm.get('patientId')?.touched) {
                 <mat-error>Please select a patient</mat-error>
               }
             </mat-form-field>
           }
 
-          <mat-form-field appearance="outline" class="glass-field">
-            <mat-label>Select Specialist Doctor</mat-label>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Specialist Physician</mat-label>
             <mat-select formControlName="doctorId">
               @for (d of doctors(); track d.id) {
                 <mat-option [value]="d.id">
-                  <div class="option-row">
-                    <strong>Dr. {{ d.firstName }} {{ d.lastName }}</strong>
-                    <span class="spec-badge">{{ d.specialization || 'General Physician' }}</span>
-                  </div>
+                  Dr. {{ d.firstName }} {{ d.lastName }} — {{ d.specialization || 'General Physician' }}
                 </mat-option>
               }
             </mat-select>
-            <mat-icon matPrefix>medical_services</mat-icon>
             @if (bookingForm.get('doctorId')?.hasError('required') && bookingForm.get('doctorId')?.touched) {
-              <mat-error>Please select a doctor</mat-error>
+              <mat-error>Please select a physician</mat-error>
             }
           </mat-form-field>
         </div>
+      </section>
 
-        <!-- Step 2: Date, Time & Duration -->
-        <div class="form-section-title" style="margin-top: 16px;">
-          <mat-icon>schedule</mat-icon>
-          <span>2. Appointment Slot & Timing</span>
-        </div>
+      <!-- SECTION 2: DATE, TIME & DURATION -->
+      <section class="form-card" aria-labelledby="booking-step-2">
+        <header class="section-header">
+          <h2 id="booking-step-2">2. Appointment Slot &amp; Timing</h2>
+        </header>
 
-        <div class="three-col-row">
-          <mat-form-field appearance="outline" class="glass-field">
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="field-full">
             <mat-label>Consultation Date</mat-label>
             <input matInput type="date" formControlName="date" />
-            <mat-icon matPrefix>event</mat-icon>
             @if (bookingForm.get('date')?.hasError('required') && bookingForm.get('date')?.touched) {
               <mat-error>Date is required</mat-error>
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="glass-field">
+          <mat-form-field appearance="outline" class="field-full">
             <mat-label>Start Time</mat-label>
             <input matInput type="time" formControlName="time" />
-            <mat-icon matPrefix>alarm</mat-icon>
             @if (bookingForm.get('time')?.hasError('required') && bookingForm.get('time')?.touched) {
               <mat-error>Time is required</mat-error>
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="glass-field">
-            <mat-label>Duration (mins)</mat-label>
+          <mat-form-field appearance="outline" class="field-full grid-span-2">
+            <mat-label>Consultation Duration</mat-label>
             <mat-select formControlName="durationMinutes">
               <mat-option [value]="15">15 Minutes (Brief)</mat-option>
               <mat-option [value]="30">30 Minutes (Standard)</mat-option>
               <mat-option [value]="45">45 Minutes (Extended)</mat-option>
               <mat-option [value]="60">60 Minutes (Comprehensive)</mat-option>
             </mat-select>
-            <mat-icon matPrefix>timer</mat-icon>
           </mat-form-field>
         </div>
+      </section>
 
-        <!-- Step 3: Clinical Reason -->
-        <div class="form-section-title" style="margin-top: 16px;">
-          <mat-icon>notes</mat-icon>
-          <span>3. Clinical Reason for Visit</span>
-        </div>
+      <!-- SECTION 3: REASON FOR VISIT -->
+      <section class="form-card" aria-labelledby="booking-step-3">
+        <header class="section-header">
+          <h2 id="booking-step-3">3. Reason for Visit</h2>
+        </header>
 
-        <mat-form-field appearance="outline" class="glass-field" style="width: 100%;">
-          <mat-label>Chief Complaint & Symptoms</mat-label>
-          <textarea matInput rows="3" formControlName="reasonForVisit" placeholder="Describe symptoms, primary health concern, or follow-up reason..."></textarea>
-          <mat-icon matPrefix>edit_note</mat-icon>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Chief Complaint &amp; Symptoms</mat-label>
+          <textarea
+            matInput
+            rows="3"
+            formControlName="reasonForVisit"
+            placeholder="Describe primary symptoms or follow-up reason"></textarea>
           @if (bookingForm.get('reasonForVisit')?.hasError('required') && bookingForm.get('reasonForVisit')?.touched) {
             <mat-error>Reason for visit is required</mat-error>
           }
         </mat-form-field>
+      </section>
 
-        @if (errorMessage()) {
-          <div class="error-banner">
-            <mat-icon>error_outline</mat-icon>
-            <span>{{ errorMessage() }}</span>
-          </div>
-        }
-
-        <!-- Actions -->
-        <div class="form-actions-bar">
-          <button mat-stroked-button type="button" routerLink="/appointments" class="cancel-btn">
-            Cancel
-          </button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="bookingForm.invalid || isSubmitting()" class="confirm-btn">
-            <mat-icon>{{ isSubmitting() ? 'hourglass_top' : 'check_circle' }}</mat-icon>
-            <span>{{ isSubmitting() ? 'Booking Consultation...' : 'Confirm & Schedule Consultation' }}</span>
-          </button>
+      @if (errorMessage()) {
+        <div class="form-error-banner" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          <span>{{ errorMessage() }}</span>
         </div>
+      }
 
-      </form>
-    </div>
-
-  </div>
+      <footer class="form-footer">
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="bookingForm.invalid || isSubmitting()"
+          [attr.aria-busy]="isSubmitting()">
+          {{ isSubmitting() ? 'Booking Consultation...' : 'Confirm Consultation' }}
+        </button>
+        <button mat-stroked-button type="button" (click)="goBack()">Cancel</button>
+      </footer>
+    </form>
+  }
 </div>

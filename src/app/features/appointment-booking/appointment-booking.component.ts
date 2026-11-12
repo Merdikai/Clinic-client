@@ -7,7 +7,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
 import { exhaustMap, catchError } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,7 +15,11 @@ import { DoctorService, DoctorDto } from '../../services/doctor.service';
 import { AppointmentService } from '../../services/appointment.service';
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
+import { ToastService } from '../../ui/toast/toast.service';
 import { Patient } from '../../models/patient.model';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
 @Component({
   selector: 'app-appointment-booking',
@@ -30,7 +33,9 @@ import { Patient } from '../../models/patient.model';
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatSnackBarModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent
   ],
   templateUrl: './appointment-booking.component.html',
   styleUrls: ['./appointment-booking.component.scss']
@@ -44,22 +49,24 @@ export class AppointmentBookingComponent implements OnInit {
   private permissionService = inject(PermissionService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
 
   isDoctor = computed(() => this.authService.isDoctor());
-  isPatient = computed(() => 
-    this.authService.isPatient() || 
-    this.authService.userRoles().includes('Patient') || 
+  isPatient = computed(() =>
+    this.authService.isPatient() ||
+    this.authService.userRoles().includes('Patient') ||
     this.permissionService.activeRole() === 'Patient'
   );
 
   currentPatient = signal<Patient | null>(null);
   patients = signal<Patient[]>([]);
   doctors = signal<DoctorDto[]>([]);
+  isLoadingPatients = signal(false);
+  isLoadingDoctors = signal(false);
   isSubmitting = signal(false);
   errorMessage = signal('');
 
-  // ─── Qiyas M9 Session 3: Defensive RxJS Mutation Pipeline ───
+  // Defensive RxJS mutation pipeline
   private submitClick$ = new Subject<any>();
 
   constructor() {
@@ -79,7 +86,7 @@ export class AppointmentBookingComponent implements OnInit {
     ).subscribe((response) => {
       if (response) {
         this.isSubmitting.set(false);
-        this.snackBar.open('Appointment booked successfully!', 'Close', { duration: 3000 });
+        this.toast.success('Appointment booked successfully.');
         if (this.isPatient()) {
           this.router.navigate(['/my-appointments']);
         } else {
@@ -100,17 +107,18 @@ export class AppointmentBookingComponent implements OnInit {
 
   ngOnInit() {
     if (this.isDoctor()) {
-      this.snackBar.open('Doctors do not schedule patient appointments directly. Receptionists & Admin manage bookings.', 'Close', { duration: 4000 });
+      this.toast.info('Doctors do not book appointments directly.');
       this.router.navigate(['/my-consultations']);
       return;
     }
 
     if (this.isPatient()) {
-      // Auto-load current patient profile and lock patientId
+      this.isLoadingPatients.set(true);
       this.patientService.getMyProfile().subscribe({
         next: (pat: Patient) => {
           this.currentPatient.set(pat);
           this.bookingForm.patchValue({ patientId: pat.id });
+          this.isLoadingPatients.set(false);
         },
         error: () => {
           const fallback: any = {
@@ -122,6 +130,7 @@ export class AppointmentBookingComponent implements OnInit {
           };
           this.currentPatient.set(fallback);
           this.bookingForm.patchValue({ patientId: fallback.id });
+          this.isLoadingPatients.set(false);
         }
       });
     } else {
@@ -148,16 +157,24 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   loadPatients() {
+    this.isLoadingPatients.set(true);
     this.patientService.getAll(1, 100).subscribe({
-      next: (res) => this.patients.set(res.items || []),
-      error: () => {}
+      next: (res) => {
+        this.patients.set(res.items || []);
+        this.isLoadingPatients.set(false);
+      },
+      error: () => this.isLoadingPatients.set(false)
     });
   }
 
   loadDoctors() {
+    this.isLoadingDoctors.set(true);
     this.doctorService.getAllDoctors().subscribe({
-      next: (docs) => this.doctors.set(docs || []),
-      error: () => {}
+      next: (docs) => {
+        this.doctors.set(docs || []);
+        this.isLoadingDoctors.set(false);
+      },
+      error: () => this.isLoadingDoctors.set(false)
     });
   }
 
@@ -179,7 +196,6 @@ export class AppointmentBookingComponent implements OnInit {
       reasonForVisit: this.bookingForm.value.reasonForVisit!
     };
 
-    // Defend against rage-clicks and double submissions via exhaustMap
     this.submitClick$.next(request);
   }
 }
