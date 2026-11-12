@@ -2,16 +2,18 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../services/auth.service';
 import { PermissionService } from '../services/permission.service';
 import { StaffDutyService } from '../services/staff-duty.service';
 import { LiveSyncService } from '../services/live-sync.service';
 import { ThemeService } from '../services/theme.service';
+import { ToastService } from '../ui/toast/toast.service';
 import { PharmacyService, PharmacyMetrics } from '../services/pharmacy.service';
 import { FinanceService } from '../services/finance.service';
 import { FinanceDashboardMetrics } from '../models/finance.model';
@@ -34,12 +36,16 @@ import { catchError, retry } from 'rxjs/operators';
     CommonModule,
     RouterModule,
     FormsModule,
-    MatSidenavModule,
-    MatListModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule
   ],
+  host: {
+    '(document:keydown.escape)': 'onEscapeKey()'
+  },
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss']
 })
@@ -49,6 +55,7 @@ export class ShellComponent implements OnInit {
   dutyService = inject(StaffDutyService);
   liveSync = inject(LiveSyncService);
   themeService = inject(ThemeService);
+  toast = inject(ToastService);
   pharmacyService = inject(PharmacyService);
   financeService = inject(FinanceService);
   labService = inject(LabService);
@@ -103,9 +110,7 @@ export class ShellComponent implements OnInit {
     const user = this.currentUser();
     if (!user) return 'Staff Nurse, RN';
     if (user.fullName && user.fullName !== 'User') return `${user.fullName}, RN`;
-    if (user.username) {
-      return `Nurse ${user.username}, RN`;
-    }
+    if (user.username) return `Nurse ${user.username}, RN`;
     return 'Staff Nurse, RN';
   });
 
@@ -116,17 +121,15 @@ export class ShellComponent implements OnInit {
     const fullName = user?.fullName || '';
     const username = user?.username || '';
     if (username.toLowerCase().includes('elena') || fullName.toLowerCase().includes('elena')) {
-      return 'Dr. Elena Vance, MD (Neuroradiology)';
+      return 'Dr. Elena Vance, MD';
     }
     if (username.toLowerCase().includes('ray') || fullName.toLowerCase().includes('ray')) {
-      return 'Dr. Ray Radiologist, MD, FACR';
+      return 'Dr. Ray Radiologist, MD';
     }
     if (fullName && fullName !== 'User') {
       return fullName.startsWith('Dr.') ? `${fullName}, MD` : `Dr. ${fullName}, MD`;
     }
-    if (username) {
-      return `Dr. ${username}, MD`;
-    }
+    if (username) return `Dr. ${username}, MD`;
     return 'Attending Radiologist, MD';
   });
 
@@ -160,13 +163,21 @@ export class ShellComponent implements OnInit {
     const user = this.currentUser();
     if (!user) return 'Financial Controller';
     if (user.fullName && user.fullName !== 'User') return `${user.fullName}, CPA`;
-    if (user.username) {
-      return `${user.username}, CPA`;
-    }
+    if (user.username) return `${user.username}, CPA`;
     return 'Financial Controller';
   });
 
   accountantDepartment = computed(() => 'Financial Control & Revenue Governance');
+
+  userDisplayName = computed(() => {
+    const user = this.currentUser();
+    return user?.fullName || user?.username || 'Clinic Staff';
+  });
+
+  userInitial = computed(() => {
+    const label = this.userDisplayName().trim();
+    return (label || 'U').slice(0, 1).toUpperCase();
+  });
 
   allRoles = ['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'LabTechnician', 'Radiologist', 'Accountant', 'Patient'];
   availableRoles = computed(() =>
@@ -185,6 +196,7 @@ export class ShellComponent implements OnInit {
   dutyLoading = false;
 
   ngOnInit(): void {
+    this.themeService.setTheme('light');
     this.liveSync.connect();
     if (this.authService.userRoles().length > 0) {
       const initialRole = this.authService.userRoles()[0];
@@ -199,7 +211,6 @@ export class ShellComponent implements OnInit {
     this.loadRadiologyMetrics();
     this.loadNursingProcedures();
     this.loadAdminMetrics();
-    // Sync duty status with actual DB state
     this.dutyService.refreshDutyStatus().subscribe({ error: () => {} });
 
     this.liveSync.lowStockAlert$.subscribe(() => {
@@ -232,9 +243,14 @@ export class ShellComponent implements OnInit {
     });
   }
 
+  onEscapeKey(): void {
+    if (this.showDutyModal) {
+      this.closeDutyModal();
+    }
+  }
+
   loadPharmacyMetrics(): void {
     const role = this.activeSimulatedRole();
-    // Pharmacy metrics API requires Admin or Pharmacist role — skip for other roles
     if (role !== 'Pharmacist' && role !== 'Admin') return;
     this.pharmacyService.getMetrics().subscribe({
       next: (m) => this.pharmacyMetrics.set(m),
@@ -416,14 +432,14 @@ export class ShellComponent implements OnInit {
   getRoleSubtitle(role: string): string {
     switch (role?.toLowerCase()) {
       case 'doctor': return 'Clinical Attending & EMR';
-      case 'radiologist': return 'Imaging Studies & PACS Diagnostics';
+      case 'radiologist': return 'Imaging Studies & PACS';
       case 'nurse': return 'Triage & Vital Signs';
       case 'receptionist': return 'Front Desk & Check-in';
       case 'pharmacist': return 'Dispensary & Stock';
       case 'labtechnician': return 'Diagnostic Pathology';
       case 'accountant': return 'Revenue & Invoicing';
       case 'patient': return 'Personal Health Records';
-      default: return 'System Security & Governance';
+      default: return 'System Governance';
     }
   }
 
@@ -492,7 +508,6 @@ export class ShellComponent implements OnInit {
 
   openDutyModal(mode: 'clock-in' | 'clock-out' | 'info') {
     this.dutyModalMode = mode;
-    // Pre-fill department based on active role
     const role = this.activeSimulatedRole();
     this.dutyDepartment = this.getRoleDepartment(role);
     this.dutyShiftType = 'Day Shift (08:00 - 16:00)';
@@ -525,10 +540,11 @@ export class ShellComponent implements OnInit {
       next: () => {
         this.dutyLoading = false;
         this.showDutyModal = false;
+        this.toast.success('Clocked in to active clinical roster.');
       },
       error: (err: any) => {
         this.dutyLoading = false;
-        alert(err.error?.detail || err.error?.message || 'Failed to clock in.');
+        this.toast.error(err.error?.detail || err.error?.message || 'Failed to clock in.');
       }
     });
   }
@@ -539,10 +555,11 @@ export class ShellComponent implements OnInit {
       next: () => {
         this.dutyLoading = false;
         this.showDutyModal = false;
+        this.toast.info('Shift completed and clocked out.');
       },
       error: (err: any) => {
         this.dutyLoading = false;
-        alert(err.error?.detail || err.error?.message || 'Failed to clock out.');
+        this.toast.error(err.error?.detail || err.error?.message || 'Failed to clock out.');
       }
     });
   }
