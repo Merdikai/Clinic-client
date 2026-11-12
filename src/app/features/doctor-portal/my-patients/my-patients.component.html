@@ -1,8 +1,6 @@
 <div class="patients-panel-container">
-  <app-page-header
-    title="My Clinical Patient Panel"
-    subtitle="Patients assigned under your physician care with allergy alerts and EMR links"
-  >
+  <app-page-header title="My Clinical Patient Panel"
+    subtitle="Patients assigned under your physician care with allergy alerts and EMR links">
     <div actions>
       <a mat-stroked-button routerLink="/patients">
         All Hospital Patients
@@ -14,93 +12,80 @@
     <div class="isolation-notice" role="note">
       <mat-icon aria-hidden="true">info</mat-icon>
       <div>
-        <strong>Physician Account Isolation Active:</strong> Displaying patients assigned to your care ({{ doctorName() }}).
+        <strong>Physician Account Isolation Active:</strong> Displaying patients assigned to your care ({{ doctorName()
+        }}).
       </div>
     </div>
 
     <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
       <mat-label>Search Patient Panel</mat-label>
-      <input
-        matInput
-        type="search"
-        placeholder="Name, allergy, MRN, or phone..."
-        [ngModel]="searchQuery()"
-        (ngModelChange)="searchQuery.set($event)"
-      />
+      <input matInput type="search" placeholder="Name, allergy, MRN, or phone..." [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)" />
       @if (searchQuery()) {
-        <button
-          matSuffix
-          mat-icon-button
-          type="button"
-          aria-label="Clear search query"
-          (click)="searchQuery.set('')"
-        >
-          <mat-icon aria-hidden="true">close</mat-icon>
-        </button>
+      <button matSuffix mat-icon-button type="button" aria-label="Clear search query" (click)="searchQuery.set('')">
+        <mat-icon aria-hidden="true">close</mat-icon>
+      </button>
       }
     </mat-form-field>
   </section>
 
   @if (isLoading()) {
-    <div aria-busy="true" aria-label="Loading clinical patient panel">
-      <app-skeleton variant="card" [count]="6" />
-    </div>
+  <div aria-busy="true" aria-label="Loading clinical patient panel">
+    <app-skeleton variant="card" [count]="6" />
+  </div>
   } @else if (filteredPatients().length === 0) {
-    <app-empty-state
-      icon="person_search"
-      title="No Patients Assigned To Your Active Panel"
-      description="No patient appointments or consultations match your active panel or search filter."
-    >
-      <a mat-flat-button color="primary" routerLink="/patients">
-        Search Hospital Patient Directory
-      </a>
-    </app-empty-state>
+  <app-empty-state icon="person_search" title="No Patients Assigned To Your Active Panel"
+    description="No patient appointments or consultations match your active panel or search filter.">
+    <a mat-flat-button color="primary" routerLink="/patients">
+      Search Hospital Patient Directory
+    </a>
+  </app-empty-state>
   } @else {
-    <div class="patient-grid">
-      @for (p of filteredPatients(); track p.id) {
-        <article class="patient-card">
-          <div class="card-top">
-            <h2 class="patient-name">{{ p.firstName }} {{ p.lastName }}</h2>
-            <div class="patient-meta-row">
-              <span class="mrn-tag">MRN {{ p.id.substring(0, 8).toUpperCase() }}</span>
-              <span class="attending-note">Attending: {{ doctorName() }}</span>
-            </div>
-          </div>
+  <div class="patient-grid">
+    @for (p of filteredPatients(); track p.id) {
+    <article class="patient-card">
+      <div class="card-top">
+        <h2 class="patient-name">{{ p.firstName }} {{ p.lastName }}</h2>
+        <div class="patient-meta-row">
+          <span class="mrn-tag">MRN {{ p.id.substring(0, 8).toUpperCase() }}</span>
+          <span class="attending-note">Attending: {{ doctorName() }}</span>
+        </div>
+      </div>
 
-          <div class="safety-status">
-            @if (hasKnownAllergy(p)) {
-              <app-status-chip tone="danger" [label]="'Allergic: ' + p.allergies" />
-            } @else {
-              <app-status-chip tone="success" label="NKDA (No Known Allergies)" />
-            }
-          </div>
+      <div class="safety-status">
+        @if (hasKnownAllergy(p)) {
+        <app-status-chip tone="danger" [label]="'Allergic: ' + p.allergies" />
+        } @else {
+        <app-status-chip tone="success" label="NKDA (No Known Allergies)" />
+        }
+      </div>
 
-          <dl class="vitals-row">
-            <div class="vital-item">
-              <dt>Gender</dt>
-              <dd>{{ p.gender || 'N/A' }}</dd>
-            </div>
-            <div class="vital-item">
-              <dt>Blood Group</dt>
-              <dd>{{ p.bloodGroup || 'O+' }}</dd>
-            </div>
-            <div class="vital-item">
-              <dt>DOB</dt>
-              <dd>{{ (p.dateOfBirth || '') | date:'mediumDate' }}</dd>
-            </div>
-          </dl>
+      <dl class="vitals-row">
+        <div class="vital-item">
+          <dt>Gender</dt>
+          <dd>{{ p.gender || 'N/A' }}</dd>
+        </div>
+        <div class="vital-item">
+          <dt>Blood Group</dt>
+          <dd>{{ p.bloodGroup || 'O+' }}</dd>
+        </div>
+        <div class="vital-item">
+          <dt>DOB</dt>
+          <dd>{{ (p.dateOfBirth || '') | date:'mediumDate' }}</dd>
+        </div>
+      </dl>
 
-          <p class="contact-info">
-            Phone: {{ p.phone || 'Not recorded' }}
-          </p>
+      <p class="contact-info">
+        Phone: {{ p.phone || 'Not recorded' }}
+      </p>
 
-          <div class="card-bottom">
-            <a mat-flat-button color="primary" [routerLink]="['/patients', p.id]">
-              Open Patient EMR File
-            </a>
-          </div>
-        </article>
-      }
-    </div>
+      <div class="card-bottom">
+        <a mat-flat-button color="primary" [routerLink]="['/patients', p.id]">
+          Open Patient EMR File
+        </a>
+      </div>
+    </article>
+    }
+  </div>
   }
 </div>

@@ -1,20 +1,14 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
@@ -22,26 +16,30 @@ import { LabStore } from '../../store/lab.store';
 import { LabService } from '../../services/lab.service';
 import { PatientService } from '../../services/patient.service';
 import { ToastService } from '../../ui/toast/toast.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 import {
+  CreateLabEquipmentLogRequest,
+  CreateLabOrderRequest,
+  CreateLabReagentRequest,
+  CreateLabRequisitionRequest,
+  CreateLabTestTemplateRequest,
+  LabEquipmentLog,
   LabOrder,
   LabOrderItem,
-  LabTestTemplate,
-  LabResultFlag,
-  CreateLabOrderRequest,
-  RecordLabResultRequest,
   LabParameterResult,
+  LabReagent,
+  LabResultFlag,
+  LabStockRequisition,
+  LabTestTemplate,
+  RecordLabResultRequest,
+  ReviewLabRequisitionRequest,
   SpecimenIntakeRequest,
   SpecimenRejectRequest,
-  LabReagent,
-  CreateLabReagentRequest,
-  UpdateReagentStockRequest,
-  LabStockRequisition,
-  CreateLabRequisitionRequest,
-  ReviewLabRequisitionRequest,
-  LabEquipmentLog,
-  CreateLabEquipmentLogRequest,
-  CreateLabTestTemplateRequest,
-  UpdateLabTestTemplateRequest
+  UpdateLabTestTemplateRequest,
+  UpdateReagentStockRequest
 } from '../../models/lab.model';
 
 @Component({
@@ -51,19 +49,17 @@ import {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    MatTabsModule,
-    MatTableModule,
     MatButtonModule,
-    MatIconModule,
-    MatCardModule,
-    MatChipsModule,
-    MatDialogModule,
+    MatCheckboxModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSelectModule,
-    MatCheckboxModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './laboratory.component.html',
   styleUrls: ['./laboratory.component.scss']
@@ -87,7 +83,23 @@ export class LaboratoryComponent implements OnInit {
   canCollectSample = computed(() => this.isLabTech() || this.isNurse() || this.permissionService.hasPermission('Lab.Collect'));
   canOrderLab = computed(() => this.isDoctor() || this.isLabTech());
 
-  // Active Tab Filter (0: Worklist, 1: Accession, 2: Execution, 3: Reagents, 4: Requisitions, 5: Equipment QC, 6: Catalog)
+  pageTitle = computed(() => {
+    if (this.isDoctor()) return 'Diagnostic Requisitions & Pathology Reports';
+    if (this.isNurse()) return 'Laboratory Specimen Orders & Phlebotomy';
+    return 'Laboratory Information Management System (LIMS)';
+  });
+
+  pageSubtitle = computed(() => {
+    if (this.isDoctor()) {
+      return 'Electronic laboratory order entry, specimen tracking status, and verified pathology reports';
+    }
+    if (this.isNurse()) {
+      return 'Collect patient specimens, track phlebotomy orders, and inspect diagnostic requisitions';
+    }
+    return 'Diagnostic bench execution, specimen accession barcoding, multi-parameter test runs, reagent inventory, and analyzer QC';
+  });
+
+  // Active Tab
   selectedTab = signal<number>(0);
 
   // Entities & Data Signals
@@ -95,6 +107,13 @@ export class LaboratoryComponent implements OnInit {
   reagents = signal<LabReagent[]>([]);
   requisitions = signal<LabStockRequisition[]>([]);
   equipmentLogs = signal<LabEquipmentLog[]>([]);
+
+  loadingReagents = signal<boolean>(true);
+  loadingRequisitions = signal<boolean>(true);
+  loadingEquipmentLogs = signal<boolean>(true);
+
+  reagentSearchQuery = signal<string>('');
+  requisitionSearchQuery = signal<string>('');
 
   // Modals Visibility
   isCreatingOrder = signal<boolean>(false);
@@ -227,16 +246,6 @@ export class LaboratoryComponent implements OnInit {
   reagentCategoryFilter = signal<string>('ALL');
   reagentLowStockOnly = signal<boolean>(false);
 
-  // Table Columns
-  displayedColumns = ['orderNumber', 'patient', 'specimen', 'tests', 'orderDate', 'priority', 'status', 'totalCost', 'actions'];
-  doctorDisplayedColumns = ['orderNumber', 'patient', 'tests', 'orderDate', 'priority', 'status', 'actions'];
-  accessionColumns = ['orderNumber', 'patient', 'sampleRequirements', 'specimenStatus', 'collectionTime', 'actions'];
-  executionColumns = ['orderNumber', 'patient', 'barcode', 'testName', 'sampleType', 'priority', 'status', 'actions'];
-  reagentColumns = ['catalogCode', 'name', 'category', 'lotNumber', 'stockLevel', 'storageCondition', 'expiryDate', 'actions'];
-  requisitionColumns = ['reqNumber', 'itemName', 'category', 'quantity', 'estimatedCost', 'urgency', 'status', 'requestedBy', 'actions'];
-  equipmentColumns = ['equipment', 'location', 'logType', 'sdScore', 'status', 'findings', 'performedAt', 'nextDue'];
-  catalogColumns = ['testCode', 'testName', 'category', 'sampleType', 'turnaround', 'price', 'parameters'];
-
   // Computed data
   catalogCategories = computed(() => {
     const list = this.labStore.templates();
@@ -257,6 +266,32 @@ export class LaboratoryComponent implements OnInit {
         t.testName.toLowerCase().includes(q) ||
         t.testCode.toLowerCase().includes(q) ||
         (t.description && t.description.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  });
+
+  filteredReagents = computed(() => {
+    let list = this.reagents();
+    const q = this.reagentSearchQuery().toLowerCase().trim();
+    if (q) {
+      list = list.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.catalogCode.toLowerCase().includes(q) ||
+        r.lotNumber.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  });
+
+  filteredRequisitions = computed(() => {
+    let list = this.requisitions();
+    const q = this.requisitionSearchQuery().toLowerCase().trim();
+    if (q) {
+      list = list.filter(r =>
+        r.requisitionNumber.toLowerCase().includes(q) ||
+        r.itemName.toLowerCase().includes(q) ||
+        r.category.toLowerCase().includes(q)
       );
     }
     return list;
@@ -317,7 +352,6 @@ export class LaboratoryComponent implements OnInit {
     this.loadRequisitions();
     this.loadEquipmentLogs();
 
-    // Listen to query param changes for direct deep linking
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
       if (this.isDoctor()) {
@@ -336,6 +370,23 @@ export class LaboratoryComponent implements OnInit {
         else if (tab === 'catalog') this.selectedTab.set(6);
       }
     });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isSubmitting()) return;
+    if (this.isDeleteConfirmModal()) this.cancelDeleteTest();
+    else if (this.isEditTestModal()) this.closeEditTestModal();
+    else if (this.isEquipmentLogModal()) this.closeEquipmentLogModal();
+    else if (this.isReviewRequisitionModal()) this.closeReviewRequisitionModal();
+    else if (this.isRequisitionModal()) this.closeRequisitionModal();
+    else if (this.isAdjustStockModal()) this.closeAdjustStockModal();
+    else if (this.isReagentModal()) this.closeReagentModal();
+    else if (this.isViewingReport()) this.closeReportModal();
+    else if (this.isEnteringResults()) this.closeResultModal();
+    else if (this.isRejectModal()) this.closeRejectModal();
+    else if (this.isAccessionModal()) this.closeAccessionModal();
+    else if (this.isCreatingOrder()) this.closeCreateOrderModal();
   }
 
   onTabChanged(index: number) {
@@ -381,25 +432,43 @@ export class LaboratoryComponent implements OnInit {
   }
 
   loadReagents() {
+    this.loadingReagents.set(true);
     const cat = this.reagentCategoryFilter();
     const low = this.reagentLowStockOnly();
     this.labService.getReagents(cat, undefined, low).subscribe({
-      next: (data) => this.reagents.set(data),
-      error: () => {}
+      next: (data) => {
+        this.reagents.set(data || []);
+        this.loadingReagents.set(false);
+      },
+      error: () => {
+        this.loadingReagents.set(false);
+      }
     });
   }
 
   loadRequisitions() {
+    this.loadingRequisitions.set(true);
     this.labService.getRequisitions().subscribe({
-      next: (data) => this.requisitions.set(data),
-      error: () => {}
+      next: (data) => {
+        this.requisitions.set(data || []);
+        this.loadingRequisitions.set(false);
+      },
+      error: () => {
+        this.loadingRequisitions.set(false);
+      }
     });
   }
 
   loadEquipmentLogs() {
+    this.loadingEquipmentLogs.set(true);
     this.labService.getEquipmentLogs().subscribe({
-      next: (data) => this.equipmentLogs.set(data),
-      error: () => {}
+      next: (data) => {
+        this.equipmentLogs.set(data || []);
+        this.loadingEquipmentLogs.set(false);
+      },
+      error: () => {
+        this.loadingEquipmentLogs.set(false);
+      }
     });
   }
 
@@ -459,7 +528,7 @@ export class LaboratoryComponent implements OnInit {
     if (this.orderForm.invalid) return;
     const formVal = this.orderForm.value;
     if (!formVal.selectedTests || formVal.selectedTests.length === 0) {
-      this.toast.error('Please select at least one laboratory test');
+      this.toast.error('Please select at least one laboratory test.');
       return;
     }
 
@@ -473,7 +542,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.createOrder(req).subscribe({
       next: (created) => {
-        this.toast.success(`Lab order ${created.orderNumber} placed successfully!`);
+        this.toast.success(`Lab order ${created.orderNumber} placed.`);
         this.isSubmitting.set(false);
         this.closeCreateOrderModal();
         this.labStore.loadOrders();
@@ -491,7 +560,7 @@ export class LaboratoryComponent implements OnInit {
     this.selectedOrder.set(order);
     const firstItem = order.items?.[0];
     let defaultTube = 'EDTA Lavender Top';
-    let defaultSpecimen = firstItem?.sampleType || 'Whole Blood';
+    const defaultSpecimen = firstItem?.sampleType || 'Whole Blood';
 
     if (defaultSpecimen.toLowerCase().includes('serum')) {
       defaultTube = 'SST Gold Top Gel Separator';
@@ -533,7 +602,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.specimenIntake(order.id, req).subscribe({
       next: (updated) => {
-        this.toast.success(`Specimen accessioned: Barcode ${updated.specimenBarcode} assigned!`);
+        this.toast.success(`Specimen accessioned: Barcode ${updated.specimenBarcode} assigned.`);
         this.isSubmitting.set(false);
         this.closeAccessionModal();
         this.labStore.loadOrders();
@@ -582,7 +651,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.specimenReject(order.id, req).subscribe({
       next: () => {
-        this.toast.warning(`Specimen for ${order.orderNumber} rejected. Reason: ${val.rejectionReason}`);
+        this.toast.warning(`Specimen for ${order.orderNumber} rejected (${val.rejectionReason}).`);
         this.isSubmitting.set(false);
         this.closeRejectModal();
         this.labStore.loadOrders();
@@ -606,7 +675,7 @@ export class LaboratoryComponent implements OnInit {
     if (template && template.parametersJson) {
       try {
         params = JSON.parse(template.parametersJson);
-      } catch (e) {
+      } catch {
         params = [];
       }
     }
@@ -615,7 +684,7 @@ export class LaboratoryComponent implements OnInit {
     if (item.result && item.result.parameterResultsJson) {
       try {
         existingResults = JSON.parse(item.result.parameterResultsJson);
-      } catch (e) {
+      } catch {
         existingResults = [];
       }
     }
@@ -676,7 +745,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.recordResult(req).subscribe({
       next: () => {
-        this.toast.success(`Lab results recorded for ${item.testName}`);
+        this.toast.success(`Lab results recorded for ${item.testName}.`);
         this.isSubmitting.set(false);
         this.closeResultModal();
         this.labStore.loadOrders();
@@ -692,7 +761,7 @@ export class LaboratoryComponent implements OnInit {
   verifyItemResult(item: LabOrderItem) {
     this.labService.verifyResult(item.id).subscribe({
       next: () => {
-        this.toast.success(`Test result verified and signed off for ${item.testName}!`);
+        this.toast.success(`Test result verified and signed off for ${item.testName}.`);
         this.labStore.loadOrders();
         this.labStore.loadMetrics();
       },
@@ -719,7 +788,7 @@ export class LaboratoryComponent implements OnInit {
 
   billOrder(order: LabOrder) {
     if (order.isBilled) {
-      this.toast.info(`Invoice is already issued for Order ${order.orderNumber}.`);
+      this.toast.info(`Invoice already issued for Order ${order.orderNumber}.`);
       this.router.navigate(['/billing'], { queryParams: { dept: 'Laboratory' } });
       return;
     }
@@ -728,7 +797,7 @@ export class LaboratoryComponent implements OnInit {
     this.labService.generateInvoice(order.id).subscribe({
       next: (invoice) => {
         this.isSubmitting.set(false);
-        this.toast.success(`Diagnostic invoice ${invoice.invoiceNumber} successfully generated for ${order.patientName}!`);
+        this.toast.success(`Diagnostic invoice ${invoice.invoiceNumber} generated for ${order.patientName}.`);
         this.labStore.loadOrders();
         this.labStore.loadMetrics();
       },
@@ -737,10 +806,6 @@ export class LaboratoryComponent implements OnInit {
         this.toast.error(err.error?.detail || err.error?.title || 'Failed to generate diagnostic invoice');
       }
     });
-  }
-
-  viewLabInvoice(order: LabOrder) {
-    this.router.navigate(['/billing'], { queryParams: { dept: 'Laboratory' } });
   }
 
   // --- Reagents Modal ---
@@ -792,7 +857,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.createReagent(req).subscribe({
       next: (created) => {
-        this.toast.success(`Reagent ${created.name} added to inventory!`);
+        this.toast.success(`Reagent ${created.name} added to inventory.`);
         this.isSubmitting.set(false);
         this.closeReagentModal();
         this.loadReagents();
@@ -837,7 +902,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.adjustReagentStock(reagent.id, req).subscribe({
       next: (updated) => {
-        this.toast.success(`Stock for ${updated.name} updated: Now ${updated.currentStock} ${updated.unitOfMeasure}`);
+        this.toast.success(`Stock for ${updated.name} updated: ${updated.currentStock} ${updated.unitOfMeasure}.`);
         this.isSubmitting.set(false);
         this.closeAdjustStockModal();
         this.loadReagents();
@@ -860,7 +925,9 @@ export class LaboratoryComponent implements OnInit {
       unitOfMeasure: preselectedReagent?.unitOfMeasure || 'Kits',
       estimatedUnitCost: preselectedReagent?.unitCost || 50.0,
       urgency: preselectedReagent && preselectedReagent.currentStock <= preselectedReagent.minimumThreshold ? 'Urgent' : 'Routine',
-      reason: preselectedReagent ? `Reagent stock level (${preselectedReagent.currentStock}) is at or below threshold (${preselectedReagent.minimumThreshold})` : ''
+      reason: preselectedReagent
+        ? `Reagent stock (${preselectedReagent.currentStock}) is at/below threshold (${preselectedReagent.minimumThreshold})`
+        : ''
     });
     this.isRequisitionModal.set(true);
   }
@@ -900,7 +967,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.createRequisition(req).subscribe({
       next: (created) => {
-        this.toast.success(`Requisition ${created.requisitionNumber} submitted!`);
+        this.toast.success(`Requisition ${created.requisitionNumber} submitted.`);
         this.isSubmitting.set(false);
         this.closeRequisitionModal();
         this.loadRequisitions();
@@ -939,7 +1006,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.reviewRequisition(req.id, reviewReq).subscribe({
       next: (updated) => {
-        this.toast.success(`Requisition ${updated.requisitionNumber} marked as ${updated.status}!`);
+        this.toast.success(`Requisition ${updated.requisitionNumber} marked as ${updated.status}.`);
         this.isSubmitting.set(false);
         this.closeReviewRequisitionModal();
         this.loadRequisitions();
@@ -1000,7 +1067,7 @@ export class LaboratoryComponent implements OnInit {
 
     this.labService.createEquipmentLog(req).subscribe({
       next: (created) => {
-        this.toast.success(`QC / Calibration log recorded for ${created.equipmentName}!`);
+        this.toast.success(`QC log recorded for ${created.equipmentName}.`);
         this.isSubmitting.set(false);
         this.closeEquipmentLogModal();
         this.loadEquipmentLogs();
@@ -1022,58 +1089,40 @@ export class LaboratoryComponent implements OnInit {
     }
   }
 
-  getStatusClass(status: string): string {
+  getDoctorStatusLabel(status: string): string {
     switch (status) {
-      case 'Ordered': return 'status-ordered';
-      case 'SampleCollected': return 'status-collected';
-      case 'InProgress': return 'status-inprogress';
-      case 'Completed': return 'status-completed';
-      case 'Cancelled': return 'status-cancelled';
-      default: return '';
+      case 'SampleCollected': return 'Sample in Lab';
+      case 'Ordered': return 'Awaiting Phlebotomy';
+      case 'InProgress': return 'In Analysis';
+      default: return status;
     }
   }
 
-  getPriorityClass(priority: string): string {
-    switch (priority) {
-      case 'Routine': return 'priority-routine';
-      case 'Urgent': return 'priority-urgent';
-      case 'Stat': return 'priority-stat';
-      default: return '';
+  getPriorityTone(priority: string): StatusTone {
+    switch ((priority || '').toLowerCase()) {
+      case 'stat': return 'danger';
+      case 'urgent':
+      case 'high': return 'warning';
+      default: return 'neutral';
     }
   }
 
-  getFlagClass(flag: string): string {
-    switch (flag) {
-      case 'Normal': return 'flag-normal';
-      case 'Low': return 'flag-low';
-      case 'High': return 'flag-high';
-      case 'Critical': return 'flag-critical';
-      default: return '';
+  getFlagTone(flag: string): StatusTone {
+    switch ((flag || '').toLowerCase()) {
+      case 'critical':
+      case 'high': return 'danger';
+      case 'low': return 'warning';
+      default: return 'success';
     }
   }
 
-  getCategoryIcon(category: string): string {
-    const c = (category || '').toLowerCase();
-    if (c.includes('hemat')) return 'bloodtype';
-    if (c.includes('biochem') || c.includes('chem')) return 'science';
-    if (c.includes('lipid')) return 'favorite';
-    if (c.includes('renal') || c.includes('metabol')) return 'health_and_safety';
-    if (c.includes('liver') || c.includes('hepat')) return 'medication_liquid';
-    if (c.includes('urin')) return 'water_drop';
-    if (c.includes('thyroid') || c.includes('endo')) return 'biotech';
-    return 'assignment';
-  }
-
-  getCategoryGradient(category: string): string {
-    const c = (category || '').toLowerCase();
-    if (c.includes('hemat')) return 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-    if (c.includes('biochem') || c.includes('chem')) return 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)';
-    if (c.includes('lipid')) return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-    if (c.includes('renal') || c.includes('metabol')) return 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)';
-    if (c.includes('liver') || c.includes('hepat')) return 'linear-gradient(135deg, #10b981 0%, #047857 100%)';
-    if (c.includes('urin')) return 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)';
-    if (c.includes('thyroid') || c.includes('endo')) return 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)';
-    return 'linear-gradient(135deg, #64748b 0%, #334155 100%)';
+  getQcTone(status: string): StatusTone {
+    switch ((status || '').toLowerCase()) {
+      case 'passed': return 'success';
+      case 'warning': return 'warning';
+      case 'failed': return 'danger';
+      default: return 'neutral';
+    }
   }
 
   getCategoryCount(category: string): number {
@@ -1081,31 +1130,7 @@ export class LaboratoryComponent implements OnInit {
     return this.labStore.templates().filter(t => t.category === category).length;
   }
 
-  getCategoryColor(category: string): string {
-    const c = (category || '').toLowerCase();
-    if (c.includes('hemat')) return '#ef4444';
-    if (c.includes('biochem') || c.includes('chem')) return '#0284c7';
-    if (c.includes('lipid')) return '#f59e0b';
-    if (c.includes('renal') || c.includes('metabol')) return '#8b5cf6';
-    if (c.includes('liver') || c.includes('hepat')) return '#10b981';
-    if (c.includes('urin')) return '#06b6d4';
-    if (c.includes('thyroid') || c.includes('endo')) return '#ec4899';
-    return '#64748b';
-  }
-
-  getCategoryBg(category: string): string {
-    const c = (category || '').toLowerCase();
-    if (c.includes('hemat')) return 'rgba(239, 68, 68, 0.12)';
-    if (c.includes('biochem') || c.includes('chem')) return 'rgba(2, 132, 199, 0.12)';
-    if (c.includes('lipid')) return 'rgba(245, 158, 11, 0.12)';
-    if (c.includes('renal') || c.includes('metabol')) return 'rgba(139, 92, 246, 0.12)';
-    if (c.includes('liver') || c.includes('hepat')) return 'rgba(16, 185, 129, 0.12)';
-    if (c.includes('urin')) return 'rgba(6, 182, 212, 0.12)';
-    if (c.includes('thyroid') || c.includes('endo')) return 'rgba(236, 72, 153, 0.12)';
-    return 'rgba(100, 116, 139, 0.12)';
-  }
-
-  // --- Diagnostic Catalog Panel Management (Create / Update / Delete) ---
+  // --- Diagnostic Catalog Panel Management ---
   openCreateTestModal() {
     this.isCreatingTest.set(true);
     this.editingTestId.set(null);
@@ -1157,7 +1182,7 @@ export class LaboratoryComponent implements OnInit {
       try {
         JSON.parse(val.parametersJson);
       } catch {
-        this.toast.error('Parameters Reference Intervals must be a valid JSON string');
+        this.toast.error('Parameters Reference Intervals must be valid JSON.');
         return;
       }
     }
@@ -1177,7 +1202,7 @@ export class LaboratoryComponent implements OnInit {
 
       this.labService.createTemplate(req).subscribe({
         next: (created) => {
-          this.toast.success(`Diagnostic Panel "${created.testName}" (${created.testCode}) created and saved to database!`);
+          this.toast.success(`Diagnostic Panel "${created.testName}" (${created.testCode}) created.`);
           this.labStore.addTemplate(created);
           this.isSubmitting.set(false);
           this.closeEditTestModal();
@@ -1204,7 +1229,7 @@ export class LaboratoryComponent implements OnInit {
 
       this.labService.updateTemplate(id, req).subscribe({
         next: (updated) => {
-          this.toast.success(`Diagnostic Panel "${updated.testName}" updated and saved to database!`);
+          this.toast.success(`Diagnostic Panel "${updated.testName}" updated.`);
           this.labStore.updateTemplateInStore(updated);
           this.isSubmitting.set(false);
           this.closeEditTestModal();
@@ -1234,13 +1259,13 @@ export class LaboratoryComponent implements OnInit {
     this.isSubmitting.set(true);
     this.labService.deleteTemplate(test.id).subscribe({
       next: () => {
-        this.toast.success(`Diagnostic Panel "${test.testName}" (${test.testCode}) removed from database.`);
+        this.toast.success(`Diagnostic Panel "${test.testName}" removed.`);
         this.labStore.removeTemplateFromStore(test.id);
         this.isSubmitting.set(false);
         this.cancelDeleteTest();
       },
       error: (err) => {
-        this.toast.error(err.error?.detail || err.message || 'Failed to delete test panel from database');
+        this.toast.error(err.error?.detail || err.message || 'Failed to delete test panel');
         this.isSubmitting.set(false);
       }
     });
