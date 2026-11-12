@@ -1,17 +1,14 @@
-import { Component, inject, signal, computed, OnInit, input } from '@angular/core';
+import { Component, HostListener, inject, signal, computed, OnInit, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FormsModule } from '@angular/forms';
 import { BillingService } from '../../services/billing.service';
 import { Invoice } from '../../models/billing.model';
 import { PatientService } from '../../services/patient.service';
@@ -26,6 +23,10 @@ import { RadiologyOrder } from '../../models/radiology.model';
 import { EmrAccessService } from '../../services/emr-access.service';
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-patient-detail',
@@ -33,17 +34,18 @@ import { PermissionService } from '../../services/permission.service';
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
+    FormsModule,
     MatButtonModule,
     MatIconModule,
     MatTabsModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    FormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatTooltipModule
+    MatTooltipModule,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './patient-detail.component.html',
   styleUrls: ['./patient-detail.component.scss']
@@ -51,8 +53,8 @@ import { PermissionService } from '../../services/permission.service';
 export class PatientDetailComponent implements OnInit {
   id = input.required<string>();
   private patientService = inject(PatientService);
-  private fileService   = inject(FileUploadService);
-  private toast         = inject(ToastService);
+  private fileService = inject(FileUploadService);
+  private toast = inject(ToastService);
   private billingService = inject(BillingService);
   private labService = inject(LabService);
   private radiologyService = inject(RadiologyService);
@@ -85,8 +87,26 @@ export class PatientDetailComponent implements OnInit {
     return role === 'admin' || this.authService.hasRole('Admin');
   });
 
+  canEditPatient = computed(() => {
+    return this.isAdmin() || this.isDoctor() || this.isNurse() || this.isReceptionist();
+  });
+
   canCreateAppointment = computed(() => {
     return !this.isDoctor() && !this.isRadiologist();
+  });
+
+  canOpenLaboratory = computed(() => {
+    return this.isDoctor() || this.isNurse() || this.isRadiologist();
+  });
+
+  canOpenRadiology = computed(() => {
+    return this.isDoctor() || this.isRadiologist() || this.isNurse();
+  });
+
+  patientFullName = computed(() => {
+    const p = this.patient();
+    if (!p) return 'Patient Chart';
+    return `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Patient Chart';
   });
 
   assignedDoctorName = computed(() => {
@@ -107,7 +127,7 @@ export class PatientDetailComponent implements OnInit {
     if (this.authService.isAdmin() || (this.permissionService.activeRole() || '').toLowerCase() === 'admin') return true;
     const currentId = this.authService.currentUserId();
     if (!currentId) return false;
-    
+
     const appts = this.patientAppointments();
     if (appts && appts.length > 0) {
       const hasMyActiveAppt = appts.some((a: any) => a.doctorId && a.doctorId.toLowerCase() === currentId.toLowerCase());
@@ -125,47 +145,22 @@ export class PatientDetailComponent implements OnInit {
   patientRadiologyOrders = signal<RadiologyOrder[]>([]);
   patientAppointments = signal<any[]>([]);
 
-  // Break-Glass Emergency State
   isBreakGlassModalOpen = signal<boolean>(false);
   breakGlassReason = signal<string>('');
   isTriggeringBreakGlass = signal<boolean>(false);
 
-  triggerBreakGlass() {
-    const reason = this.breakGlassReason().trim();
-    if (!reason) {
-      this.toast.error('Clinical emergency justification is mandatory.');
-      return;
-    }
-
-    this.isTriggeringBreakGlass.set(true);
-    this.emrAccessService.breakGlass(this.id(), reason).subscribe({
-      next: (res: any) => {
-        this.isTriggeringBreakGlass.set(false);
-        this.isBreakGlassModalOpen.set(false);
-        this.breakGlassReason.set('');
-        this.toast.success('🚨 Emergency Break-Glass granted and security audit logged.');
-      },
-      error: (err: any) => {
-        this.isTriggeringBreakGlass.set(false);
-        this.toast.error(err?.error?.detail || 'Failed to authorize break-glass override.');
-      }
-    });
-  }
-
-
-  patient   = signal<Patient | null>(null);
-  history   = signal<any>(null);
-  files     = signal<FileUploadResponse[]>([]);
-  isLoading   = signal(false);
+  patient = signal<Patient | null>(null);
+  history = signal<any>(null);
+  files = signal<FileUploadResponse[]>([]);
+  isLoading = signal(false);
   isUploading = signal(false);
 
-  // Billing / Invoice signals
-  patientInvoices      = signal<Invoice[]>([]);
-  selectedInvoice      = signal<Invoice | null>(null);
-  paymentAmount        = signal<number>(0);
-  paymentMethod        = signal<string>('Cash');
-  isPaymentModalOpen   = signal(false);
-  isProcessingPayment  = signal(false);
+  patientInvoices = signal<Invoice[]>([]);
+  selectedInvoice = signal<Invoice | null>(null);
+  paymentAmount = signal<number>(0);
+  paymentMethod = signal<string>('Cash');
+  isPaymentModalOpen = signal(false);
+  isProcessingPayment = signal(false);
 
   emergencyContactName = computed(() => {
     const raw = this.patient()?.emergencyContact || (this.patient() as any)?.emergencyContactName || '';
@@ -183,7 +178,6 @@ export class PatientDetailComponent implements OnInit {
     return match ? match[1].trim() : 'Not Provided';
   });
 
-  // Edit Patient Details Modal State
   isEditModalOpen = signal<boolean>(false);
   isSavingPatient = signal<boolean>(false);
 
@@ -223,10 +217,42 @@ export class PatientDetailComponent implements OnInit {
     insuranceEligibilityStatus: 'Active / Eligible'
   });
 
-  // Financial summary computeds
   totalInvoiced = computed(() => this.patientInvoices().reduce((acc, inv) => acc + (Number(inv.totalAmount) || 0), 0));
   totalBalanceDue = computed(() => this.patientInvoices().reduce((acc, inv) => acc + (Number(inv.balanceDue) || 0), 0));
   totalPaid = computed(() => Math.max(0, this.totalInvoiced() - this.totalBalanceDue()));
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isBreakGlassModalOpen()) {
+      this.isBreakGlassModalOpen.set(false);
+    } else if (this.isPaymentModalOpen()) {
+      this.closePaymentModal();
+    } else if (this.isEditModalOpen()) {
+      this.closeEditModal();
+    }
+  }
+
+  triggerBreakGlass() {
+    const reason = this.breakGlassReason().trim();
+    if (!reason) {
+      this.toast.error('Clinical emergency justification is mandatory.');
+      return;
+    }
+
+    this.isTriggeringBreakGlass.set(true);
+    this.emrAccessService.breakGlass(this.id(), reason).subscribe({
+      next: () => {
+        this.isTriggeringBreakGlass.set(false);
+        this.isBreakGlassModalOpen.set(false);
+        this.breakGlassReason.set('');
+        this.toast.success('Emergency Break-Glass granted and security audit logged.');
+      },
+      error: (err: any) => {
+        this.isTriggeringBreakGlass.set(false);
+        this.toast.error(err?.error?.detail || 'Failed to authorize break-glass override.');
+      }
+    });
+  }
 
   openEditModal() {
     const p = this.patient();
@@ -314,9 +340,8 @@ export class PatientDetailComponent implements OnInit {
         this.isEditModalOpen.set(false);
         const updated = (res as any)?.isSuccess !== undefined ? res.value : res;
         this.patient.set(updated || { ...this.patient()!, ...payload });
-        this.toast.success('Patient demographics & clinical insurance file successfully updated!');
-        
-        // Reload all sections to ensure sync
+        this.toast.success('Patient demographics and insurance file updated.');
+
         this.loadPatientProfile();
         this.loadMedicalHistory();
         this.loadAppointments();
@@ -360,10 +385,9 @@ export class PatientDetailComponent implements OnInit {
         this.patient.set(patient);
         this.isLoading.set(false);
 
-        // HIPAA §164.312(b): Log every EMR chart access event
         this.emrAccessService.logAccess(this.id(), 'ViewChart', 'Clinical chart opened').subscribe({
           next: () => {},
-          error: () => {} // fire-and-forget — audit failure must never block clinical workflow
+          error: () => {}
         });
       },
       error: () => this.isLoading.set(false)
@@ -390,12 +414,10 @@ export class PatientDetailComponent implements OnInit {
   loadFiles() {
     this.fileService.getPatientFiles(this.id()).subscribe({
       next: (files: any) => {
-        // API returns an array directly (controller calls result.Value)
         const list: FileUploadResponse[] = Array.isArray(files) ? files : [];
         this.files.set(list);
       },
       error: () => {
-        // Silently fail — shows empty state
         this.files.set([]);
       }
     });
@@ -414,7 +436,7 @@ export class PatientDetailComponent implements OnInit {
   copyPrescriptionId(id: string) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(id).then(() => {
-        this.toast.success('Prescription ID copied to clipboard!');
+        this.toast.success('Prescription ID copied to clipboard.');
       });
     } else {
       this.toast.success('Prescription ID: ' + id);
@@ -433,7 +455,7 @@ export class PatientDetailComponent implements OnInit {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        this.toast.success('Download complete!');
+        this.toast.success('Download complete.');
       },
       error: () => {
         this.toast.error('Failed to download file');
@@ -452,7 +474,7 @@ export class PatientDetailComponent implements OnInit {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        this.toast.success('Invoice PDF downloaded successfully!');
+        this.toast.success('Invoice PDF downloaded.');
       },
       error: () => {
         this.toast.error('Failed to download invoice PDF');
@@ -490,9 +512,9 @@ export class PatientDetailComponent implements OnInit {
       next: () => {
         this.isProcessingPayment.set(false);
         this.isPaymentModalOpen.set(false);
-        this.toast.success(`Payment of ${this.paymentAmount()} processed successfully!`);
+        this.toast.success(`Payment of ${this.paymentAmount()} processed.`);
         this.loadInvoices();
-    this.loadLabOrders();
+        this.loadLabOrders();
       },
       error: (err: any) => {
         this.isProcessingPayment.set(false);
@@ -515,7 +537,7 @@ export class PatientDetailComponent implements OnInit {
         this.files.update((list) => [uploaded, ...list]);
         this.isUploading.set(false);
         input.value = '';
-        this.toast.success(`File '${file.name}' uploaded successfully!`);
+        this.toast.success(`File '${file.name}' uploaded.`);
       },
       error: (err: any) => {
         this.isUploading.set(false);

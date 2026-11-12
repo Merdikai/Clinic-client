@@ -1,576 +1,410 @@
-<div class="patient-detail-container">
+<div class="ehr-page patient-detail-page">
   @if (isLoading()) {
-    <div class="loading-wrap">
-      <mat-spinner diameter="44"></mat-spinner>
-      <p>Loading patient medical chart...</p>
+    <div class="detail-skeleton-stack">
+      <app-skeleton variant="card" [count]="1" height="120px" label="Loading patient header"></app-skeleton>
+      <app-skeleton variant="table" [count]="6" [columns]="4" label="Loading clinical records"></app-skeleton>
     </div>
   } @else if (patient()) {
-    <!-- Modern Executive Patient Chart Header -->
-    <div class="chart-header-card">
-      <div class="chart-header-main">
-        <div class="avatar-badge-wrap">
-          <div class="avatar-circle">
-            <mat-icon>person</mat-icon>
-          </div>
-          <span class="blood-tag">{{ patient()?.bloodGroup || 'O+' }}</span>
-        </div>
-
-        <div class="chart-title-area">
-          <div class="title-row">
-            <h1 class="patient-full-name">{{ patient()?.firstName }} {{ patient()?.lastName }}</h1>
-            <span class="mrn-badge">MRN: {{ patient()?.medicalRecordNumber }}</span>
-          </div>
-
-          <div class="demographics-chips">
-            <div class="chip-item">
-              <mat-icon>cake</mat-icon>
-              <span>{{ patient()?.dateOfBirth | date:'mediumDate' }}</span>
-            </div>
-            <div class="chip-item">
-              <mat-icon>wc</mat-icon>
-              <span>{{ patient()?.gender }}</span>
-            </div>
-            <div class="chip-item">
-              <mat-icon>call</mat-icon>
-              <span>{{ patient()?.phone }}</span>
-            </div>
-            @if (patient()?.email) {
-              <div class="chip-item">
-                <mat-icon>mail</mat-icon>
-                <span>{{ patient()?.email }}</span>
-              </div>
-            }
-            @if (patient()?.nationalId) {
-              <div class="chip-item">
-                <mat-icon>credit_card</mat-icon>
-                <span>ID: {{ patient()?.nationalId }}</span>
-              </div>
-            }
-            @if (patient()?.insuranceProvider) {
-              <div class="chip-item" style="background: rgba(99, 102, 241, 0.1); color: #4338ca; border: 1px solid rgba(99, 102, 241, 0.2);">
-                <mat-icon>health_and_safety</mat-icon>
-                <span>{{ patient()?.insuranceProvider }} ({{ patient()?.insuranceEligibilityStatus || 'Self-Pay' }})</span>
-              </div>
-            }
-            @if (patient()?.allergies) {
-              <div class="chip-item" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.35); font-weight: 700;">
-                <mat-icon style="color: #dc2626;">warning</mat-icon>
-                <span>Allergies: {{ patient()?.allergies }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <div class="chart-header-actions">
-        <button mat-flat-button class="action-btn edit-btn" (click)="openEditModal()" matTooltip="Update Demographics, Emergency Contacts, Allergies & Insurance">
-          <mat-icon>edit_note</mat-icon>
-          <span>Edit Patient File</span>
+    <app-page-header
+      [title]="patientFullName()"
+      [subtitle]="'MRN: ' + (patient()?.medicalRecordNumber || 'Pending Assignment')"
+      backLink="/patients"
+      backLabel="Patient Directory">
+      @if (canEditPatient()) {
+        <button mat-flat-button color="primary" type="button" (click)="openEditModal()">
+          Edit Patient File
         </button>
-        @if (canCreateAppointment()) {
-          <a mat-flat-button color="primary" routerLink="/appointments/book" class="action-btn">
-            <mat-icon>add_alarm</mat-icon>
-            <span>Schedule Visit</span>
-          </a>
-        }
-        @if (isDoctor()) {
-          <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}" class="action-btn">
-            <mat-icon>add_photo_alternate</mat-icon>
-            <span>Order Imaging Study</span>
-          </a>
-        }
-        @if (isRadiologist() || isAdmin()) {
-          <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'viewer'}" class="action-btn">
-            <mat-icon>center_focus_strong</mat-icon>
-            <span>PACS Viewer</span>
-          </a>
-        }
-        @if (isDoctor() || isNurse() || isAdmin() || permissionService.hasPermission('ClinicalGovernance.BreakGlass')) {
-          <button mat-flat-button class="action-btn break-glass-btn" (click)="isBreakGlassModalOpen.set(true)"
-                  matTooltip="Emergency override — grants immediate access to this patient's full EMR with mandatory audit logging">
-            <mat-icon>emergency</mat-icon>
-            <span>Break-Glass Override</span>
-          </button>
-        }
-        <a mat-stroked-button routerLink="/patients" class="action-btn back-btn">
-          <mat-icon>arrow_back</mat-icon>
-          <span>Back to Directory</span>
+      }
+      @if (canCreateAppointment()) {
+        <a mat-stroked-button routerLink="/appointments/book" [queryParams]="{patientId: id()}">
+          Schedule Visit
         </a>
-      </div>
-    </div>
+      }
+      @if (isDoctor()) {
+        <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">
+          Order Imaging
+        </a>
+      } @else if (isRadiologist() && canOpenRadiology()) {
+        <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'viewer'}">
+          PACS Viewer
+        </a>
+      }
+      @if (isDoctor() || isNurse() || isAdmin() || permissionService.hasPermission('ClinicalGovernance.BreakGlass')) {
+        <button
+          type="button"
+          mat-stroked-button
+          class="break-glass-trigger"
+          (click)="isBreakGlassModalOpen.set(true)"
+          matTooltip="Emergency override with mandatory HIPAA audit logging">
+          Break-Glass Override
+        </button>
+      }
+    </app-page-header>
 
-    <!-- PHYSICIAN ACCOUNT ISOLATION BANNER -->
-    @if (isDoctor() && assignedDoctorName() && !isAttendingDoctor()) {
-      <div class="attending-isolation-banner">
-        <div class="isolation-info">
-          <div class="isolation-icon-box">
-            <mat-icon>lock</mat-icon>
-          </div>
-          <div>
-            <h4>Attending Physician: {{ assignedDoctorName() }}. Account Isolation: Read-Only EMR Chart Access Active.</h4>
-            <p>
-              Doctor Account Isolation Active. You have licensed cross-physician access to review clinical history, lab reports, vitals, and documents. Active consultations and pharmaceutical orders are reserved for the attending physician.
-            </p>
-          </div>
-        </div>
-        <span class="cross-physician-pill">
-          Cross-Physician EMR
-        </span>
+    <section class="patient-summary-bar" aria-label="Patient key clinical demographics">
+      <div class="summary-meta-row">
+        <span class="meta-item">DOB: <strong>{{ patient()?.dateOfBirth | date:'mediumDate' }}</strong></span>
+        <span class="meta-item">Sex: <strong>{{ patient()?.gender || 'Unspecified' }}</strong></span>
+        <span class="meta-item">Phone: <strong>{{ patient()?.phone || 'N/A' }}</strong></span>
+        @if (patient()?.email) {
+          <span class="meta-item">Email: <strong>{{ patient()?.email }}</strong></span>
+        }
+        @if (patient()?.nationalId) {
+          <span class="meta-item">National ID: <strong>{{ patient()?.nationalId }}</strong></span>
+        }
       </div>
+
+      <div class="summary-chips-row">
+        <app-status-chip
+          [status]="'Blood: ' + (patient()?.bloodGroup || 'Unknown')"
+          [tone]="patient()?.bloodGroup ? 'info' : 'neutral'"
+          [showIcon]="false">
+        </app-status-chip>
+        <app-status-chip
+          [status]="(patient()?.insuranceProvider || 'Self-Pay') + ' (' + (patient()?.insuranceEligibilityStatus || 'Self-Pay') + ')'"
+          tone="neutral"
+          [showIcon]="false">
+        </app-status-chip>
+        @if (patient()?.allergies) {
+          <app-status-chip [status]="'Allergies: ' + patient()?.allergies" tone="danger"></app-status-chip>
+        } @else {
+          <app-status-chip status="NKDA" tone="success"></app-status-chip>
+        }
+      </div>
+    </section>
+
+    @if (isDoctor() && assignedDoctorName() && !isAttendingDoctor()) {
+      <section class="isolation-banner" role="status">
+        <div class="banner-text">
+          <strong>Attending Physician: {{ assignedDoctorName() }} (Read-Only Cross-Physician Access)</strong>
+          <p>
+            You may inspect clinical history, laboratory results, vitals, and attached documents. New consultations and prescribing are restricted to the attending physician.
+          </p>
+        </div>
+        <app-status-chip status="Read-Only EMR" tone="info"></app-status-chip>
+      </section>
     }
 
-    <!-- Structured Tabbed Medical Records -->
-    <div class="chart-tabs-wrapper">
-      <mat-tab-group animationDuration="250ms" class="styled-mat-tabs">
-        
-        <!-- Tab 1: Medical Visits & Consultations / Front Desk Administrative Visit Log -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">{{ isReceptionist() ? 'event_note' : 'medical_services' }}</mat-icon>
-            <span>{{ isReceptionist() ? 'Administrative Visit Log' : 'Consultations & History' }}</span>
-          </ng-template>
-          <div class="tab-pane-content">
+    <section class="chart-tabs-surface" aria-label="Patient record sections">
+      <mat-tab-group animationDuration="0ms">
+        <!-- Tab 1: Consultations / Front Desk Visits -->
+        <mat-tab [label]="isReceptionist() ? 'Administrative Visit Log' : 'Consultations & History'">
+          <div class="tab-pane">
             @if (isReceptionist()) {
-              <!-- HIPAA / GDPR CONFIDENTIALITY SHIELD NOTICE -->
-              <div class="hipaa-shield-banner">
-                <div class="shield-icon-box">
-                  <mat-icon>verified_user</mat-icon>
-                </div>
-                <div>
-                  <h4>HIPAA / GDPR Role-Based Access Control (RBAC) Active</h4>
-                  <p>
-                    Physician clinical diagnostic assessments, SOAP notes, and prescribed pharmaceuticals are shielded for front desk staff. Patient movement and scheduling timeline is presented below.
-                  </p>
-                </div>
+              <div class="rbac-banner" role="note">
+                <strong>HIPAA Role-Based Privacy Shield Active</strong>
+                <p>Clinical diagnostic assessments, SOAP notes, and prescriptions are masked for front-desk staff. Scheduling timeline is displayed below.</p>
               </div>
 
-              <!-- ADMINISTRATIVE VISITS TIMELINE -->
               @if (patientAppointments().length > 0) {
-                <div class="visits-timeline">
+                <div class="timeline-list">
                   @for (appt of patientAppointments(); track appt.id) {
-                    <div class="timeline-card">
-                      <div class="timeline-indicator">
-                        <div class="indicator-dot" style="background: #0284c7;"></div>
-                        <div class="indicator-line"></div>
-                      </div>
-                      <div class="timeline-body">
-                        <div class="visit-header-row">
-                          <span class="visit-date-badge">{{ appt.scheduledDateTime | date:'mediumDate' }} • {{ appt.scheduledDateTime | date:'shortTime' }}</span>
-                          <span class="doctor-badge">Dr. {{ appt.doctorName }}</span>
+                    <article class="timeline-card">
+                      <header class="timeline-head">
+                        <div class="head-left">
+                          <span class="visit-date">{{ appt.scheduledDateTime | date:'mediumDate' }} · {{ appt.scheduledDateTime | date:'shortTime' }}</span>
+                          <span class="doctor-name">Dr. {{ appt.doctorName }}</span>
                           @if (appt.tokenNumber) {
-                            <span class="visit-token-pill">🎟️ {{ appt.tokenNumber }}</span>
+                            <span class="token-tag">Token {{ appt.tokenNumber }}</span>
                           }
-                          <span class="status-pill" [class.info]="appt.status === 'Scheduled'" [class.warning]="appt.status === 'CheckedIn'" [class.success]="appt.status === 'Completed'" [class.danger]="appt.status === 'Cancelled' || appt.status === 'NoShow'">
-                            <span class="pill-dot"></span>
-                            <span>{{ appt.status === 'NoShow' ? 'No-Show' : appt.status }}</span>
-                          </span>
                         </div>
-                        <h3 class="diagnosis-title">Visit Category: {{ appt.visitType || 'General Consultation' }}</h3>
-                        <p class="visit-reason"><strong>Front-Desk Reason:</strong> {{ appt.reasonForVisit || 'Scheduled Visit' }}</p>
-                      </div>
-                    </div>
+                        <app-status-chip [status]="appt.status"></app-status-chip>
+                      </header>
+                      <h3 class="timeline-title">{{ appt.visitType || 'General Consultation' }}</h3>
+                      <p class="timeline-meta"><strong>Reason:</strong> {{ appt.reasonForVisit || 'Scheduled Visit' }}</p>
+                    </article>
                   }
                 </div>
               } @else {
-                <div class="empty-chart-state">
-                  <mat-icon class="empty-icon">event_busy</mat-icon>
-                  <h3>No Recorded Visits</h3>
-                  <p>No appointment records found for this patient.</p>
-                </div>
+                <app-empty-state
+                  icon="event_busy"
+                  title="No recorded visits"
+                  description="No appointment records exist for this patient.">
+                </app-empty-state>
               }
             } @else {
-              <!-- CLINICAL TIMELINE (DOCTOR / NURSE / ADMIN) -->
               @if (history()?.visits && history().visits.length > 0) {
-                <div class="visits-timeline">
+                <div class="timeline-list">
                   @for (visit of history().visits; track visit.appointmentId) {
-                    <div class="timeline-card">
-                      <div class="timeline-indicator">
-                        <div class="indicator-dot"></div>
-                        <div class="indicator-line"></div>
-                      </div>
-                      <div class="timeline-body">
-                        <div class="visit-header-row">
-                          <span class="visit-date-badge">{{ visit.visitDate | date:'mediumDate' }}</span>
-                          <span class="doctor-badge">Dr. {{ visit.doctorName }}</span>
+                    <article class="timeline-card">
+                      <header class="timeline-head">
+                        <span class="visit-date">{{ visit.visitDate | date:'mediumDate' }}</span>
+                        <span class="doctor-name">Dr. {{ visit.doctorName }}</span>
+                      </header>
+
+                      <h3 class="timeline-title">{{ visit.diagnosis || 'Clinical Consultation' }}</h3>
+                      <p class="timeline-meta"><strong>Chief Complaint:</strong> {{ visit.reasonForVisit || 'Regular Checkup' }}</p>
+
+                      @if (visit.symptoms) {
+                        <p class="timeline-meta"><strong>Symptoms:</strong> {{ visit.symptoms }}</p>
+                      }
+
+                      @if (visit.findings) {
+                        <div class="callout-box callout-info">
+                          <strong>Objective Findings</strong>
+                          <p>{{ visit.findings }}</p>
                         </div>
-                        <h3 class="diagnosis-title">{{ visit.diagnosis || 'Clinical Consultation' }}</h3>
-                        <p class="visit-reason"><strong>Chief Complaint:</strong> {{ visit.reasonForVisit || 'Regular Checkup' }}</p>
-                        
-                        @if (visit.symptoms) {
-                          <div class="symptoms-row">
-                            <span class="symptoms-label">Symptoms:</span>
-                            <span class="symptoms-text">{{ visit.symptoms }}</span>
+                      }
+
+                      @if (visit.vitalSigns) {
+                        <div class="vitals-strip" aria-label="Recorded visit vitals">
+                          <span class="vital-pill">BP {{ visit.vitalSigns.systolicBP }}/{{ visit.vitalSigns.diastolicBP }} mmHg</span>
+                          <span class="vital-pill">HR {{ visit.vitalSigns.heartRateBpm }} bpm</span>
+                          <span class="vital-pill">Temp {{ visit.vitalSigns.temperatureC }} °C</span>
+                          <span class="vital-pill">Weight {{ visit.vitalSigns.weightKg }} kg</span>
+                        </div>
+                      }
+
+                      @if (visit.clinicalNotes) {
+                        <div class="callout-box callout-neutral">
+                          <strong>Physician Notes</strong>
+                          <p>{{ visit.clinicalNotes }}</p>
+                        </div>
+                      }
+
+                      @if (visit.prescription) {
+                        <div class="rx-box">
+                          <div class="rx-head">
+                            <strong>Prescription Record</strong>
+                            <button
+                              type="button"
+                              mat-stroked-button
+                              class="copy-rx-btn"
+                              (click)="copyPrescriptionId(visit.prescription.id)"
+                              matTooltip="Copy Prescription ID">
+                              ID: {{ visit.prescription.id }}
+                            </button>
                           </div>
-                        }
 
-                        @if (visit.findings) {
-                          <div class="findings-box" style="margin-top: 8px; padding: 10px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6; border-radius: 4px;">
-                            <strong style="color: #1d4ed8; font-size: 13px;">Clinical Findings (Objective Exam):</strong>
-                            <p style="margin: 4px 0 0; font-size: 13px;">{{ visit.findings }}</p>
-                          </div>
-                        }
+                          @if (visit.prescription.notes) {
+                            <p class="rx-notes"><strong>Notes:</strong> {{ visit.prescription.notes }}</p>
+                          }
 
-                        @if (visit.vitalSigns) {
-                          <div class="visit-vitals-strip" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0;">
-                            <span class="vital-pill" style="background: rgba(16, 185, 129, 0.1); color: #065f46; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                              BP: {{ visit.vitalSigns.systolicBP }}/{{ visit.vitalSigns.diastolicBP }} mmHg
-                            </span>
-                            <span class="vital-pill" style="background: rgba(16, 185, 129, 0.1); color: #065f46; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                              HR: {{ visit.vitalSigns.heartRateBpm }} bpm
-                            </span>
-                            <span class="vital-pill" style="background: rgba(16, 185, 129, 0.1); color: #065f46; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                              Temp: {{ visit.vitalSigns.temperatureC }} °C
-                            </span>
-                            <span class="vital-pill" style="background: rgba(16, 185, 129, 0.1); color: #065f46; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                              Weight: {{ visit.vitalSigns.weightKg }} kg
-                            </span>
-                          </div>
-                        }
-
-                        @if (visit.clinicalNotes) {
-                          <div class="clinical-notes-box">
-                            <strong>Physician Notes:</strong>
-                            <p>{{ visit.clinicalNotes }}</p>
-                          </div>
-                        }
-
-                        @if (visit.prescription) {
-                          <div class="prescription-box">
-                            <div class="rx-header">
-                              <div class="rx-title">
-                                <mat-icon>local_pharmacy</mat-icon>
-                                <span>Doctor Prescription Record</span>
-                              </div>
-                              <div class="rx-code-badge" (click)="copyPrescriptionId(visit.prescription.id)" title="Click to copy Prescription Code">
-                                <span class="rx-code-label">ID:</span>
-                                <code>{{ visit.prescription.id }}</code>
-                                <mat-icon class="copy-icon">content_copy</mat-icon>
-                              </div>
-                            </div>
-
-                            @if (visit.prescription.notes) {
-                              <p class="rx-notes"><strong>Notes:</strong> {{ visit.prescription.notes }}</p>
-                            }
-
-                            @if (visit.prescription.items && visit.prescription.items.length > 0) {
-                              <div class="rx-items-grid">
-                                @for (item of visit.prescription.items; track item.id || item.medicineName) {
-                                  <div class="rx-item-tag">
-                                    <mat-icon>medication</mat-icon>
-                                    <div class="rx-item-info">
-                                      <span class="rx-item-name">{{ item.medicineName }} <strong>&times;{{ item.quantity }}</strong></span>
-                                      <span class="rx-item-dose">{{ item.dosageInstructions }}</span>
-                                    </div>
-                                  </div>
-                                }
-                              </div>
-                            } @else {
-                              <div class="rx-empty-items">
-                                <span>Prescription record issued on {{ visit.prescription.issuedAt | date:'mediumDate' }}</span>
-                              </div>
-                            }
-                          </div>
-                        }
-                      </div>
-                    </div>
+                          @if (visit.prescription.items && visit.prescription.items.length > 0) {
+                            <ul class="rx-items-list">
+                              @for (item of visit.prescription.items; track item.id || item.medicineName) {
+                                <li class="rx-item">
+                                  <strong>{{ item.medicineName }} &times;{{ item.quantity }}</strong>
+                                  <span>{{ item.dosageInstructions }}</span>
+                                </li>
+                              }
+                            </ul>
+                          } @else {
+                            <p class="rx-empty">Prescription issued on {{ visit.prescription.issuedAt | date:'mediumDate' }}</p>
+                          }
+                        </div>
+                      }
+                    </article>
                   }
                 </div>
               } @else {
-                <div class="empty-chart-state">
-                  <mat-icon class="empty-icon">history_edu</mat-icon>
-                  <h3>No Previous Consultations</h3>
-                  <p>There are no recorded consultation notes for this patient yet.</p>
-                </div>
+                <app-empty-state
+                  icon="history_edu"
+                  title="No previous consultations"
+                  description="There are no recorded consultation notes for this patient yet.">
+                </app-empty-state>
               }
             }
           </div>
         </mat-tab>
 
-        <!-- Tab 2: Lab Reports, Scans & Files -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">folder_shared</mat-icon>
-            <span>Lab Results & Documents</span>
-          </ng-template>
-          <div class="tab-pane-content">
-            <div class="upload-action-box">
-              <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none">
-              <button mat-flat-button color="accent" (click)="fileInput.click()" [disabled]="isUploading()" class="upload-btn">
-                <mat-icon>upload_file</mat-icon>
-                <span>Upload New Lab Report / Scan</span>
-              </button>
-              @if (isUploading()) {
-                <div class="upload-spinner-wrap">
-                  <mat-spinner diameter="20"></mat-spinner>
-                  <span>Securing & Uploading Document...</span>
-                </div>
-              }
+        <!-- Tab 2: Lab Results & Documents -->
+        <mat-tab label="Lab Results & Documents">
+          <div class="tab-pane">
+            <div class="section-toolbar">
+              <h2>Clinical Documents &amp; External Scans</h2>
+              <div>
+                <input type="file" #fileInput (change)="onFileSelected($event)" class="visually-hidden" aria-label="Choose clinical document to upload">
+                <button
+                  type="button"
+                  mat-flat-button
+                  color="primary"
+                  (click)="fileInput.click()"
+                  [disabled]="isUploading()"
+                  [attr.aria-busy]="isUploading()">
+                  {{ isUploading() ? 'Uploading Document...' : 'Upload Lab Report / Scan' }}
+                </button>
+              </div>
             </div>
 
+            @if (isUploading()) {
+              <app-skeleton variant="row" [count]="1" label="Uploading file"></app-skeleton>
+            }
+
             @if (files().length > 0) {
-              <div class="files-card-grid">
+              <div class="files-grid">
                 @for (f of files(); track f.id) {
-                  <div class="file-item-card">
-                    <div class="file-icon-box">
-                      <mat-icon>description</mat-icon>
+                  <div class="file-card">
+                    <div class="file-info">
+                      <span class="file-name">{{ f.originalFileName || f.fileName }}</span>
+                      <span class="file-meta">{{ f.uploadedAt | date:'mediumDate' }} · {{ (f.fileSizeBytes / 1024) | number:'1.0-0' }} KB</span>
                     </div>
-                    <div class="file-text-content">
-                      <span class="file-title">{{ f.originalFileName || f.fileName }}</span>
-                      <span class="file-meta">{{ f.uploadedAt | date:'mediumDate' }} • {{ (f.fileSizeBytes / 1024) | number:'1.0-0' }} KB</span>
-                    </div>
-                    <button (click)="downloadFile(f)" mat-icon-button color="primary" title="Download Document">
-                      <mat-icon>download</mat-icon>
+                    <button
+                      type="button"
+                      mat-icon-button
+                      color="primary"
+                      (click)="downloadFile(f)"
+                      matTooltip="Download Document"
+                      [attr.aria-label]="'Download ' + (f.originalFileName || f.fileName)">
+                      <mat-icon aria-hidden="true">download</mat-icon>
                     </button>
                   </div>
                 }
               </div>
             } @else {
-              <div class="empty-chart-state">
-                <mat-icon class="empty-icon">attachment</mat-icon>
-                <h3>No Attached Files</h3>
-                <p>No lab reports, imaging scans, or clinical PDFs attached to this patient profile.</p>
-              </div>
+              <app-empty-state
+                icon="attachment"
+                title="No attached documents"
+                description="No external lab reports, imaging PDFs, or scans are attached to this chart.">
+              </app-empty-state>
             }
           </div>
         </mat-tab>
 
-        <!-- Tab 3: Demographics & Emergency Contacts -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">contact_phone</mat-icon>
-            <span>Demographics & Contact</span>
-          </ng-template>
-          <div class="tab-pane-content">
+        <!-- Tab 3: Demographics & Contact -->
+        <mat-tab label="Demographics & Contact">
+          <div class="tab-pane">
             <div class="demographics-grid">
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>badge</mat-icon></div>
-                <div>
-                  <label>Full Legal Name</label>
-                  <h4>{{ patient()?.firstName }} {{ patient()?.lastName }}</h4>
-                </div>
+                <span class="tile-label">Full Legal Name</span>
+                <span class="tile-value">{{ patient()?.firstName }} {{ patient()?.lastName }}</span>
               </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>fingerprint</mat-icon></div>
-                <div>
-                  <label>Medical Record Number</label>
-                  <h4>{{ patient()?.medicalRecordNumber || 'N/A' }}</h4>
-                </div>
+                <span class="tile-label">Medical Record Number</span>
+                <span class="tile-value mono">{{ patient()?.medicalRecordNumber || 'N/A' }}</span>
               </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>cake</mat-icon></div>
-                <div>
-                  <label>Date of Birth</label>
-                  <h4>{{ patient()?.dateOfBirth | date:'mediumDate' }}</h4>
-                </div>
+                <span class="tile-label">Date of Birth</span>
+                <span class="tile-value">{{ patient()?.dateOfBirth | date:'mediumDate' }}</span>
               </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>people</mat-icon></div>
-                <div>
-                  <label>Gender</label>
-                  <h4>{{ patient()?.gender }}</h4>
-                </div>
+                <span class="tile-label">Gender</span>
+                <span class="tile-value">{{ patient()?.gender || 'Unspecified' }}</span>
               </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>phone</mat-icon></div>
-                <div>
-                  <label>Primary Phone</label>
-                  <h4>{{ patient()?.phone }}</h4>
-                </div>
+                <span class="tile-label">Primary Phone</span>
+                <span class="tile-value">{{ patient()?.phone || 'N/A' }}</span>
               </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>email</mat-icon></div>
-                <div>
-                  <label>Email Address</label>
-                  <h4>{{ patient()?.email || 'Not Provided' }}</h4>
-                </div>
+                <span class="tile-label">Email Address</span>
+                <span class="tile-value">{{ patient()?.email || 'Not Provided' }}</span>
               </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>home</mat-icon></div>
-                <div>
-                  <label>Residential Address</label>
-                  <h4>{{ patient()?.address || 'Not Provided' }}</h4>
-                </div>
+                <span class="tile-label">Residential Address</span>
+                <span class="tile-value">{{ patient()?.address || 'Not Provided' }}</span>
               </div>
-
-              <div class="info-tile highlight">
-                <div class="tile-icon-wrap"><mat-icon>bloodtype</mat-icon></div>
-                <div>
-                  <label>Blood Type</label>
-                  <h4>{{ (patient()?.bloodGroup || patient()?.bloodType) || 'Unknown' }}</h4>
-                </div>
-              </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>credit_card</mat-icon></div>
-                <div>
-                  <label>National ID / SSN</label>
-                  <h4>{{ patient()?.nationalId || 'Not Recorded' }}</h4>
-                </div>
+                <span class="tile-label">Blood Type</span>
+                <span class="tile-value">{{ (patient()?.bloodGroup || patient()?.bloodType) || 'Unknown' }}</span>
               </div>
-
-              <div class="info-tile" style="border-left: 3px solid #f59e0b;">
-                <div class="tile-icon-wrap" style="color: #f59e0b;"><mat-icon>contact_emergency</mat-icon></div>
-                <div>
-                  <label>Emergency Contact Name</label>
-                  <h4>{{ emergencyContactName() }}</h4>
-                </div>
-              </div>
-
-              <div class="info-tile" style="border-left: 3px solid #f59e0b;">
-                <div class="tile-icon-wrap" style="color: #f59e0b;"><mat-icon>ring_volume</mat-icon></div>
-                <div>
-                  <label>Emergency Contact Phone</label>
-                  <h4>{{ emergencyContactPhone() }}</h4>
-                </div>
-              </div>
-
-              <div class="info-tile" style="border-left: 3px solid #6366f1;">
-                <div class="tile-icon-wrap" style="color: #6366f1;"><mat-icon>health_and_safety</mat-icon></div>
-                <div>
-                  <label>Insurance Provider</label>
-                  <h4>{{ patient()?.insuranceProvider || 'Direct Self-Pay' }}</h4>
-                </div>
-              </div>
-
-              <div class="info-tile" style="border-left: 3px solid #6366f1;">
-                <div class="tile-icon-wrap" style="color: #6366f1;"><mat-icon>policy</mat-icon></div>
-                <div>
-                  <label>Policy & Plan Tier</label>
-                  <h4>{{ patient()?.insuranceCoveragePlan || 'Standard Clinic Tier' }} ({{ patient()?.insurancePolicyNumber || 'N/A' }})</h4>
-                </div>
-              </div>
-
-              <div class="info-tile" style="border-left: 3px solid #10b981;">
-                <div class="tile-icon-wrap" style="color: #10b981;"><mat-icon>verified_user</mat-icon></div>
-                <div>
-                  <label>Eligibility Status</label>
-                  <h4>{{ patient()?.insuranceEligibilityStatus || 'Active / Verified' }}</h4>
-                </div>
-              </div>
-
               <div class="info-tile">
-                <div class="tile-icon-wrap"><mat-icon>verified</mat-icon></div>
-                <div>
-                  <label>Registration Date</label>
-                  <h4>{{ patient()?.registeredAt | date:'mediumDate' }}</h4>
-                </div>
+                <span class="tile-label">National ID / SSN</span>
+                <span class="tile-value">{{ patient()?.nationalId || 'Not Recorded' }}</span>
+              </div>
+              <div class="info-tile">
+                <span class="tile-label">Emergency Contact Name</span>
+                <span class="tile-value">{{ emergencyContactName() }}</span>
+              </div>
+              <div class="info-tile">
+                <span class="tile-label">Emergency Contact Phone</span>
+                <span class="tile-value">{{ emergencyContactPhone() }}</span>
+              </div>
+              <div class="info-tile">
+                <span class="tile-label">Insurance Provider</span>
+                <span class="tile-value">{{ patient()?.insuranceProvider || 'Direct Self-Pay' }}</span>
+              </div>
+              <div class="info-tile">
+                <span class="tile-label">Policy &amp; Plan Tier</span>
+                <span class="tile-value">{{ patient()?.insuranceCoveragePlan || 'Standard Clinic Tier' }} ({{ patient()?.insurancePolicyNumber || 'N/A' }})</span>
+              </div>
+              <div class="info-tile">
+                <span class="tile-label">Eligibility Status</span>
+                <span class="tile-value">{{ patient()?.insuranceEligibilityStatus || 'Active / Verified' }}</span>
+              </div>
+              <div class="info-tile">
+                <span class="tile-label">Registration Date</span>
+                <span class="tile-value">{{ patient()?.registeredAt | date:'mediumDate' }}</span>
               </div>
             </div>
 
-            <!-- Prominent Clinical Alerts Bar in Demographics Tab -->
             @if (patient()?.allergies) {
-              <div class="allergy-alert-card" style="margin-top: 1.5rem; display: flex; align-items: flex-start; gap: 1rem; background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 1.25rem 1.5rem;">
-                <div style="background: rgba(239, 68, 68, 0.18); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #dc2626; flex-shrink: 0;">
-                  <mat-icon>warning</mat-icon>
+              <div class="clinical-alert-box alert-danger" role="status">
+                <div>
+                  <h3>Documented Clinical Allergies &amp; Sensitivities</h3>
+                  <p class="alert-primary">{{ patient()?.allergies }}</p>
+                  <p class="alert-sub">Verify formulary contraindications before prescribing or administering medication.</p>
                 </div>
-                <div style="flex: 1;">
-                  <h4 style="margin: 0; color: #b91c1c; font-size: 1rem; font-weight: 800;">Documented Clinical Allergies & Sensitivities</h4>
-                  <p style="margin: 4px 0 0; color: #991b1b; font-size: 0.9rem; font-weight: 600;">{{ patient()?.allergies }}</p>
-                  <span style="display: inline-block; margin-top: 6px; font-size: 0.78rem; color: #7f1d1d; opacity: 0.85;">⚠️ All prescribing providers and nursing triage staff must check formulary contraindications before issuing medication.</span>
-                </div>
-                <button mat-stroked-button color="warn" (click)="openEditModal()" style="border-radius: 8px;">
-                  <mat-icon>edit</mat-icon> Update Allergies
-                </button>
+                @if (canEditPatient()) {
+                  <button mat-stroked-button type="button" (click)="openEditModal()">Update Allergies</button>
+                }
               </div>
             } @else {
-              <div class="nkda-card" style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem; background: rgba(16, 185, 129, 0.08); border: 1.5px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1rem 1.5rem;">
-                <div style="background: rgba(16, 185, 129, 0.15); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
-                  <mat-icon>check_circle</mat-icon>
+              <div class="clinical-alert-box alert-success" role="status">
+                <div>
+                  <h3>No Known Drug Allergies (NKDA)</h3>
+                  <p class="alert-sub">No adverse pharmacological reactions recorded on file.</p>
                 </div>
-                <div style="flex: 1;">
-                  <h4 style="margin: 0; color: #065f46; font-size: 0.95rem; font-weight: 700;">No Known Drug Allergies (NKDA)</h4>
-                  <p style="margin: 2px 0 0; color: #047857; font-size: 0.82rem;">Patient confirmed no adverse pharmacological reactions on file.</p>
-                </div>
-                <button mat-stroked-button (click)="openEditModal()" style="border-radius: 8px;">
-                  <mat-icon>edit</mat-icon> Update Record
-                </button>
+                @if (canEditPatient()) {
+                  <button mat-stroked-button type="button" (click)="openEditModal()">Update Record</button>
+                }
               </div>
             }
           </div>
         </mat-tab>
 
-
-        <!-- Tab 4: Patient Invoices & Billing -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">receipt_long</mat-icon>
-            <span>Invoices & Billing</span>
-          </ng-template>
-          <div class="tab-pane-content">
-
-            <!-- Executive Financial Summary Cards -->
-            <div class="financial-summary-cards">
-              <div class="fin-stat-card">
-                <div class="stat-icon-wrap blue">
-                  <mat-icon>receipt</mat-icon>
-                </div>
-                <div class="stat-meta">
-                  <span class="stat-label">Total Invoiced</span>
-                  <h3 class="stat-value">{{ totalInvoiced() | currency }}</h3>
-                </div>
+        <!-- Tab 4: Invoices & Billing -->
+        <mat-tab label="Invoices & Billing">
+          <div class="tab-pane">
+            <div class="finance-strip">
+              <div class="finance-card">
+                <span class="finance-label">Total Invoiced</span>
+                <span class="finance-value">{{ totalInvoiced() | currency }}</span>
               </div>
-
-              <div class="fin-stat-card">
-                <div class="stat-icon-wrap green">
-                  <mat-icon>verified</mat-icon>
-                </div>
-                <div class="stat-meta">
-                  <span class="stat-label">Settled & Paid</span>
-                  <h3 class="stat-value paid">{{ totalPaid() | currency }}</h3>
-                </div>
+              <div class="finance-card">
+                <span class="finance-label">Settled &amp; Paid</span>
+                <span class="finance-value tone-success">{{ totalPaid() | currency }}</span>
               </div>
-
-              <div class="fin-stat-card">
-                <div class="stat-icon-wrap red">
-                  <mat-icon>pending_actions</mat-icon>
-                </div>
-                <div class="stat-meta">
-                  <span class="stat-label">Outstanding Balance</span>
-                  <h3 class="stat-value due">{{ totalBalanceDue() | currency }}</h3>
-                </div>
+              <div class="finance-card">
+                <span class="finance-label">Outstanding Balance</span>
+                <span class="finance-value" [class.tone-danger]="totalBalanceDue() > 0">{{ totalBalanceDue() | currency }}</span>
               </div>
             </div>
 
             @if (patientInvoices().length > 0) {
               <div class="invoices-list">
                 @for (inv of patientInvoices(); track inv.id) {
-                  <div class="invoice-row-card">
+                  <div class="invoice-row">
                     <div class="inv-left">
-                      <span class="inv-num-badge">{{ inv.invoiceNumber }}</span>
+                      <span class="inv-number">{{ inv.invoiceNumber }}</span>
                       <div class="inv-meta">
-                        <span class="inv-date">{{ inv.issueDate | date:'mediumDate' }}</span>
                         <span class="inv-desc">{{ inv.items?.[0]?.description || 'Medical Service' }}</span>
+                        <span class="inv-date">{{ inv.issueDate | date:'mediumDate' }}</span>
                       </div>
                     </div>
-                    <div class="inv-center">
-                      <span class="inv-status-badge"
-                        [class.paid]="inv.status === 'Paid'"
-                        [class.unpaid]="inv.status === 'Unpaid' || inv.status === 'Overdue'"
-                        [class.partial]="inv.status === 'PartiallyPaid' || inv.status === 'Issued' || inv.status === 'Draft'">
-                        {{ inv.status }}
-                      </span>
+
+                    <div class="inv-status">
+                      <app-status-chip [status]="inv.status"></app-status-chip>
                     </div>
+
                     <div class="inv-right">
                       <div class="inv-amounts">
                         <span class="inv-total">{{ inv.totalAmount | currency }}</span>
                         @if (inv.balanceDue > 0) {
-                          <span class="inv-balance">Due: {{ inv.balanceDue | currency }}</span>
+                          <span class="inv-due">Due: {{ inv.balanceDue | currency }}</span>
                         }
                       </div>
                       <div class="inv-actions">
                         @if (inv.balanceDue > 0) {
-                          <button mat-flat-button color="primary" class="inv-pay-btn" (click)="openPaymentModal(inv)">
-                            <mat-icon>payments</mat-icon> Pay
-                          </button>
+                          <button type="button" mat-flat-button color="primary" (click)="openPaymentModal(inv)">Pay</button>
                         }
-                        <button mat-icon-button color="primary" (click)="downloadInvoicePdf(inv)" matTooltip="Download PDF">
-                          <mat-icon>picture_as_pdf</mat-icon>
+                        <button
+                          type="button"
+                          mat-icon-button
+                          color="primary"
+                          (click)="downloadInvoicePdf(inv)"
+                          matTooltip="Download PDF"
+                          [attr.aria-label]="'Download PDF for invoice ' + inv.invoiceNumber">
+                          <mat-icon aria-hidden="true">download</mat-icon>
                         </button>
                       </div>
                     </div>
@@ -578,104 +412,66 @@
                 }
               </div>
             } @else {
-              <div class="empty-chart-state">
-                <mat-icon class="empty-icon">receipt</mat-icon>
-                <h3>No Invoices Found</h3>
-                <p>There are no billing records associated with this patient yet.</p>
-              </div>
+              <app-empty-state
+                icon="receipt"
+                title="No invoices found"
+                description="No billing records are associated with this patient chart.">
+              </app-empty-state>
             }
-
-            <!-- Inline Payment Modal -->
-            @if (isPaymentModalOpen()) {
-              <div class="payment-overlay">
-                <div class="payment-modal-card">
-                  <div class="payment-modal-header">
-                    <mat-icon>payments</mat-icon>
-                    <h3>Settle Invoice #{{ selectedInvoice()?.invoiceNumber }}</h3>
-                    <button mat-icon-button (click)="closePaymentModal()" class="close-modal-btn">
-                      <mat-icon>close</mat-icon>
-                    </button>
-                  </div>
-                  <div class="payment-modal-body">
-                    <div class="balance-info-box">
-                      <span>Outstanding Balance:</span>
-                      <strong>{{ selectedInvoice()?.balanceDue | currency }}</strong>
-                    </div>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Payment Amount ($)</mat-label>
-                      <input matInput type="number" [ngModel]="paymentAmount()" (ngModelChange)="paymentAmount.set($event)" min="1">
-                    </mat-form-field>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Payment Method</mat-label>
-                      <mat-select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
-                        <mat-option value="Cash">Cash</mat-option>
-                        <mat-option value="CreditCard">Credit Card</mat-option>
-                        <mat-option value="DebitCard">Debit Card</mat-option>
-                        <mat-option value="Insurance">Insurance</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-                  </div>
-                  <div class="payment-modal-footer">
-                    <button mat-stroked-button (click)="closePaymentModal()">Cancel</button>
-                    <button mat-flat-button color="primary" (click)="submitPayment()" [disabled]="isProcessingPayment() || paymentAmount() <= 0">
-                      <mat-icon>verified</mat-icon>
-                      @if (isProcessingPayment()) { Processing... } @else { Confirm Payment }
-                    </button>
-                  </div>
-                </div>
-              </div>
-            }
-
           </div>
         </mat-tab>
-        <!-- TAB 5: LAB & DIAGNOSTICS -->
+
+        <!-- Tab 5: Lab & Diagnostics -->
         <mat-tab label="Lab & Diagnostics">
-          <div class="tab-body">
-            <div class="section-header-row">
-              <h3>Diagnostic Laboratory Orders & Results</h3>
-              <a mat-stroked-button color="primary" routerLink="/laboratory">
-                <mat-icon>science</mat-icon> Open Laboratory Workspace
-              </a>
+          <div class="tab-pane">
+            <div class="section-toolbar">
+              <h2>Laboratory Orders &amp; Results</h2>
+              @if (canOpenLaboratory()) {
+                <a mat-stroked-button routerLink="/laboratory">Open Laboratory</a>
+              }
             </div>
 
             @if (patientLabOrders().length === 0) {
-              <div class="empty-state">
-                <mat-icon>biotech</mat-icon>
-                <p>No laboratory orders found for this patient.</p>
-                <a mat-flat-button color="primary" routerLink="/laboratory">Order Tests in Lab Module</a>
-              </div>
+              <app-empty-state
+                icon="biotech"
+                title="No laboratory orders"
+                description="No laboratory orders have been recorded for this patient.">
+                @if (canOpenLaboratory()) {
+                  <a mat-flat-button color="primary" routerLink="/laboratory">Order Tests in Lab Module</a>
+                }
+              </app-empty-state>
             } @else {
-              <div class="lab-orders-list">
+              <div class="orders-list">
                 @for (order of patientLabOrders(); track order.id) {
-                  <div class="patient-lab-card">
-                    <div class="card-head">
-                      <div class="title-group">
+                  <article class="order-card">
+                    <header class="order-head">
+                      <div class="order-title">
                         <span class="order-number">{{ order.orderNumber }}</span>
                         <span class="order-date">{{ order.orderDate | date:'mediumDate' }}</span>
                       </div>
-                      <div class="status-group">
-                        <span class="priority-pill" [class.urgent]="order.priority !== 'Routine'">{{ order.priority }}</span>
-                        <span class="status-pill">{{ order.status }}</span>
+                      <div class="order-statuses">
+                        <app-status-chip [status]="order.priority" [tone]="order.priority === 'Stat' ? 'danger' : (order.priority === 'Urgent' ? 'warning' : 'neutral')"></app-status-chip>
+                        <app-status-chip [status]="order.status"></app-status-chip>
                       </div>
-                    </div>
+                    </header>
 
-                    <div class="tests-breakdown">
+                    <div class="order-items">
                       @for (item of order.items; track item.id) {
-                        <div class="test-item-row">
-                          <div class="test-title">
+                        <div class="test-item">
+                          <div class="test-item-head">
                             <strong>{{ item.testName }} ({{ item.testCode }})</strong>
-                            <span class="sample-tag">Specimen: {{ item.sampleType }}</span>
+                            <span class="specimen-tag">Specimen: {{ item.sampleType }}</span>
                           </div>
 
                           @if (item.result) {
-                            <div class="results-table-mini">
-                              <table>
+                            <div class="table-responsive">
+                              <table class="mini-results-table">
                                 <thead>
                                   <tr>
-                                    <th>Parameter</th>
-                                    <th>Measured Value</th>
-                                    <th>Normal Range</th>
-                                    <th>Flag</th>
+                                    <th scope="col">Parameter</th>
+                                    <th scope="col">Measured Value</th>
+                                    <th scope="col">Reference Range</th>
+                                    <th scope="col">Flag</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -685,345 +481,336 @@
                                       <td><strong>{{ r.value }} {{ r.unit }}</strong></td>
                                       <td>{{ r.normalText || (r.minRef + ' - ' + r.maxRef) }}</td>
                                       <td>
-                                        <span class="result-flag" [class.abnormal]="r.flag !== 'Normal'">
-                                          {{ r.flag }}
-                                        </span>
+                                        <app-status-chip [status]="r.flag || 'Normal'" [tone]="r.flag !== 'Normal' ? 'danger' : 'success'"></app-status-chip>
                                       </td>
                                     </tr>
                                   }
                                 </tbody>
                               </table>
-                              @if (item.result.remarks) {
-                                <div class="lab-remarks">
-                                  <em>Notes: {{ item.result.remarks }}</em>
-                                </div>
-                              }
                             </div>
+                            @if (item.result.remarks) {
+                              <p class="lab-remarks"><strong>Remarks:</strong> {{ item.result.remarks }}</p>
+                            }
                           } @else {
-                            <div class="pending-test-badge">
-                              <span>⏳ Test pending laboratory processing</span>
-                            </div>
+                            <app-status-chip status="Pending Laboratory Processing" tone="warning"></app-status-chip>
                           }
                         </div>
                       }
                     </div>
-                  </div>
+                  </article>
                 }
               </div>
             }
           </div>
         </mat-tab>
 
-        <!-- TAB 6: RADIOLOGY & PACS IMAGING -->
+        <!-- Tab 6: Radiology & Imaging -->
         <mat-tab label="Radiology & Imaging">
-          <div class="tab-body">
-            <div class="section-header-row">
-              <h3>Radiology Examinations & Web PACS Imaging</h3>
-              <div style="display: flex; gap: 0.5rem;">
-                <a mat-stroked-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist'}">
-                  <mat-icon>camera</mat-icon> Open PACS Suite
-                </a>
-                @if (isDoctor()) {
-                  <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">
-                    <mat-icon>add_photo_alternate</mat-icon> Order Imaging Study
-                  </a>
-                }
-              </div>
+          <div class="tab-pane">
+            <div class="section-toolbar">
+              <h2>Radiology Examinations &amp; PACS Studies</h2>
+              @if (canOpenRadiology()) {
+                <div class="toolbar-actions">
+                  <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist'}">Open PACS Suite</a>
+                  @if (isDoctor()) {
+                    <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">Order Imaging Study</a>
+                  }
+                </div>
+              }
             </div>
 
             @if (patientRadiologyOrders().length === 0) {
-              <div class="empty-state">
-                <mat-icon>camera</mat-icon>
-                <p>No radiology imaging studies found for this patient.</p>
-                <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">Order Imaging in Radiology Suite</a>
-              </div>
+              <app-empty-state
+                icon="camera"
+                title="No radiology studies"
+                description="No imaging examinations have been recorded for this patient.">
+                @if (isDoctor()) {
+                  <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">Order Imaging Study</a>
+                }
+              </app-empty-state>
             } @else {
-              <div class="lab-orders-list">
+              <div class="orders-list">
                 @for (study of patientRadiologyOrders(); track study.id) {
-                  <div class="patient-lab-card" style="border-left: 4px solid #a855f7;">
-                    <div class="card-head">
-                      <div class="title-group">
-                        <span class="order-number" style="color: #a855f7;">{{ study.accessionNumber || study.orderNumber }}</span>
-                        <span class="order-date">{{ (study.orderedAt || study.reportedAt) | date:'mediumDate' }} • {{ study.modality }}</span>
+                  <article class="order-card">
+                    <header class="order-head">
+                      <div class="order-title">
+                        <span class="order-number">{{ study.accessionNumber || study.orderNumber }}</span>
+                        <span class="order-date">{{ (study.orderedAt || study.reportedAt) | date:'mediumDate' }} · {{ study.modality }}</span>
                       </div>
-                      <div class="status-group">
-                        <span class="priority-pill" [class.urgent]="study.priority === 'Stat'">{{ study.priority }}</span>
-                        <span class="status-pill">{{ study.status }}</span>
+                      <div class="order-statuses">
+                        <app-status-chip [status]="study.priority" [tone]="study.priority === 'Stat' ? 'danger' : 'neutral'"></app-status-chip>
+                        <app-status-chip [status]="study.status"></app-status-chip>
                       </div>
-                    </div>
+                    </header>
 
-                    <div style="padding: 16px;">
-                      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
-                        <div>
-                          <h4 style="margin: 0; font-size: 1rem; color: var(--text-primary);">{{ study.procedureName }} ({{ study.bodyPart }})</h4>
-                          <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-secondary);">Indication: {{ study.clinicalIndication }}</p>
-                          @if (study.impression) {
-                            <div style="margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7;">
-                              <strong style="font-size: 0.85rem; color: #a855f7; display: block;">Radiological Impression:</strong>
-                              <span style="font-size: 0.85rem; color: var(--text-primary);">{{ study.impression }}</span>
-                            </div>
-                          }
-                        </div>
-                        @if (isNurse()) {
-                          <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderId: study.id}" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); white-space: nowrap;">
-                            <mat-icon>assignment</mat-icon> View Report
-                          </a>
-                        } @else {
-                          <a mat-flat-button color="primary" routerLink="/radiology" [queryParams]="{tab: 'viewer', orderId: study.id}" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); white-space: nowrap;">
-                            <mat-icon>center_focus_strong</mat-icon> View in PACS
-                          </a>
+                    <div class="study-body">
+                      <div class="study-info">
+                        <h3>{{ study.procedureName }} ({{ study.bodyPart }})</h3>
+                        <p class="study-indication"><strong>Indication:</strong> {{ study.clinicalIndication }}</p>
+                        @if (study.impression) {
+                          <div class="callout-box callout-info">
+                            <strong>Radiological Impression</strong>
+                            <p>{{ study.impression }}</p>
+                          </div>
                         }
                       </div>
+
+                      @if (canOpenRadiology()) {
+                        @if (isNurse()) {
+                          <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderId: study.id}">View Report</a>
+                        } @else {
+                          <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'viewer', orderId: study.id}">Open PACS Viewer</a>
+                        }
+                      }
                     </div>
-                  </div>
+                  </article>
                 }
               </div>
             }
           </div>
         </mat-tab>
       </mat-tab-group>
-    </div>
-
-    <!-- EDIT PATIENT COMPREHENSIVE EMR RECORD MODAL -->
-    @if (isEditModalOpen()) {
-      <div class="edit-patient-overlay">
-        <div class="edit-patient-card">
-          <div class="edit-modal-header">
-            <div class="modal-title-wrap">
-              <div class="modal-icon-badge">
-                <mat-icon>manage_accounts</mat-icon>
-              </div>
-              <div>
-                <h2>Update Patient Master Record</h2>
-                <p>Modify demographics, contact coordinates, emergency contacts, clinical allergies, and insurance policy</p>
-              </div>
-            </div>
-            <button mat-icon-button (click)="closeEditModal()" class="close-btn">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-
-          <div class="edit-modal-body">
-            <!-- Section 1: Demographics -->
-            <div class="form-section-title">
-              <mat-icon>badge</mat-icon>
-              <span>Legal Demographics & Identification</span>
-            </div>
-            <div class="form-row-grid">
-              <mat-form-field appearance="outline">
-                <mat-label>First Name</mat-label>
-                <input matInput [(ngModel)]="editForm().firstName" required placeholder="Legal First Name">
-                <mat-icon matPrefix>person</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Last Name</mat-label>
-                <input matInput [(ngModel)]="editForm().lastName" required placeholder="Legal Last Name">
-                <mat-icon matPrefix>person</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Date of Birth</mat-label>
-                <input matInput type="date" [(ngModel)]="editForm().dateOfBirth">
-                <mat-icon matPrefix>cake</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Gender</mat-label>
-                <mat-select [(ngModel)]="editForm().gender">
-                  <mat-option value="Male">Male</mat-option>
-                  <mat-option value="Female">Female</mat-option>
-                  <mat-option value="Other">Other</mat-option>
-                </mat-select>
-                <mat-icon matPrefix>wc</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Blood Group</mat-label>
-                <mat-select [(ngModel)]="editForm().bloodGroup">
-                  <mat-option value="A+">A+</mat-option>
-                  <mat-option value="A-">A-</mat-option>
-                  <mat-option value="B+">B+</mat-option>
-                  <mat-option value="B-">B-</mat-option>
-                  <mat-option value="AB+">AB+</mat-option>
-                  <mat-option value="AB-">AB-</mat-option>
-                  <mat-option value="O+">O+</mat-option>
-                  <mat-option value="O-">O-</mat-option>
-                </mat-select>
-                <mat-icon matPrefix>bloodtype</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>National ID / SSN</mat-label>
-                <input matInput [(ngModel)]="editForm().nationalId" placeholder="e.g. ID-100234">
-                <mat-icon matPrefix>credit_card</mat-icon>
-              </mat-form-field>
-            </div>
-
-            <!-- Section 2: Contact Coordinates -->
-            <div class="form-section-title">
-              <mat-icon>contact_phone</mat-icon>
-              <span>Contact Coordinates & Address</span>
-            </div>
-            <div class="form-row-grid">
-              <mat-form-field appearance="outline">
-                <mat-label>Primary Phone</mat-label>
-                <input matInput [(ngModel)]="editForm().phone" required placeholder="e.g. +1 555-0199">
-                <mat-icon matPrefix>phone</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Email Address</mat-label>
-                <input matInput [(ngModel)]="editForm().email" type="email" placeholder="patient@domain.com">
-                <mat-icon matPrefix>mail</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="span-two">
-                <mat-label>Residential Address</mat-label>
-                <input matInput [(ngModel)]="editForm().address" placeholder="Street Address, City, Region">
-                <mat-icon matPrefix>home</mat-icon>
-              </mat-form-field>
-            </div>
-
-            <!-- Section 3: Clinical Allergies & Emergency Contact -->
-            <div class="form-section-title warning-title">
-              <mat-icon>warning</mat-icon>
-              <span>Clinical Allergies & Emergency Contact</span>
-            </div>
-            <div class="form-row-grid">
-              <mat-form-field appearance="outline" class="span-two">
-                <mat-label>Documented Allergies</mat-label>
-                <input matInput [(ngModel)]="editForm().allergies" placeholder="e.g. Penicillin (Hives), Peanuts, NKDA">
-                <mat-icon matPrefix>warning</mat-icon>
-                <mat-hint>Enter NKDA if no known drug allergies exist.</mat-hint>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Emergency Contact Name</mat-label>
-                <input matInput [(ngModel)]="editForm().emergencyContactName" placeholder="Full Name (e.g. John Connor)">
-                <mat-icon matPrefix>contact_emergency</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Emergency Contact Phone</mat-label>
-                <input matInput [(ngModel)]="editForm().emergencyContactPhone" placeholder="Emergency Phone Number">
-                <mat-icon matPrefix>ring_volume</mat-icon>
-              </mat-form-field>
-            </div>
-
-            <!-- Section 4: Insurance & Payer -->
-            <div class="form-section-title">
-              <mat-icon>health_and_safety</mat-icon>
-              <span>Insurance Coverage & Payer Policy</span>
-            </div>
-            <div class="form-row-grid">
-              <mat-form-field appearance="outline">
-                <mat-label>Insurance Provider</mat-label>
-                <input matInput [(ngModel)]="editForm().insuranceProvider" placeholder="e.g. BlueCross, Aetna, Cigna">
-                <mat-icon matPrefix>apartment</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Policy / Member ID</mat-label>
-                <input matInput [(ngModel)]="editForm().insurancePolicyNumber" placeholder="e.g. POL-992384">
-                <mat-icon matPrefix>tag</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Coverage Plan Tier</mat-label>
-                <input matInput [(ngModel)]="editForm().insuranceCoveragePlan" placeholder="e.g. Platinum Comprehensive PPO">
-                <mat-icon matPrefix>layers</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Eligibility Status</mat-label>
-                <mat-select [(ngModel)]="editForm().insuranceEligibilityStatus">
-                  <mat-option value="Active / Eligible">Active / Eligible</mat-option>
-                  <mat-option value="Pending Verification">Pending Verification</mat-option>
-                  <mat-option value="Co-Pay Required">Co-Pay Required</mat-option>
-                  <mat-option value="Expired / Inactive">Expired / Inactive</mat-option>
-                  <mat-option value="Self-Pay">Self-Pay</mat-option>
-                </mat-select>
-                <mat-icon matPrefix>verified_user</mat-icon>
-              </mat-form-field>
-            </div>
-          </div>
-
-          <div class="edit-modal-footer">
-            <button mat-stroked-button (click)="closeEditModal()" [disabled]="isSavingPatient()">Cancel</button>
-            <button mat-flat-button color="primary" class="save-btn" (click)="savePatientEdit()" [disabled]="isSavingPatient()">
-              <mat-icon>save</mat-icon>
-              <span>{{ isSavingPatient() ? 'Saving Changes...' : 'Save Patient Records' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    }
+    </section>
   }
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- BREAK-GLASS EMERGENCY OVERRIDE MODAL                                   -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-@if (isBreakGlassModalOpen()) {
-  <div class="edit-patient-overlay" (click)="isBreakGlassModalOpen.set(false)" style="z-index: 10000;">
-    <div class="edit-patient-card" style="max-width: 560px;" (click)="$event.stopPropagation()">
-      <!-- Modal Header -->
-      <div class="edit-modal-header" style="background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); border-radius: 16px 16px 0 0; padding: 1.5rem 1.75rem;">
-        <div class="modal-title-wrap">
-          <div class="modal-icon-badge" style="background: rgba(255,255,255,0.15); color: #fff;">
-            <mat-icon style="font-size: 28px; width: 28px; height: 28px;">emergency</mat-icon>
-          </div>
-          <div>
-            <h2 style="color: #fff; margin: 0; font-size: 1.2rem; font-weight: 800;">🚨 Emergency Break-Glass Override</h2>
-            <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 0.82rem;">
-              Patient: <strong>{{ patient()?.firstName }} {{ patient()?.lastName }}</strong> · MRN: {{ patient()?.medicalRecordNumber }}
-            </p>
-          </div>
+<!-- PAYMENT SETTLEMENT MODAL -->
+@if (isPaymentModalOpen()) {
+  <div class="ehr-modal-backdrop" (click)="closePaymentModal()">
+    <div
+      class="ehr-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="payment-modal-title"
+      (click)="$event.stopPropagation()">
+      <header class="ehr-modal-header">
+        <div>
+          <h2 id="payment-modal-title">Settle Invoice #{{ selectedInvoice()?.invoiceNumber }}</h2>
+          <p>Record payment against patient invoice balance</p>
         </div>
-        <button mat-icon-button (click)="isBreakGlassModalOpen.set(false)" class="close-btn" style="color: #fff;">
-          <mat-icon>close</mat-icon>
+        <button type="button" mat-icon-button (click)="closePaymentModal()" aria-label="Close payment modal">
+          <mat-icon aria-hidden="true">close</mat-icon>
         </button>
-      </div>
+      </header>
 
-      <div class="edit-modal-body" style="padding: 1.5rem 1.75rem;">
-        <!-- Warning Banner -->
-        <div style="background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(220, 38, 38, 0.3); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
-          <mat-icon style="color: #dc2626; flex-shrink: 0; margin-top: 2px;">warning</mat-icon>
-          <div>
-            <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #7f1d1d;">This action is fully audited under HIPAA §164.312(b)</p>
-            <p style="margin: 4px 0 0; font-size: 0.8rem; color: #b91c1c; line-height: 1.5;">
-              Your identity, timestamp, IP address, and stated clinical justification will be permanently recorded and reviewed by compliance officers. Use only in a genuine clinical emergency.
-            </p>
-          </div>
+      <div class="ehr-modal-body">
+        <div class="balance-summary">
+          <span>Outstanding Balance</span>
+          <strong>{{ selectedInvoice()?.balanceDue | currency }}</strong>
         </div>
 
-        <!-- Clinical Rationale Input -->
-        <mat-form-field appearance="outline" style="width: 100%;">
-          <mat-label>Clinical Emergency Justification (mandatory)</mat-label>
-          <textarea matInput rows="4"
-                    [ngModel]="breakGlassReason()"
-                    (ngModelChange)="breakGlassReason.set($event)"
-                    placeholder="e.g. Patient unresponsive post-procedure. Immediate access to allergy history and medication record required for emergency resuscitation protocol."
-                    style="resize: none;">
-          </textarea>
-          <mat-icon matPrefix style="color: #dc2626;">gavel</mat-icon>
-          <mat-hint>Minimum clinical context required. Vague or unjustified entries will trigger a compliance review.</mat-hint>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Payment Amount</mat-label>
+          <input matInput type="number" [ngModel]="paymentAmount()" (ngModelChange)="paymentAmount.set($event)" min="1">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Payment Method</mat-label>
+          <mat-select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
+            <mat-option value="Cash">Cash</mat-option>
+            <mat-option value="CreditCard">Credit Card</mat-option>
+            <mat-option value="DebitCard">Debit Card</mat-option>
+            <mat-option value="Insurance">Insurance</mat-option>
+          </mat-select>
         </mat-form-field>
       </div>
 
-      <!-- Modal Footer -->
-      <div class="edit-modal-footer" style="padding: 1rem 1.75rem; border-top: 1px solid #fee2e2;">
-        <button mat-stroked-button (click)="isBreakGlassModalOpen.set(false)" [disabled]="isTriggeringBreakGlass()">Cancel</button>
-        <button mat-flat-button
-                (click)="triggerBreakGlass()"
-                [disabled]="!breakGlassReason().trim() || isTriggeringBreakGlass()"
-                style="background: #dc2626; color: #fff;">
-          <mat-icon>{{ isTriggeringBreakGlass() ? 'hourglass_empty' : 'emergency' }}</mat-icon>
-          <span>{{ isTriggeringBreakGlass() ? 'Logging Override...' : '🚨 Confirm Break-Glass Access' }}</span>
+      <footer class="ehr-modal-footer">
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="submitPayment()"
+          [disabled]="isProcessingPayment() || paymentAmount() <= 0"
+          [attr.aria-busy]="isProcessingPayment()">
+          {{ isProcessingPayment() ? 'Processing...' : 'Confirm Payment' }}
         </button>
-      </div>
+        <button type="button" mat-stroked-button (click)="closePaymentModal()" [disabled]="isProcessingPayment()">Cancel</button>
+      </footer>
     </div>
   </div>
 }
 
+<!-- EDIT PATIENT MODAL -->
+@if (isEditModalOpen()) {
+  <div class="ehr-modal-backdrop" (click)="closeEditModal()">
+    <div
+      class="ehr-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-patient-title"
+      (click)="$event.stopPropagation()">
+      <header class="ehr-modal-header">
+        <div>
+          <h2 id="edit-patient-title">Update Patient Record</h2>
+          <p>Demographics, emergency contact, allergies, and insurance policy</p>
+        </div>
+        <button type="button" mat-icon-button (click)="closeEditModal()" aria-label="Close edit patient modal">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
+
+      <div class="ehr-modal-body modal-form-stack">
+        <h3 class="modal-section-title">Demographics &amp; Identification</h3>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>First Name</mat-label>
+          <input matInput [(ngModel)]="editForm().firstName" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Last Name</mat-label>
+          <input matInput [(ngModel)]="editForm().lastName" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Date of Birth</mat-label>
+          <input matInput type="date" [(ngModel)]="editForm().dateOfBirth">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Gender</mat-label>
+          <mat-select [(ngModel)]="editForm().gender">
+            <mat-option value="Male">Male</mat-option>
+            <mat-option value="Female">Female</mat-option>
+            <mat-option value="Other">Other</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Blood Group</mat-label>
+          <mat-select [(ngModel)]="editForm().bloodGroup">
+            <mat-option value="A+">A+</mat-option>
+            <mat-option value="A-">A-</mat-option>
+            <mat-option value="B+">B+</mat-option>
+            <mat-option value="B-">B-</mat-option>
+            <mat-option value="AB+">AB+</mat-option>
+            <mat-option value="AB-">AB-</mat-option>
+            <mat-option value="O+">O+</mat-option>
+            <mat-option value="O-">O-</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>National ID / SSN</mat-label>
+          <input matInput [(ngModel)]="editForm().nationalId">
+        </mat-form-field>
+
+        <h3 class="modal-section-title">Contact &amp; Address</h3>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Primary Phone</mat-label>
+          <input matInput [(ngModel)]="editForm().phone" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Email Address</mat-label>
+          <input matInput [(ngModel)]="editForm().email" type="email">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Residential Address</mat-label>
+          <input matInput [(ngModel)]="editForm().address">
+        </mat-form-field>
+
+        <h3 class="modal-section-title">Allergies &amp; Emergency Contact</h3>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Documented Allergies</mat-label>
+          <input matInput [(ngModel)]="editForm().allergies" placeholder="e.g. Penicillin, NKDA">
+          <mat-hint>Enter NKDA if no known drug allergies exist.</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Emergency Contact Name</mat-label>
+          <input matInput [(ngModel)]="editForm().emergencyContactName">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Emergency Contact Phone</mat-label>
+          <input matInput [(ngModel)]="editForm().emergencyContactPhone">
+        </mat-form-field>
+
+        <h3 class="modal-section-title">Insurance Coverage</h3>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Insurance Provider</mat-label>
+          <input matInput [(ngModel)]="editForm().insuranceProvider">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Policy / Member ID</mat-label>
+          <input matInput [(ngModel)]="editForm().insurancePolicyNumber">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Coverage Plan Tier</mat-label>
+          <input matInput [(ngModel)]="editForm().insuranceCoveragePlan">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Eligibility Status</mat-label>
+          <mat-select [(ngModel)]="editForm().insuranceEligibilityStatus">
+            <mat-option value="Active / Eligible">Active / Eligible</mat-option>
+            <mat-option value="Pending Verification">Pending Verification</mat-option>
+            <mat-option value="Co-Pay Required">Co-Pay Required</mat-option>
+            <mat-option value="Expired / Inactive">Expired / Inactive</mat-option>
+            <mat-option value="Self-Pay">Self-Pay</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <footer class="ehr-modal-footer">
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="savePatientEdit()"
+          [disabled]="isSavingPatient()"
+          [attr.aria-busy]="isSavingPatient()">
+          {{ isSavingPatient() ? 'Saving Changes...' : 'Save Patient Records' }}
+        </button>
+        <button type="button" mat-stroked-button (click)="closeEditModal()" [disabled]="isSavingPatient()">Cancel</button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- BREAK-GLASS EMERGENCY OVERRIDE MODAL -->
+@if (isBreakGlassModalOpen()) {
+  <div class="ehr-modal-backdrop" (click)="isBreakGlassModalOpen.set(false)">
+    <div
+      class="ehr-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="break-glass-title"
+      (click)="$event.stopPropagation()">
+      <header class="ehr-modal-header modal-header-danger">
+        <div>
+          <h2 id="break-glass-title">Emergency Break-Glass Override</h2>
+          <p>{{ patient()?.firstName }} {{ patient()?.lastName }} · MRN: {{ patient()?.medicalRecordNumber }}</p>
+        </div>
+        <button type="button" mat-icon-button (click)="isBreakGlassModalOpen.set(false)" aria-label="Close break-glass modal">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
+
+      <div class="ehr-modal-body modal-form-stack">
+        <div class="clinical-alert-box alert-danger" role="note">
+          <div>
+            <h3>Audited Under HIPAA §164.312(b)</h3>
+            <p class="alert-sub">Your user identity, timestamp, and clinical justification are permanently logged for compliance review.</p>
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Clinical Emergency Justification</mat-label>
+          <textarea
+            matInput
+            rows="4"
+            [ngModel]="breakGlassReason()"
+            (ngModelChange)="breakGlassReason.set($event)"
+            placeholder="Describe the immediate emergency requiring chart access..."></textarea>
+          <mat-hint>Mandatory clinical context required.</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <footer class="ehr-modal-footer">
+        <button
+          type="button"
+          mat-flat-button
+          class="break-glass-confirm-btn"
+          (click)="triggerBreakGlass()"
+          [disabled]="!breakGlassReason().trim() || isTriggeringBreakGlass()"
+          [attr.aria-busy]="isTriggeringBreakGlass()">
+          {{ isTriggeringBreakGlass() ? 'Logging Override...' : 'Confirm Break-Glass Override' }}
+        </button>
+        <button type="button" mat-stroked-button (click)="isBreakGlassModalOpen.set(false)" [disabled]="isTriggeringBreakGlass()">Cancel</button>
+      </footer>
+    </div>
+  </div>
+}
