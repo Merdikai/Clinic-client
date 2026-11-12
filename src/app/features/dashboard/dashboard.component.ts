@@ -1,43 +1,43 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatChipsModule } from '@angular/material/chips';
-import { RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DashboardService, DashboardSummary } from '../../services/dashboard.service';
 import { LabStore } from '../../store/lab.store';
 import { LiveSyncService } from '../../services/live-sync.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { ToastService } from '../../ui/toast/toast.service';
-import { FormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { AppointmentService } from '../../services/appointment.service';
 import { PrescriptionService } from '../../services/prescription.service';
 import { BillingService } from '../../services/billing.service';
 import { PatientService } from '../../services/patient.service';
 import { NursingService } from '../../services/nursing.service';
 import { VitalSignsService } from '../../services/vital-signs.service';
+import { PermissionService } from '../../services/permission.service';
+import { ReceptionService } from '../../services/reception.service';
+import { PharmacyService, PharmacyMetrics } from '../../services/pharmacy.service';
+import { FinanceService } from '../../services/finance.service';
+import { RadiologyService } from '../../services/radiology.service';
 import { Patient } from '../../models/patient.model';
 import { Appointment } from '../../models/appointment.model';
 import { Prescription } from '../../models/prescription.model';
 import { Invoice } from '../../models/billing.model';
 import { ShiftHandover } from '../../models/nursing.model';
-import { PermissionService } from '../../services/permission.service';
-import { ReceptionService } from '../../services/reception.service';
-import { PharmacyService, PharmacyMetrics } from '../../services/pharmacy.service';
 import { Medicine } from '../../models/medicine.model';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DailyCashSummary, VisitorInquiry, MpiLookupResult } from '../../models/reception.model';
-import { FinanceService } from '../../services/finance.service';
 import { FinanceDashboardMetrics } from '../../models/finance.model';
-import { RadiologyService } from '../../services/radiology.service';
 import { RadiologyMetrics, RadiologyOrder } from '../../models/radiology.model';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -45,18 +45,21 @@ import { RadiologyMetrics, RadiologyOrder } from '../../models/radiology.model';
   imports: [
     CommonModule,
     FormsModule,
-    MatCardModule,
+    RouterLink,
     MatIconModule,
     MatButtonModule,
-    MatProgressBarModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatTooltipModule,
-    RouterLink
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
+  host: {
+    '(document:keydown.escape)': 'onEscapeKey()'
+  },
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -76,12 +79,13 @@ export class DashboardComponent implements OnInit {
   private pharmacyService = inject(PharmacyService);
   private financeService = inject(FinanceService);
   private radiologyService = inject(RadiologyService);
+  private notifService = inject(NotificationService);
+  private toast = inject(ToastService);
 
   summary = signal<DashboardSummary | null>(null);
   isLoading = signal(true);
   recentEvents = this.liveSync.globalActivities;
 
-  // Active role signal (considers simulated persona as well)
   userRole = computed(() => {
     return this.permissionService.activeRole() || this.authService.userRoles()[0] || 'Admin';
   });
@@ -93,6 +97,40 @@ export class DashboardComponent implements OnInit {
   isAccountantView = computed(() => {
     const role = this.userRole().toLowerCase();
     return role === 'accountant' || role === 'finance' || role === 'financeofficer';
+  });
+
+  dashboardTitle = computed(() => {
+    switch (this.userRole().toLowerCase()) {
+      case 'doctor': return 'Physician Dashboard';
+      case 'nurse': return 'Nursing & Triage Dashboard';
+      case 'receptionist': return 'Front Desk Dashboard';
+      case 'pharmacist': return 'Dispensary Dashboard';
+      case 'accountant':
+      case 'finance':
+      case 'financeofficer': return 'Finance Dashboard';
+      case 'labtechnician': return 'Laboratory Dashboard';
+      case 'radiologist': return 'Radiology Dashboard';
+      case 'patient': return 'Patient Health Portal';
+      default: return 'Operations Dashboard';
+    }
+  });
+
+  dashboardSubtitle = computed(() => {
+    const user = this.authService.currentUser();
+    const actor = user?.fullName || user?.username || this.userRole();
+    switch (this.userRole().toLowerCase()) {
+      case 'doctor': return `${actor} · Consultations, diagnostics sign-off, and patient panel`;
+      case 'nurse': return `${actor} · Triage intake, vital signs, and SBAR shift handover`;
+      case 'receptionist': return `${actor} · Arrival queue, MPI screening, and daily drawer reconciliation`;
+      case 'pharmacist': return `${actor} · Prescription verification, counter POS, and inventory`;
+      case 'accountant':
+      case 'finance':
+      case 'financeofficer': return `${actor} · Revenue cycle, receivables, payables, and drawer audits`;
+      case 'labtechnician': return `${actor} · Specimen accession queue and diagnostic test profiles`;
+      case 'radiologist': return `${actor} · RIS worklist telemetry, suites, and radiation safety`;
+      case 'patient': return `${actor} · Appointments, prescriptions, and billing summary`;
+      default: return `${actor} · Clinic census, staffing governance, and operational activity`;
+    }
   });
 
   // Radiologist Operations Signals
@@ -124,14 +162,13 @@ export class DashboardComponent implements OnInit {
   patientInvoices = signal<Invoice[]>([]);
   patientLoading = signal(false);
 
-  // Derived patient metrics
-  patientPendingApptsCount = computed(() => 
+  patientPendingApptsCount = computed(() =>
     this.patientAppointments().filter(a => a.status === 'PendingApproval').length
   );
-  patientScheduledApptsCount = computed(() => 
+  patientScheduledApptsCount = computed(() =>
     this.patientAppointments().filter(a => a.status === 'Scheduled').length
   );
-  patientOutstandingBalance = computed(() => 
+  patientOutstandingBalance = computed(() =>
     this.patientInvoices()
       .filter(i => i.status !== 'Paid')
       .reduce((sum, inv) => sum + (inv.balanceDue || inv.totalAmount || 0), 0)
@@ -167,7 +204,6 @@ export class DashboardComponent implements OnInit {
     return h > 0 ? parseFloat((w / (h * h)).toFixed(1)) : 0;
   });
 
-  // Nurse KPIs
   awaitingTriageCount = computed(() =>
     this.nurseAppointments().filter(a => (a.status === 'CheckedIn' || a.status === 'Scheduled') && !a.vitalSigns).length
   );
@@ -184,13 +220,14 @@ export class DashboardComponent implements OnInit {
   receptionTodaySummary = signal<DailyCashSummary | null>(null);
   receptionInquiries = signal<VisitorInquiry[]>([]);
   receptionTodayAppointments = signal<Appointment[]>([]);
+  receptionLoading = signal<boolean>(false);
   mpiSearchQuery = signal<string>('');
   mpiSearchResults = signal<MpiLookupResult[]>([]);
   isSearchingMpi = signal<boolean>(false);
-  
+
   // Drawer Closing Modal
   showDrawerModal = signal<boolean>(false);
-  drawerShift = signal<string>('Morning');
+  drawerShift = signal<string>('Morning Shift');
   drawerCashCounted = signal<number>(0);
   drawerNotes = signal<string>('');
   isSubmittingDrawer = signal<boolean>(false);
@@ -213,7 +250,6 @@ export class DashboardComponent implements OnInit {
   isSubmittingCheckIn = signal<boolean>(false);
   today = new Date();
 
-  // Receptionist KPIs
   receptionCheckInCount = computed(() =>
     this.receptionTodayAppointments().filter(a => a.status === 'CheckedIn' || a.status === 'TriageComplete' || a.status === 'InConsultation' || a.status === 'Completed').length
   );
@@ -227,12 +263,23 @@ export class DashboardComponent implements OnInit {
     this.receptionInquiries().filter(i => i.status === 'Open').length
   );
 
-  private notifService = inject(NotificationService);
-  private toast = inject(ToastService);
-
   isAlertModalOpen = signal(false);
   isSendingAlert = signal(false);
   alertMessage = signal('All medical personnel please be advised: Routine server sync scheduled for tonight.');
+
+  onEscapeKey(): void {
+    if (this.isAlertModalOpen()) {
+      this.closeBroadcastModal();
+    } else if (this.isNurseTriageModalOpen()) {
+      this.closeNurseTriageModal();
+    } else if (this.showDeskCheckInModal()) {
+      this.closeDeskCheckInModal();
+    } else if (this.showDrawerModal()) {
+      this.closeDrawerModal();
+    } else if (this.showNewInquiryModal()) {
+      this.closeInquiryModal();
+    }
+  }
 
   openBroadcastModal() {
     this.isAlertModalOpen.set(true);
@@ -441,14 +488,12 @@ export class DashboardComponent implements OnInit {
 
   loadPatientPortalData() {
     this.patientLoading.set(true);
-    // Fetch current authenticated patient record via /api/v1/patients/me
     this.patientService.getMyProfile().subscribe({
       next: (pat: any) => {
         this.patientProfile.set(pat);
         this.fetchPatientDetails(pat.id);
       },
       error: () => {
-        // Fallback to Alice Patient
         const fallbackPatient = {
           id: 'a11ce000-0000-0000-0000-000000000001',
           firstName: 'Alice',
@@ -469,7 +514,6 @@ export class DashboardComponent implements OnInit {
   }
 
   private fetchPatientDetails(patientId: string) {
-    // 1. Appointments
     this.appointmentService.getAll(1, 20, patientId).subscribe({
       next: (res: any) => {
         const appts = Array.isArray(res) ? res : res?.items || [];
@@ -477,7 +521,6 @@ export class DashboardComponent implements OnInit {
       }
     });
 
-    // 2. Prescriptions
     this.prescriptionService.getPatientPrescriptions(patientId).subscribe({
       next: (rxs: any) => {
         const rxList = Array.isArray(rxs) ? rxs : rxs?.items || [];
@@ -485,7 +528,6 @@ export class DashboardComponent implements OnInit {
       }
     });
 
-    // 3. Invoices
     this.billingService.getInvoicesByPatient(patientId).subscribe({
       next: (invs: any) => {
         const invList = Array.isArray(invs) ? invs : invs?.items || [];
@@ -524,8 +566,8 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // RECEPTIONIST OPERATIONS METHODS
   loadReceptionData() {
+    this.receptionLoading.set(true);
     this.receptionService.getTodayCashSummary().subscribe({
       next: summary => {
         this.receptionTodaySummary.set(summary);
@@ -545,8 +587,11 @@ export class DashboardComponent implements OnInit {
       next: (res: any) => {
         const appts = Array.isArray(res) ? res : res?.items || [];
         this.receptionTodayAppointments.set(appts);
+        this.receptionLoading.set(false);
       },
-      error: () => {}
+      error: () => {
+        this.receptionLoading.set(false);
+      }
     });
   }
 
@@ -645,7 +690,7 @@ export class DashboardComponent implements OnInit {
         this.closeDrawerModal();
         const discrepancy = res.discrepancyAmount;
         if (Math.abs(discrepancy) < 0.01) {
-          this.toast.success('Daily Cash Drawer closed successfully! Register is perfectly balanced.');
+          this.toast.success('Daily Cash Drawer closed successfully! Register is balanced.');
         } else {
           this.toast.warning(`Daily Cash Drawer closed with discrepancy of $${discrepancy.toFixed(2)}. Logged for audit.`);
         }
@@ -708,7 +753,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // PHARMACIST OPERATIONS METHODS
   loadPharmacyData() {
     this.pharmacyLoading.set(true);
     this.pharmacyService.getMetrics().subscribe({
@@ -731,7 +775,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // ACCOUNTANT OPERATIONS METHODS
   loadAccountantData() {
     this.financeLoading.set(true);
     this.financeService.getMetrics().subscribe({
@@ -743,7 +786,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // RADIOLOGIST OPERATIONS METHODS
   fallbackRadiologyOrders: RadiologyOrder[] = [
     {
       id: 'rad-seed-01',
