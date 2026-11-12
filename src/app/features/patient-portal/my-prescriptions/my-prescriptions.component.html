@@ -1,8 +1,5 @@
 <div class="prescriptions-container">
-  <app-page-header
-    title="My Prescriptions &amp; Medication Queue"
-    [subtitle]="pageSubtitle()"
-  >
+  <app-page-header title="My Prescriptions &amp; Medication Queue" [subtitle]="pageSubtitle()">
     <div actions>
       <a mat-flat-button color="primary" routerLink="/appointments/book">
         Book Consultation / Refill
@@ -33,155 +30,144 @@
   </section>
 
   @if (isLoading()) {
-    <div class="skeleton-stack" aria-busy="true" aria-label="Retrieving medication records">
-      <app-skeleton variant="card" [count]="3" />
-    </div>
+  <div class="skeleton-stack" aria-busy="true" aria-label="Retrieving medication records">
+    <app-skeleton variant="card" [count]="3" />
+  </div>
   } @else if (prescriptions().length === 0) {
-    <app-empty-state
-      icon="medication"
-      title="No Prescriptions on File"
-      message="You have no active prescriptions or medication orders at this time."
-    >
-      <a mat-flat-button color="primary" routerLink="/appointments/book">Book Consultation</a>
-    </app-empty-state>
+  <app-empty-state icon="medication" title="No Prescriptions on File"
+    message="You have no active prescriptions or medication orders at this time.">
+    <a mat-flat-button color="primary" routerLink="/appointments/book">Book Consultation</a>
+  </app-empty-state>
   } @else {
-    <div class="rx-card-list">
-      @for (rx of prescriptions(); track rx.id || $index) {
-        <article class="rx-item-card">
-          <div class="rx-item-top">
-            <div class="doctor-meta">
-              <h2>{{ rx.doctorName || 'Prescribing Physician (General Practice)' }}</h2>
-              <span class="rx-date">
-                Prescribed on {{ (rx.issuedAt || rx.createdAt) | date:'fullDate' }}
-              </span>
-            </div>
-            <app-status-chip
-              [status]="rx.isDispensed ? 'Dispensed' : 'Ready'"
-              [label]="rx.isDispensed ? 'Dispensed' : 'Ready for Pickup'"
-            />
-          </div>
+  <div class="rx-card-list">
+    @for (rx of prescriptions(); track rx.id || $index) {
+    <article class="rx-item-card">
+      <div class="rx-item-top">
+        <div class="doctor-meta">
+          <h2>{{ rx.doctorName || 'Prescribing Physician (General Practice)' }}</h2>
+          <span class="rx-date">
+            Prescribed on {{ (rx.issuedAt || rx.createdAt) | date:'fullDate' }}
+          </span>
+        </div>
+        <app-status-chip [status]="rx.isDispensed ? 'Dispensed' : 'Ready'"
+          [label]="rx.isDispensed ? 'Dispensed' : 'Ready for Pickup'" />
+      </div>
 
-          <div class="rx-meds-list">
-            @for (item of (rx.items?.length ? rx.items : [{
-              medicineName: rx.medicineName || 'Cetirizine 10mg',
-              quantity: rx.quantity || 2,
-              dosageInstructions: rx.dosageInstructions || '1 tablet once daily in the evening after food for 14 days'
-            }]); track $index) {
-              <div class="med-item-row">
-                <div class="med-name-col">
-                  <h3>{{ item.medicineName }}</h3>
-                  <span class="med-qty">Quantity Prescribed: <strong>{{ item.quantity }} units</strong></span>
-                </div>
-                <div class="med-dosage-col">
-                  <span class="dosage-label">Dosage &amp; Instructions</span>
-                  <p class="dosage-text">{{ item.dosageInstructions || '1 tablet once daily in the evening after food for 14 days' }}</p>
-                </div>
-              </div>
-            }
+      <div class="rx-meds-list">
+        @for (item of (rx.items?.length ? rx.items : [{
+        medicineName: rx.medicineName || 'Cetirizine 10mg',
+        quantity: rx.quantity || 2,
+        dosageInstructions: rx.dosageInstructions || '1 tablet once daily in the evening after food for 14 days'
+        }]); track $index) {
+        <div class="med-item-row">
+          <div class="med-name-col">
+            <h3>{{ item.medicineName }}</h3>
+            <span class="med-qty">Quantity Prescribed: <strong>{{ item.quantity }} units</strong></span>
           </div>
-
-          @if (rx.notes) {
-            <div class="rx-notes-box">
-              <span class="notes-label">Physician Advisory</span>
-              <p class="notes-text">{{ rx.notes }}</p>
-            </div>
-          }
-
-          <div class="rx-card-footer">
-            <button mat-stroked-button color="primary" type="button" (click)="openDetailModal(rx)">
-              View Full Regimen &amp; Instructions
-            </button>
+          <div class="med-dosage-col">
+            <span class="dosage-label">Dosage &amp; Instructions</span>
+            <p class="dosage-text">{{ item.dosageInstructions || '1 tablet once daily in the evening after food for 14
+              days' }}</p>
           </div>
-        </article>
+        </div>
+        }
+      </div>
+
+      @if (rx.notes) {
+      <div class="rx-notes-box">
+        <span class="notes-label">Physician Advisory</span>
+        <p class="notes-text">{{ rx.notes }}</p>
+      </div>
       }
-    </div>
+
+      <div class="rx-card-footer">
+        <button mat-stroked-button color="primary" type="button" (click)="openDetailModal(rx)">
+          View Full Regimen &amp; Instructions
+        </button>
+      </div>
+    </article>
+    }
+  </div>
   }
 
   @if (isDetailModalOpen()) {
-    <div class="modal-backdrop" (click)="closeDetailModal()">
-      <div
-        class="modal-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rx-detail-title"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="modal-header">
-          <div>
-            <h2 id="rx-detail-title">E-Prescription &amp; Pharmacy Details</h2>
-            <p>Prescribed by {{ selectedPrescription()?.doctorName || 'Attending Physician' }}</p>
+  <div class="modal-backdrop" (click)="closeDetailModal()">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rx-detail-title"
+      (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2 id="rx-detail-title">E-Prescription &amp; Pharmacy Details</h2>
+          <p>Prescribed by {{ selectedPrescription()?.doctorName || 'Attending Physician' }}</p>
+        </div>
+        <button mat-icon-button type="button" aria-label="Close prescription details" (click)="closeDetailModal()">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </div>
+
+      @if (selectedPrescription(); as rx) {
+      <div class="modal-body">
+        <dl class="rx-modal-meta-grid">
+          <div class="meta-item">
+            <dt>Prescription ID</dt>
+            <dd class="font-mono">{{ rx.id ? (rx.id | slice:0:8) : 'RX-PORTAL' }}</dd>
           </div>
-          <button mat-icon-button type="button" aria-label="Close prescription details" (click)="closeDetailModal()">
-            <mat-icon aria-hidden="true">close</mat-icon>
-          </button>
+          <div class="meta-item">
+            <dt>Date Issued</dt>
+            <dd>{{ (rx.issuedAt || rx.createdAt) | date:'mediumDate' }}</dd>
+          </div>
+          <div class="meta-item">
+            <dt>Dispensing Status</dt>
+            <dd>
+              <app-status-chip [status]="rx.isDispensed ? 'Dispensed' : 'Ready'"
+                [label]="rx.isDispensed ? 'Dispensed' : 'Ready for Pickup'" />
+            </dd>
+          </div>
+          @if (rx.dispensedAt) {
+          <div class="meta-item">
+            <dt>Dispensed Date</dt>
+            <dd>{{ rx.dispensedAt | date:'mediumDate' }}</dd>
+          </div>
+          }
+        </dl>
+
+        <h3 class="modal-subheading">Prescribed Medications</h3>
+        <div class="modal-meds-list">
+          @for (item of (rx.items?.length ? rx.items : [rx]); track $index) {
+          <div class="modal-med-row">
+            <div class="med-info">
+              <strong>{{ item.medicineName || rx.medicineName || 'Prescribed Drug' }}</strong>
+              @if (item.genericName) {
+              <span class="generic-name">Generic: {{ item.genericName }}</span>
+              }
+              <span class="instructions-text">
+                Instructions: {{ item.dosageInstructions || 'Take as directed by your physician' }}
+              </span>
+            </div>
+            <span class="med-qty-badge">Qty: {{ item.quantity || 1 }}</span>
+          </div>
+          }
         </div>
 
-        @if (selectedPrescription(); as rx) {
-          <div class="modal-body">
-            <dl class="rx-modal-meta-grid">
-              <div class="meta-item">
-                <dt>Prescription ID</dt>
-                <dd class="font-mono">{{ rx.id ? (rx.id | slice:0:8) : 'RX-PORTAL' }}</dd>
-              </div>
-              <div class="meta-item">
-                <dt>Date Issued</dt>
-                <dd>{{ (rx.issuedAt || rx.createdAt) | date:'mediumDate' }}</dd>
-              </div>
-              <div class="meta-item">
-                <dt>Dispensing Status</dt>
-                <dd>
-                  <app-status-chip
-                    [status]="rx.isDispensed ? 'Dispensed' : 'Ready'"
-                    [label]="rx.isDispensed ? 'Dispensed' : 'Ready for Pickup'"
-                  />
-                </dd>
-              </div>
-              @if (rx.dispensedAt) {
-                <div class="meta-item">
-                  <dt>Dispensed Date</dt>
-                  <dd>{{ rx.dispensedAt | date:'mediumDate' }}</dd>
-                </div>
-              }
-            </dl>
-
-            <h3 class="modal-subheading">Prescribed Medications</h3>
-            <div class="modal-meds-list">
-              @for (item of (rx.items?.length ? rx.items : [rx]); track $index) {
-                <div class="modal-med-row">
-                  <div class="med-info">
-                    <strong>{{ item.medicineName || rx.medicineName || 'Prescribed Drug' }}</strong>
-                    @if (item.genericName) {
-                      <span class="generic-name">Generic: {{ item.genericName }}</span>
-                    }
-                    <span class="instructions-text">
-                      Instructions: {{ item.dosageInstructions || 'Take as directed by your physician' }}
-                    </span>
-                  </div>
-                  <span class="med-qty-badge">Qty: {{ item.quantity || 1 }}</span>
-                </div>
-              }
-            </div>
-
-            @if (rx.notes) {
-              <div class="modal-advisory-box">
-                <span class="lbl">Physician Advisory</span>
-                <p>{{ rx.notes }}</p>
-              </div>
-            }
-
-            @if (rx.verificationNotes) {
-              <div class="modal-advisory-box">
-                <span class="lbl">Pharmacist Notes</span>
-                <p>{{ rx.verificationNotes }}</p>
-              </div>
-            }
-          </div>
+        @if (rx.notes) {
+        <div class="modal-advisory-box">
+          <span class="lbl">Physician Advisory</span>
+          <p>{{ rx.notes }}</p>
+        </div>
         }
 
-        <div class="modal-actions">
-          <button mat-flat-button color="primary" type="button" (click)="closeDetailModal()">Close</button>
+        @if (rx.verificationNotes) {
+        <div class="modal-advisory-box">
+          <span class="lbl">Pharmacist Notes</span>
+          <p>{{ rx.verificationNotes }}</p>
         </div>
+        }
+      </div>
+      }
+
+      <div class="modal-actions">
+        <button mat-flat-button color="primary" type="button" (click)="closeDetailModal()">Close</button>
       </div>
     </div>
+  </div>
   }
 </div>

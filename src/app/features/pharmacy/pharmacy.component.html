@@ -1,625 +1,600 @@
-<div class="pharmacy-container page-container">
-  <!-- TOP HEADER -->
-  <div class="header-glass-card">
-    <div class="pharmacy-header">
-      <div>
-        <div class="badge-row">
-          <span class="clinical-dept-badge">
-            <mat-icon>local_pharmacy</mat-icon> Central Dispensary & Clinical Formulary
-          </span>
-          @if (isPharmacist()) {
-            <span class="role-auth-badge">
-              <mat-icon>verified_user</mat-icon> Licensed Pharmacist Session
-            </span>
-          }
-        </div>
-        <h1 class="page-title">
-          {{ isPatient() ? 'My Prescribed Medications' : (isDoctor() ? 'Clinical Medication Formulary' : (isNurse() ? 'Medication Administration Reference' : 'Pharmacy & Dispensary Control')) }}
-        </h1>
-        <p class="page-subtitle">
-          {{ isPatient() ? 'Track your active prescriptions, dosage schedules, and pharmacy fulfillment status' : (isNurse() ? 'Reference standard dosages, routes of administration, and inspect patient medication queues' : (isDoctor() ? 'Institutional hospital formulary, therapeutic drug classifications, dosage strengths, and pharmacy stock availability' : 'Prescription fulfillment, dispensary POS billing, 12-category formulary inventory, and controlled substance audit')) }}
-        </p>
-      </div>
-
+<div class="pharmacy-container">
+  <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()">
+    <div actions class="header-actions">
       @if (isDoctor()) {
-        <div class="header-actions">
-          <button mat-stroked-button class="header-action-btn" (click)="navigateToConsultations()">
-            <mat-icon>stethoscope</mat-icon> My Consultations & Rx
-          </button>
-        </div>
+        <button mat-stroked-button type="button" (click)="navigateToConsultations()">
+          My Consultations &amp; Rx
+        </button>
       } @else if (canManageInventory()) {
-        <div class="header-actions">
-          <button mat-stroked-button class="header-action-btn" (click)="openRequisitionModal()">
-            <mat-icon>add_shopping_cart</mat-icon> New Requisition / PO
-          </button>
-          <button mat-flat-button color="primary" class="header-action-btn primary" (click)="toggleAddMedicine()">
-            <mat-icon>{{ showAddMedicine() ? 'close' : 'add_circle' }}</mat-icon>
-            <span>{{ showAddMedicine() ? 'Close Form' : 'Register Medicine' }}</span>
-          </button>
-        </div>
+        <button mat-stroked-button type="button" (click)="openRequisitionModal()">
+          New Requisition / PO
+        </button>
+        <button mat-flat-button color="primary" type="button" (click)="toggleAddMedicine()">
+          {{ showAddMedicine() ? 'Close Form' : 'Register Medicine' }}
+        </button>
       }
     </div>
+  </app-page-header>
 
-    <!-- METRICS KPI RIBBON -->
-    @if (isDoctor() || isNurse()) {
-      <div class="kpi-ribbon doctor-kpi-ribbon">
-        <div class="kpi-card formulary-total" (click)="selectedCategory.set('All'); filterInStockOnly.set(false); filterControlledOnly.set(false)">
-          <div class="kpi-icon-wrapper teal">
-            <mat-icon>medication</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Approved Medications</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ doctorFormularyMetrics().totalCount }}</strong>
-              <span class="kpi-trend good">Formulary Listed</span>
-            </div>
-          </div>
-        </div>
+  @if (isDoctor() || isNurse()) {
+    @if (medicineStore.isLoading()) {
+      <div class="kpi-ribbon" aria-busy="true" aria-label="Loading formulary metrics">
+        <app-skeleton variant="card" [count]="4" />
+      </div>
+    } @else {
+      <section class="kpi-ribbon" aria-label="Formulary overview">
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="resetFormularyFilters()"
+        >
+          <span class="kpi-label">Approved Medications</span>
+          <span class="kpi-value">{{ doctorFormularyMetrics().totalCount }}</span>
+          <span class="kpi-sub">Formulary listed</span>
+        </button>
 
-        <div class="kpi-card in-stock-kpi" (click)="filterInStockOnly.set(true)">
-          <div class="kpi-icon-wrapper green">
-            <mat-icon>check_circle</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Available In Dispensary</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ doctorFormularyMetrics().inStockCount }}</strong>
-              <span class="kpi-trend good">Ready to Dispense</span>
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          class="kpi-card"
+          [class.active-kpi]="filterInStockOnly()"
+          [attr.aria-pressed]="filterInStockOnly()"
+          (click)="filterInStockOnly.update(v => !v)"
+        >
+          <span class="kpi-label">Available In Dispensary</span>
+          <span class="kpi-value">{{ doctorFormularyMetrics().inStockCount }}</span>
+          <span class="kpi-sub">Ready to dispense</span>
+        </button>
 
-        <div class="kpi-card low-stock-kpi" (click)="filterLowStockOnly.update(v => !v)">
-          <div class="kpi-icon-wrapper amber">
-            <mat-icon>warning</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Limited Supply</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ doctorFormularyMetrics().lowStockCount }}</strong>
-              <span class="kpi-trend warn">Low Inventory</span>
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          class="kpi-card"
+          [class.active-kpi]="filterLowStockOnly()"
+          [attr.aria-pressed]="filterLowStockOnly()"
+          (click)="filterLowStockOnly.update(v => !v)"
+        >
+          <span class="kpi-label">Limited Supply</span>
+          <span class="kpi-value">{{ doctorFormularyMetrics().lowStockCount }}</span>
+          <span class="kpi-sub">Low inventory</span>
+        </button>
 
-        <div class="kpi-card controlled-kpi" (click)="filterControlledOnly.update(v => !v)">
-          <div class="kpi-icon-wrapper purple">
-            <mat-icon>shield_locked</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Controlled Substances</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ doctorFormularyMetrics().controlledCount }}</strong>
-              <span class="kpi-trend purple">Schedule II-IV</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="kpi-card categories-kpi">
-          <div class="kpi-icon-wrapper blue">
-            <mat-icon>category</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Therapeutic Classes</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">12</strong>
-              <span class="kpi-trend good">Specialties</span>
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          class="kpi-card"
+          [class.active-kpi]="filterControlledOnly()"
+          [attr.aria-pressed]="filterControlledOnly()"
+          (click)="filterControlledOnly.update(v => !v)"
+        >
+          <span class="kpi-label">Controlled Substances</span>
+          <span class="kpi-value">{{ doctorFormularyMetrics().controlledCount }}</span>
+          <span class="kpi-sub">Schedule II–IV</span>
+        </button>
+      </section>
+    }
+  } @else {
+    @if (loadingMetrics()) {
+      <div class="kpi-ribbon" aria-busy="true" aria-label="Loading dispensary metrics">
+        <app-skeleton variant="card" [count]="4" />
       </div>
     } @else if (metrics(); as m) {
-      <div class="kpi-ribbon">
-        <div class="kpi-card pending-rx" (click)="onTabChange(0); rxStatusFilter.set('Pending'); loadPrescriptions()">
-          <div class="kpi-icon-wrapper amber">
-            <mat-icon>pending_actions</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Pending Rx Queue</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ m.pendingPrescriptionsCount }}</strong>
-              <span class="kpi-trend alert">Awaiting Fulfillment</span>
-            </div>
-          </div>
+      <section class="kpi-ribbon" aria-label="Dispensary metrics">
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="onTabChange(0); rxStatusFilter.set('Pending'); loadPrescriptions()"
+        >
+          <span class="kpi-label">Pending Rx Queue</span>
+          <span class="kpi-value">{{ m.pendingPrescriptionsCount }}</span>
+          <span class="kpi-sub">Awaiting fulfillment</span>
+        </button>
+
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="onTabChange(0); rxStatusFilter.set('Dispensed'); loadPrescriptions()"
+        >
+          <span class="kpi-label">Dispensed Today</span>
+          <span class="kpi-value">{{ m.dispensedTodayCount }}</span>
+          <span class="kpi-sub">Completed orders</span>
+        </button>
+
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="onTabChange(2); filterLowStockOnly.set(true)"
+        >
+          <span class="kpi-label">Low Stock Alerts</span>
+          <span class="kpi-value">{{ m.lowStockMedicinesCount }}</span>
+          <span class="kpi-sub">Below reorder level</span>
+        </button>
+
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="onTabChange(2); filterNearExpiryOnly.set(true)"
+        >
+          <span class="kpi-label">Expiring Soon</span>
+          <span class="kpi-value">{{ m.nearExpiryMedicinesCount }}</span>
+          <span class="kpi-sub">&lt; 60 days</span>
+        </button>
+
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="onTabChange(4)"
+        >
+          <span class="kpi-label">Controlled Vault</span>
+          <span class="kpi-value">{{ m.controlledSubstancesCount }}</span>
+          <span class="kpi-sub">Restricted medications</span>
+        </button>
+
+        <button
+          type="button"
+          class="kpi-card"
+          (click)="onTabChange(1)"
+        >
+          <span class="kpi-label">Today's Dispensary Sales</span>
+          <span class="kpi-value">{{ m.todayDispensaryRevenue | currency }}</span>
+          <span class="kpi-sub">POS &amp; Rx revenue</span>
+        </button>
+      </section>
+    }
+  }
+
+  @if (showAddMedicine()) {
+    <section class="section-card" aria-labelledby="medicine-drawer-heading">
+      <div class="drawer-header">
+        <div>
+          <h2 id="medicine-drawer-heading">
+            {{ editingMedicineId() ? 'Edit Formulary Medicine' : 'Register New Medicine in Clinical Formulary' }}
+          </h2>
+          <p>Maintain regulatory specifications, therapeutic classification, stock reorder levels, and storage conditions.</p>
+        </div>
+        @if (editingMedicineId()) {
+          <app-status-chip tone="info" [showIcon]="false" [label]="'Editing #' + editingMedicineId()?.substring(0, 8)" />
+        }
+      </div>
+
+      <form [formGroup]="medicineForm" (ngSubmit)="submitMedicineForm()" class="drawer-form">
+        <div class="form-grid-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Brand / Trade Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. Amoxicillin Clavulanate">
+            @if (medicineForm.get('name')?.hasError('required')) {
+              <mat-error>Name is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Generic / Chemical Name</mat-label>
+            <input matInput formControlName="genericName" placeholder="e.g. Amoxicillin + Clavulanic Acid">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>SKU / Barcode Code</mat-label>
+            <input matInput formControlName="code" placeholder="e.g. MED-AMOX-01">
+            @if (medicineForm.get('code')?.hasError('required')) {
+              <mat-error>Code is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Therapeutic Category</mat-label>
+            <mat-select formControlName="category">
+              @for (cat of formularyCategories.slice(1); track cat) {
+                <mat-option [value]="cat">{{ cat }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Dosage Form</mat-label>
+            <mat-select formControlName="dosageForm">
+              <mat-option value="Tablet">Tablet</mat-option>
+              <mat-option value="Capsule">Capsule</mat-option>
+              <mat-option value="Oral Solution">Oral Solution / Syrup</mat-option>
+              <mat-option value="Injection">Injection / IV Vial</mat-option>
+              <mat-option value="Inhaler (MDI)">Inhaler (MDI)</mat-option>
+              <mat-option value="Topical Cream">Topical Cream / Ointment</mat-option>
+              <mat-option value="Eye / Ear Drops">Eye / Ear Drops</mat-option>
+              <mat-option value="Suppository">Suppository</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Strength / Concentration</mat-label>
+            <input matInput formControlName="strength" placeholder="e.g. 875/125 mg, 500 mg">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Manufacturer / Supplier</mat-label>
+            <input matInput formControlName="manufacturer" placeholder="e.g. Sandoz, Pfizer, GSK">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Current Stock Quantity</mat-label>
+            <input matInput type="number" formControlName="stockQuantity" min="0">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Reorder Threshold Level</mat-label>
+            <input matInput type="number" formControlName="reorderLevel" min="0">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Cost Price ($)</mat-label>
+            <input matInput type="number" formControlName="costPrice" step="0.01" min="0">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Dispensing Unit Price ($)</mat-label>
+            <input matInput type="number" formControlName="unitPrice" step="0.01" min="0.01">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Batch / Lot Number</mat-label>
+            <input matInput formControlName="batchNumber" placeholder="e.g. LOT-2026A">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Expiration Date</mat-label>
+            <input matInput type="date" formControlName="expiryDate">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Storage Conditions</mat-label>
+            <input matInput formControlName="storageConditions" placeholder="e.g. Room Temp (&lt; 25°C)">
+          </mat-form-field>
         </div>
 
-        <div class="kpi-card dispensed-rx" (click)="onTabChange(0); rxStatusFilter.set('Dispensed'); loadPrescriptions()">
-          <div class="kpi-icon-wrapper green">
-            <mat-icon>check_circle</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Dispensed Today</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ m.dispensedTodayCount }}</strong>
-              <span class="kpi-trend good">Completed Orders</span>
-            </div>
-          </div>
+        <div class="drawer-checkbox-row">
+          <mat-checkbox formControlName="isControlledSubstance">
+            Controlled Substance / Narcotic (Requires regulatory double-check and audit log)
+          </mat-checkbox>
+          <mat-checkbox formControlName="isActive">
+            Active Formulary Status (Available for prescribing and POS dispensing)
+          </mat-checkbox>
         </div>
 
-        <div class="kpi-card low-stock" (click)="onTabChange(2); filterLowStockOnly.set(true)">
-          <div class="kpi-icon-wrapper red">
-            <mat-icon>warning</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Low Stock Alerts</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ m.lowStockMedicinesCount }}</strong>
-              <span class="kpi-trend danger">Below Reorder Level</span>
-            </div>
-          </div>
+        <div class="drawer-actions">
+          <button type="submit" mat-flat-button color="primary" [disabled]="medicineForm.invalid || isProcessing()">
+            {{ editingMedicineId() ? 'Update Formulary Item' : 'Register Medicine' }}
+          </button>
+          <button type="button" mat-stroked-button (click)="cancelEdit()">Cancel</button>
         </div>
+      </form>
+    </section>
+  }
 
-        <div class="kpi-card near-expiry" (click)="onTabChange(2); filterNearExpiryOnly.set(true)">
-          <div class="kpi-icon-wrapper orange">
-            <mat-icon>event_busy</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Expiring Soon</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ m.nearExpiryMedicinesCount }}</strong>
-              <span class="kpi-trend warn">&lt; 60 Days</span>
-            </div>
-          </div>
-        </div>
+  @if (isDoctor() || isNurse()) {
+    <section class="formulary-workspace" aria-label="Clinical medication formulary">
+      <nav class="category-chips-scroll" role="tablist" aria-label="Therapeutic categories">
+        @for (cat of formularyCategories; track cat) {
+          <button
+            type="button"
+            role="tab"
+            class="category-tab"
+            [class.active]="selectedCategory() === cat"
+            [attr.aria-selected]="selectedCategory() === cat"
+            (click)="selectedCategory.set(cat)"
+          >
+            {{ cat }}
+          </button>
+        }
+      </nav>
 
-        <div class="kpi-card controlled-kpi" (click)="onTabChange(4)">
-          <div class="kpi-icon-wrapper purple">
-            <mat-icon>shield_locked</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Controlled Substances</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">{{ m.controlledSubstancesCount }}</strong>
-              <span class="kpi-trend purple">Safe Vault Monitored</span>
-            </div>
-          </div>
-        </div>
+      <div class="toolbar-card">
+        <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+          <mat-label>Search Formulary Medications</mat-label>
+          <input
+            matInput
+            type="search"
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+            placeholder="Brand name, generic molecule, class, strength..."
+          >
+        </mat-form-field>
 
-        <div class="kpi-card revenue-kpi" (click)="onTabChange(1)">
-          <div class="kpi-icon-wrapper teal">
-            <mat-icon>payments</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Today's Dispensary Sales</span>
-            <div class="kpi-value-row">
-              <strong class="kpi-value">${{ m.todayDispensaryRevenue.toFixed(2) }}</strong>
-              <span class="kpi-trend good">POS & Rx Sales</span>
-            </div>
-          </div>
+        <div class="toggle-filters">
+          <button
+            type="button"
+            class="filter-toggle-btn"
+            [class.active]="filterInStockOnly()"
+            [attr.aria-pressed]="filterInStockOnly()"
+            (click)="filterInStockOnly.update(v => !v)"
+          >
+            In Stock Only
+          </button>
+          <button
+            type="button"
+            class="filter-toggle-btn"
+            [class.active]="filterControlledOnly()"
+            [attr.aria-pressed]="filterControlledOnly()"
+            (click)="filterControlledOnly.update(v => !v)"
+          >
+            Controlled Substances Only
+          </button>
         </div>
       </div>
-    }
 
-    <!-- ADD / EDIT MEDICINE INLINE DRAWER -->
-    @if (showAddMedicine()) {
-      <div class="content-card inline-drawer mat-elevation-z4">
-        <div class="drawer-header">
-          <div class="drawer-title-box">
-            <mat-icon class="drawer-icon">{{ editingMedicineId() ? 'edit_note' : 'add_circle' }}</mat-icon>
-            <div>
-              <h3>{{ editingMedicineId() ? 'Edit Formulary Medicine' : 'Register New Medicine in Clinical Formulary' }}</h3>
-              <p>Maintain accurate regulatory specifications, therapeutic classification, stock reorder levels, and storage conditions.</p>
-            </div>
-          </div>
-          @if (editingMedicineId()) {
-            <span class="editing-mode-pill">Editing Record: #{{ editingMedicineId()?.substring(0, 8) }}</span>
-          }
+      @if (medicineStore.isLoading()) {
+        <div class="cards-grid" aria-busy="true" aria-label="Loading formulary medications">
+          <app-skeleton variant="card" [count]="6" />
         </div>
-
-        <form [formGroup]="medicineForm" (ngSubmit)="submitMedicineForm()" class="drawer-form">
-          <div class="form-grid-3">
-            <mat-form-field appearance="outline">
-              <mat-label>Brand / Trade Name</mat-label>
-              <input matInput formControlName="name" placeholder="e.g. Augmentin / Amoxicillin Clavulanate">
-              <mat-icon matPrefix>medication</mat-icon>
-              @if (medicineForm.get('name')?.hasError('required')) {
-                <mat-error>Name is required</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Generic / Chemical Name</mat-label>
-              <input matInput formControlName="genericName" placeholder="e.g. Amoxicillin + Clavulanic Acid">
-              <mat-icon matPrefix>science</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>SKU / Barcode Code</mat-label>
-              <input matInput formControlName="code" placeholder="e.g. MED-AMOX-01">
-              <mat-icon matPrefix>qr_code</mat-icon>
-              @if (medicineForm.get('code')?.hasError('required')) {
-                <mat-error>Code is required</mat-error>
-              }
-            </mat-form-field>
-          </div>
-
-          <div class="form-grid-4">
-            <mat-form-field appearance="outline">
-              <mat-label>Therapeutic Category</mat-label>
-              <mat-select formControlName="category">
-                @for (cat of formularyCategories.slice(1); track cat) {
-                  <mat-option [value]="cat">{{ cat }}</mat-option>
-                }
-              </mat-select>
-              <mat-icon matPrefix>category</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Dosage Form</mat-label>
-              <mat-select formControlName="dosageForm">
-                <mat-option value="Tablet">Tablet</mat-option>
-                <mat-option value="Capsule">Capsule</mat-option>
-                <mat-option value="Oral Solution">Oral Solution / Syrup</mat-option>
-                <mat-option value="Injection">Injection / IV Vial</mat-option>
-                <mat-option value="Inhaler (MDI)">Inhaler (MDI)</mat-option>
-                <mat-option value="Topical Cream">Topical Cream / Ointment</mat-option>
-                <mat-option value="Eye / Ear Drops">Eye / Ear Drops</mat-option>
-                <mat-option value="Suppository">Suppository</mat-option>
-              </mat-select>
-              <mat-icon matPrefix>format_shapes</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Strength / Concentration</mat-label>
-              <input matInput formControlName="strength" placeholder="e.g. 875/125 mg, 500 mg, 10 mg/5mL">
-              <mat-icon matPrefix>fitness_center</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Manufacturer / Supplier</mat-label>
-              <input matInput formControlName="manufacturer" placeholder="e.g. Sandoz, Pfizer, GSK">
-              <mat-icon matPrefix>domain</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <div class="form-grid-4">
-            <mat-form-field appearance="outline">
-              <mat-label>Current Stock Quantity</mat-label>
-              <input matInput type="number" formControlName="stockQuantity" min="0">
-              <mat-icon matPrefix>inventory_2</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Reorder Threshold Level</mat-label>
-              <input matInput type="number" formControlName="reorderLevel" min="0">
-              <mat-icon matPrefix>notification_important</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Cost Price ($)</mat-label>
-              <input matInput type="number" formControlName="costPrice" step="0.01" min="0">
-              <mat-icon matPrefix>price_change</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Dispensing Unit Price ($)</mat-label>
-              <input matInput type="number" formControlName="unitPrice" step="0.01" min="0.01">
-              <mat-icon matPrefix>attach_money</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <div class="form-grid-3">
-            <mat-form-field appearance="outline">
-              <mat-label>Batch / Lot Number</mat-label>
-              <input matInput formControlName="batchNumber" placeholder="e.g. LOT-2026A">
-              <mat-icon matPrefix>tag</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Expiration Date</mat-label>
-              <input matInput type="date" formControlName="expiryDate">
-              <mat-icon matPrefix>calendar_today</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Storage Conditions</mat-label>
-              <input matInput formControlName="storageConditions" placeholder="e.g. Room Temp (< 25°C), Refrigerated (2-8°C)">
-              <mat-icon matPrefix>thermostat</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <div class="drawer-checkbox-row">
-            <label class="custom-checkbox">
-              <input type="checkbox" formControlName="isControlledSubstance">
-              <span class="checkmark"></span>
-              <span class="label-text danger-text">
-                <mat-icon>shield_locked</mat-icon>
-                <strong>Controlled Substance / Narcotic</strong> (Requires DEA / Regulatory Double-Check & Safe Log)
-              </span>
-            </label>
-
-            <label class="custom-checkbox">
-              <input type="checkbox" formControlName="isActive">
-              <span class="checkmark"></span>
-              <span class="label-text">
-                <strong>Active Formulary Status</strong> (Available for Physician Prescribing & POS Dispensing)
-              </span>
-            </label>
-          </div>
-
-          <div class="drawer-actions">
-            <button type="button" mat-stroked-button (click)="cancelEdit()">
-              <mat-icon>close</mat-icon> Cancel
-            </button>
-            <button type="submit" mat-flat-button color="primary" [disabled]="medicineForm.invalid || isProcessing()">
-              <mat-icon>{{ editingMedicineId() ? 'save' : 'add' }}</mat-icon>
-              <span>{{ editingMedicineId() ? 'Update Formulary Item' : 'Register Medicine' }}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    }
-
-    @if (isDoctor() || isNurse()) {
-      <!-- DOCTOR/NURSE CLINICAL MEDICATION FORMULARY VIEW (READ-ONLY for Nurses) -->
-      <div class="doctor-formulary-workspace">
-        <!-- 12 Category Filter Chips Bar -->
-        <div class="category-chips-scroll mat-elevation-z1">
-          @for (cat of formularyCategories; track cat) {
-            <button class="category-chip" [class.active]="selectedCategory() === cat" (click)="selectedCategory.set(cat)">
-              <mat-icon class="cat-chip-icon">{{ getCategoryIcon(cat) }}</mat-icon>
-              <span>{{ cat }}</span>
-            </button>
-          }
-        </div>
-
-        <!-- Filter & Search Controls Bar -->
-        <div class="formulary-controls-card mat-elevation-z2">
-          <div class="search-box">
-            <mat-icon>search</mat-icon>
-            <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Search medications by brand name, generic molecule, therapeutic class, strength...">
-          </div>
-
-          <div class="toggle-filters">
-            <button class="toggle-btn" [class.active]="filterInStockOnly()" (click)="filterInStockOnly.update(v => !v)">
-              <mat-icon>check_circle</mat-icon> In Stock Only
-            </button>
-            <button class="toggle-btn" [class.active]="filterControlledOnly()" (click)="filterControlledOnly.update(v => !v)">
-              <mat-icon>shield_locked</mat-icon> Controlled Substances Only
-            </button>
-          </div>
-        </div>
-
-        <!-- Clinical Medication Cards Grid -->
-        <div class="premium-grid doctor-med-grid">
+      } @else if (filteredMedicines().length === 0) {
+        <app-empty-state
+          icon="search_off"
+          title="No Formulary Medications Found"
+          message="No medications matched the selected category or filter criteria."
+        >
+          <button mat-stroked-button color="primary" type="button" (click)="resetFormularyFilters()">
+            Reset Filters
+          </button>
+        </app-empty-state>
+      } @else {
+        <div class="cards-grid">
           @for (med of filteredMedicines(); track med.id) {
-            <div class="premium-card doctor-med-card" [class.controlled-border]="med.isControlledSubstance">
+            <article class="med-card">
               <div class="med-header">
                 <div>
-                  <span class="category-pill">{{ med.category }}</span>
-                  <h3 class="med-trade-name">{{ med.name }}</h3>
+                  <span class="category-label">{{ med.category }}</span>
+                  <h2 class="med-trade-name">{{ med.name }}</h2>
                   @if (med.genericName) {
-                    <span class="generic-sub"><mat-icon>science</mat-icon> {{ med.genericName }}</span>
+                    <span class="generic-sub">{{ med.genericName }}</span>
                   }
                 </div>
-
                 @if (med.isControlledSubstance) {
-                  <span class="narcotic-tag" matTooltip="Controlled Substance — Schedule II-IV strictly monitored">
-                    <mat-icon>shield_locked</mat-icon> Controlled
-                  </span>
+                  <app-status-chip tone="danger" label="Controlled" />
                 }
               </div>
 
               <div class="med-details-body">
                 <div class="meta-row">
-                  <span class="meta-badge"><mat-icon>format_shapes</mat-icon> {{ med.dosageForm || 'Tablet' }}</span>
-                  <span class="meta-badge"><mat-icon>fitness_center</mat-icon> {{ med.strength || 'Standard' }}</span>
-                  <span class="meta-badge code-badge"><mat-icon>qr_code</mat-icon> {{ med.code }}</span>
+                  <span class="meta-badge">{{ med.dosageForm || 'Tablet' }}</span>
+                  <span class="meta-badge">{{ med.strength || 'Standard' }}</span>
+                  <span class="meta-badge font-mono">{{ med.code }}</span>
                 </div>
 
-                <!-- Central Pharmacy Availability Status -->
-                <div class="doc-stock-status">
-                  @if (med.stockQuantity > (med.reorderLevel || 15)) {
-                    <div class="stock-status-pill in-stock">
-                      <mat-icon>check_circle</mat-icon>
-                      <span>In Stock ({{ med.stockQuantity }} units in Central Dispensary)</span>
-                    </div>
-                  } @else if (med.stockQuantity > 0) {
-                    <div class="stock-status-pill low-stock">
-                      <mat-icon>warning</mat-icon>
-                      <span>Limited Stock ({{ med.stockQuantity }} units remaining)</span>
-                    </div>
-                  } @else {
-                    <div class="stock-status-pill out-of-stock">
-                      <mat-icon>cancel</mat-icon>
-                      <span>Out of Stock (Restock in progress)</span>
-                    </div>
-                  }
+                <div>
+                  <app-status-chip
+                    [tone]="getStockTone(med)"
+                    [status]="getStockStatus(med)"
+                    [label]="getStockLabel(med)"
+                  />
                 </div>
 
-                <div class="doc-pricing-storage-row">
-                  <div class="doc-price-box">
-                    <span class="price-lbl">Patient Fee</span>
-                    <strong class="price-val">${{ med.unitPrice.toFixed(2) }}</strong>
-                  </div>
+                <div class="pricing-row">
+                  <span>Patient Fee: <strong>{{ med.unitPrice | currency }}</strong></span>
                   @if (med.storageConditions) {
-                    <div class="doc-storage-box">
-                      <mat-icon>thermostat</mat-icon>
-                      <span>{{ med.storageConditions }}</span>
-                    </div>
+                    <span>{{ med.storageConditions }}</span>
                   }
                 </div>
               </div>
 
-              <!-- Doctor Actions Footer -->
-              <div class="doctor-card-footer">
-                <button mat-stroked-button class="doc-copy-btn" (click)="copyMedicationDetails(med)" matTooltip="Copy drug details to clipboard">
-                  <mat-icon>content_copy</mat-icon> Copy Details
+              <div class="med-card-footer">
+                <button mat-stroked-button type="button" (click)="copyMedicationDetails(med)">
+                  Copy Details
                 </button>
-                <button mat-flat-button color="primary" class="doc-prescribe-btn" (click)="navigateToConsultations()" matTooltip="Prescribe in active consultation">
-                  <mat-icon>stethoscope</mat-icon> Prescribe
-                </button>
+                @if (isDoctor()) {
+                  <button mat-flat-button color="primary" type="button" (click)="navigateToConsultations()">
+                    Prescribe
+                  </button>
+                }
               </div>
-            </div>
+            </article>
           }
         </div>
+      }
+    </section>
+  } @else {
+    <nav class="workspace-tabs" role="tablist" aria-label="Pharmacy operations">
+      <button
+        type="button"
+        role="tab"
+        class="workspace-tab"
+        [class.active]="selectedTabIndex() === 0"
+        [attr.aria-selected]="selectedTabIndex() === 0"
+        (click)="onTabChange(0)"
+      >
+        <span>Prescription Queue</span>
+        <span class="tab-count">{{ metrics()?.pendingPrescriptionsCount || 0 }}</span>
+      </button>
 
-        @if (filteredMedicines().length === 0) {
-          <div class="empty-state-card">
-            <mat-icon>search_off</mat-icon>
-            <h3>No Formulary Medications Found</h3>
-            <p>No medications matched the selected category or filter criteria.</p>
-            <button mat-stroked-button color="primary" (click)="selectedCategory.set('All'); searchTerm.set(''); filterInStockOnly.set(false); filterControlledOnly.set(false)">
-              <mat-icon>refresh</mat-icon> Reset Filters
-            </button>
-          </div>
-        }
-      </div>
-    } @else {
-      <!-- 5-TAB SUITE (For Pharmacists and Staff) -->
-      <mat-tab-group [selectedIndex]="selectedTabIndex()" (selectedIndexChange)="onTabChange($event)" class="modern-tabs" animationDuration="200ms">
-      
-      <!-- ========================================== -->
-      <!-- TAB 1: PRESCRIPTION DISPENSARY QUEUE -->
-      <!-- ========================================== -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <div class="custom-tab-label">
-            <mat-icon class="tab-icon primary-color">local_pharmacy</mat-icon>
-            <span class="premium-tab-text">Prescription Orders Queue</span>
-            <span class="premium-badge alert-badge">{{ metrics()?.pendingPrescriptionsCount || 0 }}</span>
-          </div>
-        </ng-template>
+      <button
+        type="button"
+        role="tab"
+        class="workspace-tab"
+        [class.active]="selectedTabIndex() === 1"
+        [attr.aria-selected]="selectedTabIndex() === 1"
+        (click)="onTabChange(1)"
+      >
+        <span>Dispensary Cashier &amp; POS</span>
+      </button>
 
-        <div class="tab-content">
-          <!-- Queue Toolbar -->
-          <div class="queue-toolbar-card mat-elevation-z2">
-            <div class="toolbar-left">
-              <div class="search-box">
-                <mat-icon>search</mat-icon>
-                <input [ngModel]="prescriptionSearch()" (ngModelChange)="prescriptionSearch.set($event)" placeholder="Search by patient name, MRN, Dr. name, or Rx ID...">
-              </div>
+      <button
+        type="button"
+        role="tab"
+        class="workspace-tab"
+        [class.active]="selectedTabIndex() === 2"
+        [attr.aria-selected]="selectedTabIndex() === 2"
+        (click)="onTabChange(2)"
+      >
+        <span>Drug Formulary Catalog</span>
+        <span class="tab-count">{{ filteredMedicines().length }}</span>
+      </button>
 
-              <!-- Status Filters -->
-              <div class="status-chip-group">
-                <button class="status-chip" [class.active]="rxStatusFilter() === 'Pending'" (click)="rxStatusFilter.set('Pending'); loadPrescriptions()">
-                  <span class="chip-dot amber"></span> Pending Orders ({{ metrics()?.pendingPrescriptionsCount || 0 }})
+      <button
+        type="button"
+        role="tab"
+        class="workspace-tab"
+        [class.active]="selectedTabIndex() === 3"
+        [attr.aria-selected]="selectedTabIndex() === 3"
+        (click)="onTabChange(3)"
+      >
+        <span>Stock Requisitions &amp; POs</span>
+        <span class="tab-count">{{ requisitions().length }}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="workspace-tab"
+        [class.active]="selectedTabIndex() === 4"
+        [attr.aria-selected]="selectedTabIndex() === 4"
+        (click)="onTabChange(4)"
+      >
+        <span>Controlled Substances Audit</span>
+        <span class="tab-count">{{ controlledLogs().length }}</span>
+      </button>
+    </nav>
+
+    @switch (selectedTabIndex()) {
+      <!-- TAB 0: PRESCRIPTION DISPENSARY QUEUE -->
+      @case (0) {
+        <section class="tab-panel" aria-label="Prescription orders queue">
+          <div class="toolbar-card">
+            <div class="toolbar-group">
+              <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+                <mat-label>Search Prescription Queue</mat-label>
+                <input
+                  matInput
+                  type="search"
+                  [ngModel]="prescriptionSearch()"
+                  (ngModelChange)="prescriptionSearch.set($event)"
+                  placeholder="Patient name, MRN, prescriber, Rx ID..."
+                >
+              </mat-form-field>
+
+              <div class="toggle-filters" role="group" aria-label="Filter prescriptions by status">
+                <button
+                  type="button"
+                  class="filter-toggle-btn"
+                  [class.active]="rxStatusFilter() === 'Pending'"
+                  [attr.aria-pressed]="rxStatusFilter() === 'Pending'"
+                  (click)="rxStatusFilter.set('Pending'); loadPrescriptions()"
+                >
+                  Pending ({{ metrics()?.pendingPrescriptionsCount || 0 }})
                 </button>
-                <button class="status-chip" [class.active]="rxStatusFilter() === 'Dispensed'" (click)="rxStatusFilter.set('Dispensed'); loadPrescriptions()">
-                  <span class="chip-dot green"></span> Dispensed Orders
+                <button
+                  type="button"
+                  class="filter-toggle-btn"
+                  [class.active]="rxStatusFilter() === 'Dispensed'"
+                  [attr.aria-pressed]="rxStatusFilter() === 'Dispensed'"
+                  (click)="rxStatusFilter.set('Dispensed'); loadPrescriptions()"
+                >
+                  Dispensed
                 </button>
-                <button class="status-chip" [class.active]="rxStatusFilter() === 'All'" (click)="rxStatusFilter.set('All'); loadPrescriptions()">
-                  <span class="chip-dot gray"></span> All Orders
+                <button
+                  type="button"
+                  class="filter-toggle-btn"
+                  [class.active]="rxStatusFilter() === 'All'"
+                  [attr.aria-pressed]="rxStatusFilter() === 'All'"
+                  (click)="rxStatusFilter.set('All'); loadPrescriptions()"
+                >
+                  All Orders
                 </button>
               </div>
             </div>
 
-            <!-- Quick Barcode Dispense -->
-            <div class="toolbar-right">
-              <div class="quick-code-box">
-                <mat-icon>qr_code_scanner</mat-icon>
-                <input [ngModel]="quickRxCodeInput()" (ngModelChange)="quickRxCodeInput.set($event)" (keyup.enter)="quickDispenseByInput()" placeholder="Scan Rx Barcode...">
-                <button mat-flat-button color="primary" [disabled]="!quickRxCodeInput() || isProcessing()" (click)="quickDispenseByInput()">
-                  Dispense
-                </button>
-              </div>
+            <div class="barcode-dispense-row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Scan Rx Barcode</mat-label>
+                <input
+                  matInput
+                  [ngModel]="quickRxCodeInput()"
+                  (ngModelChange)="quickRxCodeInput.set($event)"
+                  (keyup.enter)="quickDispenseByInput()"
+                  placeholder="Enter or scan Rx code"
+                >
+              </mat-form-field>
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                [disabled]="!quickRxCodeInput() || isProcessing()"
+                (click)="quickDispenseByInput()"
+              >
+                Dispense
+              </button>
             </div>
           </div>
 
-          <!-- Loading State -->
           @if (loadingPrescriptions()) {
-            <div class="queue-loading-state">
-              <mat-spinner diameter="36"></mat-spinner>
-              <span>Loading prescriptions...</span>
+            <div class="cards-grid" aria-busy="true" aria-label="Loading prescriptions">
+              <app-skeleton variant="card" [count]="4" />
             </div>
-          }
-
-          <!-- Prescriptions Grid -->
-          <div class="premium-grid rx-queue-grid">
-            @for (rx of filteredPrescriptions(); track rx.id) {
-              <div class="premium-card rx-card" [class.dispensed-card]="rx.status === 'Dispensed'">
-                <!-- Header -->
-                <div class="rx-card-header">
-                  <div class="rx-id-block">
-                    <span class="rx-badge" [class.dispensed-badge]="rx.status === 'Dispensed'">
-                      <mat-icon>{{ rx.status === 'Dispensed' ? 'check_circle' : 'pending_actions' }}</mat-icon>
-                    </span>
+          } @else if (filteredPrescriptions().length === 0) {
+            <app-empty-state
+              icon="inventory_2"
+              title="No Prescriptions in This Queue"
+              message="All prescription orders for the selected filter have been fulfilled or none matched."
+            />
+          } @else {
+            <div class="cards-grid">
+              @for (rx of filteredPrescriptions(); track rx.id) {
+                <article class="rx-card">
+                  <div class="rx-card-header">
                     <div>
-                      <strong class="rx-code">RX-{{ rx.id.substring(0, 8).toUpperCase() }}</strong>
-                      <span class="rx-time">{{ rx.issuedAt | date:'MMM d, y, h:mm a' }}</span>
+                      <strong class="font-mono">RX-{{ rx.id.substring(0, 8).toUpperCase() }}</strong>
+                      <div class="rx-time">{{ rx.issuedAt | date:'MMM d, y, h:mm a' }}</div>
                     </div>
+                    <app-status-chip [status]="rx.status || 'Pending'" />
                   </div>
 
-                  <span class="status-pill" [class.dispensed]="rx.status === 'Dispensed'" [class.pending]="rx.status === 'Pending'">
-                    <span class="status-indicator" [class.pulse]="rx.status === 'Pending'"></span>
-                    {{ rx.status }}
-                  </span>
-                </div>
-
-                <!-- Patient & Safety Details -->
-                <div class="rx-card-body">
                   <div class="patient-safety-box">
-                    <div class="patient-row">
-                      <div class="avatar-circle">
-                        {{ rx.patientName.charAt(0) }}
-                      </div>
-                      <div class="patient-meta">
-                        <strong class="patient-name">{{ rx.patientName }}</strong>
-                        <span class="patient-mrn">MRN: {{ rx.patientMrn }}</span>
-                      </div>
+                    <div>
+                      <strong class="patient-name">{{ rx.patientName }}</strong>
+                      <span class="patient-mrn"> · MRN: {{ rx.patientMrn }}</span>
                     </div>
 
                     @if (rx.patientAllergies) {
-                      <div class="allergy-alert-pill">
-                        <mat-icon>warning</mat-icon>
-                        <span>Allergies: <strong>{{ rx.patientAllergies }}</strong></span>
-                      </div>
+                      <app-status-chip tone="warning" [label]="'Allergies: ' + rx.patientAllergies" />
                     } @else {
-                      <div class="no-allergy-pill">
-                        <mat-icon>check</mat-icon>
-                        <span>No Known Drug Allergies (NKDA)</span>
-                      </div>
+                      <app-status-chip tone="success" label="NKDA (No Known Drug Allergies)" />
                     }
                   </div>
 
-                  <div class="doctor-row">
-                    <mat-icon>stethoscope</mat-icon>
-                    <span>Prescribed by: <strong>{{ rx.doctorName }}</strong></span>
-                  </div>
+                  <p class="doctor-row">
+                    Prescribed by: <strong>{{ rx.doctorName }}</strong>
+                  </p>
 
                   @if (rx.notes) {
-                    <div class="clinical-rx-note">
-                      <mat-icon>chat_bubble_outline</mat-icon>
-                      <span><em>Doctor's Instructions:</em> {{ rx.notes }}</span>
-                    </div>
+                    <p class="clinical-rx-note">
+                      <strong>Instructions:</strong> {{ rx.notes }}
+                    </p>
                   }
 
-                  <!-- Medication Items List -->
                   <div class="rx-items-section">
                     <div class="rx-items-header">
                       <span>Prescribed Items ({{ rx.items.length }})</span>
-                      <span class="rx-total-val">Total: ${{ rx.totalAmount?.toFixed(2) || '0.00' }}</span>
+                      <strong>Total: {{ rx.totalAmount | currency }}</strong>
                     </div>
 
                     <div class="rx-items-list">
                       @for (item of rx.items; track item.id) {
-                        <div class="rx-item-row" [class.controlled-item]="item.isControlledSubstance">
+                        <div class="rx-item-row">
                           <div class="item-main">
                             <div class="item-title-row">
-                              <strong class="item-name">{{ item.medicineName }}</strong>
+                              <strong>{{ item.medicineName }}</strong>
                               @if (item.strength) {
-                                <span class="item-strength-badge">{{ item.strength }}</span>
+                                <span class="meta-badge">{{ item.strength }}</span>
                               }
                               @if (item.dosageForm) {
-                                <span class="item-form-badge">{{ item.dosageForm }}</span>
+                                <span class="meta-badge">{{ item.dosageForm }}</span>
                               }
                               @if (item.isControlledSubstance) {
-                                <span class="controlled-badge">
-                                  <mat-icon>shield_locked</mat-icon> Controlled
-                                </span>
+                                <app-status-chip tone="danger" label="Controlled" />
                               }
                             </div>
-                            <div class="item-instruction">
-                              <mat-icon>schedule</mat-icon> {{ item.dosageInstructions || 'Take as instructed' }}
-                            </div>
+                            <span class="item-instruction">{{ item.dosageInstructions || 'Take as instructed' }}</span>
                           </div>
-
                           <div class="item-stock-qty">
-                            <span class="qty-label">Qty: <strong>{{ item.quantity }}</strong></span>
+                            <span>Qty: <strong>{{ item.quantity }}</strong></span>
                             @if (item.availableStock !== undefined) {
-                              <span class="stock-check" [class.in-stock]="item.availableStock >= item.quantity" [class.low-stock]="item.availableStock < item.quantity">
-                                Stock: {{ item.availableStock }}
-                              </span>
+                              <app-status-chip
+                                [tone]="item.availableStock >= item.quantity ? 'success' : 'warning'"
+                                [showIcon]="false"
+                                [label]="'Stock: ' + item.availableStock"
+                              />
                             }
                           </div>
                         </div>
@@ -628,631 +603,651 @@
                   </div>
 
                   @if (rx.verificationNotes) {
-                    <div class="pharmacist-verification-box">
-                      <mat-icon>verified</mat-icon>
-                      <div>
-                        <strong>Pharmacist Review Notes:</strong>
-                        <p>{{ rx.verificationNotes }}</p>
-                        @if (rx.dispensedByPharmacistName) {
-                          <span class="pharma-sig">Verified & Dispensed by: {{ rx.dispensedByPharmacistName }} on {{ rx.dispensedAt | date:'medium' }}</span>
-                        }
-                      </div>
+                    <div class="clinical-rx-note">
+                      <strong>Pharmacist Review:</strong> {{ rx.verificationNotes }}
+                      @if (rx.dispensedByPharmacistName) {
+                        <div class="rx-time">
+                          Verified by {{ rx.dispensedByPharmacistName }} on {{ rx.dispensedAt | date:'medium' }}
+                        </div>
+                      }
                     </div>
                   }
-                </div>
 
-                <!-- Actions Footer -->
-                <div class="rx-card-footer">
-                  @if (canDispense() && rx.status === 'Pending') {
-                    <button mat-flat-button color="primary" class="footer-btn dispense-btn" (click)="openDispenseModal(rx)">
-                      <mat-icon>done_all</mat-icon> Verify & Dispense
+                  <div class="rx-card-footer">
+                    @if (canDispense() && rx.status === 'Pending') {
+                      <button mat-flat-button color="primary" type="button" (click)="openDispenseModal(rx)">
+                        Verify &amp; Dispense
+                      </button>
+                    }
+                    <button mat-stroked-button type="button" (click)="openLabelModal(rx.id)">
+                      Dosage Label
                     </button>
-                  }
-
-                  <button mat-stroked-button class="footer-btn label-btn" (click)="openLabelModal(rx.id)">
-                    <mat-icon>print</mat-icon> Dosage Label
-                  </button>
-
-                  @if (!rx.invoiceId) {
-                    <button mat-stroked-button class="footer-btn invoice-btn" (click)="generatePrescriptionInvoice(rx.id)">
-                      <mat-icon>receipt</mat-icon> Bill Invoice
-                    </button>
-                  } @else {
-                    <span class="invoiced-badge">
-                      <mat-icon>receipt_long</mat-icon> Invoiced (#{{ rx.invoiceNumber || 'INV' }})
-                    </span>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-
-          @if (filteredPrescriptions().length === 0) {
-            <div class="empty-state-card">
-              <mat-icon>inventory_2</mat-icon>
-              <h3>No Prescriptions in this Queue</h3>
-              <p>All prescription orders for the selected filter have been fulfilled or none found.</p>
+                    @if (!rx.invoiceId) {
+                      <button mat-stroked-button type="button" (click)="generatePrescriptionInvoice(rx.id)">
+                        Bill Invoice
+                      </button>
+                    } @else {
+                      <app-status-chip tone="neutral" [label]="'Invoiced #' + (rx.invoiceNumber || 'INV')" />
+                    }
+                  </div>
+                </article>
+              }
             </div>
           }
-        </div>
-      </mat-tab>
+        </section>
+      }
 
-      <!-- ========================================== -->
-      <!-- TAB 2: DISPENSARY POINT-OF-SALE (POS) -->
-      <!-- ========================================== -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <div class="custom-tab-label">
-            <mat-icon class="tab-icon">point_of_sale</mat-icon>
-            <span class="premium-tab-text">Dispensary Cashier & POS</span>
-          </div>
-        </ng-template>
+      <!-- TAB 1: DISPENSARY POINT-OF-SALE (POS) -->
+      @case (1) {
+        <section class="pos-layout" aria-label="Dispensary point of sale">
+          <div class="pos-catalog-panel">
+            <div class="toolbar-card stacked">
+              <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+                <mat-label>Search OTC &amp; Formulary Items</mat-label>
+                <input
+                  matInput
+                  type="search"
+                  [ngModel]="posSearchTerm()"
+                  (ngModelChange)="posSearchTerm.set($event)"
+                  placeholder="Medicine name, generic molecule, code..."
+                >
+              </mat-form-field>
 
-        <div class="tab-content">
-          <div class="pos-layout">
-            <!-- Left: Medication Catalog Grid -->
-            <div class="pos-catalog-panel">
-              <div class="panel-header">
-                <div class="search-box pos-search">
-                  <mat-icon>search</mat-icon>
-                  <input [ngModel]="posSearchTerm()" (ngModelChange)="posSearchTerm.set($event)" placeholder="Search OTC & medicines to add...">
-                </div>
-
-                <div class="pos-category-chips">
-                  @for (cat of ['All', 'Analgesics & Antipyretics', 'Antibiotics', 'Respiratory', 'Gastrointestinal', 'Vitamins & Supplements']; track cat) {
-                    <button class="mini-chip" [class.active]="posSelectedCategory() === cat" (click)="posSelectedCategory.set(cat)">
-                      {{ cat }}
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <div class="pos-med-grid">
-                @for (med of posMedicinesList(); track med.id) {
-                  <div class="pos-med-card" (click)="addToCart(med)">
-                    <div class="med-top">
-                      <strong class="med-name">{{ med.name }}</strong>
-                      <span class="med-price">${{ med.unitPrice.toFixed(2) }}</span>
-                    </div>
-                    <div class="med-sub">
-                      <span>{{ med.strength || med.category }}</span>
-                      <span class="stock-pill" [class.danger]="med.stockQuantity <= 10">{{ med.stockQuantity }} in stock</span>
-                    </div>
-                    <button mat-flat-button class="add-cart-btn" (click)="$event.stopPropagation(); addToCart(med)">
-                      <mat-icon>add_shopping_cart</mat-icon> Add to Cart
-                    </button>
-                  </div>
+              <nav class="category-chips-scroll" role="tablist" aria-label="POS categories">
+                @for (cat of ['All', 'Analgesics & Antipyretics', 'Antibiotics', 'Respiratory', 'Gastrointestinal', 'Vitamins & Supplements']; track cat) {
+                  <button
+                    type="button"
+                    role="tab"
+                    class="category-tab"
+                    [class.active]="posSelectedCategory() === cat"
+                    [attr.aria-selected]="posSelectedCategory() === cat"
+                    (click)="posSelectedCategory.set(cat)"
+                  >
+                    {{ cat }}
+                  </button>
                 }
-              </div>
+              </nav>
             </div>
 
-            <!-- Right: POS Register & Cart -->
-            <div class="pos-register-panel mat-elevation-z3">
-              <div class="register-header">
-                <div class="register-title">
-                  <mat-icon>receipt</mat-icon>
-                  <div>
-                    <h3>Dispensary Checkout Register</h3>
-                    <p>Counter sales, OTC fulfillment & patient payments</p>
+            <div class="pos-med-grid">
+              @for (med of posMedicinesList(); track med.id) {
+                <article class="pos-med-card">
+                  <div class="med-top">
+                    <strong>{{ med.name }}</strong>
+                    <span class="med-price">{{ med.unitPrice | currency }}</span>
                   </div>
-                </div>
-                <button mat-icon-button (click)="clearCart()" matTooltip="Clear Register">
-                  <mat-icon>delete_sweep</mat-icon>
-                </button>
-              </div>
-
-              <!-- Customer / Patient Name -->
-              <div class="customer-input-box">
-                <label>Customer / Patient Name</label>
-                <div class="input-with-icon">
-                  <mat-icon>person</mat-icon>
-                  <input [ngModel]="posPatientName()" (ngModelChange)="posPatientName.set($event)" placeholder="Customer Name or Walk-in">
-                </div>
-              </div>
-
-              <!-- Cart Items List -->
-              <div class="cart-items-box">
-                @if (posCart().length === 0) {
-                  <div class="empty-cart">
-                    <mat-icon>shopping_basket</mat-icon>
-                    <span>Register cart is empty</span>
-                    <small>Click medicines from the catalog to add items</small>
+                  <div class="med-sub">
+                    <span>{{ med.strength || med.category }}</span>
+                    <app-status-chip
+                      [tone]="med.stockQuantity <= 10 ? 'warning' : 'neutral'"
+                      [showIcon]="false"
+                      [label]="med.stockQuantity + ' in stock'"
+                    />
                   </div>
-                } @else {
-                  @for (item of posCart(); track item.medicine.id) {
-                    <div class="cart-item-row">
-                      <div class="item-desc">
-                        <strong class="cart-name">{{ item.medicine.name }}</strong>
-                        <span class="cart-unit">${{ item.unitPrice.toFixed(2) }} each</span>
-                      </div>
-
-                      <div class="qty-stepper">
-                        <button class="step-btn" (click)="updateCartQuantity(item.medicine.id, -1)">-</button>
-                        <span class="step-val">{{ item.quantity }}</span>
-                        <button class="step-btn" (click)="updateCartQuantity(item.medicine.id, 1)">+</button>
-                      </div>
-
-                      <span class="item-subtotal">${{ (item.quantity * item.unitPrice).toFixed(2) }}</span>
-
-                      <button mat-icon-button class="del-btn" (click)="removeFromCart(item.medicine.id)">
-                        <mat-icon>close</mat-icon>
-                      </button>
-                    </div>
-                  }
-                }
-              </div>
-
-              <!-- Payment Method Selector -->
-              <div class="payment-method-section">
-                <label>Payment Tender</label>
-                <div class="method-toggles">
-                  <button class="method-btn" [class.active]="posPaymentMethod() === 'Cash'" (click)="posPaymentMethod.set('Cash')">
-                    <mat-icon>payments</mat-icon> Cash
+                  <button mat-stroked-button color="primary" type="button" (click)="addToCart(med)">
+                    Add to Cart
                   </button>
-                  <button class="method-btn" [class.active]="posPaymentMethod() === 'CreditCard'" (click)="posPaymentMethod.set('CreditCard')">
-                    <mat-icon>credit_card</mat-icon> Credit Card
-                  </button>
-                  <button class="method-btn" [class.active]="posPaymentMethod() === 'Insurance'" (click)="posPaymentMethod.set('Insurance')">
-                    <mat-icon>health_and_safety</mat-icon> Co-Pay / Insurance
-                  </button>
-                </div>
-              </div>
+                </article>
+              }
+            </div>
+          </div>
 
-              <!-- Discount & Tax Controls -->
-              <div class="discount-tax-row">
-                <div class="dt-field">
-                  <label>Discount (%)</label>
-                  <div class="dt-input-wrap">
-                    <input type="number" min="0" max="100" step="1"
-                           [ngModel]="posDiscountPercent()"
-                           (ngModelChange)="posDiscountPercent.set(+$event)"
-                           placeholder="0">
-                    <span class="dt-unit">%</span>
-                  </div>
-                </div>
-                <div class="dt-field">
-                  <label>Tax / VAT (%)</label>
-                  <div class="dt-input-wrap">
-                    <input type="number" min="0" max="30" step="0.5"
-                           [ngModel]="posTaxPercent()"
-                           (ngModelChange)="posTaxPercent.set(+$event)"
-                           placeholder="0">
-                    <span class="dt-unit">%</span>
-                  </div>
-                </div>
+          <aside class="pos-register-panel" aria-label="Dispensary checkout register">
+            <div class="register-header">
+              <div>
+                <h2>Dispensary Checkout Register</h2>
+                <p>Counter sales, OTC fulfillment &amp; patient payments</p>
               </div>
-
-              <!-- Billing Breakdown -->
-              <div class="billing-breakdown">
-                <div class="breakdown-row">
-                  <span>Subtotal:</span>
-                  <strong>${{ posSubTotal().toFixed(2) }}</strong>
-                </div>
-                @if (posDiscountAmount() > 0) {
-                  <div class="breakdown-row discount-row">
-                    <span>Discount ({{ posDiscountPercent() }}%):</span>
-                    <span class="discount-val">-${{ posDiscountAmount().toFixed(2) }}</span>
-                  </div>
-                }
-                @if (posTaxAmount() > 0) {
-                  <div class="breakdown-row">
-                    <span>Tax ({{ posTaxPercent() }}%):</span>
-                    <strong>${{ posTaxAmount().toFixed(2) }}</strong>
-                  </div>
-                }
-                <div class="breakdown-row total-row">
-                  <span>Total Due:</span>
-                  <strong class="grand-total">${{ posGrandTotal().toFixed(2) }}</strong>
-                </div>
-              </div>
-
-              <!-- Complete Transaction Button -->
-              <button mat-flat-button color="primary" class="checkout-btn" [disabled]="posCart().length === 0 || isProcessing()" (click)="checkoutPosSale()">
-                <mat-icon>check_circle</mat-icon>
-                <span>Complete Sale & Print Receipt (${{ posGrandTotal().toFixed(2) }})</span>
+              <button mat-icon-button type="button" aria-label="Clear checkout cart" (click)="clearCart()" matTooltip="Clear Register">
+                <mat-icon aria-hidden="true">delete</mat-icon>
               </button>
             </div>
-          </div>
-        </div>
-      </mat-tab>
 
-      <!-- ========================================== -->
-      <!-- TAB 3: CLINICAL FORMULARY & STOCK CONTROL -->
-      <!-- ========================================== -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <div class="custom-tab-label">
-            <mat-icon class="tab-icon">inventory_2</mat-icon>
-            <span class="premium-tab-text">Drug Formulary Catalog</span>
-            <span class="premium-badge">{{ filteredMedicines().length }}</span>
-          </div>
-        </ng-template>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Customer / Patient Name</mat-label>
+              <input matInput [ngModel]="posPatientName()" (ngModelChange)="posPatientName.set($event)" placeholder="Customer Name or Walk-in">
+            </mat-form-field>
 
-        <div class="tab-content">
-          <!-- 12 Category Filter Chips Bar -->
-          <div class="category-chips-scroll mat-elevation-z1">
+            <div class="cart-items-box">
+              @if (posCart().length === 0) {
+                <app-empty-state
+                  icon="shopping_basket"
+                  title="Register Cart is Empty"
+                  message="Select medicines from the catalog to add items."
+                />
+              } @else {
+                @for (item of posCart(); track item.medicine.id) {
+                  <div class="cart-item-row">
+                    <div class="item-desc">
+                      <strong>{{ item.medicine.name }}</strong>
+                      <span class="cart-unit">{{ item.unitPrice | currency }} each</span>
+                    </div>
+
+                    <div class="qty-stepper" role="group" [attr.aria-label]="'Quantity for ' + item.medicine.name">
+                      <button
+                        type="button"
+                        class="step-btn"
+                        aria-label="Decrease quantity"
+                        (click)="updateCartQuantity(item.medicine.id, -1)"
+                      >
+                        -
+                      </button>
+                      <span class="step-val">{{ item.quantity }}</span>
+                      <button
+                        type="button"
+                        class="step-btn"
+                        aria-label="Increase quantity"
+                        (click)="updateCartQuantity(item.medicine.id, 1)"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <span class="item-subtotal">{{ (item.quantity * item.unitPrice) | currency }}</span>
+
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Remove ' + item.medicine.name"
+                      (click)="removeFromCart(item.medicine.id)"
+                    >
+                      <mat-icon aria-hidden="true">close</mat-icon>
+                    </button>
+                  </div>
+                }
+              }
+            </div>
+
+            <div class="payment-method-section">
+              <span class="section-lbl">Payment Tender</span>
+              <div class="method-toggles" role="group" aria-label="Payment method">
+                <button
+                  type="button"
+                  class="filter-toggle-btn"
+                  [class.active]="posPaymentMethod() === 'Cash'"
+                  [attr.aria-pressed]="posPaymentMethod() === 'Cash'"
+                  (click)="posPaymentMethod.set('Cash')"
+                >
+                  Cash
+                </button>
+                <button
+                  type="button"
+                  class="filter-toggle-btn"
+                  [class.active]="posPaymentMethod() === 'CreditCard'"
+                  [attr.aria-pressed]="posPaymentMethod() === 'CreditCard'"
+                  (click)="posPaymentMethod.set('CreditCard')"
+                >
+                  Credit Card
+                </button>
+                <button
+                  type="button"
+                  class="filter-toggle-btn"
+                  [class.active]="posPaymentMethod() === 'Insurance'"
+                  [attr.aria-pressed]="posPaymentMethod() === 'Insurance'"
+                  (click)="posPaymentMethod.set('Insurance')"
+                >
+                  Co-Pay / Insurance
+                </button>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Discount (%)</mat-label>
+                <input matInput type="number" min="0" max="100" step="1" [ngModel]="posDiscountPercent()" (ngModelChange)="posDiscountPercent.set(+$event)">
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Tax / VAT (%)</mat-label>
+                <input matInput type="number" min="0" max="30" step="0.5" [ngModel]="posTaxPercent()" (ngModelChange)="posTaxPercent.set(+$event)">
+              </mat-form-field>
+            </div>
+
+            <div class="billing-breakdown">
+              <div class="breakdown-row">
+                <span>Subtotal</span>
+                <strong>{{ posSubTotal() | currency }}</strong>
+              </div>
+              @if (posDiscountAmount() > 0) {
+                <div class="breakdown-row">
+                  <span>Discount ({{ posDiscountPercent() }}%)</span>
+                  <span>-{{ posDiscountAmount() | currency }}</span>
+                </div>
+              }
+              @if (posTaxAmount() > 0) {
+                <div class="breakdown-row">
+                  <span>Tax ({{ posTaxPercent() }}%)</span>
+                  <strong>{{ posTaxAmount() | currency }}</strong>
+                </div>
+              }
+              <div class="breakdown-row total-row">
+                <strong>Total Due</strong>
+                <strong>{{ posGrandTotal() | currency }}</strong>
+              </div>
+            </div>
+
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              [disabled]="posCart().length === 0 || isProcessing()"
+              (click)="checkoutPosSale()"
+            >
+              Complete Sale ({{ posGrandTotal() | currency }})
+            </button>
+          </aside>
+        </section>
+      }
+
+      <!-- TAB 2: CLINICAL FORMULARY & STOCK CONTROL -->
+      @case (2) {
+        <section class="tab-panel" aria-label="Drug formulary catalog">
+          <nav class="category-chips-scroll" role="tablist" aria-label="Therapeutic categories">
             @for (cat of formularyCategories; track cat) {
-              <button class="category-chip" [class.active]="selectedCategory() === cat" (click)="selectedCategory.set(cat)">
+              <button
+                type="button"
+                role="tab"
+                class="category-tab"
+                [class.active]="selectedCategory() === cat"
+                [attr.aria-selected]="selectedCategory() === cat"
+                (click)="selectedCategory.set(cat)"
+              >
                 {{ cat }}
               </button>
             }
+          </nav>
+
+          <div class="toolbar-card">
+            <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+              <mat-label>Search Drug Formulary</mat-label>
+              <input
+                matInput
+                type="search"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="searchTerm.set($event)"
+                placeholder="Brand name, generic name, category, SKU, lot #..."
+              >
+            </mat-form-field>
+
+            <div class="toggle-filters" role="group" aria-label="Inventory filters">
+              <button
+                type="button"
+                class="filter-toggle-btn"
+                [class.active]="filterLowStockOnly()"
+                [attr.aria-pressed]="filterLowStockOnly()"
+                (click)="filterLowStockOnly.update(v => !v)"
+              >
+                Low Stock Only
+              </button>
+              <button
+                type="button"
+                class="filter-toggle-btn"
+                [class.active]="filterNearExpiryOnly()"
+                [attr.aria-pressed]="filterNearExpiryOnly()"
+                (click)="filterNearExpiryOnly.update(v => !v)"
+              >
+                Expiring &lt; 60d
+              </button>
+              <button
+                type="button"
+                class="filter-toggle-btn"
+                [class.active]="filterControlledOnly()"
+                [attr.aria-pressed]="filterControlledOnly()"
+                (click)="filterControlledOnly.update(v => !v)"
+              >
+                Controlled Substances
+              </button>
+            </div>
           </div>
 
-          <!-- Filter & Search Controls Bar -->
-          <div class="formulary-controls-card mat-elevation-z2">
-            <div class="search-box">
-              <mat-icon>search</mat-icon>
-              <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Search formulary by brand name, generic name, category, SKU, lot #...">
+          @if (medicineStore.isLoading()) {
+            <div class="cards-grid" aria-busy="true" aria-label="Loading drug formulary">
+              <app-skeleton variant="card" [count]="6" />
             </div>
-
-            <div class="toggle-filters">
-              <button class="toggle-btn" [class.active]="filterLowStockOnly()" (click)="filterLowStockOnly.update(v => !v)">
-                <mat-icon>warning</mat-icon> Low Stock Only
+          } @else if (filteredMedicines().length === 0) {
+            <app-empty-state
+              icon="search_off"
+              title="No Medicines Found"
+              message="No medicines matched the selected therapeutic category or filter criteria."
+            >
+              <button mat-stroked-button color="primary" type="button" (click)="resetFormularyFilters()">
+                Reset Filters
               </button>
-              <button class="toggle-btn" [class.active]="filterNearExpiryOnly()" (click)="filterNearExpiryOnly.update(v => !v)">
-                <mat-icon>event_busy</mat-icon> Expiring &lt; 60d
-              </button>
-              <button class="toggle-btn" [class.active]="filterControlledOnly()" (click)="filterControlledOnly.update(v => !v)">
-                <mat-icon>shield_locked</mat-icon> Controlled Substances
-              </button>
-            </div>
-          </div>
-
-          <!-- Medicines Cards Grid -->
-          <div class="premium-grid formulary-grid">
-            @for (med of filteredMedicines(); track med.id) {
-              <div class="premium-card med-card" [class.controlled-border]="med.isControlledSubstance">
-                <div class="med-header">
-                  <div>
-                    <span class="category-pill">{{ med.category }}</span>
-                    <h3 class="med-trade-name">{{ med.name }}</h3>
-                    @if (med.genericName) {
-                      <span class="generic-sub"><em>Generic:</em> {{ med.genericName }}</span>
+            </app-empty-state>
+          } @else {
+            <div class="cards-grid">
+              @for (med of filteredMedicines(); track med.id) {
+                <article class="med-card">
+                  <div class="med-header">
+                    <div>
+                      <span class="category-label">{{ med.category }}</span>
+                      <h2 class="med-trade-name">{{ med.name }}</h2>
+                      @if (med.genericName) {
+                        <span class="generic-sub">Generic: {{ med.genericName }}</span>
+                      }
+                    </div>
+                    @if (med.isControlledSubstance) {
+                      <app-status-chip tone="danger" label="Controlled" />
                     }
                   </div>
 
-                  @if (med.isControlledSubstance) {
-                    <span class="narcotic-tag" matTooltip="Controlled Substance — Requires strict audit trail">
-                      <mat-icon>shield_locked</mat-icon> Controlled
-                    </span>
-                  }
-                </div>
-
-                <div class="med-details-body">
-                  <div class="meta-row">
-                    <span class="meta-badge"><mat-icon>format_shapes</mat-icon> {{ med.dosageForm || 'Tablet' }}</span>
-                    <span class="meta-badge"><mat-icon>fitness_center</mat-icon> {{ med.strength || 'N/A' }}</span>
-                    <span class="meta-badge code-badge"><mat-icon>qr_code</mat-icon> {{ med.code }}</span>
-                  </div>
-
-                  <div class="stock-status-bar">
-                    <div class="stock-info">
-                      <span class="stock-label">Stock Level:</span>
-                      <strong class="stock-number" [class.danger]="med.stockQuantity <= (med.reorderLevel || 15)">
-                        {{ med.stockQuantity }} Units
-                      </strong>
-                      <span class="reorder-sub">(Reorder: {{ med.reorderLevel || 15 }})</span>
+                  <div class="med-details-body">
+                    <div class="meta-row">
+                      <span class="meta-badge">{{ med.dosageForm || 'Tablet' }}</span>
+                      <span class="meta-badge">{{ med.strength || 'N/A' }}</span>
+                      <span class="meta-badge font-mono">{{ med.code }}</span>
                     </div>
 
-                    <div class="stock-progress-track">
-                      <div class="stock-progress-fill"
-                           [style.width.%]="Math.min(100, (med.stockQuantity / Math.max(med.stockQuantity, (med.reorderLevel || 15) * 4)) * 100)"
-                           [class.danger-fill]="med.stockQuantity <= (med.reorderLevel || 15)"
-                           [class.warn-fill]="med.stockQuantity > (med.reorderLevel || 15) && med.stockQuantity <= (med.reorderLevel || 15) * 2">
+                    <div class="stock-status-bar">
+                      <div class="stock-info">
+                        <app-status-chip
+                          [tone]="getStockTone(med)"
+                          [status]="getStockStatus(med)"
+                          [label]="med.stockQuantity + ' Units'"
+                        />
+                        <span class="reorder-sub">Reorder: {{ med.reorderLevel || 15 }}</span>
+                      </div>
+
+                      <div class="stock-progress-track" aria-hidden="true">
+                        <div
+                          class="stock-progress-fill"
+                          [style.width.%]="Math.min(100, (med.stockQuantity / Math.max(med.stockQuantity, (med.reorderLevel || 15) * 4)) * 100)"
+                          [class.danger-fill]="med.stockQuantity <= (med.reorderLevel || 15)"
+                          [class.warn-fill]="med.stockQuantity > (med.reorderLevel || 15) && med.stockQuantity <= (med.reorderLevel || 15) * 2"
+                        ></div>
                       </div>
                     </div>
-                  </div>
 
-                  <div class="pricing-batch-grid">
-                    <div class="pricing-box">
-                      <span class="price-lbl">Retail Price</span>
-                      <strong class="price-val">${{ med.unitPrice.toFixed(2) }}</strong>
-                    </div>
-                    @if (med.costPrice) {
+                    <dl class="pricing-batch-grid">
                       <div class="pricing-box">
-                        <span class="price-lbl">Cost Price</span>
-                        <span class="cost-val">${{ med.costPrice.toFixed(2) }}</span>
+                        <dt>Retail Price</dt>
+                        <dd>{{ med.unitPrice | currency }}</dd>
                       </div>
+                      @if (med.costPrice) {
+                        <div class="pricing-box">
+                          <dt>Cost Price</dt>
+                          <dd>{{ med.costPrice | currency }}</dd>
+                        </div>
+                      }
+                      <div class="pricing-box">
+                        <dt>Batch / Lot</dt>
+                        <dd>{{ med.batchNumber || 'N/A' }}</dd>
+                      </div>
+                      <div class="pricing-box">
+                        <dt>Expiry Date</dt>
+                        <dd [class.near-expiry]="med.isNearExpiry">
+                          {{ med.expiryDate ? (med.expiryDate | date:'MM/yyyy') : 'N/A' }}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    @if (med.storageConditions) {
+                      <p class="storage-row">{{ med.storageConditions }}</p>
                     }
-                    <div class="pricing-box">
-                      <span class="price-lbl">Batch / Lot</span>
-                      <span class="batch-val">{{ med.batchNumber || 'N/A' }}</span>
-                    </div>
-                    <div class="pricing-box">
-                      <span class="price-lbl">Expiry Date</span>
-                      <span class="expiry-val" [class.near-expiry]="med.isNearExpiry">
-                        {{ med.expiryDate ? (med.expiryDate | date:'MM/yyyy') : 'N/A' }}
-                      </span>
-                    </div>
                   </div>
 
-                  @if (med.storageConditions) {
-                    <div class="storage-row">
-                      <mat-icon>thermostat</mat-icon>
-                      <span>{{ med.storageConditions }}</span>
+                  @if (canManageInventory()) {
+                    <div class="med-card-footer">
+                      <button mat-stroked-button type="button" (click)="editMedicine(med)">
+                        <mat-icon aria-hidden="true">edit</mat-icon>
+                        Edit
+                      </button>
+                      <button mat-stroked-button type="button" (click)="openRequisitionModal()">
+                        PO Order
+                      </button>
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        type="button"
+                        [attr.aria-label]="'Retire ' + med.name"
+                        matTooltip="Retire Medicine"
+                        (click)="deleteMedicine(med.id)"
+                      >
+                        <mat-icon aria-hidden="true">delete</mat-icon>
+                      </button>
                     </div>
                   }
-                </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+      }
 
-                <!-- Formulary Card Footer Actions -->
-                <div class="med-card-footer">
-                  @if (canManageInventory()) {
-                    <button mat-stroked-button class="edit-btn" (click)="editMedicine(med)">
-                      <mat-icon>edit</mat-icon> Edit
-                    </button>
-                    <button mat-stroked-button class="restock-btn" (click)="openRequisitionModal()">
-                      <mat-icon>add_shopping_cart</mat-icon> PO Order
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deleteMedicine(med.id)" matTooltip="Retire Medicine">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  }
-                </div>
+      <!-- TAB 3: STOCK REQUISITIONS & PURCHASE ORDERS -->
+      @case (3) {
+        <section class="tab-panel" aria-label="Stock requisitions and purchase orders">
+          <div class="section-card">
+            <div class="drawer-header">
+              <div>
+                <h2>Pharmacy Purchase Orders &amp; Ward Requisitions</h2>
+                <p>Manage procurement from authorized pharmaceutical distributors and replenish ward emergency carts.</p>
+              </div>
+              <button mat-flat-button color="primary" type="button" (click)="openRequisitionModal()">
+                Create New Requisition
+              </button>
+            </div>
+
+            @if (loadingRequisitions()) {
+              <div aria-busy="true" aria-label="Loading requisitions">
+                <app-skeleton variant="table" [count]="5" />
+              </div>
+            } @else if (requisitions().length === 0) {
+              <app-empty-state
+                icon="inventory"
+                title="No Stock Requisitions on File"
+                message="Create purchase orders to distributors to replenish low stock."
+              />
+            } @else {
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Order #</th>
+                      <th scope="col">Medicine Details</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Supplier / Ward</th>
+                      <th scope="col">Requested Qty</th>
+                      <th scope="col">Est. Cost</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Requested By</th>
+                      <th scope="col" class="col-actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (req of requisitions(); track req.id) {
+                      <tr>
+                        <td class="font-mono"><strong>{{ req.requisitionNumber }}</strong></td>
+                        <td>
+                          <strong>{{ req.medicineName }}</strong>
+                          <div class="sub-code">{{ req.medicineCode }}</div>
+                        </td>
+                        <td>{{ req.type }}</td>
+                        <td>{{ req.supplierName || req.department }}</td>
+                        <td><strong>{{ req.quantityRequested }} Units</strong></td>
+                        <td>{{ req.totalAmount | currency }}</td>
+                        <td>
+                          <app-status-chip [status]="req.status" />
+                        </td>
+                        <td>
+                          <div>{{ req.requestedByUserName }}</div>
+                          <div class="sub-code">{{ req.createdAt | date:'short' }}</div>
+                        </td>
+                        <td class="col-actions">
+                          <div class="table-actions">
+                            @if (req.status === 'Pending') {
+                              <button mat-button color="primary" type="button" (click)="reviewRequisition(req.id, 'Approved')">
+                                Approve
+                              </button>
+                              <button mat-button color="warn" type="button" (click)="reviewRequisition(req.id, 'Rejected')">
+                                Reject
+                              </button>
+                            } @else if (req.status === 'Approved') {
+                              <button mat-flat-button color="primary" type="button" (click)="reviewRequisition(req.id, 'Received')">
+                                Receive &amp; Restock
+                              </button>
+                            } @else {
+                              <app-status-chip tone="neutral" label="Fulfilled" />
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             }
           </div>
+        </section>
+      }
 
-          @if (filteredMedicines().length === 0) {
-            <div class="empty-state-card">
-              <mat-icon>search_off</mat-icon>
-              <h3>No Medicines Found</h3>
-              <p>No medicines matched the selected therapeutic category or filter criteria.</p>
+      <!-- TAB 4: CONTROLLED SUBSTANCES AUDIT LEDGER -->
+      @case (4) {
+        <section class="tab-panel" aria-label="Controlled substances audit ledger">
+          <div class="section-card">
+            <div class="drawer-header">
+              <div>
+                <h2>DEA &amp; Ministry of Health Controlled Substances Ledger</h2>
+                <p>Double-check audit trail for Schedule II–IV narcotics, opioids, and benzodiazepines including safe balance and justification.</p>
+              </div>
+              <app-status-chip tone="info" label="Immutable Audit Log" />
             </div>
-          }
-        </div>
-      </mat-tab>
 
-      <!-- ========================================== -->
-      <!-- TAB 4: STOCK REQUISITIONS & PURCHASE ORDERS -->
-      <!-- ========================================== -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <div class="custom-tab-label">
-            <mat-icon class="tab-icon">shopping_cart_checkout</mat-icon>
-            <span class="premium-tab-text">Stock Requisitions & POs</span>
-            <span class="premium-badge">{{ requisitions().length }}</span>
+            <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+              <mat-label>Search Controlled Substance Audit Logs</mat-label>
+              <input
+                matInput
+                type="search"
+                [ngModel]="controlledSearchTerm()"
+                (ngModelChange)="controlledSearchTerm.set($event)"
+                placeholder="Log #, patient name, MRN, medicine, pharmacist..."
+              >
+            </mat-form-field>
+
+            @if (loadingControlledLogs()) {
+              <div aria-busy="true" aria-label="Loading controlled substance logs">
+                <app-skeleton variant="table" [count]="5" />
+              </div>
+            } @else if (filteredControlledLogs().length === 0) {
+              <app-empty-state
+                icon="shield_locked"
+                title="No Controlled Substance Dispensing Events"
+                message="Audit events are logged automatically when controlled substances are dispensed."
+              />
+            } @else {
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Log #</th>
+                      <th scope="col">Controlled Substance</th>
+                      <th scope="col">Patient Details</th>
+                      <th scope="col">Prescribing Doctor</th>
+                      <th scope="col">Dispensing Pharmacist</th>
+                      <th scope="col">Qty Dispensed</th>
+                      <th scope="col">Safe Balance</th>
+                      <th scope="col">Clinical Justification</th>
+                      <th scope="col">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (log of filteredControlledLogs(); track log.id) {
+                      <tr>
+                        <td class="font-mono"><strong>{{ log.logNumber }}</strong></td>
+                        <td>
+                          <strong>{{ log.medicineName }}</strong>
+                          <div class="sub-code">{{ log.strength }} · {{ log.dosageForm }}</div>
+                        </td>
+                        <td>
+                          <strong>{{ log.patientName }}</strong>
+                          <div class="sub-code">MRN: {{ log.patientMrn }}</div>
+                        </td>
+                        <td>{{ log.prescribingDoctorName }}</td>
+                        <td>{{ log.pharmacistName }}</td>
+                        <td><strong>{{ log.quantityDispensed }} Units</strong></td>
+                        <td><strong>{{ log.remainingBalance }} Units</strong></td>
+                        <td>{{ log.medicalJustification }}</td>
+                        <td>{{ log.dispensedAt | date:'MMM d, y, h:mm a' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
           </div>
-        </ng-template>
-
-        <div class="tab-content">
-          <div class="requisitions-header-card mat-elevation-z2">
-            <div class="header-text">
-              <h3>Pharmacy Purchase Orders & Ward Requisitions</h3>
-              <p>Manage procurement from authorized pharmaceutical distributors and replenish internal ward emergency carts.</p>
-            </div>
-            <button mat-flat-button color="primary" (click)="openRequisitionModal()">
-              <mat-icon>add_circle</mat-icon> Create New Requisition
-            </button>
-          </div>
-
-          <div class="table-container mat-elevation-z2">
-            <table class="premium-table">
-              <thead>
-                <tr>
-                  <th>Order #</th>
-                  <th>Medicine Details</th>
-                  <th>Type</th>
-                  <th>Supplier / Ward</th>
-                  <th>Requested Qty</th>
-                  <th>Est. Cost</th>
-                  <th>Status</th>
-                  <th>Requested By & Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (req of requisitions(); track req.id) {
-                  <tr>
-                    <td>
-                      <strong class="po-number">{{ req.requisitionNumber }}</strong>
-                    </td>
-                    <td>
-                      <strong>{{ req.medicineName }}</strong>
-                      <span class="sub-code">{{ req.medicineCode }}</span>
-                    </td>
-                    <td>
-                      <span class="type-badge" [class.ward]="req.type.includes('Ward')">
-                        {{ req.type }}
-                      </span>
-                    </td>
-                    <td>{{ req.supplierName || req.department }}</td>
-                    <td><strong>{{ req.quantityRequested }} Units</strong></td>
-                    <td>${{ req.totalAmount.toFixed(2) }}</td>
-                    <td>
-                      <span class="status-pill" [class.dispensed]="req.status === 'Received' || req.status === 'Approved'" [class.pending]="req.status === 'Pending'">
-                        {{ req.status }}
-                      </span>
-                    </td>
-                    <td>
-                      <div>{{ req.requestedByUserName }}</div>
-                      <small class="text-secondary">{{ req.createdAt | date:'short' }}</small>
-                    </td>
-                    <td>
-                      <div class="table-actions">
-                        @if (req.status === 'Pending') {
-                          <button mat-stroked-button class="action-btn-sm approve" (click)="reviewRequisition(req.id, 'Approved')">
-                            Approve
-                          </button>
-                          <button mat-stroked-button class="action-btn-sm reject" (click)="reviewRequisition(req.id, 'Rejected')">
-                            Reject
-                          </button>
-                        } @else if (req.status === 'Approved') {
-                          <button mat-flat-button color="primary" class="action-btn-sm receive" (click)="reviewRequisition(req.id, 'Received')">
-                            Receive & Restock
-                          </button>
-                        } @else {
-                          <span class="fulfilled-tag">Fulfilled</span>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-
-          @if (requisitions().length === 0) {
-            <div class="empty-state-card">
-              <mat-icon>inventory</mat-icon>
-              <h3>No Stock Requisitions on File</h3>
-              <p>Create purchase orders to distributors to replenish low stock.</p>
-            </div>
-          }
-        </div>
-      </mat-tab>
-
-      <!-- ========================================== -->
-      <!-- TAB 5: CONTROLLED SUBSTANCES AUDIT LEDGER -->
-      <!-- ========================================== -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <div class="custom-tab-label">
-            <mat-icon class="tab-icon purple-color">shield_locked</mat-icon>
-            <span class="premium-tab-text">Controlled Substances Audit</span>
-            <span class="premium-badge purple-badge">{{ controlledLogs().length }}</span>
-          </div>
-        </ng-template>
-
-        <div class="tab-content">
-          <!-- Compliance Notice Banner -->
-          <div class="dea-compliance-card mat-elevation-z2">
-            <div class="dea-icon-box">
-              <mat-icon>gavel</mat-icon>
-            </div>
-            <div class="dea-text">
-              <h3>DEA & Ministry of Health Controlled Substances Regulatory Ledger</h3>
-              <p>Strict double-check audit trail for Schedule II-IV restricted narcotics, opioids, and benzodiazepines. Every dispensing event records remaining safe balance and clinical justification.</p>
-            </div>
-            <div class="dea-badge">
-              <mat-icon>verified</mat-icon> Immutable Audit Log
-            </div>
-          </div>
-
-          <!-- Search filter -->
-          <div class="search-bar-row mat-elevation-z1">
-            <div class="search-box">
-              <mat-icon>search</mat-icon>
-              <input [ngModel]="controlledSearchTerm()" (ngModelChange)="controlledSearchTerm.set($event)" placeholder="Search audit logs by Log #, patient name, MRN, medicine, or pharmacist...">
-            </div>
-          </div>
-
-          <!-- Audit Table -->
-          <div class="table-container mat-elevation-z2">
-            <table class="premium-table audit-table">
-              <thead>
-                <tr>
-                  <th>Log #</th>
-                  <th>Controlled Substance</th>
-                  <th>Patient Details</th>
-                  <th>Prescribing Doctor</th>
-                  <th>Dispensing Pharmacist</th>
-                  <th>Qty Dispensed</th>
-                  <th>Safe Balance</th>
-                  <th>Clinical Justification</th>
-                  <th>Timestamp</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (log of filteredControlledLogs(); track log.id) {
-                  <tr>
-                    <td><strong class="log-num">{{ log.logNumber }}</strong></td>
-                    <td>
-                      <strong>{{ log.medicineName }}</strong>
-                      <span class="sub-code">{{ log.strength }} · {{ log.dosageForm }}</span>
-                    </td>
-                    <td>
-                      <strong>{{ log.patientName }}</strong>
-                      <span class="sub-code">MRN: {{ log.patientMrn }}</span>
-                    </td>
-                    <td>{{ log.prescribingDoctorName }}</td>
-                    <td>
-                      <span class="pharma-badge">
-                        <mat-icon>verified_user</mat-icon> {{ log.pharmacistName }}
-                      </span>
-                    </td>
-                    <td><strong class="qty-highlight">{{ log.quantityDispensed }} Units</strong></td>
-
-                    <td><strong class="safe-balance">{{ log.remainingBalance }} Units</strong></td>
-                    <td><em class="justification-text">{{ log.medicalJustification }}</em></td>
-                    <td>{{ log.dispensedAt | date:'MMM d, y, h:mm a' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-
-          @if (filteredControlledLogs().length === 0) {
-            <div class="empty-state-card">
-              <mat-icon>shield_locked</mat-icon>
-              <h3>No Controlled Substance Dispensing Events</h3>
-              <p>Audit trail will record events automatically when narcotics or opioids are dispensed from doctor prescriptions.</p>
-            </div>
-          }
-        </div>
-      </mat-tab>
-    </mat-tab-group>
+        </section>
+      }
     }
-  </div>
+  }
 
   <!-- DISPENSING CLINICAL VERIFICATION MODAL -->
   @if (showDispenseModal()) {
-    <div class="custom-modal-overlay" (click)="closeDispenseModal()">
-      <div class="custom-modal-content mat-elevation-z8" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" (click)="closeDispenseModal()">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dispense-modal-title"
+        (click)="$event.stopPropagation()"
+      >
         <div class="modal-header">
-          <div class="modal-title-box">
-            <mat-icon class="modal-icon primary-color">verified</mat-icon>
-            <div>
-              <h3>Clinical Prescription Verification & Dispensing</h3>
-              <p>Confirm dosage, frequency, and patient drug-allergy interactions before deduction.</p>
-            </div>
+          <div>
+            <h2 id="dispense-modal-title">Clinical Verification &amp; Dispensing</h2>
+            <p>Confirm dosage, frequency, and drug-allergy safety before stock deduction.</p>
           </div>
-          <button mat-icon-button (click)="closeDispenseModal()">
-            <mat-icon>close</mat-icon>
+          <button mat-icon-button type="button" aria-label="Close modal" (click)="closeDispenseModal()">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         @if (activeDispenseRx(); as rx) {
           <div class="modal-body">
-            <div class="modal-rx-summary">
-              <div class="summary-col">
-                <span class="lbl">Patient:</span>
-                <strong>{{ rx.patientName }} ({{ rx.patientMrn }})</strong>
+            <dl class="modal-summary-list">
+              <div class="summary-row">
+                <dt>Patient</dt>
+                <dd>{{ rx.patientName }} ({{ rx.patientMrn }})</dd>
               </div>
-              <div class="summary-col">
-                <span class="lbl">Doctor:</span>
-                <strong>{{ rx.doctorName }}</strong>
+              <div class="summary-row">
+                <dt>Prescriber</dt>
+                <dd>{{ rx.doctorName }}</dd>
               </div>
-              <div class="summary-col">
-                <span class="lbl">Allergies:</span>
-                <span class="allergy-tag">{{ rx.patientAllergies || 'NKDA (None)' }}</span>
+              <div class="summary-row">
+                <dt>Allergies</dt>
+                <dd>{{ rx.patientAllergies || 'NKDA (None)' }}</dd>
               </div>
-            </div>
+            </dl>
 
             <div class="modal-items-list">
-              <h4>Medications to Dispense:</h4>
+              <h3>Medications to Dispense</h3>
               @for (item of rx.items; track item.id) {
                 <div class="modal-item-row">
                   <div>
                     <strong>{{ item.medicineName }}</strong>
                     <span> — {{ item.dosageInstructions }}</span>
                   </div>
-                  <strong class="item-qty">&times; {{ item.quantity }}</strong>
+                  <strong>&times; {{ item.quantity }}</strong>
                 </div>
               }
             </div>
 
-            <div class="verification-input-box">
-              <label>Pharmacist Verification Notes</label>
-              <textarea rows="3" [ngModel]="verificationNotesInput()" (ngModelChange)="verificationNotesInput.set($event)"
-                        placeholder="Enter clinical review notes, patient counseling points, or dosage confirmations..."></textarea>
-            </div>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Pharmacist Verification Notes</mat-label>
+              <textarea
+                matInput
+                rows="3"
+                [ngModel]="verificationNotesInput()"
+                (ngModelChange)="verificationNotesInput.set($event)"
+                placeholder="Enter review notes and patient counseling points..."
+              ></textarea>
+            </mat-form-field>
           </div>
         }
 
         <div class="modal-footer">
-          <button mat-stroked-button (click)="closeDispenseModal()">Cancel</button>
-          <button mat-flat-button color="primary" [disabled]="isProcessing()" (click)="confirmDispense()">
-            <mat-icon>done_all</mat-icon> Confirm & Dispense Stock
+          <button mat-flat-button color="primary" type="button" [disabled]="isProcessing()" (click)="confirmDispense()">
+            Confirm &amp; Dispense Stock
+          </button>
+          <button mat-stroked-button type="button" [disabled]="isProcessing()" (click)="closeDispenseModal()">
+            Cancel
           </button>
         </div>
       </div>
@@ -1261,74 +1256,64 @@
 
   <!-- THERMAL DOSAGE LABEL MODAL -->
   @if (showLabelModal()) {
-    <div class="custom-modal-overlay" (click)="closeLabelModal()">
-      <div class="custom-modal-content label-modal mat-elevation-z8" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" (click)="closeLabelModal()">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="label-modal-title"
+        (click)="$event.stopPropagation()"
+      >
         <div class="modal-header">
-          <div class="modal-title-box">
-            <mat-icon class="modal-icon">print</mat-icon>
-            <div>
-              <h3>Prescription Thermal Dosage Labels</h3>
-              <p>Printable patient instructions label ready for medicine bottles and packaging.</p>
-            </div>
+          <div>
+            <h2 id="label-modal-title">Prescription Dosage Labels</h2>
+            <p>Printable patient instructions ready for medication packaging.</p>
           </div>
-          <button mat-icon-button (click)="closeLabelModal()">
-            <mat-icon>close</mat-icon>
+          <button mat-icon-button type="button" aria-label="Close modal" (click)="closeLabelModal()">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
         <div class="modal-body label-print-area">
           @for (lbl of activeLabels(); track lbl.rxNumber) {
             <div class="thermal-label-card">
-              <div class="clinic-header">
+              <div class="label-row">
                 <strong>{{ lbl.clinicName }}</strong>
-                <small>{{ lbl.clinicPhone }}</small>
+                <span>{{ lbl.clinicPhone }}</span>
               </div>
-
               <div class="label-divider"></div>
-
-              <div class="label-row patient-row">
+              <div class="label-row">
                 <span>Rx #: <strong>{{ lbl.rxNumber }}</strong></span>
-                <span>Date: {{ lbl.dispensedDate }}</span>
+                <span>{{ lbl.dispensedDate }}</span>
               </div>
-
               <div class="label-row">
                 <span>Patient: <strong>{{ lbl.patientName }}</strong></span>
                 <span>MRN: {{ lbl.patientMrn }}</span>
               </div>
-
               <div class="label-drug-box">
-                <h3 class="label-drug-name">{{ lbl.medicineName }} {{ lbl.strength }}</h3>
-                <span class="label-generic">({{ lbl.genericName || lbl.dosageForm }}) — Qty: {{ lbl.quantity }}</span>
+                <strong>{{ lbl.medicineName }} {{ lbl.strength }}</strong>
+                <span>({{ lbl.genericName || lbl.dosageForm }}) — Qty: {{ lbl.quantity }}</span>
               </div>
-
               <div class="label-directions-box">
-                <span class="dir-lbl">DIRECTIONS FOR USE:</span>
-                <p class="directions-text">{{ lbl.dosageInstructions }}</p>
+                <span class="dir-lbl">Directions For Use</span>
+                <p>{{ lbl.dosageInstructions }}</p>
               </div>
-
-              <div class="label-row footer-meta">
+              <div class="label-row">
                 <span>Prescriber: {{ lbl.doctorName }}</span>
                 <span>RPh: {{ lbl.pharmacistName }}</span>
               </div>
-
               <div class="label-caution">
                 <small>{{ lbl.cautionNotes }}</small>
-              </div>
-
-              <!-- Simulated Barcode -->
-              <div class="barcode-sim">
-                <div class="bars"></div>
-                <small class="barcode-num">*{{ lbl.rxNumber }}*</small>
               </div>
             </div>
           }
         </div>
 
         <div class="modal-footer">
-          <button mat-stroked-button (click)="closeLabelModal()">Close</button>
-          <button mat-flat-button color="primary" (click)="printThermalLabels()">
-            <mat-icon>print</mat-icon> Print Label
+          <button mat-flat-button color="primary" type="button" (click)="printThermalLabels()">
+            Print Label
           </button>
+          <button mat-stroked-button type="button" (click)="closeLabelModal()">Close</button>
         </div>
       </div>
     </div>
@@ -1336,23 +1321,26 @@
 
   <!-- NEW REQUISITION MODAL -->
   @if (showRequisitionModal()) {
-    <div class="custom-modal-overlay" (click)="closeRequisitionModal()">
-      <div class="custom-modal-content mat-elevation-z8" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" (click)="closeRequisitionModal()">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="requisition-modal-title"
+        (click)="$event.stopPropagation()"
+      >
         <div class="modal-header">
-          <div class="modal-title-box">
-            <mat-icon class="modal-icon primary-color">shopping_cart</mat-icon>
-            <div>
-              <h3>Create Stock Purchase Order / Requisition</h3>
-              <p>Order fresh stock from pharmaceutical suppliers or replenish ward emergency carts.</p>
-            </div>
+          <div>
+            <h2 id="requisition-modal-title">Create Stock Requisition / PO</h2>
+            <p>Order stock from distributors or replenish ward carts.</p>
           </div>
-          <button mat-icon-button (click)="closeRequisitionModal()">
-            <mat-icon>close</mat-icon>
+          <button mat-icon-button type="button" aria-label="Close modal" (click)="closeRequisitionModal()">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
 
-        <form [formGroup]="requisitionForm" (ngSubmit)="submitRequisition()" class="modal-body">
-          <div class="form-grid-2">
+        <form [formGroup]="requisitionForm" (ngSubmit)="submitRequisition()" class="modal-form">
+          <div class="modal-body">
             <mat-form-field appearance="outline">
               <mat-label>Medication to Order</mat-label>
               <mat-select formControlName="medicineId">
@@ -1366,9 +1354,7 @@
               <mat-label>Quantity to Order / Transfer</mat-label>
               <input matInput type="number" formControlName="quantityRequested" min="1">
             </mat-form-field>
-          </div>
 
-          <div class="form-grid-2">
             <mat-form-field appearance="outline">
               <mat-label>Requisition Type</mat-label>
               <mat-select formControlName="type">
@@ -1382,18 +1368,18 @@
               <mat-label>Supplier Name / Destination Ward</mat-label>
               <input matInput formControlName="supplierName" placeholder="e.g. MedSupply Direct Ltd or ICU Ward">
             </mat-form-field>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Procurement Notes / Justification</mat-label>
+              <textarea matInput rows="2" formControlName="notes" placeholder="e.g. Routine monthly restock..."></textarea>
+            </mat-form-field>
           </div>
 
-          <mat-form-field appearance="outline" style="width: 100%;">
-            <mat-label>Procurement Notes / Justification</mat-label>
-            <textarea matInput rows="2" formControlName="notes" placeholder="e.g. Routine monthly restock or low stock threshold alert..."></textarea>
-          </mat-form-field>
-
-          <div class="modal-footer" style="padding: 0; margin-top: 16px;">
-            <button type="button" mat-stroked-button (click)="closeRequisitionModal()">Cancel</button>
+          <div class="modal-footer">
             <button type="submit" mat-flat-button color="primary" [disabled]="requisitionForm.invalid || isProcessing()">
               Submit Requisition Order
             </button>
+            <button type="button" mat-stroked-button (click)="closeRequisitionModal()">Cancel</button>
           </div>
         </form>
       </div>

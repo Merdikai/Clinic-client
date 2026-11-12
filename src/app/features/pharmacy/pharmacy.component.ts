@@ -1,29 +1,36 @@
-import { Component, inject, computed, OnInit, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, forkJoin } from 'rxjs';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
 import { MedicineStore } from '../../store/medicine.store';
 import { MedicineService } from '../../services/medicine.service';
 import { PrescriptionService } from '../../services/prescription.service';
-import { PharmacyService, PharmacyMetrics, PharmacyStockRequisition, ControlledSubstanceLog, PrescriptionLabel } from '../../services/pharmacy.service';
+import {
+  ControlledSubstanceLog,
+  PharmacyMetrics,
+  PharmacyService,
+  PharmacyStockRequisition,
+  PrescriptionLabel
+} from '../../services/pharmacy.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { LiveSyncService } from '../../services/live-sync.service';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Medicine } from '../../models/medicine.model';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-pharmacy',
@@ -32,17 +39,17 @@ import { Medicine } from '../../models/medicine.model';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    MatTabsModule,
-    MatCardModule,
     MatButtonModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatFormFieldModule,
     MatSelectModule,
     MatTooltipModule,
-    MatChipsModule,
-    MatDialogModule,
-    MatProgressSpinnerModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './pharmacy.component.html',
   styleUrls: ['./pharmacy.component.scss']
@@ -63,30 +70,49 @@ export class PharmacyComponent implements OnInit {
   readonly Math = Math;
 
   // Role checks
-
   isDoctor = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'doctor' || this.authService.hasRole('Doctor'));
   isPatient = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'patient' || this.authService.hasRole('Patient'));
   isNurse = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'nurse' || this.authService.hasRole('Nurse'));
   isPharmacist = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'pharmacist' || this.authService.hasRole('Pharmacist'));
 
-  /** Nurse can ONLY view the Formulary Catalog — no prescriptions, POS, requisitions, or audit */
   nurseFormularyOnly = computed(() => this.isNurse());
 
-  canDispense = computed(() => 
+  canDispense = computed(() =>
     !this.isDoctor() && !this.isPatient() && !this.isNurse() && !this.authService.hasRole('Admin') &&
     (this.isPharmacist() || this.permissionService.hasPermission('Prescriptions.Dispense'))
   );
 
-  canManageInventory = computed(() => 
+  canManageInventory = computed(() =>
     !this.isDoctor() && !this.isPatient() && !this.isNurse() && !this.authService.hasRole('Admin') &&
     (this.isPharmacist() || this.permissionService.hasPermission('Medicines.Manage'))
   );
+
+  pageTitle = computed(() => {
+    if (this.isPatient()) return 'My Prescribed Medications';
+    if (this.isDoctor()) return 'Clinical Medication Formulary';
+    if (this.isNurse()) return 'Medication Administration Reference';
+    return 'Pharmacy & Dispensary Control';
+  });
+
+  pageSubtitle = computed(() => {
+    if (this.isPatient()) {
+      return 'Track active prescriptions, dosage schedules, and pharmacy fulfillment status';
+    }
+    if (this.isNurse()) {
+      return 'Reference approved hospital formulary dosages, routes of administration, and storage conditions';
+    }
+    if (this.isDoctor()) {
+      return 'Institutional hospital formulary, therapeutic drug classifications, dosage strengths, and stock availability';
+    }
+    return 'Prescription fulfillment, dispensary POS billing, 12-category formulary inventory, and controlled substance audit';
+  });
 
   // Tabs
   selectedTabIndex = signal<number>(0);
 
   // Dispensary metrics
   metrics = signal<PharmacyMetrics | null>(null);
+  loadingMetrics = signal<boolean>(true);
 
   // Prescription Queue
   prescriptions = signal<any[]>([]);
@@ -106,10 +132,12 @@ export class PharmacyComponent implements OnInit {
 
   // Stock Requisitions
   requisitions = signal<PharmacyStockRequisition[]>([]);
+  loadingRequisitions = signal<boolean>(true);
   showRequisitionModal = signal<boolean>(false);
 
   // Controlled Substances Audit
   controlledLogs = signal<ControlledSubstanceLog[]>([]);
+  loadingControlledLogs = signal<boolean>(true);
   controlledSearchTerm = signal<string>('');
 
   // POS Point of Sale
@@ -133,7 +161,6 @@ export class PharmacyComponent implements OnInit {
   // Processing state
   isProcessing = signal<boolean>(false);
   loadingPrescriptions = signal<boolean>(false);
-  loadingFormulary = signal<boolean>(false);
 
   // Formulary Medicine Form
   medicineForm = this.fb.group({
@@ -206,12 +233,21 @@ export class PharmacyComponent implements OnInit {
     this.loadPrescriptions();
     this.loadRequisitions();
     this.loadControlledLogs();
-
     this.syncTabWithRoute();
   }
 
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showDispenseModal() && !this.isProcessing()) {
+      this.closeDispenseModal();
+    } else if (this.showLabelModal()) {
+      this.closeLabelModal();
+    } else if (this.showRequisitionModal() && !this.isProcessing()) {
+      this.closeRequisitionModal();
+    }
+  }
+
   syncTabWithRoute(): void {
-    // Nurses are restricted to Formulary only — always force tab index 0 (their only tab)
     if (this.isNurse()) {
       this.selectedTabIndex.set(0);
       return;
@@ -231,7 +267,6 @@ export class PharmacyComponent implements OnInit {
   }
 
   onTabChange(index: number): void {
-    // Nurses cannot change tabs — they only see Formulary
     if (this.isNurse()) return;
     this.selectedTabIndex.set(index);
     const tabMap: { [key: number]: string } = {
@@ -247,9 +282,15 @@ export class PharmacyComponent implements OnInit {
 
   // DATA LOADERS
   loadMetrics(): void {
+    this.loadingMetrics.set(true);
     this.pharmacyService.getMetrics().subscribe({
-      next: (m) => this.metrics.set(m),
-      error: () => {}
+      next: (m) => {
+        this.metrics.set(m);
+        this.loadingMetrics.set(false);
+      },
+      error: () => {
+        this.loadingMetrics.set(false);
+      }
     });
   }
 
@@ -263,16 +304,18 @@ export class PharmacyComponent implements OnInit {
   }
 
   loadRequisitions(): void {
+    this.loadingRequisitions.set(true);
     this.pharmacyService.getRequisitions().subscribe({
-      next: (list) => this.requisitions.set(list || []),
-      error: () => this.requisitions.set([])
+      next: (list) => { this.requisitions.set(list || []); this.loadingRequisitions.set(false); },
+      error: () => { this.requisitions.set([]); this.loadingRequisitions.set(false); }
     });
   }
 
   loadControlledLogs(): void {
+    this.loadingControlledLogs.set(true);
     this.pharmacyService.getControlledSubstances().subscribe({
-      next: (list) => this.controlledLogs.set(list || []),
-      error: () => this.controlledLogs.set([])
+      next: (list) => { this.controlledLogs.set(list || []); this.loadingControlledLogs.set(false); },
+      error: () => { this.controlledLogs.set([]); this.loadingControlledLogs.set(false); }
     });
   }
 
@@ -301,19 +344,15 @@ export class PharmacyComponent implements OnInit {
     if (this.selectedCategory() !== 'All') {
       list = list.filter(m => m.category === this.selectedCategory());
     }
-
     if (this.filterLowStockOnly()) {
       list = list.filter(m => m.stockQuantity <= (m.reorderLevel || 15));
     }
-
     if (this.filterNearExpiryOnly()) {
       list = list.filter(m => m.isNearExpiry);
     }
-
     if (this.filterControlledOnly()) {
       list = list.filter(m => m.isControlledSubstance);
     }
-
     if (this.filterInStockOnly()) {
       list = list.filter(m => m.stockQuantity > 0);
     }
@@ -342,21 +381,31 @@ export class PharmacyComponent implements OnInit {
     };
   });
 
-  getCategoryIcon(category: string): string {
-    switch ((category || '').toLowerCase()) {
-      case 'antibiotics': return 'coronavirus';
-      case 'analgesics & antipyretics': return 'healing';
-      case 'cardiovascular': return 'favorite';
-      case 'gastrointestinal': return 'local_drink';
-      case 'respiratory': return 'air';
-      case 'endocrine & diabetes': return 'water_drop';
-      case 'controlled substances': return 'shield_locked';
-      case 'dermatological': return 'clean_hands';
-      case 'ophthalmic & otic': return 'visibility';
-      case 'vitamins & supplements': return 'spa';
-      case 'emergency & resuscitation': return 'emergency';
-      default: return 'medication';
-    }
+  getStockStatus(med: Medicine): string {
+    if (med.stockQuantity <= 0) return 'OutOfStock';
+    if (med.stockQuantity <= (med.reorderLevel || 15)) return 'LowStock';
+    return 'InStock';
+  }
+
+  getStockLabel(med: Medicine): string {
+    if (med.stockQuantity <= 0) return 'Out of Stock';
+    if (med.stockQuantity <= (med.reorderLevel || 15)) return `Limited (${med.stockQuantity} left)`;
+    return `In Stock (${med.stockQuantity})`;
+  }
+
+  getStockTone(med: Medicine): StatusTone {
+    if (med.stockQuantity <= 0) return 'danger';
+    if (med.stockQuantity <= (med.reorderLevel || 15)) return 'warning';
+    return 'success';
+  }
+
+  resetFormularyFilters(): void {
+    this.selectedCategory.set('All');
+    this.searchTerm.set('');
+    this.filterInStockOnly.set(false);
+    this.filterLowStockOnly.set(false);
+    this.filterNearExpiryOnly.set(false);
+    this.filterControlledOnly.set(false);
   }
 
   copyMedicationDetails(med: Medicine): void {
@@ -375,7 +424,7 @@ export class PharmacyComponent implements OnInit {
   }
 
   filteredControlledLogs = computed(() => {
-    let list = this.controlledLogs();
+    const list = this.controlledLogs();
     const term = this.controlledSearchTerm().trim().toLowerCase();
     if (!term) return list;
     return list.filter(l =>
@@ -441,16 +490,14 @@ export class PharmacyComponent implements OnInit {
     this.isProcessing.set(true);
 
     this.pharmacyService.dispensePrescription(rx.id, this.verificationNotesInput()).subscribe({
-      next: (res) => {
-        this.toast.success(`Prescription #${rx.id.substring(0, 8).toUpperCase()} fulfilled and inventory updated!`);
+      next: () => {
+        this.toast.success(`Prescription #${rx.id.substring(0, 8).toUpperCase()} fulfilled and inventory updated.`);
         this.closeDispenseModal();
         this.medicineStore.loadMedicines();
         this.loadPrescriptions();
         this.loadMetrics();
         this.loadControlledLogs();
         this.isProcessing.set(false);
-
-        // Open label modal automatically for convenience
         this.openLabelModal(rx.id);
       },
       error: (err) => {
@@ -467,7 +514,7 @@ export class PharmacyComponent implements OnInit {
 
     this.pharmacyService.dispensePrescription(code, 'Quick barcode scan fulfillment').subscribe({
       next: () => {
-        this.toast.success('Prescription verified & dispensed!');
+        this.toast.success('Prescription verified and dispensed.');
         this.quickRxCodeInput.set('');
         this.medicineStore.loadMedicines();
         this.loadPrescriptions();
@@ -485,7 +532,7 @@ export class PharmacyComponent implements OnInit {
     this.isProcessing.set(true);
     this.pharmacyService.generateInvoice(rxId).subscribe({
       next: (invoice) => {
-        this.toast.success(`Billing invoice ${invoice.invoiceNumber} created successfully! Total: $${invoice.totalAmount.toFixed(2)}`);
+        this.toast.success(`Billing invoice ${invoice.invoiceNumber} created. Total: $${invoice.totalAmount.toFixed(2)}`);
         this.loadPrescriptions();
         this.isProcessing.set(false);
       },
@@ -529,7 +576,7 @@ export class PharmacyComponent implements OnInit {
         existing.quantity += 1;
         this.posCart.set(current);
       } else {
-        this.toast.warning(`Only ${med.stockQuantity} units available in dispensary stock!`);
+        this.toast.warning(`Only ${med.stockQuantity} units available in dispensary stock.`);
       }
     } else {
       current.push({ medicine: med, quantity: 1, unitPrice: med.unitPrice });
@@ -568,14 +615,13 @@ export class PharmacyComponent implements OnInit {
     if (items.length === 0) return;
     this.isProcessing.set(true);
 
-    // Parallel dispense all cart items atomically
     const dispenseRequests = items.map(cartItem =>
       this.medicineService.dispense(cartItem.medicine.id, cartItem.quantity)
     );
 
     forkJoin(dispenseRequests).subscribe({
       next: () => {
-        this.toast.success(`POS Checkout Complete! $${this.posGrandTotal().toFixed(2)} collected via ${this.posPaymentMethod()}.`);
+        this.toast.success(`POS Checkout Complete: $${this.posGrandTotal().toFixed(2)} collected via ${this.posPaymentMethod()}.`);
         this.clearCart();
         this.medicineStore.loadMedicines();
         this.loadMetrics();
@@ -654,7 +700,7 @@ export class PharmacyComponent implements OnInit {
       const id = this.editingMedicineId()!;
       this.medicineService.update(id, payload).subscribe({
         next: (updatedMed) => {
-          this.toast.success(`Formulary medicine '${payload.name}' updated!`);
+          this.toast.success(`Formulary medicine '${payload.name}' updated.`);
           if (updatedMed) this.medicineStore.upsertMedicineEntity(updatedMed);
           this.medicineStore.loadMedicines();
           this.loadMetrics();
@@ -669,7 +715,7 @@ export class PharmacyComponent implements OnInit {
     } else {
       this.medicineService.create(payload).subscribe({
         next: (createdMed) => {
-          this.toast.success(`Medicine '${payload.name}' added to Clinical Formulary!`);
+          this.toast.success(`Medicine '${payload.name}' added to Clinical Formulary.`);
           if (createdMed) this.medicineStore.upsertMedicineEntity(createdMed);
           this.medicineStore.loadMedicines();
           this.loadMetrics();
@@ -712,7 +758,7 @@ export class PharmacyComponent implements OnInit {
     if (confirm('Are you sure you want to retire this medicine from the formulary?')) {
       this.medicineService.delete(id).subscribe({
         next: () => {
-          this.toast.success('Medicine removed from formulary catalog');
+          this.toast.success('Medicine removed from formulary catalog.');
           this.medicineStore.removeMedicineEntity(id);
           this.medicineStore.loadMedicines();
           this.loadMetrics();
@@ -757,7 +803,7 @@ export class PharmacyComponent implements OnInit {
 
     this.pharmacyService.createRequisition(payload).subscribe({
       next: (req) => {
-        this.toast.success(`Requisition order ${req.requisitionNumber} submitted!`);
+        this.toast.success(`Requisition order ${req.requisitionNumber} submitted.`);
         this.closeRequisitionModal();
         this.loadRequisitions();
         this.isProcessing.set(false);
@@ -773,7 +819,7 @@ export class PharmacyComponent implements OnInit {
     this.isProcessing.set(true);
     this.pharmacyService.reviewRequisition(reqId, { status }).subscribe({
       next: (res) => {
-        this.toast.success(`Requisition ${res.requisitionNumber} marked as ${status}!`);
+        this.toast.success(`Requisition ${res.requisitionNumber} marked as ${status}.`);
         this.loadRequisitions();
         this.medicineStore.loadMedicines();
         this.loadMetrics();
