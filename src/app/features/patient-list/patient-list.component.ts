@@ -8,14 +8,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PatientStore } from '../../store/patient.store';
 import { PatientService } from '../../services/patient.service';
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
 import { ToastService } from '../../ui/toast/toast.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-patient-list',
@@ -30,9 +32,11 @@ import { ToastService } from '../../ui/toast/toast.service';
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatTooltipModule
+    MatTooltipModule,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './patient-list.component.html',
   styleUrls: ['./patient-list.component.scss']
@@ -59,9 +63,20 @@ export class PatientListComponent implements OnInit {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
     return role === 'admin' || this.authService.isAdmin();
   });
+  isNurse = computed(() => {
+    const role = (this.permissionService.activeRole() || '').toLowerCase();
+    return role === 'nurse' || this.authService.hasRole('Nurse');
+  });
+  isReceptionist = computed(() => {
+    const role = (this.permissionService.activeRole() || '').toLowerCase();
+    return role === 'receptionist' || this.authService.hasRole('Receptionist');
+  });
   isRadiologist = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
     return role === 'radiologist' || this.authService.hasRole('Radiologist');
+  });
+  canManagePatients = computed(() => {
+    return this.isAdmin() || this.isDoctor() || this.isNurse() || this.isReceptionist();
   });
   canCreateAppointment = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
@@ -97,6 +112,13 @@ export class PatientListComponent implements OnInit {
     this.selectedGender.set(gender);
   }
 
+  clearFilters() {
+    this.selectedGender.set('ALL');
+    this.searchQuery.set('');
+    this.patientStore.setSearchTerm('');
+    this.patientStore.loadPatients();
+  }
+
   onPageChange(event: PageEvent) {
     this.patientStore.setPageSize(event.pageSize);
     this.patientStore.setPage(event.pageIndex + 1);
@@ -121,7 +143,7 @@ export class PatientListComponent implements OnInit {
           this.toast.success('Patient deleted successfully');
           this.patientStore.loadPatients();
         },
-        error: (err: any) => this.toast.error('Error deleting patient')
+        error: () => this.toast.error('Error deleting patient')
       });
     }
   }

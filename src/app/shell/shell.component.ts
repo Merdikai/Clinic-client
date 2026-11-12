@@ -211,7 +211,7 @@ export class ShellComponent implements OnInit {
     this.loadRadiologyMetrics();
     this.loadNursingProcedures();
     this.loadAdminMetrics();
-    this.dutyService.refreshDutyStatus().subscribe({ error: () => { } });
+    this.dutyService.refreshDutyStatus().subscribe({ error: () => {} });
 
     this.liveSync.lowStockAlert$.subscribe(() => {
       this.loadPharmacyMetrics();
@@ -238,7 +238,7 @@ export class ShellComponent implements OnInit {
       this.loadAdminMetrics();
     });
     this.liveSync.dutyRosterChanged$.subscribe(() => {
-      this.dutyService.refreshDutyStatus().subscribe({ error: () => { } });
+      this.dutyService.refreshDutyStatus().subscribe({ error: () => {} });
       this.loadAdminMetrics();
     });
   }
@@ -254,21 +254,21 @@ export class ShellComponent implements OnInit {
     if (role !== 'Pharmacist' && role !== 'Admin') return;
     this.pharmacyService.getMetrics().subscribe({
       next: (m) => this.pharmacyMetrics.set(m),
-      error: () => { }
+      error: () => {}
     });
   }
 
   loadFinanceMetrics(): void {
     this.financeService.getMetrics().subscribe({
       next: (m) => this.financeMetrics.set(m),
-      error: () => { }
+      error: () => {}
     });
   }
 
   loadLabMetrics(): void {
     this.labService.getMetrics().subscribe({
       next: (m) => this.labMetrics.set(m),
-      error: () => { }
+      error: () => {}
     });
   }
 
@@ -282,7 +282,7 @@ export class ShellComponent implements OnInit {
         const count = res?.totalCount || (Array.isArray(res?.items) ? res.items.length : 8);
         if (count) this.totalPatientsCount.set(count);
       },
-      error: () => { }
+      error: () => {}
     });
   }
 
@@ -297,7 +297,7 @@ export class ShellComponent implements OnInit {
           const queue = list.filter((a: any) => a.status === 'Scheduled' || a.status === 'CheckedIn' || a.status === 'TriageComplete' || a.status === 'PendingApproval');
           this.todayConsultationsCount.set(queue.length);
         },
-        error: () => { }
+        error: () => {}
       });
     } else {
       this.appointmentService.getAll(1, 50).subscribe({
@@ -311,7 +311,7 @@ export class ShellComponent implements OnInit {
             }
           }
         },
-        error: () => { }
+        error: () => {}
       });
     }
   }
@@ -322,7 +322,7 @@ export class ShellComponent implements OnInit {
         const list = Array.isArray(res) ? res : (res?.items || []);
         if (list.length > 0) this.doctorPanelCount.set(list.length);
       },
-      error: () => { }
+      error: () => {}
     });
   }
 
@@ -334,7 +334,7 @@ export class ShellComponent implements OnInit {
           this.nurseProceduresCount.set(list.length);
         }
       },
-      error: () => { }
+      error: () => {}
     });
   }
 
@@ -395,7 +395,7 @@ export class ShellComponent implements OnInit {
           this.radiologyCriticalCount.set(m.criticalAlertsCount ?? 0);
         }
       },
-      error: () => { }
+      error: () => {}
     });
 
     this.radiologyService.getSafetyLogs().pipe(
@@ -407,7 +407,7 @@ export class ShellComponent implements OnInit {
           this.radiologySafetyCount.set(logs.length);
         }
       },
-      error: () => { }
+      error: () => {}
     });
   }
 
@@ -466,14 +466,14 @@ export class ShellComponent implements OnInit {
       next: (users) => {
         if (users && users.length > 0) this.adminStaffUsersCount.set(users.length);
       },
-      error: () => { }
+      error: () => {}
     });
 
     this.dutyService.getActiveStaff().subscribe({
       next: (staff) => {
         if (staff) this.adminActiveDutyCount.set(staff.length);
       },
-      error: () => { }
+      error: () => {}
     });
 
     this.emrAccessService.getAuditLogs(1, 1).subscribe({
@@ -481,14 +481,14 @@ export class ShellComponent implements OnInit {
         const count = res?.totalCount ?? (Array.isArray(res) ? res.length : 18);
         if (count !== undefined) this.adminAuditLogsCount.set(count);
       },
-      error: () => { }
+      error: () => {}
     });
 
     this.dutyService.getActiveDelegations().subscribe({
       next: (dels) => {
         if (dels) this.adminDelegationsCount.set(dels.length);
       },
-      error: () => { }
+      error: () => {}
     });
   }
 

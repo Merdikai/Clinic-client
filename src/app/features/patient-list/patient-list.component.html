@@ -1,207 +1,161 @@
-<div class="page-container premium-page">
+<div class="ehr-page patient-list-page">
+  <app-page-header title="Patient Directory" subtitle="Medical record numbers, demographics, and clinical charts">
+    @if (canManagePatients()) {
+    <a mat-flat-button color="primary" routerLink="/patients/new">
+      Register Patient
+    </a>
+    }
+  </app-page-header>
 
-  <!-- HERO BANNER -->
-  <div class="hero-card">
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="pulse-dot"></span>
-        <span>Electronic Health Records (EHR)</span>
-      </div>
-      <h1 class="hero-title">Patient Master Directory</h1>
-      <p class="hero-subtitle">Comprehensive medical charts, identity records, demographics, and clinical appointment histories</p>
+  <section class="summary-strip" aria-label="Patient directory counts">
+    <div class="summary-card">
+      <span class="summary-label">Total Registered</span>
+      <span class="summary-value">{{ totalCount() || patients().length }}</span>
     </div>
-    <div class="hero-actions">
-      <a mat-raised-button color="primary" routerLink="/patients/new" class="register-hero-btn">
-        <mat-icon>person_add</mat-icon>
-        <span>Register New Patient</span>
-      </a>
+    <div class="summary-card">
+      <span class="summary-label">Male (Page)</span>
+      <span class="summary-value">{{ maleCount() }}</span>
     </div>
-  </div>
+    <div class="summary-card">
+      <span class="summary-label">Female (Page)</span>
+      <span class="summary-value">{{ femaleCount() }}</span>
+    </div>
+  </section>
 
-  <!-- STATS OVERVIEW CARDS -->
-  <div class="stats-grid">
-    <div class="stat-card total-card">
-      <div class="stat-icon-wrap blue-glow">
-        <mat-icon>groups</mat-icon>
-      </div>
-      <div class="stat-info">
-        <span class="stat-label">Total Registered Patients</span>
-        <h3 class="stat-value">{{ totalCount() || patients().length }}</h3>
-        <span class="stat-sub">Active database records</span>
-      </div>
-    </div>
-
-    <div class="stat-card male-card" (click)="setGenderFilter(selectedGender() === 'Male' ? 'ALL' : 'Male')" [class.active]="selectedGender() === 'Male'">
-      <div class="stat-icon-wrap indigo-glow">
-        <mat-icon>male</mat-icon>
-      </div>
-      <div class="stat-info">
-        <span class="stat-label">Male Patients</span>
-        <h3 class="stat-value">{{ maleCount() }}</h3>
-        <span class="stat-sub">Click to filter</span>
-      </div>
-    </div>
-
-    <div class="stat-card female-card" (click)="setGenderFilter(selectedGender() === 'Female' ? 'ALL' : 'Female')" [class.active]="selectedGender() === 'Female'">
-      <div class="stat-icon-wrap pink-glow">
-        <mat-icon>female</mat-icon>
-      </div>
-      <div class="stat-info">
-        <span class="stat-label">Female Patients</span>
-        <h3 class="stat-value">{{ femaleCount() }}</h3>
-        <span class="stat-sub">Click to filter</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN TABLE CONTAINER -->
-  <div class="content-glass-card">
-    <!-- TOOLBAR & FILTERS -->
+  <section class="directory-surface" aria-label="Patient records table">
     <div class="table-toolbar">
-      <div class="search-box">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input type="text" (input)="onSearch($event)" placeholder="Search by patient name, MRN, email, or phone number..." class="search-input">
-      </div>
+      <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+        <mat-label>Search patients</mat-label>
+        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+        <input matInput type="search" [value]="searchQuery()" (input)="onSearch($event)"
+          placeholder="Name, MRN, email, or phone">
+      </mat-form-field>
 
-      <div class="filter-chips">
-        <button class="filter-btn" [class.active]="selectedGender() === 'ALL'" (click)="setGenderFilter('ALL')">
+      <div class="filter-group" role="group" aria-label="Filter by gender">
+        <button type="button" mat-stroked-button class="filter-btn" [class.active]="selectedGender() === 'ALL'"
+          [attr.aria-pressed]="selectedGender() === 'ALL'" (click)="setGenderFilter('ALL')">
           All ({{ patients().length }})
         </button>
-        <button class="filter-btn" [class.active]="selectedGender() === 'Male'" (click)="setGenderFilter('Male')">
+        <button type="button" mat-stroked-button class="filter-btn" [class.active]="selectedGender() === 'Male'"
+          [attr.aria-pressed]="selectedGender() === 'Male'" (click)="setGenderFilter('Male')">
           Male ({{ maleCount() }})
         </button>
-        <button class="filter-btn" [class.active]="selectedGender() === 'Female'" (click)="setGenderFilter('Female')">
+        <button type="button" mat-stroked-button class="filter-btn" [class.active]="selectedGender() === 'Female'"
+          [attr.aria-pressed]="selectedGender() === 'Female'" (click)="setGenderFilter('Female')">
           Female ({{ femaleCount() }})
         </button>
       </div>
     </div>
 
     @if (isLoading()) {
-      <div class="loading-state">
-        <mat-spinner diameter="48"></mat-spinner>
-        <p>Loading patient directory records...</p>
-      </div>
+    <app-skeleton variant="table" [count]="8" [columns]="6" label="Loading patient directory"></app-skeleton>
+    } @else if (filteredPatients().length === 0) {
+    <app-empty-state icon="person_search" title="No patient records found"
+      description="No patients matched the current search or gender filter.">
+      <button mat-stroked-button type="button" (click)="clearFilters()">Clear Filters</button>
+      @if (canManagePatients()) {
+      <a mat-flat-button color="primary" routerLink="/patients/new">Register Patient</a>
+      }
+    </app-empty-state>
     } @else {
-      <div class="table-responsive">
-        <table mat-table [dataSource]="filteredPatients()" class="patient-table">
+    <div class="table-responsive">
+      <table mat-table [dataSource]="filteredPatients()" class="patient-table">
+        <ng-container matColumnDef="patientId">
+          <th mat-header-cell *matHeaderCellDef scope="col">MRN</th>
+          <td mat-cell *matCellDef="let p">
+            <span class="mrn-code">{{ p.medicalRecordNumber || p.patientId || p.id.substring(0, 8).toUpperCase()
+              }}</span>
+          </td>
+        </ng-container>
 
-          <!-- Patient MRN Column -->
-          <ng-container matColumnDef="patientId">
-            <th mat-header-cell *matHeaderCellDef>MRN Code</th>
-            <td mat-cell *matCellDef="let p">
-              <div class="mrn-badge">
-                <mat-icon class="mrn-icon">badge</mat-icon>
-                <span>{{ p.medicalRecordNumber || p.patientId || p.id.substring(0, 8).toUpperCase() }}</span>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef scope="col">Patient</th>
+          <td mat-cell *matCellDef="let p">
+            <div class="profile-cell">
+              <div class="avatar-circle" aria-hidden="true">
+                {{ getInitials(p.fullName || (p.firstName + ' ' + p.lastName)) }}
               </div>
-            </td>
-          </ng-container>
-
-          <!-- Full Name & Avatar -->
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Patient Profile</th>
-            <td mat-cell *matCellDef="let p">
-              <div class="profile-cell">
-                <div class="avatar-circle" [class.male-avatar]="p.gender === 'Male'" [class.female-avatar]="p.gender === 'Female'">
-                  {{ getInitials(p.fullName || (p.firstName + ' ' + p.lastName)) }}
-                </div>
-                <div class="name-info">
-                  <span class="patient-name">{{ p.fullName || (p.firstName + ' ' + p.lastName) }}</span>
-                  <span class="patient-email">
-                    <mat-icon class="sub-icon">mail_outline</mat-icon>
-                    <span>{{ p.email || 'No email registered' }}</span>
-                  </span>
-                </div>
+              <div class="name-info">
+                <span class="patient-name">{{ p.fullName || (p.firstName + ' ' + p.lastName) }}</span>
+                <span class="patient-email">{{ p.email || 'No email on file' }}</span>
               </div>
-            </td>
-          </ng-container>
-
-          <!-- Gender & Age -->
-          <ng-container matColumnDef="gender">
-            <th mat-header-cell *matHeaderCellDef>Gender</th>
-            <td mat-cell *matCellDef="let p">
-              <span class="gender-tag" [class.male]="p.gender === 'Male'" [class.female]="p.gender === 'Female'">
-                <mat-icon class="gender-icon">{{ p.gender === 'Male' ? 'male' : p.gender === 'Female' ? 'female' : 'person' }}</mat-icon>
-                <span>{{ p.gender || 'Unspecified' }}</span>
-              </span>
-            </td>
-          </ng-container>
-
-          <!-- Phone Number -->
-          <ng-container matColumnDef="phone">
-            <th mat-header-cell *matHeaderCellDef>Contact Phone</th>
-            <td mat-cell *matCellDef="let p">
-              <div class="phone-cell">
-                <mat-icon class="phone-icon">phone</mat-icon>
-                <span>{{ p.phone || p.phoneNumber || 'N/A' }}</span>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Blood Group -->
-          <ng-container matColumnDef="bloodGroup">
-            <th mat-header-cell *matHeaderCellDef>Blood Group</th>
-            <td mat-cell *matCellDef="let p">
-              <span class="blood-group-badge" [class.has-blood]="p.bloodGroup">
-                <mat-icon class="blood-icon">bloodtype</mat-icon>
-                <span>{{ p.bloodGroup || 'N/A' }}</span>
-              </span>
-            </td>
-          </ng-container>
-
-          <!-- Action Buttons -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
-            <td mat-cell *matCellDef="let p">
-              <div class="actions-cell">
-                <a mat-flat-button color="primary" [routerLink]="['/patients', p.id]" class="action-btn-primary view-file-btn" matTooltip="View Clinical File & Imaging History">
-                  <mat-icon>folder_shared</mat-icon>
-                  <span>{{ isRadiologist() ? 'Imaging EMR' : 'View File' }}</span>
-                </a>
-                <a *ngIf="isDoctor()" mat-icon-button class="action-icon-btn rad-order-btn" routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: p.id}" matTooltip="Requisition Imaging Exam">
-                  <mat-icon>camera</mat-icon>
-                </a>
-                <a *ngIf="isRadiologist()" mat-icon-button class="action-icon-btn pacs-btn" routerLink="/radiology" [queryParams]="{tab: 'viewer'}" matTooltip="Open Web PACS Viewer">
-                  <mat-icon>center_focus_strong</mat-icon>
-                </a>
-                <a *ngIf="canCreateAppointment()" mat-icon-button class="action-icon-btn book-btn" routerLink="/appointments/book" matTooltip="Schedule Consultation">
-                  <mat-icon>calendar_today</mat-icon>
-                </a>
-                <button mat-icon-button class="action-icon-btn edit-btn" (click)="editPatient(p)" matTooltip="Edit Patient Details">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button class="action-icon-btn delete-btn" (click)="deletePatient(p.id)" matTooltip="Delete Patient Record">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="patient-row"></tr>
-        </table>
-
-        @if (filteredPatients().length === 0) {
-          <div class="empty-state">
-            <div class="empty-icon-box">
-              <mat-icon>person_search</mat-icon>
             </div>
-            <h3>No Patient Records Found</h3>
-            <p>No patients matched your search filters. Try typing a different keyword or register a new patient.</p>
-            <a mat-raised-button color="primary" routerLink="/patients/new" class="register-empty-btn">
-              <mat-icon>add</mat-icon>
-              <span>Register Patient Now</span>
-            </a>
-          </div>
-        }
+          </td>
+        </ng-container>
 
-        <mat-paginator
-          [length]="totalCount()"
-          [pageSize]="10"
-          [pageSizeOptions]="[5, 10, 25, 50]"
-          (page)="onPageChange($event)"
-          class="custom-paginator">
-        </mat-paginator>
-      </div>
+        <ng-container matColumnDef="gender">
+          <th mat-header-cell *matHeaderCellDef scope="col">Gender</th>
+          <td mat-cell *matCellDef="let p">
+            <app-status-chip [status]="p.gender || 'Unspecified'" tone="neutral" [showIcon]="false">
+            </app-status-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef scope="col">Phone</th>
+          <td mat-cell *matCellDef="let p">
+            <span class="phone-text">{{ p.phone || p.phoneNumber || '—' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="bloodGroup">
+          <th mat-header-cell *matHeaderCellDef scope="col">Blood Group</th>
+          <td mat-cell *matCellDef="let p">
+            <app-status-chip [status]="p.bloodGroup || 'Unknown'" [tone]="p.bloodGroup ? 'info' : 'neutral'"
+              [showIcon]="false">
+            </app-status-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
+          <td mat-cell *matCellDef="let p">
+            <div class="actions-cell">
+              <a mat-button color="primary" [routerLink]="['/patients', p.id]">
+                {{ isRadiologist() ? 'Imaging EMR' : 'View File' }}
+              </a>
+              @if (isDoctor()) {
+              <a mat-icon-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: p.id}"
+                matTooltip="Order Imaging Exam"
+                [attr.aria-label]="'Order imaging exam for ' + (p.fullName || (p.firstName + ' ' + p.lastName))">
+                <mat-icon aria-hidden="true">camera</mat-icon>
+              </a>
+              }
+              @if (isRadiologist()) {
+              <a mat-icon-button routerLink="/radiology" [queryParams]="{tab: 'viewer'}" matTooltip="Open PACS Viewer"
+                [attr.aria-label]="'Open PACS viewer for ' + (p.fullName || (p.firstName + ' ' + p.lastName))">
+                <mat-icon aria-hidden="true">center_focus_strong</mat-icon>
+              </a>
+              }
+              @if (canCreateAppointment()) {
+              <a mat-icon-button routerLink="/appointments/book" matTooltip="Book Appointment"
+                [attr.aria-label]="'Book appointment for ' + (p.fullName || (p.firstName + ' ' + p.lastName))">
+                <mat-icon aria-hidden="true">calendar_today</mat-icon>
+              </a>
+              }
+              @if (canManagePatients()) {
+              <button type="button" mat-icon-button (click)="editPatient(p)" matTooltip="Edit Patient"
+                [attr.aria-label]="'Edit ' + (p.fullName || (p.firstName + ' ' + p.lastName))">
+                <mat-icon aria-hidden="true">edit</mat-icon>
+              </button>
+              <button type="button" mat-icon-button class="delete-action" (click)="deletePatient(p.id)"
+                matTooltip="Delete Patient"
+                [attr.aria-label]="'Delete ' + (p.fullName || (p.firstName + ' ' + p.lastName))">
+                <mat-icon aria-hidden="true">delete</mat-icon>
+              </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="patient-row"></tr>
+      </table>
+    </div>
+
+    <mat-paginator [length]="totalCount()" [pageSize]="10" [pageSizeOptions]="[5, 10, 25, 50]"
+      (page)="onPageChange($event)" aria-label="Patient directory pagination">
+    </mat-paginator>
     }
-  </div>
+  </section>
 </div>
