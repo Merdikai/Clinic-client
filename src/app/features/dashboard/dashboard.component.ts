@@ -336,14 +336,14 @@ export class DashboardComponent implements OnInit {
       next: (procs) => {
         this.nurseProceduresTodayCount.set(procs ? procs.length : 0);
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.nursingService.getLatestHandover().subscribe({
       next: (handover) => {
         this.latestShiftHandover.set(handover);
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -387,7 +387,7 @@ export class DashboardComponent implements OnInit {
             if (pain != null) this.nursePain.set(Number(pain));
           }
         },
-        error: () => {}
+        error: () => { }
       });
     }
 
@@ -575,12 +575,12 @@ export class DashboardComponent implements OnInit {
           this.drawerCashCounted.set(summary.cashCollected);
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.receptionService.getInquiries().subscribe({
       next: inquiries => this.receptionInquiries.set(inquiries || []),
-      error: () => {}
+      error: () => { }
     });
 
     this.appointmentService.getAll(1, 100).subscribe({
@@ -757,7 +757,7 @@ export class DashboardComponent implements OnInit {
     this.pharmacyLoading.set(true);
     this.pharmacyService.getMetrics().subscribe({
       next: (m) => this.pharmacyMetrics.set(m),
-      error: () => {}
+      error: () => { }
     });
 
     this.prescriptionService.getAll(undefined, 'Pending').subscribe({
@@ -771,7 +771,7 @@ export class DashboardComponent implements OnInit {
 
     this.pharmacyService.getLowStockMedicines().subscribe({
       next: (meds) => this.pharmacyLowStockMedicines.set(meds || []),
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -914,7 +914,7 @@ export class DashboardComponent implements OnInit {
     this.radiologyLoading.set(true);
     this.radiologyService.getMetrics().subscribe({
       next: (m) => this.radiologyMetrics.set(m),
-      error: () => {}
+      error: () => { }
     });
 
     this.radiologyService.getOrders().subscribe({

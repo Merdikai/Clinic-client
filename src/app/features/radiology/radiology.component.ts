@@ -1,22 +1,24 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import { RadiologyService } from '../../services/radiology.service';
 import { PatientService } from '../../services/patient.service';
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
 import { ToastService } from '../../ui/toast/toast.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 import {
   RadiologyOrder,
   RadiologyModality,
@@ -52,15 +54,17 @@ export interface ModalitySuiteStatus {
     CommonModule,
     FormsModule,
     RouterModule,
-    MatCardModule,
     MatIconModule,
     MatButtonModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatTooltipModule,
-    MatProgressBarModule
+    MatCheckboxModule,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './radiology.component.html',
   styleUrls: ['./radiology.component.scss']
@@ -273,8 +277,25 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     return role === 'nurse' || roles.includes('Nurse');
   });
 
+  pageTitle = computed(() => 'Diagnostic Imaging & PACS');
+  pageSubtitle = computed(() =>
+    this.isNurse()
+      ? 'Clinical RIS worklist, diagnostic reports, and patient study tracking'
+      : 'RIS modality worklist, PACS DICOM review, structured reporting, and radiation safety'
+  );
+
   nurseCompletedCount = computed(() => this.orders().filter(o => o.status === 'Reported' || o.status === 'Completed').length);
   nurseInScanCount = computed(() => this.orders().filter(o => o.status === 'InProgress' || o.status === 'Scheduled').length);
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.viewerMetadataDrawerOpen()) this.viewerMetadataDrawerOpen.set(false);
+    else if (this.isOrderModalOpen()) this.isOrderModalOpen.set(false);
+    else if (this.isScheduleModalOpen()) this.isScheduleModalOpen.set(false);
+    else if (this.isReportModalOpen()) this.isReportModalOpen.set(false);
+    else if (this.isNewSafetyEntryModalOpen()) this.isNewSafetyEntryModalOpen.set(false);
+    else if (this.isNurseStudyModalOpen()) this.closeNurseStudyDetails();
+  }
 
   openNurseStudyDetails(order: RadiologyOrder) {
     this.nurseSelectedStudy.set(order);
@@ -307,14 +328,14 @@ export class RadiologyComponent implements OnInit, OnDestroy {
   radiologistProfileTitle = computed(() => {
     const name = this.currentRadiologistName();
     if (name === 'Elena') {
-      return 'Dr. Elena Vance, MD • Diagnostic Radiologist & Neuroradiologist';
+      return 'Dr. Elena Vance, MD — Diagnostic Radiologist & Neuroradiologist';
     }
     if (name === 'Ray') {
-      return 'Dr. Ray Radiologist, MD, FACR • Senior Diagnostic Radiologist';
+      return 'Dr. Ray Radiologist, MD, FACR — Senior Diagnostic Radiologist';
     }
     const user = this.currentUser();
     const full = user?.fullName || this.authService.currentUserName();
-    return `Dr. ${full || 'Radiologist'}, MD • Diagnostic Imaging Specialist`;
+    return `Dr. ${full || 'Radiologist'}, MD — Diagnostic Imaging Specialist`;
   });
 
   getRadiologistSignature(): string {
@@ -358,7 +379,6 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     const priority = this.selectedPriority();
 
     if (this.isRadiologist() && this.scopeFilter() === 'my') {
-      // Radiologist Account Isolation: Display studies assigned/signed by this radiologist, or pending studies needing reading
       list = list.filter(o => this.isStudyAssociatedWithMe(o) || o.status === 'Ordered' || o.status === 'Scheduled' || o.status === 'InProgress');
     }
 
@@ -557,6 +577,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       (o.accessionNumber && o.accessionNumber.toLowerCase().includes(q))
     );
   });
+
   reportingTemplates = [
     {
       id: 'cxr-normal',
@@ -770,7 +791,6 @@ export class RadiologyComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit() {
-    // Parse query params to activate tabs (e.g. ?tab=worklist, ?tab=viewer, etc.)
     this.route.queryParams.subscribe(params => {
       const currentTab = this.activeTab();
       const rawTab = params['tab'] as any;
@@ -890,11 +910,9 @@ export class RadiologyComponent implements OnInit, OnDestroy {
             this.openReportingDesk(targetOrder, false);
           }
         } else {
-          // Auto-select first order for PACS viewer if none is selected
           if (!this.viewerOrder() && finalOrders.length > 0 && !this.isNurse()) {
             this.viewerOrder.set(finalOrders[0]);
           }
-          // Auto-select first pending order for Structured Reporting desk only if currently on reports tab
           if (!this.selectedOrder() && finalOrders.length > 0 && !this.isNurse() && this.activeTab() === 'reports') {
             const pending = finalOrders.find(o => o.status === 'Ordered' || o.status === 'Scheduled' || o.status === 'InProgress') || finalOrders[0];
             this.openReportingDesk(pending, false);
@@ -1090,14 +1108,14 @@ export class RadiologyComponent implements OnInit, OnDestroy {
 
     const rowsHtml = logs.map((l, idx) => `
       <tr style="${idx % 2 === 0 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-family:monospace; font-weight:700; color:#0369a1;">${l.accessionNumber || 'ACC-2026-X'}</td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-family:monospace; font-weight:700; color:#075985;">${l.accessionNumber || 'ACC-2026-X'}</td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#0f172a;">${l.patientName}</td>
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;"><span style="background:#e0f2fe; color:#0369a1; padding:3px 7px; border-radius:4px; font-size:11px; font-weight:700;">${l.modality}</span></td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;"><span style="background:#f0f9ff; color:#075985; padding:3px 7px; border-radius:4px; font-size:11px; font-weight:700;">${l.modality}</span></td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; color:#334155;">${l.procedureName}</td>
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#64748b;">${new Date(l.performedAt).toLocaleString()}</td>
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-weight:700; color:${(l.radiationDoseDlp || 0) > 800 ? '#e11d48' : '#0f172a'};">${l.radiationDoseDlp ? l.radiationDoseDlp + ' mGy·cm' : 'N/A'}</td>
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;">${l.contrastUsed ? `<strong style="color:#059669;">YES</strong> (${l.contrastAgentName || 'Omnipaque'} - ${l.contrastVolumeMl || 80}mL)` : '<span style="color:#94a3b8;">None</span>'}</td>
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#059669; font-weight:600;">${l.adverseReaction || 'None'}</td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#475569;">${new Date(l.performedAt).toLocaleString()}</td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-weight:700; color:${(l.radiationDoseDlp || 0) > 800 ? '#991b1b' : '#0f172a'};">${l.radiationDoseDlp ? l.radiationDoseDlp + ' mGy·cm' : 'N/A'}</td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;">${l.contrastUsed ? `<strong style="color:#1b5e20;">YES</strong> (${l.contrastAgentName || 'Omnipaque'} - ${l.contrastVolumeMl || 80}mL)` : '<span style="color:#64748b;">None</span>'}</td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#1b5e20; font-weight:600;">${l.adverseReaction || 'None'}</td>
       </tr>
     `).join('');
 
@@ -1109,20 +1127,20 @@ export class RadiologyComponent implements OnInit, OnDestroy {
         <style>
           @page { size: landscape; margin: 12mm; }
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 24px; }
-          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 20px; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px; }
           .title-box h1 { margin: 0 0 5px 0; font-size: 20px; color: #0f172a; font-weight: 800; letter-spacing: -0.02em; }
-          .title-box p { margin: 0; font-size: 13px; color: #64748b; }
+          .title-box p { margin: 0; font-size: 13px; color: #475569; }
           .badge-box { text-align: right; }
-          .acr-badge { background: #0284c7; color: white; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 800; display: inline-block; margin-bottom: 4px; }
-          .date-sub { font-size: 11px; color: #64748b; }
+          .acr-badge { background: #1e293b; color: white; padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; display: inline-block; margin-bottom: 4px; }
+          .date-sub { font-size: 11px; color: #475569; }
           .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
-          .kpi-card { border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 12px 16px; background: #f8fafc; }
-          .kpi-card .lbl { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; }
-          .kpi-card .val { font-size: 22px; font-weight: 800; color: #0284c7; }
-          .kpi-card .sub { font-size: 11px; color: #059669; font-weight: 600; display: block; margin-top: 2px; }
+          .kpi-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; background: #f8fafc; }
+          .kpi-card .lbl { font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 700; display: block; margin-bottom: 4px; }
+          .kpi-card .val { font-size: 22px; font-weight: 800; color: #0f172a; }
+          .kpi-card .sub { font-size: 11px; color: #1b5e20; font-weight: 600; display: block; margin-top: 2px; }
           table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
           th { background: #0f172a; color: #ffffff; padding: 10px 12px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .footer { margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; justify-content: space-between; font-size: 11px; color: #64748b; }
+          .footer { margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; justify-content: space-between; font-size: 11px; color: #475569; }
           @media print {
             .no-print { display: none !important; }
             body { padding: 0; }
@@ -1131,7 +1149,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       </head>
       <body>
         <div class="no-print" style="margin-bottom: 16px; display: flex; justify-content: flex-end; gap: 10px;">
-          <button onclick="window.print()" style="background:#0284c7; color:#fff; border:none; padding:9px 20px; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; box-shadow:0 4px 12px rgba(2,132,199,0.3);">🖨️ Print / Save as PDF</button>
+          <button onclick="window.print()" style="background:#1e293b; color:#fff; border:none; padding:9px 20px; border-radius:4px; font-weight:700; cursor:pointer; font-size:14px;">Print / Save as PDF</button>
         </div>
         <div class="header">
           <div class="title-box">
@@ -1162,7 +1180,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
           </div>
           <div class="kpi-card">
             <span class="lbl">ALARA Regulatory Compliance</span>
-            <div class="val" style="color: #059669;">99.4% Verified</div>
+            <div class="val" style="color: #1b5e20;">99.4% Verified</div>
             <span class="sub">Joint Commission & ACR Standard</span>
           </div>
         </div>
@@ -1596,7 +1614,50 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Helper formatting methods
+  // Semantic tone helpers
+  getStatusTone(status?: string): StatusTone {
+    switch (status) {
+      case 'Completed':
+      case 'Reported':
+        return 'success';
+      case 'InProgress':
+        return 'info';
+      case 'Scheduled':
+      case 'Ordered':
+        return 'warning';
+      case 'Cancelled':
+        return 'danger';
+      default:
+        return 'neutral';
+    }
+  }
+
+  getPriorityTone(priority?: string): StatusTone {
+    switch (priority) {
+      case 'Stat':
+        return 'danger';
+      case 'Urgent':
+        return 'warning';
+      default:
+        return 'neutral';
+    }
+  }
+
+  getSuiteTone(status: ModalitySuiteStatus['status']): StatusTone {
+    switch (status) {
+      case 'Ready':
+        return 'success';
+      case 'In Scan':
+        return 'info';
+      case 'Calibrating':
+        return 'warning';
+      case 'Maintenance':
+        return 'danger';
+      default:
+        return 'neutral';
+    }
+  }
+
   getStatusClass(status: RadiologyStatus): string {
     switch (status) {
       case 'Ordered': return 'status-ordered';

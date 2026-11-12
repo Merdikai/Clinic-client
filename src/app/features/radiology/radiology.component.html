@@ -1,2137 +1,1990 @@
 <div class="radiology-page">
-  <!-- Header Banner -->
-  <header class="page-header">
-    <div class="header-left">
-      <div class="header-icon purple-glow">
-        <mat-icon>camera</mat-icon>
-      </div>
-      <div>
-        <div class="title-row">
-          <h1>Diagnostic Imaging & PACS Enterprise Suite</h1>
-          <span class="pacs-status-chip"><span class="pulse-dot"></span>PACS ONLINE</span>
-        </div>
-        <p class="subtitle" *ngIf="isNurse()">Clinical RIS Worklist • Diagnostic Imaging Reports • Patient Study Tracking</p>
-        <p class="subtitle" *ngIf="!isNurse()">RIS Modality Worklist • Web PACS DICOM Inspection • Structured Reporting • Radiation & Contrast Safety</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button mat-flat-button color="primary" class="action-btn" (click)="openOrderModal()" *ngIf="isDoctor() || isRadiologist() || isAdmin()">
-        <mat-icon>add_photo_alternate</mat-icon>
+  <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()">
+    <app-status-chip tone="success" label="PACS Online" />
+    <button
+      type="button"
+      mat-stroked-button
+      (click)="loadData(); loadSafetyLogs()"
+    >
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Sync RIS/PACS
+    </button>
+    @if (isDoctor() || isRadiologist() || isAdmin()) {
+      <button
+        type="button"
+        mat-flat-button
+        color="primary"
+        (click)="openOrderModal()"
+      >
+        <mat-icon aria-hidden="true">add</mat-icon>
         Order Imaging Study
       </button>
-      <button mat-stroked-button class="refresh-btn" (click)="loadData(); loadSafetyLogs()">
-        <mat-icon>refresh</mat-icon>
-        Sync RIS/PACS
-      </button>
-    </div>
-  </header>
+    }
+  </app-page-header>
 
-  <!-- Navigation Pill Tabs Bar -->
-  <nav class="radiology-nav-tabs">
-    <button class="nav-tab-btn" [class.active]="activeTab() === 'overview'" (click)="setTab('overview')">
-      <mat-icon>dashboard_customize</mat-icon>
-      <span>Imaging Cockpit</span>
-    </button>
-    <button class="nav-tab-btn" [class.active]="activeTab() === 'worklist'" (click)="setTab('worklist')">
-      <mat-icon>view_list</mat-icon>
-      <span>RIS Worklist</span>
-      <span class="tab-badge">{{ orders().length }}</span>
-    </button>
-    <!-- PACS Viewer: Radiologists & Doctors only (NOT nurses) -->
-    <button class="nav-tab-btn" [class.active]="activeTab() === 'viewer'" (click)="setTab('viewer')" *ngIf="!isNurse()">
-      <mat-icon>center_focus_strong</mat-icon>
-      <span>PACS DICOM Viewer</span>
-      <span class="tab-badge pacs">PACS</span>
-    </button>
-    <!-- Structured Reporting: Radiologists & Doctors only (NOT nurses) -->
-    <button class="nav-tab-btn" [class.active]="activeTab() === 'reports'" (click)="setTab('reports')" *ngIf="!isNurse()">
-      <mat-icon>assignment_turned_in</mat-icon>
-      <span>Structured Reporting</span>
-      <span class="tab-badge alert" *ngIf="unreportedOrders().length > 0">{{ unreportedOrders().length }} unread</span>
-    </button>
-    <!-- Radiation Safety: Radiologists only (NOT nurses) -->
-    <button class="nav-tab-btn" [class.active]="activeTab() === 'safety'" (click)="setTab('safety')" *ngIf="!isNurse()">
-      <mat-icon>shield</mat-icon>
-      <span>Radiation &amp; Contrast Log</span>
-      <span class="tab-badge green">Safety</span>
-    </button>
-    <!-- Modality Suites: Radiologists only (NOT nurses) -->
-    <button class="nav-tab-btn" [class.active]="activeTab() === 'suites'" (click)="setTab('suites')" *ngIf="!isNurse()">
-      <mat-icon>meeting_room</mat-icon>
-      <span>Modality Suites</span>
-      <span class="tab-badge neutral">5 Suites</span>
-    </button>
+  <!-- Navigation Tabs -->
+  <nav class="radiology-tabs-nav" aria-label="Radiology sections">
+    <div class="tab-bar" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeTab() === 'overview'"
+        class="tab-btn"
+        [class.active]="activeTab() === 'overview'"
+        (click)="setTab('overview')"
+      >
+        Imaging Cockpit
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeTab() === 'worklist'"
+        class="tab-btn"
+        [class.active]="activeTab() === 'worklist'"
+        (click)="setTab('worklist')"
+      >
+        RIS Worklist
+        <span class="tab-count">{{ orders().length }}</span>
+      </button>
+      @if (!isNurse()) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'viewer'"
+          class="tab-btn"
+          [class.active]="activeTab() === 'viewer'"
+          (click)="setTab('viewer')"
+        >
+          PACS DICOM Viewer
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'reports'"
+          class="tab-btn"
+          [class.active]="activeTab() === 'reports'"
+          (click)="setTab('reports')"
+        >
+          Structured Reporting
+          @if (unreportedOrders().length > 0) {
+            <span class="tab-count alert">{{ unreportedOrders().length }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'safety'"
+          class="tab-btn"
+          [class.active]="activeTab() === 'safety'"
+          (click)="setTab('safety')"
+        >
+          Radiation &amp; Contrast Log
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'suites'"
+          class="tab-btn"
+          [class.active]="activeTab() === 'suites'"
+          (click)="setTab('suites')"
+        >
+          Modality Suites
+        </button>
+      }
+    </div>
   </nav>
 
-  <!-- TAB 1: IMAGING COCKPIT (OVERVIEW) -->
-  <div class="tab-content" *ngIf="activeTab() === 'overview'">
-    <!-- Critical Findings Alert Banner if any STAT critical orders exist -->
-    <div class="critical-alert-banner" *ngIf="criticalOrders().length > 0">
-      <div class="alert-icon-pod">
-        <mat-icon>warning</mat-icon>
-      </div>
-      <div class="alert-content">
-        <div class="alert-title-row">
-          <h3>STAT CRITICAL FINDINGS ALERT — IMMEDIATE ATTENTION REQUIRED</h3>
-          <span class="alert-badge">{{ criticalOrders().length }} STAT Alerts Active</span>
-        </div>
-        <div class="alert-items-list">
-          <div class="alert-item" *ngFor="let crit of criticalOrders()">
-            <div class="crit-main">
-              <span class="crit-acc">{{ crit.accessionNumber || crit.orderNumber }}</span>
-              <strong class="crit-patient">{{ crit.patientName }} (MRN: {{ crit.patientMedicalRecordNumber }})</strong>
-              <span class="crit-proc">{{ crit.modality }} — {{ crit.procedureName }}</span>
-            </div>
-            <div class="crit-diag">
-              <span class="diag-lbl">Impression:</span>
-              <span class="diag-val">{{ crit.impression || crit.clinicalIndication }}</span>
-            </div>
-            <div class="crit-actions">
-              <button class="crit-btn nurse-crit-btn" (click)="openNurseStudyDetails(crit)" *ngIf="isNurse()">
-                <mat-icon>visibility</mat-icon> View Critical Finding
-              </button>
-              <button class="crit-btn" (click)="openInViewer(crit)" *ngIf="!isNurse()">
-                <mat-icon>visibility</mat-icon> Open in PACS
-              </button>
-              <button class="crit-btn ack-btn" *ngIf="(isDoctor() || isRadiologist()) && !crit.criticalAlertAcknowledgedByDoctor" (click)="acknowledgeCriticalFinding(crit)">
-                <mat-icon>check_circle</mat-icon> Acknowledge Alert
-              </button>
-              <span class="ack-confirmed" *ngIf="crit.criticalAlertAcknowledgedByDoctor">
-                <mat-icon>task_alt</mat-icon> Acknowledged by Dr. {{ crit.doctorName }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Telemetry Metric Cards Grid -->
-    <section class="metrics-grid">
-      <div class="metric-card total" (click)="setTab('worklist')">
-        <div class="metric-icon"><mat-icon>perm_media</mat-icon></div>
-        <div class="metric-info">
-          <span class="metric-val">{{ metrics()?.totalOrders || orders().length }}</span>
-          <span class="metric-label">{{ isNurse() ? 'Total Active Studies' : 'Total Studies Requisitioned' }}</span>
-        </div>
-      </div>
-      <div class="metric-card awaiting" (click)="setTab('worklist')">
-        <div class="metric-icon"><mat-icon>schedule</mat-icon></div>
-        <div class="metric-info">
-          <span class="metric-val">{{ isNurse() ? nurseInScanCount() : (metrics()?.inProgressCount || metrics()?.orderedCount || 2) }}</span>
-          <span class="metric-label">{{ isNurse() ? 'In Scan / Scheduled' : 'In Examination / Scheduled' }}</span>
-        </div>
-      </div>
-      <!-- For Nurse: Show Completed Diagnostic Reports -->
-      <div class="metric-card completed-nurse" *ngIf="isNurse()" (click)="setTab('worklist')">
-        <div class="metric-icon"><mat-icon>task_alt</mat-icon></div>
-        <div class="metric-info">
-          <span class="metric-val">{{ nurseCompletedCount() }}</span>
-          <span class="metric-label">Completed Diagnostic Reports</span>
-        </div>
-      </div>
-      <!-- For Doctor/Radiologist: Show Pending Diagnostic Read -->
-      <div class="metric-card pending" *ngIf="!isNurse()" (click)="setTab('reports')">
-        <div class="metric-icon"><mat-icon>edit_note</mat-icon></div>
-        <div class="metric-info">
-          <span class="metric-val">{{ unreportedOrders().length }}</span>
-          <span class="metric-label">Pending Diagnostic Read</span>
-        </div>
-      </div>
-      <div class="metric-card critical-card" (click)="setTab('worklist')">
-        <div class="metric-icon"><mat-icon>priority_high</mat-icon></div>
-        <div class="metric-info">
-          <span class="metric-val text-red">{{ metrics()?.criticalAlertsCount || criticalOrders().length }}</span>
-          <span class="metric-label">STAT Critical Alert Studies</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Modality Status & Quick Suite Monitor Row -->
-    <div class="cockpit-split-row">
-      <!-- Left: Modality Distribution -->
-      <div class="cockpit-card flex-2">
-        <div class="card-header">
-          <div class="card-title">
-            <mat-icon>donut_large</mat-icon>
-            <h3>Modality Case Distribution</h3>
-          </div>
-          <button class="mini-btn" (click)="setTab('worklist')">View All</button>
-        </div>
-        <div class="modality-dist-grid">
-          <div class="mod-tile" (click)="selectedModality.set('CT Scan'); setTab('worklist')">
-            <div class="mod-icon ct"><mat-icon>blur_circular</mat-icon></div>
-            <div class="mod-details">
-              <span class="mod-name">CT Scan</span>
-              <span class="mod-count">128-Slice Dual Source</span>
-            </div>
-            <span class="mod-tag">High Priority</span>
-          </div>
-          <div class="mod-tile" (click)="selectedModality.set('MRI'); setTab('worklist')">
-            <div class="mod-icon mri"><mat-icon>track_changes</mat-icon></div>
-            <div class="mod-details">
-              <span class="mod-name">MRI Resonance</span>
-              <span class="mod-count">1.5T Superconducting</span>
-            </div>
-            <span class="mod-tag">Contrast Ready</span>
-          </div>
-          <div class="mod-tile" (click)="selectedModality.set('X-Ray'); setTab('worklist')">
-            <div class="mod-icon xray"><mat-icon>radiology</mat-icon></div>
-            <div class="mod-details">
-              <span class="mod-name">Digital X-Ray</span>
-              <span class="mod-count">Wireless DR Flat Panel</span>
-            </div>
-            <span class="mod-tag">Routine Queue</span>
-          </div>
-          <div class="mod-tile" (click)="selectedModality.set('Ultrasound'); setTab('worklist')">
-            <div class="mod-icon us"><mat-icon>waves</mat-icon></div>
-            <div class="mod-details">
-              <span class="mod-name">Ultrasound</span>
-              <span class="mod-count">EPIQ 7 Matrix Doppler</span>
-            </div>
-            <span class="mod-tag">Point-of-Care</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: Nursing Imaging Care & Prep Guide (Nurse view) -->
-      <div class="cockpit-card flex-1 nursing-prep-card" *ngIf="isNurse()">
-        <div class="card-header">
-          <div class="card-title">
-            <mat-icon>medical_information</mat-icon>
-            <h3>Nursing Imaging Care & Prep Guide</h3>
-          </div>
-          <span class="nurse-scope-chip">Clinical Nursing Scope</span>
-        </div>
-        <div class="prep-guide-list">
-          <div class="prep-item">
-            <mat-icon class="p-icon blue">water_drop</mat-icon>
-            <div>
-              <strong>IV Contrast Hydration Protocol</strong>
-              <p>Verify eGFR prior to scan; ensure post-scan oral/IV fluids administered.</p>
-            </div>
-          </div>
-          <div class="prep-item">
-            <mat-icon class="p-icon amber">warning</mat-icon>
-            <div>
-              <strong>MRI Magnetic Safety Screening</strong>
-              <p>Confirm patient is cleared of pacemakers, metal implants, and patches.</p>
-            </div>
-          </div>
-          <div class="prep-item">
-            <mat-icon class="p-icon purple">no_food</mat-icon>
-            <div>
-              <strong>NPO / Fasting Verification</strong>
-              <p>Check 4-6h fasting for abdominal ultrasound & contrast CT examinations.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: Modality Suite Readiness (Doctor / Radiologist view) -->
-      <div class="cockpit-card flex-1" *ngIf="!isNurse()">
-        <div class="card-header">
-          <div class="card-title">
-            <mat-icon>meeting_room</mat-icon>
-            <h3>Suite Readiness</h3>
-          </div>
-          <button class="mini-btn" (click)="setTab('suites')">Suites</button>
-        </div>
-        <div class="suite-mini-list">
-          <div class="suite-mini-item" *ngFor="let s of modalitySuites()">
-            <div class="s-info">
-              <span class="s-dot" [class.ready]="s.status === 'Ready'" [class.busy]="s.status === 'In Scan'"></span>
-              <strong>{{ s.name.split('-')[0] }}</strong>
-              <span class="s-mod">{{ s.modality }}</span>
-            </div>
-            <span class="s-status" [class.in-scan]="s.status === 'In Scan'">{{ s.status }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recent Studies Table Preview -->
-    <div class="cockpit-card recent-studies-card">
-      <div class="card-header">
-        <div class="card-title">
-          <mat-icon>history</mat-icon>
-          <h3>Recent Imaging Worklist Feed</h3>
-        </div>
-        <button class="action-link-btn" (click)="setTab('worklist')">Full RIS Worklist →</button>
-      </div>
-
-      <table class="clinical-table compact-table">
-        <thead>
-          <tr>
-            <th>Accession & Order</th>
-            <th>Patient Details</th>
-            <th>Modality & Procedure</th>
-            <th>Suite / Room</th>
-            <th>Status</th>
-            <th>Urgency</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let order of orders().slice(0, 5)" [class.stat-row]="order.priority === 'Stat'">
-            <td>
-              <strong class="acc-code">{{ order.accessionNumber || 'ACC-2026-X' }}</strong>
-              <span class="sub-ord">{{ order.orderNumber }}</span>
-            </td>
-            <td>
-              <strong>{{ order.patientName }}</strong>
-              <span class="sub-ord">MRN: {{ order.patientMedicalRecordNumber }}</span>
-            </td>
-            <td>
-              <span class="mod-chip">{{ order.modality }}</span>
-              <span>{{ order.procedureName }}</span>
-            </td>
-            <td>
-              <span class="suite-tag">{{ order.roomSuite || 'Suite 1 - Digital X-Ray' }}</span>
-            </td>
-            <td>
-              <span class="status-pill" [attr.data-status]="order.status">{{ order.status }}</span>
-            </td>
-            <td>
-              <span class="priority-badge" [attr.data-priority]="order.priority">
-                <span class="pulse-dot" *ngIf="order.priority === 'Stat'"></span>
-                {{ order.priority }}
-              </span>
-            </td>
-            <td>
-              <button mat-flat-button color="primary" class="nurse-table-btn" (click)="openNurseStudyDetails(order)" *ngIf="isNurse()">
-                <mat-icon>description</mat-icon> View Report
-              </button>
-              <button mat-icon-button class="view-btn" (click)="openInViewer(order)" matTooltip="Open in PACS Viewer" *ngIf="!isNurse()">
-                <mat-icon>visibility</mat-icon>
-              </button>
-              <button mat-icon-button class="edit-btn" (click)="openReportingDesk(order)" matTooltip="Diagnostic Report" *ngIf="isRadiologist()">
-                <mat-icon>rate_review</mat-icon>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- TAB 2: RIS ORDER WORKLIST -->
-  <div class="tab-content" *ngIf="activeTab() === 'worklist'">
-    <!-- RADIOLOGIST ACCOUNT ISOLATION BANNER & SCOPE CONTROLS -->
-    <div class="radiologist-account-bar" *ngIf="isRadiologist()">
-      <div class="account-identity">
-        <div class="rad-avatar">
-          <mat-icon>person</mat-icon>
-        </div>
-        <div class="identity-info">
-          <span class="active-badge">Active Radiologist Session</span>
-          <strong class="rad-title">{{ radiologistProfileTitle() }}</strong>
-          <span class="rad-sub">Signature: {{ getRadiologistSignature() }}</span>
-        </div>
-      </div>
-
-      <div class="scope-toggle-group">
-        <span class="scope-label">Worklist Scope:</span>
-        <button
-          type="button"
-          class="scope-btn"
-          [class.active]="scopeFilter() === 'my'"
-          (click)="scopeFilter.set('my')"
-        >
-          <mat-icon>assignment_ind</mat-icon> My Assigned / Read Studies
-        </button>
-        <button
-          type="button"
-          class="scope-btn"
-          [class.active]="scopeFilter() === 'all'"
-          (click)="scopeFilter.set('all')"
-        >
-          <mat-icon>domain</mat-icon> Entire Department Fleet
-        </button>
-      </div>
-    </div>
-
-    <!-- Modality Filter Chips Bar -->
-    <section class="modality-bar">
-      <div class="chips-container">
-        <button class="chip" [class.active]="selectedModality() === 'ALL'" (click)="selectedModality.set('ALL')">
-          <mat-icon>apps</mat-icon> All Modalities ({{ orders().length }})
-        </button>
-        <button class="chip" [class.active]="selectedModality() === 'X-Ray'" (click)="selectedModality.set('X-Ray')">
-          <mat-icon>radiology</mat-icon> X-Ray (DR)
-        </button>
-        <button class="chip" [class.active]="selectedModality() === 'Ultrasound'" (click)="selectedModality.set('Ultrasound')">
-          <mat-icon>waves</mat-icon> Ultrasound (US)
-        </button>
-        <button class="chip" [class.active]="selectedModality() === 'CT Scan'" (click)="selectedModality.set('CT Scan')">
-          <mat-icon>blur_circular</mat-icon> CT Computed Tomography
-        </button>
-        <button class="chip" [class.active]="selectedModality() === 'MRI'" (click)="selectedModality.set('MRI')">
-          <mat-icon>track_changes</mat-icon> MRI Resonance
-        </button>
-        <button class="chip" [class.active]="selectedModality() === 'ECG / Echo'" (click)="selectedModality.set('ECG / Echo')">
-          <mat-icon>monitor_heart</mat-icon> ECG / Echocardiogram
-        </button>
-      </div>
-    </section>
-
-    <!-- Control & Filter Bar -->
-    <section class="filter-card">
-      <div class="search-input-wrap">
-        <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          placeholder="Search patient name, MRN, Accession #, order number, or procedure..."
-          [ngModel]="searchQuery()"
-          (ngModelChange)="searchQuery.set($event)"
-        />
-        <button class="clear-btn" *ngIf="searchQuery()" (click)="searchQuery.set('')">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <div class="filter-controls">
-        <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)">
-          <option value="ALL">All Statuses</option>
-          <option value="Ordered">Ordered (Awaiting Scan)</option>
-          <option value="Scheduled">Scheduled</option>
-          <option value="InProgress">In Progress</option>
-          <option value="Reported">Reported</option>
-          <option value="Completed">Completed & Signed</option>
-        </select>
-
-        <select [ngModel]="selectedPriority()" (ngModelChange)="selectedPriority.set($event)">
-          <option value="ALL">All Priorities</option>
-          <option value="Routine">Routine</option>
-          <option value="Urgent">Urgent</option>
-          <option value="Stat">STAT (Emergency)</option>
-        </select>
-      </div>
-    </section>
-
-    <!-- Progress Bar -->
-    <mat-progress-bar *ngIf="isLoading()" mode="indeterminate"></mat-progress-bar>
-
-    <!-- Studies Table -->
-    <section class="table-container">
-      <table class="clinical-table" *ngIf="filteredOrders().length > 0; else noStudies">
-        <thead>
-          <tr>
-            <th>Accession & Order</th>
-            <th>Patient Details</th>
-            <th>Modality & Procedure</th>
-            <th>Assigned Suite</th>
-            <th>Status</th>
-            <th *ngIf="!isNurse()">Billing</th>
-            <th>Diagnostic Impression</th>
-            <th>{{ isNurse() ? 'Physician Review' : 'Attending Sign-Off' }}</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let order of filteredOrders()" [class.stat-row]="order.priority === 'Stat'">
-            <td>
-              <div class="order-badge-wrap">
-                <span class="accession-code">{{ order.accessionNumber || 'ACC-PENDING' }}</span>
-                <span class="order-code">{{ order.orderNumber }}</span>
-                <span class="priority-badge" [attr.data-priority]="order.priority">
-                  <span class="pulse-dot" *ngIf="order.priority === 'Stat'"></span>
-                  {{ order.priority }}
-                </span>
+  @switch (activeTab()) {
+    <!-- TAB 1: IMAGING COCKPIT -->
+    @case ('overview') {
+      <div class="tab-panel" role="tabpanel">
+        <!-- STAT Critical Alert Banner -->
+        @if (criticalOrders().length > 0) {
+          <section class="critical-alert-banner" aria-label="Critical imaging findings">
+            <div class="banner-header">
+              <div class="banner-title-wrap">
+                <mat-icon aria-hidden="true">warning</mat-icon>
+                <h2>STAT Critical Findings Alert — Immediate Attention Required</h2>
               </div>
-              <span class="timestamp">{{ order.orderedAt | date:'short' }}</span>
-            </td>
-
-            <td>
-              <div class="patient-cell">
-                <strong>{{ order.patientName }}</strong>
-                <span class="mrn-badge">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
-                <span class="dr-sub">Attending Dr: {{ order.doctorName }}</span>
-              </div>
-            </td>
-
-            <td>
-              <div class="procedure-cell">
-                <span class="modality-tag" [attr.data-modality]="order.modality">{{ order.modality }}</span>
-                <span class="proc-name">{{ order.procedureName }}</span>
-                <span class="body-site"><mat-icon>accessibility</mat-icon> {{ order.bodyPart }}</span>
-              </div>
-            </td>
-
-            <td>
-              <div class="suite-cell">
-                <span class="suite-badge"><mat-icon>meeting_room</mat-icon> {{ order.roomSuite || 'Unassigned' }}</span>
-                <button class="schedule-link-btn" (click)="openScheduleModal(order)" *ngIf="(order.status === 'Ordered' || order.status === 'Scheduled') && !isNurse()">
-                  <mat-icon>event</mat-icon> {{ order.roomSuite ? 'Reschedule' : 'Assign Suite' }}
-                </button>
-              </div>
-            </td>
-
-            <td>
-              <span class="status-pill" [attr.data-status]="order.status">
-                {{ order.status }}
-              </span>
-              <span class="critical-pill" *ngIf="order.isCritical">
-                <mat-icon>warning</mat-icon> CRITICAL
-              </span>
-            </td>
-
-            <!-- Billing Column: Hidden for Nurse -->
-            <td *ngIf="!isNurse()">
-              <div class="billing-cell">
-                <span class="billing-pill" [class.billed]="order.isBilled" [class.unbilled]="!order.isBilled">
-                  <mat-icon>{{ order.isBilled ? 'check_circle' : 'pending_actions' }}</mat-icon>
-                  {{ order.isBilled ? 'Billed' : 'Unbilled' }}
-                </span>
-                <span class="price-tag" *ngIf="order.price">${{ order.price | number:'1.2-2' }}</span>
-                <button
-                  *ngIf="!order.isBilled && isCashier()"
-                  class="bill-action-btn"
-                  (click)="billOrder(order)"
-                  matTooltip="Mark Imaging Order as Billed"
-                >
-                  Mark Billed
-                </button>
-              </div>
-            </td>
-
-            <td>
-              <div class="impression-cell" *ngIf="order.impression; else pendingImpression">
-                <p class="impression-snippet" [matTooltip]="order.impression">{{ order.impression }}</p>
-                <span class="signature-tag" *ngIf="order.radiologistSignature">
-                  <mat-icon>verified_user</mat-icon> {{ order.radiologistSignature }}
-                </span>
-              </div>
-              <ng-template #pendingImpression>
-                <span class="pending-tag">Read Pending</span>
-              </ng-template>
-            </td>
-
-            <td>
-              <div class="signoff-cell">
-                <!-- For Nurse: Clean, informative read-only physician status -->
-                <ng-container *ngIf="isNurse()">
-                  <span *ngIf="order.doctorSignedOffAt" class="signed-badge">
-                    <mat-icon>check_circle</mat-icon>
-                    Signed by Dr. {{ order.doctorName }}
-                  </span>
-                  <span *ngIf="!order.doctorSignedOffAt && (order.status === 'Reported' || order.status === 'Completed')" class="await-report nurse-await">
-                    <mat-icon>schedule</mat-icon> Pending MD Review
-                  </span>
-                  <span *ngIf="!order.doctorSignedOffAt && order.status !== 'Reported' && order.status !== 'Completed'" class="await-report">
-                    In Scan / Awaiting Read
-                  </span>
-                </ng-container>
-
-                <!-- For Doctor / Staff: Functional sign-off -->
-                <ng-container *ngIf="!isNurse()">
-                  <span *ngIf="order.doctorSignedOffAt" class="signed-badge">
-                    <mat-icon>check_circle</mat-icon>
-                    Signed {{ order.doctorSignedOffAt | date:'shortDate' }}
-                  </span>
-                  <button
-                    *ngIf="!order.doctorSignedOffAt && (order.status === 'Reported' || order.status === 'Completed') && isDoctor()"
-                    class="sign-action-btn"
-                    (click)="signOffAsDoctor(order)"
-                  >
-                    Sign Off
-                  </button>
-                  <span *ngIf="!order.doctorSignedOffAt && (order.status === 'Reported' || order.status === 'Completed') && !isDoctor()" class="await-report">
-                    Pending Attending Sign-Off
-                  </span>
-                  <span *ngIf="!order.doctorSignedOffAt && order.status !== 'Reported' && order.status !== 'Completed'" class="await-report">
-                    Awaiting Read
-                  </span>
-                </ng-container>
-              </div>
-            </td>
-
-            <td>
-              <div class="actions-cell">
-                <!-- Nurse: Interactive View Report Button -->
-                <button
-                  mat-stroked-button
-                  class="nurse-worklist-action-btn"
-                  (click)="openNurseStudyDetails(order)"
-                  *ngIf="isNurse()"
-                >
-                  <mat-icon>description</mat-icon> View Report
-                </button>
-
-                <button
-                  mat-icon-button
-                  class="view-btn"
-                  matTooltip="Open Web PACS DICOM Viewer"
-                  (click)="openInViewer(order)"
-                  *ngIf="!isNurse()"
-                >
-                  <mat-icon>center_focus_strong</mat-icon>
-                </button>
-
-                <!-- Advance to In Scan / InProgress -->
-                <button
-                  *ngIf="(order.status === 'Ordered' || order.status === 'Scheduled') && isRadiologist()"
-                  mat-icon-button
-                  style="color: #0284c7;"
-                  matTooltip="Mark In Scan (Procedure Commenced)"
-                  (click)="updateOrderStatus(order, 'InProgress')"
-                >
-                  <mat-icon>play_circle</mat-icon>
-                </button>
-
-                <!-- Diagnostic Reporting Desk -->
-                <button
-                  *ngIf="isRadiologist() && order.status !== 'Completed'"
-                  mat-icon-button
-                  class="edit-btn"
-                  matTooltip="Record Diagnostic Radiologist Report"
-                  (click)="openReportingDesk(order)"
-                >
-                  <mat-icon>rate_review</mat-icon>
-                </button>
-
-                <!-- Completed Study: Review vs Addendum -->
-                <button
-                  *ngIf="isRadiologist() && order.status === 'Completed'"
-                  mat-icon-button
-                  class="edit-btn"
-                  [matTooltip]="isStudyAssociatedWithMe(order) ? 'Review / Edit Diagnostic Report' : 'Append Signed Clinical Addendum'"
-                  (click)="openReportingDesk(order)"
-                >
-                  <mat-icon>{{ isStudyAssociatedWithMe(order) ? 'rate_review' : 'post_add' }}</mat-icon>
-                </button>
-
-                <button
-                  mat-icon-button
-                  class="schedule-btn"
-                  matTooltip="Schedule Modality Suite"
-                  (click)="openScheduleModal(order)"
-                  *ngIf="!isNurse()"
-                >
-                  <mat-icon>event</mat-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <ng-template #noStudies>
-        <div class="empty-state">
-          <mat-icon>photo_library</mat-icon>
-          <h3>No Diagnostic Imaging Studies Found</h3>
-          <p>No orders matched your active modality or status criteria. Place a new order or adjust your filters.</p>
-          <button mat-flat-button color="primary" (click)="openOrderModal()" *ngIf="isDoctor()">
-            Order First Study
-          </button>
-        </div>
-      </ng-template>
-    </section>
-  </div>
-
-  <!-- TAB 3: PACS WEB DICOM VIEWER -->
-  <div class="tab-content pacs-tab-content" *ngIf="activeTab() === 'viewer' && !isNurse()">
-    <div class="pacs-workstation-container" *ngIf="viewerOrder(); else noViewerSelected">
-      <!-- PACS Control Toolbar -->
-      <header class="pacs-toolbar">
-        <div class="pacs-patient-strip">
-          <div class="study-patient-info">
-            <span class="p-name">{{ viewerOrder()?.patientName | uppercase }}</span>
-            <span class="p-mrn">MRN: {{ viewerOrder()?.patientMedicalRecordNumber }}</span>
-            <span class="p-acc">ACC: {{ viewerOrder()?.accessionNumber || viewerOrder()?.orderNumber }}</span>
-            <span class="p-mod">{{ viewerOrder()?.modality }} • {{ viewerOrder()?.procedureName }}</span>
-          </div>
-
-          <!-- Quick Study Switcher Dropdown -->
-          <div class="pacs-study-switcher">
-            <mat-icon class="switcher-icon">swap_horiz</mat-icon>
-            <select
-              class="study-select-input"
-              [ngModel]="viewerOrder()?.id"
-              (ngModelChange)="onViewerOrderSelect($event)"
-              title="Switch Exam / Study"
-            >
-              <option *ngFor="let ord of orders()" [value]="ord.id">
-                {{ ord.patientName }} ({{ ord.modality }}) — {{ ord.procedureName }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="pacs-tools-cluster">
-          <!-- Window/Level Presets -->
-          <div class="wl-preset-group">
-            <span class="tool-label">W/L:</span>
-            <button class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Default'" (click)="setWindowLevel('Default')">Default</button>
-            <button class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Bone'" (click)="setWindowLevel('Bone')">Bone</button>
-            <button class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'SoftTissue'" (click)="setWindowLevel('SoftTissue')">Soft Tissue</button>
-            <button class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Lung'" (click)="setWindowLevel('Lung')">Lung</button>
-            <button class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Brain'" (click)="setWindowLevel('Brain')">Brain</button>
-          </div>
-
-          <div class="divider-v"></div>
-
-          <!-- Digital Tools -->
-          <div class="action-tools-group">
-            <button class="pacs-icon-btn cine-btn" [class.active]="isCinePlaying()" (click)="toggleCine()" matTooltip="Cine Loop Playback (Multi-Slice Scrub)">
-              <mat-icon>{{ isCinePlaying() ? 'pause_circle' : 'play_circle' }}</mat-icon>
-            </button>
-            <button class="pacs-icon-btn" (click)="zoomIn()" matTooltip="Zoom In (+25%)"><mat-icon>zoom_in</mat-icon></button>
-            <button class="pacs-icon-btn" (click)="zoomOut()" matTooltip="Zoom Out (-25%)"><mat-icon>zoom_out</mat-icon></button>
-            <button class="pacs-icon-btn" (click)="resetViewer()" matTooltip="Reset View 100%"><mat-icon>crop_free</mat-icon></button>
-            <button class="pacs-icon-btn" [class.active]="viewerInverted()" (click)="toggleInvert()" matTooltip="Invert Radiographic Negative"><mat-icon>invert_colors</mat-icon></button>
-            <button class="pacs-icon-btn" (click)="rotateCW()" matTooltip="Rotate 90° Clockwise"><mat-icon>rotate_right</mat-icon></button>
-            <button class="pacs-icon-btn" [class.active]="viewerCaliperActive()" (click)="toggleCaliper()" matTooltip="Digital Caliper (Distance mm)"><mat-icon>straighten</mat-icon></button>
-            <button class="pacs-icon-btn" [class.active]="viewerAngleActive()" (click)="toggleAngle()" matTooltip="Cobb Angle Tool"><mat-icon>square_foot</mat-icon></button>
-            <button class="pacs-icon-btn" [class.active]="viewerMetadataDrawerOpen()" (click)="viewerMetadataDrawerOpen.update(v => !v)" matTooltip="DICOM Header Tags"><mat-icon>info</mat-icon></button>
-          </div>
-
-          <div class="divider-v"></div>
-
-          <button class="pacs-action-btn report-cta" (click)="openReportingDesk(viewerOrder()!)" *ngIf="isRadiologist()">
-            <mat-icon>rate_review</mat-icon> Diagnostic Report
-          </button>
-        </div>
-      </header>
-
-      <!-- Main Workstation Layout -->
-      <div class="pacs-viewport-layout">
-        <!-- Filmstrip Slice Selector (Multi-Slice) -->
-        <aside class="pacs-filmstrip">
-          <div class="filmstrip-header">
-            <span>SERIES 1 ({{ slicesList().length }} Slices)</span>
-            <button class="cine-mini-btn" [class.active]="isCinePlaying()" (click)="toggleCine()" title="Cine Loop Playback">
-              <mat-icon>{{ isCinePlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
-            </button>
-          </div>
-          <div class="slice-slider-container">
-            <input
-              type="range"
-              min="0"
-              [max]="slicesList().length - 1"
-              [ngModel]="viewerActiveSlice()"
-              (ngModelChange)="selectSlice($event)"
-              class="slice-scrubber-range"
-            />
-          </div>
-          <div class="slices-stack">
-            <div
-              class="slice-thumbnail"
-              *ngFor="let s of slicesList(); let i = index"
-              [class.active]="viewerActiveSlice() === i"
-              (click)="selectSlice(i)"
-            >
-              <img [src]="s.url" alt="Slice {{ s.sliceNumber }}" />
-              <div class="slice-overlay-tag">
-                <span>#{{ s.sliceNumber }}</span>
-                <span>{{ s.zPos }}</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- Obsidian Viewport Canvas -->
-        <main class="pacs-canvas-wrapper" [class.wl-bone]="viewerWindowLevelPreset() === 'Bone'" [class.wl-lung]="viewerWindowLevelPreset() === 'Lung'" [class.wl-soft]="viewerWindowLevelPreset() === 'SoftTissue'" [class.wl-brain]="viewerWindowLevelPreset() === 'Brain'" [class.inverted]="viewerInverted()">
-          <!-- Corner DICOM Overlays -->
-          <div class="dicom-corner top-left">
-            <span class="patient-line">{{ viewerOrder()?.patientName | uppercase }}</span>
-            <span>MRN: {{ viewerOrder()?.patientMedicalRecordNumber }}</span>
-            <span>ACC: {{ viewerOrder()?.accessionNumber || viewerOrder()?.orderNumber }}</span>
-            <span>SEX: {{ viewerOrder()?.gender || 'UNSPECIFIED' }} • DOB: {{ viewerOrder()?.dateOfBirth || '1984-05-12' }}</span>
-          </div>
-
-          <div class="dicom-corner top-right">
-            <span class="clinic-line">CITY HEALTH CLINIC PACS ARCHIVE</span>
-            <span>ACQ: {{ viewerOrder()?.orderedAt | date:'yyyy-MM-dd HH:mm:ss' }}</span>
-            <span>MOD: {{ viewerOrder()?.modality }} • {{ viewerOrder()?.bodyPart }}</span>
-            <span>SUITE: {{ viewerOrder()?.roomSuite || 'Suite 2 - CT SOMATOM' }}</span>
-          </div>
-
-          <div class="dicom-corner bottom-left">
-            <span>ZOOM: {{ viewerZoom() }}% • ROT: {{ viewerRotation() }}°</span>
-            <span>W: {{ viewerWindowLevelPreset() === 'Bone' ? 2000 : (viewerWindowLevelPreset() === 'Lung' ? 1500 : (viewerWindowLevelPreset() === 'Brain' ? 80 : 2400)) }} L: {{ viewerWindowLevelPreset() === 'Bone' ? 300 : (viewerWindowLevelPreset() === 'Lung' ? -600 : (viewerWindowLevelPreset() === 'Brain' ? 40 : 400)) }}</span>
-            <span>SLICE: {{ viewerActiveSlice() + 1 }} / {{ slicesList().length }} ({{ slicesList()[viewerActiveSlice()]?.zPos || '0.0mm' }})</span>
-          </div>
-
-          <div class="dicom-corner bottom-right">
-            <span>DLP: {{ viewerOrder()?.radiationDoseDlp || 480 }} mGy*cm</span>
-            <span>CONTRAST: {{ viewerOrder()?.contrastUsed ? viewerOrder()?.contrastAgentName : 'NON-CONTRAST' }}</span>
-            <span>DIAGNOSTIC ARCHIVE • SECURE</span>
-          </div>
-
-          <!-- Measurement Annotations on Canvas -->
-          <div class="caliper-overlay-box" *ngIf="viewerCaliperActive()">
-            <div class="caliper-line"></div>
-            <div class="caliper-label">Distance: 24.6 mm ± 0.2mm</div>
-          </div>
-
-          <div class="angle-overlay-box" *ngIf="viewerAngleActive()">
-            <div class="angle-arc"></div>
-            <div class="angle-label">Cobb Angle: 32.4°</div>
-          </div>
-
-          <!-- The Clinical Image -->
-          <div
-            class="interactive-image-frame"
-            [style.transform]="'scale(' + (viewerZoom() / 100) + ') rotate(' + viewerRotation() + 'deg)'"
-          >
-            <img [src]="slicesList()[viewerActiveSlice()]?.url || viewerOrder()?.imageUrl || 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80'" alt="PACS DICOM Slice View" />
-          </div>
-        </main>
-
-        <!-- Right: Diagnostic Findings & Sign-Off Sidebar -->
-        <aside class="pacs-info-drawer">
-          <div class="drawer-header">
-            <h4><mat-icon>assignment</mat-icon> Diagnostic Impression</h4>
-            <span class="status-badge" [attr.data-status]="viewerOrder()?.status">{{ viewerOrder()?.status }}</span>
-          </div>
-
-          <div class="drawer-body">
-            <!-- STAT Critical finding notice if critical -->
-            <div class="drawer-critical-alert" *ngIf="viewerOrder()?.isCritical">
-              <mat-icon>priority_high</mat-icon>
-              <div>
-                <strong>CRITICAL FINDING RECORDED</strong>
-                <p>{{ viewerOrder()?.criticalAlertNotes || 'Immediate clinical attention required.' }}</p>
-              </div>
+              <app-status-chip tone="danger" [label]="criticalOrders().length + ' STAT Active'" />
             </div>
 
-            <div class="drawer-section">
-              <label>CLINICAL INDICATION</label>
-              <p class="text-content">{{ viewerOrder()?.clinicalIndication || 'No indication documented.' }}</p>
-            </div>
+            <div class="alert-items-list">
+              @for (crit of criticalOrders(); track crit.id) {
+                <div class="alert-item">
+                  <div class="alert-item-main">
+                    <div class="crit-meta">
+                      <span class="mono-code">{{ crit.accessionNumber || crit.orderNumber }}</span>
+                      <strong>{{ crit.patientName }}</strong>
+                      <span class="sub-text">MRN: {{ crit.patientMedicalRecordNumber || 'N/A' }}</span>
+                      <span class="sub-text">• {{ crit.modality }} — {{ crit.procedureName }}</span>
+                    </div>
+                    <p class="crit-impression">
+                      <span class="lbl">Impression:</span>
+                      {{ crit.impression || crit.clinicalIndication }}
+                    </p>
+                  </div>
 
-            <div class="drawer-section">
-              <label>OBJECTIVE FINDINGS</label>
-              <p class="text-content findings-text">{{ viewerOrder()?.findings || 'Formal radiologist findings pending reading.' }}</p>
-            </div>
-
-            <div class="drawer-section">
-              <label>DIAGNOSTIC CONCLUSION</label>
-              <div class="impression-container">
-                <p class="text-content impression-text">{{ viewerOrder()?.impression || 'Interpretation in progress.' }}</p>
-              </div>
-            </div>
-
-            <div class="drawer-section" *ngIf="viewerOrder()?.radiologistSignature">
-              <div class="signature-stamp">
-                <mat-icon>verified</mat-icon>
-                <div>
-                  <strong>Digitally Signed By:</strong>
-                  <span>{{ viewerOrder()?.radiologistSignature }}</span>
-                  <span class="sign-ts">{{ viewerOrder()?.reportedAt | date:'medium' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Radiation & Contrast info in drawer -->
-            <div class="drawer-section safety-specs">
-              <label>DOSIMETRY & SAFETY</label>
-              <div class="specs-grid">
-                <div class="spec-row">
-                  <span class="lbl">DLP:</span>
-                  <span class="val">{{ viewerOrder()?.radiationDoseDlp ? viewerOrder()?.radiationDoseDlp + ' mGy*cm' : 'N/A' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="lbl">Contrast:</span>
-                  <span class="val">{{ viewerOrder()?.contrastUsed ? viewerOrder()?.contrastAgentName : 'None' }}</span>
-                </div>
-                <div class="spec-row" *ngIf="viewerOrder()?.contrastVolumeMl">
-                  <span class="lbl">Volume:</span>
-                  <span class="val">{{ viewerOrder()?.contrastVolumeMl }} mL ({{ viewerOrder()?.contrastRoute }})</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Attending Doctor Sign-Off Action -->
-            <div class="drawer-section doctor-signoff-section" *ngIf="isDoctor()">
-              <label>ATTENDING DOCTOR SIGN-OFF</label>
-              <div *ngIf="viewerOrder()?.doctorSignedOffAt; else unverifiedSign">
-                <div class="sign-done">
-                  <mat-icon>task_alt</mat-icon>
-                  <div>
-                    <strong>Clinically Reviewed & Signed</strong>
-                    <span>{{ viewerOrder()?.doctorSignedOffAt | date:'medium' }}</span>
+                  <div class="crit-actions">
+                    @if (isNurse()) {
+                      <button type="button" mat-stroked-button (click)="openNurseStudyDetails(crit)">
+                        View Critical Finding
+                      </button>
+                    } @else {
+                      <button type="button" mat-stroked-button (click)="openInViewer(crit)">
+                        Open in PACS
+                      </button>
+                    }
+                    @if ((isDoctor() || isRadiologist()) && !crit.criticalAlertAcknowledgedByDoctor) {
+                      <button type="button" mat-flat-button color="primary" (click)="acknowledgeCriticalFinding(crit)">
+                        Acknowledge Alert
+                      </button>
+                    }
+                    @if (crit.criticalAlertAcknowledgedByDoctor) {
+                      <app-status-chip tone="success" [label]="'Ack by Dr. ' + crit.doctorName" />
+                    }
                   </div>
                 </div>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Telemetry Metric Cards Grid -->
+        @if (isLoading()) {
+          <div class="metrics-grid">
+            @for (item of [1, 2, 3, 4]; track item) {
+              <app-skeleton variant="card" />
+            }
+          </div>
+        } @else {
+          <section class="metrics-grid" aria-label="Imaging telemetry metrics">
+            <button type="button" class="metric-card" (click)="setTab('worklist')">
+              <span class="metric-label">{{ isNurse() ? 'Total Active Studies' : 'Total Studies Requisitioned' }}</span>
+              <span class="metric-val">{{ metrics()?.totalOrders || orders().length }}</span>
+            </button>
+
+            <button type="button" class="metric-card" (click)="setTab('worklist')">
+              <span class="metric-label">{{ isNurse() ? 'In Scan / Scheduled' : 'In Examination / Scheduled' }}</span>
+              <span class="metric-val">{{ isNurse() ? nurseInScanCount() : (metrics()?.inProgressCount || metrics()?.orderedCount || 2) }}</span>
+            </button>
+
+            @if (isNurse()) {
+              <button type="button" class="metric-card" (click)="setTab('worklist')">
+                <span class="metric-label">Completed Diagnostic Reports</span>
+                <span class="metric-val">{{ nurseCompletedCount() }}</span>
+              </button>
+            } @else {
+              <button type="button" class="metric-card" (click)="setTab('reports')">
+                <span class="metric-label">Pending Diagnostic Read</span>
+                <span class="metric-val">{{ unreportedOrders().length }}</span>
+              </button>
+            }
+
+            <button type="button" class="metric-card metric-danger" (click)="setTab('worklist')">
+              <span class="metric-label">STAT Critical Alert Studies</span>
+              <span class="metric-val">{{ metrics()?.criticalAlertsCount || criticalOrders().length }}</span>
+            </button>
+          </section>
+        }
+
+        <!-- Modality Distribution & Role Panel -->
+        <div class="cockpit-split-row">
+          <section class="panel-card">
+            <div class="panel-header">
+              <h2>Modality Case Distribution</h2>
+              <button type="button" mat-button (click)="setTab('worklist')">View All</button>
+            </div>
+            <div class="modality-dist-grid">
+              <button type="button" class="mod-tile" (click)="selectedModality.set('CT Scan'); setTab('worklist')">
+                <div class="mod-tile-head">
+                  <strong>CT Scan</strong>
+                  <app-status-chip tone="warning" label="High Priority" />
+                </div>
+                <span class="sub-text">128-Slice Dual Source</span>
+              </button>
+
+              <button type="button" class="mod-tile" (click)="selectedModality.set('MRI'); setTab('worklist')">
+                <div class="mod-tile-head">
+                  <strong>MRI Resonance</strong>
+                  <app-status-chip tone="info" label="Contrast Ready" />
+                </div>
+                <span class="sub-text">1.5T Superconducting</span>
+              </button>
+
+              <button type="button" class="mod-tile" (click)="selectedModality.set('X-Ray'); setTab('worklist')">
+                <div class="mod-tile-head">
+                  <strong>Digital X-Ray</strong>
+                  <app-status-chip tone="neutral" label="Routine Queue" />
+                </div>
+                <span class="sub-text">Wireless DR Flat Panel</span>
+              </button>
+
+              <button type="button" class="mod-tile" (click)="selectedModality.set('Ultrasound'); setTab('worklist')">
+                <div class="mod-tile-head">
+                  <strong>Ultrasound</strong>
+                  <app-status-chip tone="success" label="Point-of-Care" />
+                </div>
+                <span class="sub-text">EPIQ 7 Matrix Doppler</span>
+              </button>
+            </div>
+          </section>
+
+          @if (isNurse()) {
+            <section class="panel-card">
+              <div class="panel-header">
+                <h2>Nursing Imaging Care &amp; Prep Guide</h2>
+                <app-status-chip tone="info" label="Nursing Scope" />
               </div>
-              <ng-template #unverifiedSign>
-                <textarea
-                  rows="2"
-                  placeholder="Physician notes (e.g., Concur with impression. Plan initiated)..."
-                  [ngModel]="doctorSignOffNotes()"
-                  (ngModelChange)="doctorSignOffNotes.set($event)"
-                ></textarea>
-                <button
-                  mat-flat-button
-                  color="primary"
-                  class="sign-btn"
-                  [disabled]="isSubmitting() || !viewerOrder()?.impression"
-                  (click)="signOffAsDoctor(viewerOrder()!)"
+              <div class="prep-guide-list">
+                <div class="prep-item">
+                  <strong>IV Contrast Hydration Protocol</strong>
+                  <p>Verify eGFR prior to scan; ensure post-scan oral or IV fluids are administered.</p>
+                </div>
+                <div class="prep-item">
+                  <strong>MRI Magnetic Safety Screening</strong>
+                  <p>Confirm patient is cleared of pacemakers, metal implants, and transdermal patches.</p>
+                </div>
+                <div class="prep-item">
+                  <strong>NPO / Fasting Verification</strong>
+                  <p>Check 4–6h fasting for abdominal ultrasound and contrast CT examinations.</p>
+                </div>
+              </div>
+            </section>
+          } @else {
+            <section class="panel-card">
+              <div class="panel-header">
+                <h2>Suite Readiness</h2>
+                <button type="button" mat-button (click)="setTab('suites')">Manage Suites</button>
+              </div>
+              <div class="suite-mini-list">
+                @for (s of modalitySuites(); track s.id) {
+                  <div class="suite-mini-item">
+                    <div>
+                      <strong>{{ s.name.split('-')[0] }}</strong>
+                      <span class="sub-text">{{ s.modality }} • {{ s.roomNumber }}</span>
+                    </div>
+                    <app-status-chip [tone]="getSuiteTone(s.status)" [label]="s.status" />
+                  </div>
+                }
+              </div>
+            </section>
+          }
+        </div>
+
+        <!-- Recent Studies Table Preview -->
+        <section class="panel-card">
+          <div class="panel-header">
+            <h2>Recent Imaging Worklist Feed</h2>
+            <button type="button" mat-button (click)="setTab('worklist')">Full RIS Worklist</button>
+          </div>
+
+          @if (isLoading()) {
+            <app-skeleton variant="table" [count]="5" [columns]="7" />
+          } @else if (orders().length === 0) {
+            <app-empty-state
+              icon="radiology"
+              title="No recent imaging studies"
+              description="Placed radiology requisitions and modality scans will appear here."
+            />
+          } @else {
+            <div class="table-wrap">
+              <table class="clinical-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Accession &amp; Order</th>
+                    <th scope="col">Patient</th>
+                    <th scope="col">Modality &amp; Procedure</th>
+                    <th scope="col">Suite / Room</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Urgency</th>
+                    <th scope="col" class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of orders().slice(0, 5); track order.id) {
+                    <tr [class.stat-row]="order.priority === 'Stat'">
+                      <td>
+                        <strong class="mono-code">{{ order.accessionNumber || 'ACC-PENDING' }}</strong>
+                        <div class="sub-text">{{ order.orderNumber }}</div>
+                      </td>
+                      <td>
+                        <strong>{{ order.patientName }}</strong>
+                        <div class="sub-text">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</div>
+                      </td>
+                      <td>
+                        <span class="modality-code">{{ order.modality }}</span>
+                        <div class="sub-text">{{ order.procedureName }}</div>
+                      </td>
+                      <td>{{ order.roomSuite || 'Suite 1 - Digital X-Ray' }}</td>
+                      <td>
+                        <app-status-chip [tone]="getStatusTone(order.status)" [label]="order.status" />
+                      </td>
+                      <td>
+                        <app-status-chip [tone]="getPriorityTone(order.priority)" [label]="order.priority" />
+                      </td>
+                      <td class="col-actions">
+                        <div class="row-actions">
+                          @if (isNurse()) {
+                            <button type="button" mat-stroked-button (click)="openNurseStudyDetails(order)">
+                              View Report
+                            </button>
+                          } @else {
+                            <button
+                              type="button"
+                              mat-icon-button
+                              aria-label="Open study in PACS Viewer"
+                              matTooltip="Open in PACS Viewer"
+                              (click)="openInViewer(order)"
+                            >
+                              <mat-icon>visibility</mat-icon>
+                            </button>
+                            @if (isRadiologist()) {
+                              <button
+                                type="button"
+                                mat-icon-button
+                                aria-label="Open diagnostic reporting desk"
+                                matTooltip="Diagnostic Report"
+                                (click)="openReportingDesk(order)"
+                              >
+                                <mat-icon>rate_review</mat-icon>
+                              </button>
+                            }
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+    }
+
+    <!-- TAB 2: RIS ORDER WORKLIST -->
+    @case ('worklist') {
+      <div class="tab-panel" role="tabpanel">
+        @if (isRadiologist()) {
+          <section class="radiologist-scope-bar" aria-label="Radiologist worklist scope">
+            <div class="identity-info">
+              <app-status-chip tone="info" label="Active Radiologist Session" />
+              <strong>{{ radiologistProfileTitle() }}</strong>
+              <span class="sub-text">Signature: {{ getRadiologistSignature() }}</span>
+            </div>
+            <div class="scope-buttons" role="group" aria-label="Worklist scope filter">
+              <button
+                type="button"
+                mat-stroked-button
+                [class.active-toggle]="scopeFilter() === 'my'"
+                [attr.aria-pressed]="scopeFilter() === 'my'"
+                (click)="scopeFilter.set('my')"
+              >
+                My Assigned / Read Studies
+              </button>
+              <button
+                type="button"
+                mat-stroked-button
+                [class.active-toggle]="scopeFilter() === 'all'"
+                [attr.aria-pressed]="scopeFilter() === 'all'"
+                (click)="scopeFilter.set('all')"
+              >
+                Entire Department Fleet
+              </button>
+            </div>
+          </section>
+        }
+
+        <!-- Modality Filter Chips -->
+        <div class="filter-pills-row" role="group" aria-label="Filter by imaging modality">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedModality() === 'ALL'"
+            [attr.aria-pressed]="selectedModality() === 'ALL'"
+            (click)="selectedModality.set('ALL')"
+          >
+            All Modalities ({{ orders().length }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedModality() === 'X-Ray'"
+            [attr.aria-pressed]="selectedModality() === 'X-Ray'"
+            (click)="selectedModality.set('X-Ray')"
+          >
+            X-Ray (DR)
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedModality() === 'Ultrasound'"
+            [attr.aria-pressed]="selectedModality() === 'Ultrasound'"
+            (click)="selectedModality.set('Ultrasound')"
+          >
+            Ultrasound (US)
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedModality() === 'CT Scan'"
+            [attr.aria-pressed]="selectedModality() === 'CT Scan'"
+            (click)="selectedModality.set('CT Scan')"
+          >
+            CT Computed Tomography
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedModality() === 'MRI'"
+            [attr.aria-pressed]="selectedModality() === 'MRI'"
+            (click)="selectedModality.set('MRI')"
+          >
+            MRI Resonance
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedModality() === 'ECG / Echo'"
+            [attr.aria-pressed]="selectedModality() === 'ECG / Echo'"
+            (click)="selectedModality.set('ECG / Echo')"
+          >
+            ECG / Echo
+          </button>
+        </div>
+
+        <!-- Search & Dropdown Filters -->
+        <div class="filters-toolbar">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search worklist</mat-label>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              placeholder="Patient name, MRN, accession #, or procedure..."
+            />
+            @if (searchQuery()) {
+              <button
+                type="button"
+                mat-icon-button
+                matSuffix
+                aria-label="Clear search query"
+                (click)="searchQuery.set('')"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="compact-select">
+            <mat-label>Status</mat-label>
+            <mat-select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)">
+              <mat-option value="ALL">All Statuses</mat-option>
+              <mat-option value="Ordered">Ordered (Awaiting Scan)</mat-option>
+              <mat-option value="Scheduled">Scheduled</mat-option>
+              <mat-option value="InProgress">In Progress</mat-option>
+              <mat-option value="Reported">Reported</mat-option>
+              <mat-option value="Completed">Completed &amp; Signed</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="compact-select">
+            <mat-label>Urgency</mat-label>
+            <mat-select [ngModel]="selectedPriority()" (ngModelChange)="selectedPriority.set($event)">
+              <mat-option value="ALL">All Priorities</mat-option>
+              <mat-option value="Routine">Routine</mat-option>
+              <mat-option value="Urgent">Urgent</mat-option>
+              <mat-option value="Stat">STAT (Emergency)</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Worklist Table -->
+        <section class="panel-card">
+          @if (isLoading()) {
+            <app-skeleton variant="table" [count]="6" [columns]="8" />
+          } @else if (filteredOrders().length === 0) {
+            <app-empty-state
+              icon="photo_library"
+              title="No Diagnostic Imaging Studies Found"
+              description="No orders matched your active modality or status criteria. Adjust your filters or place a new order."
+              [actionLabel]="isDoctor() || isRadiologist() ? 'Order Study' : ''"
+              (action)="openOrderModal()"
+            />
+          } @else {
+            <div class="table-wrap">
+              <table class="clinical-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Accession &amp; Order</th>
+                    <th scope="col">Patient</th>
+                    <th scope="col">Modality &amp; Procedure</th>
+                    <th scope="col">Assigned Suite</th>
+                    <th scope="col">Status</th>
+                    @if (!isNurse()) {
+                      <th scope="col">Billing</th>
+                    }
+                    <th scope="col">Diagnostic Impression</th>
+                    <th scope="col">{{ isNurse() ? 'Physician Review' : 'Attending Sign-Off' }}</th>
+                    <th scope="col" class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of filteredOrders(); track order.id) {
+                    <tr [class.stat-row]="order.priority === 'Stat'">
+                      <td>
+                        <strong class="mono-code">{{ order.accessionNumber || 'ACC-PENDING' }}</strong>
+                        <div class="sub-text">{{ order.orderNumber }}</div>
+                        <div class="chip-inline">
+                          <app-status-chip [tone]="getPriorityTone(order.priority)" [label]="order.priority" />
+                        </div>
+                        <div class="sub-text">{{ order.orderedAt | date:'short' }}</div>
+                      </td>
+
+                      <td>
+                        <strong>{{ order.patientName }}</strong>
+                        <div class="sub-text">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</div>
+                        <div class="sub-text">Dr. {{ order.doctorName }}</div>
+                      </td>
+
+                      <td>
+                        <span class="modality-code">{{ order.modality }}</span>
+                        <div>{{ order.procedureName }}</div>
+                        <div class="sub-text">{{ order.bodyPart }}</div>
+                      </td>
+
+                      <td>
+                        <div>{{ order.roomSuite || 'Unassigned' }}</div>
+                        @if ((order.status === 'Ordered' || order.status === 'Scheduled') && !isNurse()) {
+                          <button type="button" mat-button (click)="openScheduleModal(order)">
+                            {{ order.roomSuite ? 'Reschedule' : 'Assign Suite' }}
+                          </button>
+                        }
+                      </td>
+
+                      <td>
+                        <div class="chip-stack">
+                          <app-status-chip [tone]="getStatusTone(order.status)" [label]="order.status" />
+                          @if (order.isCritical) {
+                            <app-status-chip tone="danger" label="CRITICAL" />
+                          }
+                        </div>
+                      </td>
+
+                      @if (!isNurse()) {
+                        <td>
+                          <div class="chip-stack">
+                            <app-status-chip
+                              [tone]="order.isBilled ? 'success' : 'warning'"
+                              [label]="order.isBilled ? 'Billed' : 'Unbilled'"
+                            />
+                            @if (order.price) {
+                              <span class="sub-text">${{ order.price | number:'1.2-2' }}</span>
+                            }
+                            @if (!order.isBilled && isCashier()) {
+                              <button type="button" mat-stroked-button (click)="billOrder(order)">
+                                Mark Billed
+                              </button>
+                            }
+                          </div>
+                        </td>
+                      }
+
+                      <td>
+                        @if (order.impression) {
+                          <p class="impression-snippet" [matTooltip]="order.impression">{{ order.impression }}</p>
+                          @if (order.radiologistSignature) {
+                            <div class="sub-text">{{ order.radiologistSignature }}</div>
+                          }
+                        } @else {
+                          <span class="sub-text">Read Pending</span>
+                        }
+                      </td>
+
+                      <td>
+                        @if (isNurse()) {
+                          @if (order.doctorSignedOffAt) {
+                            <app-status-chip tone="success" [label]="'Signed by Dr. ' + order.doctorName" />
+                          } @else if (order.status === 'Reported' || order.status === 'Completed') {
+                            <app-status-chip tone="warning" label="Pending MD Review" />
+                          } @else {
+                            <span class="sub-text">In Scan / Awaiting Read</span>
+                          }
+                        } @else {
+                          @if (order.doctorSignedOffAt) {
+                            <app-status-chip tone="success" [label]="'Signed ' + (order.doctorSignedOffAt | date:'shortDate')" />
+                          } @else if ((order.status === 'Reported' || order.status === 'Completed') && isDoctor()) {
+                            <button type="button" mat-stroked-button (click)="signOffAsDoctor(order)">
+                              Sign Off
+                            </button>
+                          } @else if (order.status === 'Reported' || order.status === 'Completed') {
+                            <span class="sub-text">Pending Sign-Off</span>
+                          } @else {
+                            <span class="sub-text">Awaiting Read</span>
+                          }
+                        }
+                      </td>
+
+                      <td class="col-actions">
+                        <div class="row-actions">
+                          @if (isNurse()) {
+                            <button type="button" mat-stroked-button (click)="openNurseStudyDetails(order)">
+                              View Report
+                            </button>
+                          } @else {
+                            <button
+                              type="button"
+                              mat-icon-button
+                              aria-label="Open PACS DICOM Viewer"
+                              matTooltip="Open Web PACS DICOM Viewer"
+                              (click)="openInViewer(order)"
+                            >
+                              <mat-icon>center_focus_strong</mat-icon>
+                            </button>
+
+                            @if ((order.status === 'Ordered' || order.status === 'Scheduled') && isRadiologist()) {
+                              <button
+                                type="button"
+                                mat-icon-button
+                                aria-label="Mark study in progress"
+                                matTooltip="Mark In Scan (Procedure Commenced)"
+                                (click)="updateOrderStatus(order, 'InProgress')"
+                              >
+                                <mat-icon>play_circle</mat-icon>
+                              </button>
+                            }
+
+                            @if (isRadiologist() && order.status !== 'Completed') {
+                              <button
+                                type="button"
+                                mat-icon-button
+                                aria-label="Record diagnostic radiologist report"
+                                matTooltip="Record Diagnostic Radiologist Report"
+                                (click)="openReportingDesk(order)"
+                              >
+                                <mat-icon>rate_review</mat-icon>
+                              </button>
+                            }
+
+                            @if (isRadiologist() && order.status === 'Completed') {
+                              <button
+                                type="button"
+                                mat-icon-button
+                                [attr.aria-label]="isStudyAssociatedWithMe(order) ? 'Review or edit diagnostic report' : 'Append signed clinical addendum'"
+                                [matTooltip]="isStudyAssociatedWithMe(order) ? 'Review / Edit Diagnostic Report' : 'Append Signed Clinical Addendum'"
+                                (click)="openReportingDesk(order)"
+                              >
+                                <mat-icon>{{ isStudyAssociatedWithMe(order) ? 'rate_review' : 'post_add' }}</mat-icon>
+                              </button>
+                            }
+
+                            <button
+                              type="button"
+                              mat-icon-button
+                              aria-label="Schedule modality suite"
+                              matTooltip="Schedule Modality Suite"
+                              (click)="openScheduleModal(order)"
+                            >
+                              <mat-icon>event</mat-icon>
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+    }
+
+    <!-- TAB 3: PACS WEB DICOM VIEWER -->
+    @case ('viewer') {
+      @if (!isNurse()) {
+        <div class="tab-panel" role="tabpanel">
+          @if (viewerOrder(); as vOrder) {
+            <div class="pacs-workstation-container">
+              <!-- PACS Control Toolbar -->
+              <div class="pacs-toolbar">
+                <div class="pacs-patient-strip">
+                  <div class="study-patient-info">
+                    <span class="p-name">{{ vOrder.patientName | uppercase }}</span>
+                    <span class="p-meta">MRN: {{ vOrder.patientMedicalRecordNumber }}</span>
+                    <span class="p-meta">ACC: {{ vOrder.accessionNumber || vOrder.orderNumber }}</span>
+                    <span class="p-meta">{{ vOrder.modality }} • {{ vOrder.procedureName }}</span>
+                  </div>
+
+                  <div class="pacs-study-switcher">
+                    <label for="pacs-study-select" class="sr-only">Switch PACS Exam Study</label>
+                    <select
+                      id="pacs-study-select"
+                      class="study-select-input"
+                      [ngModel]="vOrder.id"
+                      (ngModelChange)="onViewerOrderSelect($event)"
+                    >
+                      @for (ord of orders(); track ord.id) {
+                        <option [value]="ord.id">
+                          {{ ord.patientName }} ({{ ord.modality }}) — {{ ord.procedureName }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="pacs-tools-cluster">
+                  <div class="wl-preset-group" role="group" aria-label="Window level presets">
+                    <span class="tool-label">W/L:</span>
+                    <button type="button" class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Default'" [attr.aria-pressed]="viewerWindowLevelPreset() === 'Default'" (click)="setWindowLevel('Default')">Default</button>
+                    <button type="button" class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Bone'" [attr.aria-pressed]="viewerWindowLevelPreset() === 'Bone'" (click)="setWindowLevel('Bone')">Bone</button>
+                    <button type="button" class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'SoftTissue'" [attr.aria-pressed]="viewerWindowLevelPreset() === 'SoftTissue'" (click)="setWindowLevel('SoftTissue')">Soft Tissue</button>
+                    <button type="button" class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Lung'" [attr.aria-pressed]="viewerWindowLevelPreset() === 'Lung'" (click)="setWindowLevel('Lung')">Lung</button>
+                    <button type="button" class="tool-pill" [class.active]="viewerWindowLevelPreset() === 'Brain'" [attr.aria-pressed]="viewerWindowLevelPreset() === 'Brain'" (click)="setWindowLevel('Brain')">Brain</button>
+                  </div>
+
+                  <div class="action-tools-group" role="toolbar" aria-label="Image manipulation tools">
+                    <button type="button" class="pacs-icon-btn cine-btn" [class.active]="isCinePlaying()" [attr.aria-pressed]="isCinePlaying()" (click)="toggleCine()" aria-label="Toggle cine loop playback" matTooltip="Cine Loop Playback">
+                      <mat-icon>{{ isCinePlaying() ? 'pause_circle' : 'play_circle' }}</mat-icon>
+                    </button>
+                    <button type="button" class="pacs-icon-btn" (click)="zoomIn()" aria-label="Zoom in 25 percent" matTooltip="Zoom In (+25%)"><mat-icon>zoom_in</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" (click)="zoomOut()" aria-label="Zoom out 25 percent" matTooltip="Zoom Out (-25%)"><mat-icon>zoom_out</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" (click)="resetViewer()" aria-label="Reset image view" matTooltip="Reset View 100%"><mat-icon>crop_free</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" [class.active]="viewerInverted()" [attr.aria-pressed]="viewerInverted()" (click)="toggleInvert()" aria-label="Invert radiographic negative" matTooltip="Invert Radiographic Negative"><mat-icon>invert_colors</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" (click)="rotateCW()" aria-label="Rotate image 90 degrees clockwise" matTooltip="Rotate 90° Clockwise"><mat-icon>rotate_right</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" [class.active]="viewerCaliperActive()" [attr.aria-pressed]="viewerCaliperActive()" (click)="toggleCaliper()" aria-label="Toggle digital caliper" matTooltip="Digital Caliper"><mat-icon>straighten</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" [class.active]="viewerAngleActive()" [attr.aria-pressed]="viewerAngleActive()" (click)="toggleAngle()" aria-label="Toggle Cobb angle tool" matTooltip="Cobb Angle Tool"><mat-icon>square_foot</mat-icon></button>
+                    <button type="button" class="pacs-icon-btn" [class.active]="viewerMetadataDrawerOpen()" [attr.aria-pressed]="viewerMetadataDrawerOpen()" (click)="viewerMetadataDrawerOpen.update(v => !v)" aria-label="Inspect DICOM header tags" matTooltip="DICOM Header Tags"><mat-icon>info</mat-icon></button>
+                  </div>
+
+                  @if (isRadiologist()) {
+                    <button type="button" class="pacs-report-btn" (click)="openReportingDesk(vOrder)">
+                      Diagnostic Report
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Main Workstation Layout -->
+              <div class="pacs-viewport-layout">
+                <!-- Filmstrip Slice Selector -->
+                <aside class="pacs-filmstrip" aria-label="Multi-slice filmstrip">
+                  <div class="filmstrip-header">
+                    <span>SERIES 1 ({{ slicesList().length }})</span>
+                    <button
+                      type="button"
+                      class="cine-mini-btn"
+                      [class.active]="isCinePlaying()"
+                      (click)="toggleCine()"
+                      aria-label="Toggle cine playback"
+                    >
+                      <mat-icon>{{ isCinePlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+                    </button>
+                  </div>
+                  <div class="slice-slider-container">
+                    <label for="slice-scrubber" class="sr-only">Active slice selector</label>
+                    <input
+                      id="slice-scrubber"
+                      type="range"
+                      min="0"
+                      [max]="slicesList().length - 1"
+                      [ngModel]="viewerActiveSlice()"
+                      (ngModelChange)="selectSlice($event)"
+                      class="slice-scrubber-range"
+                    />
+                  </div>
+                  <div class="slices-stack">
+                    @for (s of slicesList(); track s.sliceNumber; let i = $index) {
+                      <button
+                        type="button"
+                        class="slice-thumbnail"
+                        [class.active]="viewerActiveSlice() === i"
+                        [attr.aria-pressed]="viewerActiveSlice() === i"
+                        [attr.aria-label]="'Select slice ' + s.sliceNumber + ' at ' + s.zPos"
+                        (click)="selectSlice(i)"
+                      >
+                        <img [src]="s.url" [alt]="'Slice ' + s.sliceNumber + ': ' + s.label" />
+                        <div class="slice-overlay-tag">
+                          <span>#{{ s.sliceNumber }}</span>
+                          <span>{{ s.zPos }}</span>
+                        </div>
+                      </button>
+                    }
+                  </div>
+                </aside>
+
+                <!-- DICOM Image Viewport -->
+                <div
+                  class="pacs-canvas-wrapper"
+                  [class.wl-bone]="viewerWindowLevelPreset() === 'Bone'"
+                  [class.wl-lung]="viewerWindowLevelPreset() === 'Lung'"
+                  [class.wl-soft]="viewerWindowLevelPreset() === 'SoftTissue'"
+                  [class.wl-brain]="viewerWindowLevelPreset() === 'Brain'"
+                  [class.inverted]="viewerInverted()"
                 >
-                  <mat-icon>check</mat-icon> Sign Off Study
+                  <div class="dicom-corner top-left">
+                    <span class="patient-line">{{ vOrder.patientName | uppercase }}</span>
+                    <span>MRN: {{ vOrder.patientMedicalRecordNumber }}</span>
+                    <span>ACC: {{ vOrder.accessionNumber || vOrder.orderNumber }}</span>
+                    <span>SEX: {{ vOrder.gender || 'UNSPECIFIED' }} • DOB: {{ vOrder.dateOfBirth || '1984-05-12' }}</span>
+                  </div>
+
+                  <div class="dicom-corner top-right">
+                    <span class="clinic-line">CITY HEALTH CLINIC PACS</span>
+                    <span>ACQ: {{ vOrder.orderedAt | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+                    <span>MOD: {{ vOrder.modality }} • {{ vOrder.bodyPart }}</span>
+                    <span>SUITE: {{ vOrder.roomSuite || 'Suite 2 - CT SOMATOM' }}</span>
+                  </div>
+
+                  <div class="dicom-corner bottom-left">
+                    <span>ZOOM: {{ viewerZoom() }}% • ROT: {{ viewerRotation() }}°</span>
+                    <span>W: {{ viewerWindowLevelPreset() === 'Bone' ? 2000 : (viewerWindowLevelPreset() === 'Lung' ? 1500 : (viewerWindowLevelPreset() === 'Brain' ? 80 : 2400)) }} L: {{ viewerWindowLevelPreset() === 'Bone' ? 300 : (viewerWindowLevelPreset() === 'Lung' ? -600 : (viewerWindowLevelPreset() === 'Brain' ? 40 : 400)) }}</span>
+                    <span>SLICE: {{ viewerActiveSlice() + 1 }} / {{ slicesList().length }} ({{ slicesList()[viewerActiveSlice()]?.zPos || '0.0mm' }})</span>
+                  </div>
+
+                  <div class="dicom-corner bottom-right">
+                    <span>DLP: {{ vOrder.radiationDoseDlp || 480 }} mGy*cm</span>
+                    <span>CONTRAST: {{ vOrder.contrastUsed ? vOrder.contrastAgentName : 'NON-CONTRAST' }}</span>
+                    <span>DIAGNOSTIC ARCHIVE</span>
+                  </div>
+
+                  @if (viewerCaliperActive()) {
+                    <div class="caliper-overlay-box">
+                      <div class="caliper-line"></div>
+                      <div class="caliper-label">Distance: 24.6 mm ± 0.2mm</div>
+                    </div>
+                  }
+
+                  @if (viewerAngleActive()) {
+                    <div class="angle-overlay-box">
+                      <div class="angle-arc"></div>
+                      <div class="angle-label">Cobb Angle: 32.4°</div>
+                    </div>
+                  }
+
+                  <div
+                    class="interactive-image-frame"
+                    [style.transform]="'scale(' + (viewerZoom() / 100) + ') rotate(' + viewerRotation() + 'deg)'"
+                  >
+                    <img
+                      [src]="slicesList()[viewerActiveSlice()]?.url || vOrder.imageUrl || 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80'"
+                      alt="PACS DICOM Slice View"
+                    />
+                  </div>
+                </div>
+
+                <!-- Right: Diagnostic Findings Drawer -->
+                <aside class="pacs-info-drawer" aria-label="Diagnostic summary">
+                  <div class="drawer-header">
+                    <h2>Diagnostic Impression</h2>
+                    <app-status-chip [tone]="getStatusTone(vOrder.status)" [label]="vOrder.status" />
+                  </div>
+
+                  <div class="drawer-body">
+                    @if (vOrder.isCritical) {
+                      <div class="drawer-critical-alert">
+                        <strong>Critical Finding Recorded</strong>
+                        <p>{{ vOrder.criticalAlertNotes || 'Immediate clinical attention required.' }}</p>
+                      </div>
+                    }
+
+                    <div class="drawer-section">
+                      <span class="drawer-label">Clinical Indication</span>
+                      <p class="drawer-text">{{ vOrder.clinicalIndication || 'No indication documented.' }}</p>
+                    </div>
+
+                    <div class="drawer-section">
+                      <span class="drawer-label">Objective Findings</span>
+                      <p class="drawer-box">{{ vOrder.findings || 'Formal radiologist findings pending reading.' }}</p>
+                    </div>
+
+                    <div class="drawer-section">
+                      <span class="drawer-label">Diagnostic Conclusion</span>
+                      <p class="drawer-impression">{{ vOrder.impression || 'Interpretation in progress.' }}</p>
+                    </div>
+
+                    @if (vOrder.radiologistSignature) {
+                      <div class="signature-stamp">
+                        <strong>Digitally Signed By</strong>
+                        <span>{{ vOrder.radiologistSignature }}</span>
+                        <span class="sub-text">{{ vOrder.reportedAt | date:'medium' }}</span>
+                      </div>
+                    }
+
+                    <div class="drawer-section">
+                      <span class="drawer-label">Dosimetry &amp; Safety</span>
+                      <div class="specs-list">
+                        <div class="spec-row">
+                          <span>DLP:</span>
+                          <strong>{{ vOrder.radiationDoseDlp ? vOrder.radiationDoseDlp + ' mGy*cm' : 'N/A' }}</strong>
+                        </div>
+                        <div class="spec-row">
+                          <span>Contrast:</span>
+                          <strong>{{ vOrder.contrastUsed ? vOrder.contrastAgentName : 'None' }}</strong>
+                        </div>
+                        @if (vOrder.contrastVolumeMl) {
+                          <div class="spec-row">
+                            <span>Volume:</span>
+                            <strong>{{ vOrder.contrastVolumeMl }} mL ({{ vOrder.contrastRoute }})</strong>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    @if (isDoctor()) {
+                      <div class="drawer-section">
+                        <span class="drawer-label">Attending Doctor Sign-Off</span>
+                        @if (vOrder.doctorSignedOffAt) {
+                          <app-status-chip tone="success" [label]="'Signed ' + (vOrder.doctorSignedOffAt | date:'short')" />
+                        } @else {
+                          <label for="pacs-signoff-notes" class="sr-only">Physician clinical sign-off notes</label>
+                          <textarea
+                            id="pacs-signoff-notes"
+                            rows="2"
+                            class="pacs-notes-input"
+                            placeholder="Physician notes (e.g., Concur with impression)..."
+                            [ngModel]="doctorSignOffNotes()"
+                            (ngModelChange)="doctorSignOffNotes.set($event)"
+                          ></textarea>
+                          <button
+                            type="button"
+                            mat-flat-button
+                            color="primary"
+                            [disabled]="isSubmitting() || !vOrder.impression"
+                            (click)="signOffAsDoctor(vOrder)"
+                          >
+                            Sign Off Study
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </aside>
+              </div>
+            </div>
+          } @else {
+            <app-empty-state
+              icon="center_focus_strong"
+              title="No Study Loaded in PACS Viewer"
+              description="Select a study from the RIS Worklist to load diagnostic imaging into the PACS viewport."
+              actionLabel="Go to RIS Worklist"
+              (action)="setTab('worklist')"
+            />
+          }
+        </div>
+      }
+    }
+
+    <!-- TAB 4: STRUCTURED DIAGNOSTIC REPORTING -->
+    @case ('reports') {
+      @if (!isNurse()) {
+        <div class="tab-panel" role="tabpanel">
+          <div class="reporting-workspace">
+            <!-- Left: Diagnostic Reading Queue -->
+            <aside class="reporting-queue-pane" aria-label="Diagnostic reading queue">
+              <div class="pane-header">
+                <h2>Reading Queue</h2>
+                <app-status-chip tone="info" [label]="filteredUnreportedOrders().length + ' Pending'" />
+              </div>
+
+              <div class="queue-search-box">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Filter queue</mat-label>
+                  <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+                  <input
+                    matInput
+                    [ngModel]="reportsSearchQuery()"
+                    (ngModelChange)="reportsSearchQuery.set($event)"
+                    placeholder="Patient, accession, or procedure..."
+                  />
+                </mat-form-field>
+              </div>
+
+              <div class="queue-list">
+                @for (order of filteredUnreportedOrders(); track order.id) {
+                  <button
+                    type="button"
+                    class="queue-item"
+                    [class.active]="selectedOrder()?.id === order.id"
+                    [attr.aria-pressed]="selectedOrder()?.id === order.id"
+                    (click)="openReportingDesk(order)"
+                  >
+                    <div class="q-row">
+                      <span class="mono-code">{{ order.accessionNumber || order.orderNumber }}</span>
+                      <app-status-chip [tone]="getPriorityTone(order.priority)" [label]="order.priority" />
+                    </div>
+                    <div class="q-row">
+                      <strong>{{ order.patientName }}</strong>
+                      <span class="sub-text">{{ order.patientMedicalRecordNumber || 'N/A' }}</span>
+                    </div>
+                    <div class="q-proc">{{ order.modality }} • {{ order.procedureName }}</div>
+                    <div class="q-row">
+                      <span class="sub-text">Ref: Dr. {{ order.doctorName }}</span>
+                      <span class="sub-text">{{ order.orderedAt | date:'shortTime' }}</span>
+                    </div>
+                  </button>
+                } @empty {
+                  <app-empty-state
+                    icon="check_circle"
+                    title="Reading queue clear"
+                    description="All studies have finalized diagnostic reports."
+                  />
+                }
+              </div>
+            </aside>
+
+            <!-- Right: Reporting Desk -->
+            <section class="reporting-desk-pane" aria-label="Structured reporting editor">
+              @if (selectedOrder(); as sOrder) {
+                <div class="panel-card desk-card">
+                  <div class="desk-header-card">
+                    <div>
+                      <div class="desk-title-row">
+                        <h2>{{ sOrder.procedureName }}</h2>
+                        <app-status-chip tone="info" [label]="sOrder.modality" />
+                        <app-status-chip [tone]="getPriorityTone(sOrder.priority)" [label]="sOrder.priority" />
+                      </div>
+                      <div class="desk-meta">
+                        <strong>{{ sOrder.patientName }}</strong>
+                        <span>MRN: {{ sOrder.patientMedicalRecordNumber || 'N/A' }}</span>
+                        <span class="mono-code">Acc: {{ sOrder.accessionNumber || sOrder.orderNumber }}</span>
+                        <span>Attending: Dr. {{ sOrder.doctorName }}</span>
+                      </div>
+                      <p class="sub-text">Indication: {{ sOrder.clinicalIndication || 'Routine Diagnostic Evaluation' }}</p>
+                    </div>
+                    <button type="button" mat-stroked-button (click)="openInViewer(sOrder)">
+                      Open Study in PACS
+                    </button>
+                  </div>
+
+                  @if (isAddendumMode()) {
+                    <div class="addendum-banner" role="note">
+                      <mat-icon aria-hidden="true">history_edu</mat-icon>
+                      <div>
+                        <strong>Official Amendment / Addendum Mode</strong>
+                        <p>
+                          Originally finalized by {{ originalSigningRadiologist() }}. Submitting records a signed addendum without altering prior legal findings.
+                        </p>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Templates -->
+                  <div class="templates-section">
+                    <span class="section-label">Structured Clinical Templates</span>
+                    <div class="tmpl-chips">
+                      @for (t of reportingTemplates; track t.id) {
+                        <button
+                          type="button"
+                          class="tmpl-chip"
+                          [class.critical-chip]="t.isCritical"
+                          (click)="applyReportingTemplate(t)"
+                        >
+                          {{ t.title }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Objective Radiographic Findings *</mat-label>
+                    <textarea
+                      matInput
+                      rows="4"
+                      [ngModel]="reportFindings()"
+                      (ngModelChange)="reportFindings.set($event)"
+                      placeholder="Document detailed radiographic findings..."
+                      required
+                    ></textarea>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Diagnostic Impression &amp; Recommendations *</mat-label>
+                    <textarea
+                      matInput
+                      rows="3"
+                      [ngModel]="reportImpression()"
+                      (ngModelChange)="reportImpression.set($event)"
+                      placeholder="Enter definitive clinical impression..."
+                      required
+                    ></textarea>
+                  </mat-form-field>
+
+                  <!-- Critical Alert Toggle -->
+                  <div class="critical-alert-config-box" [class.alert-active]="reportIsCritical()">
+                    <mat-checkbox
+                      [ngModel]="reportIsCritical()"
+                      (ngModelChange)="reportIsCritical.set($event)"
+                    >
+                      Flag as STAT Critical Finding (Immediate Attending Notification)
+                    </mat-checkbox>
+
+                    @if (reportIsCritical()) {
+                      <div class="alert-details-panel">
+                        <p class="sub-text">
+                          Flagging notifies Dr. {{ sOrder.doctorName }}. ACR standards require verbal communication and read-back documentation.
+                        </p>
+                        <mat-form-field appearance="outline" class="full-width">
+                          <mat-label>Verbal Notification Read-Back Documentation *</mat-label>
+                          <input
+                            matInput
+                            [ngModel]="reportCriticalNotes()"
+                            (ngModelChange)="reportCriticalNotes.set($event)"
+                            placeholder="E.g., Dr. Sarah James notified by phone; read-back verified."
+                            required
+                          />
+                        </mat-form-field>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Radiation & Contrast Media Pod -->
+                  <div class="safety-tracking-subpanel">
+                    <div class="subpanel-header">
+                      <h3>Radiation Dosimetry &amp; Contrast ALARA Compliance</h3>
+                      <app-status-chip tone="success" label="ACR Audit Ready" />
+                    </div>
+                    <div class="form-grid-3">
+                      <mat-form-field appearance="outline">
+                        <mat-label>DLP (mGy*cm)</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          [ngModel]="reportRadiationDlp()"
+                          (ngModelChange)="reportRadiationDlp.set($event)"
+                        />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>DAP (dGy*cm²)</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          [ngModel]="reportRadiationDap()"
+                          (ngModelChange)="reportRadiationDap.set($event)"
+                        />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Exposure Parameters</mat-label>
+                        <input
+                          matInput
+                          [ngModel]="reportExposureParams()"
+                          (ngModelChange)="reportExposureParams.set($event)"
+                        />
+                      </mat-form-field>
+                    </div>
+
+                    <mat-checkbox
+                      [ngModel]="reportContrastUsed()"
+                      (ngModelChange)="reportContrastUsed.set($event)"
+                    >
+                      Intravenous (IV) Contrast Media Administered
+                    </mat-checkbox>
+
+                    @if (reportContrastUsed()) {
+                      <div class="form-grid-2">
+                        <mat-form-field appearance="outline">
+                          <mat-label>Contrast Agent Name</mat-label>
+                          <input
+                            matInput
+                            [ngModel]="reportContrastAgent()"
+                            (ngModelChange)="reportContrastAgent.set($event)"
+                          />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                          <mat-label>Volume Administered (mL)</mat-label>
+                          <input
+                            matInput
+                            type="number"
+                            [ngModel]="reportContrastVolume()"
+                            (ngModelChange)="reportContrastVolume.set($event)"
+                          />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                          <mat-label>Lot Number &amp; Expiration</mat-label>
+                          <input
+                            matInput
+                            [ngModel]="reportContrastLot()"
+                            (ngModelChange)="reportContrastLot.set($event)"
+                          />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                          <mat-label>Injection Route &amp; Gauge</mat-label>
+                          <input
+                            matInput
+                            [ngModel]="reportContrastRoute()"
+                            (ngModelChange)="reportContrastRoute.set($event)"
+                          />
+                        </mat-form-field>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Digital Signature -->
+                  <div class="digital-signature-card">
+                    <div class="sig-header">
+                      <span class="section-label">Attending Radiologist Digital Signature</span>
+                      <app-status-chip tone="success" label="Cryptographically Stamped" />
+                    </div>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Digital Signature &amp; Certification *</mat-label>
+                      <input
+                        matInput
+                        [ngModel]="reportSignature()"
+                        (ngModelChange)="reportSignature.set($event)"
+                        required
+                      />
+                    </mat-form-field>
+                  </div>
+
+                  <div class="desk-actions">
+                    <button
+                      type="button"
+                      mat-flat-button
+                      color="primary"
+                      [disabled]="isSubmitting() || !reportFindings() || !reportImpression()"
+                      (click)="submitReport()"
+                    >
+                      {{ isSubmitting() ? 'Transmitting & Signing...' : (isAddendumMode() ? 'Finalize & Sign Addendum' : 'Finalize & Sign Diagnostic Report') }}
+                    </button>
+                    <button type="button" mat-stroked-button (click)="selectedOrder.set(null)">
+                      Close Study
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <app-empty-state
+                  icon="assignment_turned_in"
+                  title="Select a Study for Structured Reporting"
+                  description="Choose an examination from the queue on the left to record radiographic findings, dosimetry logs, and digital sign-off."
+                />
+              }
+            </section>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- TAB 5: RADIATION SAFETY & CONTRAST MEDIA LOG -->
+    @case ('safety') {
+      @if (!isNurse()) {
+        <div class="tab-panel" role="tabpanel">
+          <section class="metrics-grid" aria-label="Radiation safety metrics">
+            <div class="metric-card static">
+              <span class="metric-label">Radiation Dosimetry Audits</span>
+              <span class="metric-val">{{ filteredSafetyLogs().length }}</span>
+            </div>
+            <div class="metric-card static">
+              <span class="metric-label">Contrast Lot Traceability</span>
+              <span class="metric-val">100%</span>
+            </div>
+            <div class="metric-card static">
+              <span class="metric-label">Mean Head CT DLP (mGy*cm)</span>
+              <span class="metric-val">&lt; 850</span>
+            </div>
+            <div class="metric-card static">
+              <span class="metric-label">Adverse Contrast Reactions</span>
+              <span class="metric-val">0</span>
+            </div>
+          </section>
+
+          <div class="filters-toolbar">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>Search audit registry</mat-label>
+              <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+              <input
+                matInput
+                [ngModel]="safetySearchQuery()"
+                (ngModelChange)="safetySearchQuery.set($event)"
+                placeholder="Accession, patient, procedure, or contrast lot..."
+              />
+              @if (safetySearchQuery()) {
+                <button
+                  type="button"
+                  mat-icon-button
+                  matSuffix
+                  aria-label="Clear safety search"
+                  (click)="safetySearchQuery.set('')"
+                >
+                  <mat-icon>close</mat-icon>
                 </button>
-              </ng-template>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="compact-select">
+              <mat-label>Modality</mat-label>
+              <mat-select [ngModel]="safetyModalityFilter()" (ngModelChange)="safetyModalityFilter.set($event)">
+                <mat-option value="ALL">All Modalities</mat-option>
+                <mat-option value="CT Scan">CT Scans</mat-option>
+                <mat-option value="X-Ray">X-Ray DR</mat-option>
+                <mat-option value="MRI">MRI</mat-option>
+                <mat-option value="Fluoroscopy">Fluoroscopy</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="compact-select">
+              <mat-label>Contrast</mat-label>
+              <mat-select [ngModel]="safetyContrastFilter()" (ngModelChange)="safetyContrastFilter.set($event)">
+                <mat-option value="ALL">All Studies</mat-option>
+                <mat-option value="CONTRAST">Contrast Administered</mat-option>
+                <mat-option value="NON_CONTRAST">Non-Contrast Only</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <div class="toolbar-actions">
+              <button type="button" mat-flat-button color="primary" (click)="openNewSafetyEntryModal()">
+                Log Safety Record
+              </button>
+              <button type="button" mat-stroked-button (click)="exportSafetyAudit('PDF')">
+                Export PDF
+              </button>
+              <button type="button" mat-stroked-button (click)="exportSafetyAudit('CSV')">
+                Export CSV
+              </button>
             </div>
           </div>
-        </aside>
-      </div>
 
-      <!-- DICOM Metadata Drawer Overlay -->
-      <div class="dicom-metadata-modal" *ngIf="viewerMetadataDrawerOpen()" (click)="viewerMetadataDrawerOpen.set(false)">
-        <div class="metadata-card" (click)="$event.stopPropagation()">
-          <div class="m-header">
-            <h3><mat-icon>receipt_long</mat-icon> DICOM 3.0 Header Tags Inspection</h3>
-            <button (click)="viewerMetadataDrawerOpen.set(false)"><mat-icon>close</mat-icon></button>
+          <section class="panel-card">
+            <div class="panel-header">
+              <h2>Radiation Dosimetry &amp; Contrast Audit Registry</h2>
+              <app-status-chip tone="neutral" [label]="filteredSafetyLogs().length + ' Records Audited'" />
+            </div>
+
+            @if (filteredSafetyLogs().length === 0) {
+              <app-empty-state
+                icon="shield"
+                title="No Matching Dosimetry Logs"
+                description="No records matched your search or modality filters."
+                actionLabel="Clear Filters"
+                (action)="safetySearchQuery.set(''); safetyModalityFilter.set('ALL'); safetyContrastFilter.set('ALL')"
+              />
+            } @else {
+              <div class="table-wrap">
+                <table class="clinical-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Accession &amp; Order</th>
+                      <th scope="col">Patient</th>
+                      <th scope="col">Modality &amp; Procedure</th>
+                      <th scope="col">DLP (mGy*cm)</th>
+                      <th scope="col">DAP (dGy*cm²)</th>
+                      <th scope="col">Exposure Parameters</th>
+                      <th scope="col">Contrast Tracking</th>
+                      <th scope="col">Compliance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (log of filteredSafetyLogs(); track log.orderId) {
+                      <tr>
+                        <td>
+                          <strong class="mono-code">{{ log.accessionNumber }}</strong>
+                          <div class="sub-text">{{ log.orderNumber }}</div>
+                        </td>
+                        <td><strong>{{ log.patientName }}</strong></td>
+                        <td>
+                          <span class="modality-code">{{ log.modality }}</span>
+                          <div class="sub-text">{{ log.procedureName }}</div>
+                        </td>
+                        <td>
+                          @if (log.radiationDoseDlp) {
+                            <app-status-chip
+                              [tone]="(log.radiationDoseDlp || 0) > 850 ? 'danger' : 'neutral'"
+                              [label]="log.radiationDoseDlp + ' mGy*cm'"
+                            />
+                          } @else {
+                            <span class="sub-text">N/A</span>
+                          }
+                        </td>
+                        <td>{{ log.radiationDoseDap ? log.radiationDoseDap + ' dGy*cm²' : 'N/A' }}</td>
+                        <td class="mono-text">{{ log.exposureParameters || 'Standard Protocol' }}</td>
+                        <td>
+                          @if (log.contrastUsed) {
+                            <strong>{{ log.contrastAgentName }}</strong>
+                            <div class="sub-text">{{ log.contrastVolumeMl }} mL • Lot: {{ log.contrastLotNumber }}</div>
+                            @if (log.contrastRoute) {
+                              <div class="sub-text">{{ log.contrastRoute }}</div>
+                            }
+                          } @else {
+                            <span class="sub-text">Non-Contrast</span>
+                          }
+                        </td>
+                        <td>
+                          <app-status-chip tone="success" label="ALARA Pass" />
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+        </div>
+      }
+    }
+
+    <!-- TAB 6: MODALITY EQUIPMENT SUITES -->
+    @case ('suites') {
+      @if (!isNurse()) {
+        <div class="tab-panel" role="tabpanel">
+          <div class="suites-header-bar">
+            <div>
+              <h2>Diagnostic Modality Suites &amp; Operational Readiness</h2>
+              <p class="sub-text">Equipment telemetry, detector temperatures, cryogen reserves, and daily QA calibration</p>
+            </div>
+            <button type="button" mat-stroked-button (click)="loadData()">
+              Check Room Sensors
+            </button>
           </div>
-          <div class="m-body">
-            <table class="tag-table">
+
+          <div class="suites-grid">
+            @for (suite of modalitySuites(); track suite.id) {
+              <article class="panel-card suite-card">
+                <div class="suite-card-top">
+                  <span class="mono-code">{{ suite.roomNumber }}</span>
+                  <app-status-chip [tone]="getSuiteTone(suite.status)" [label]="suite.status" />
+                </div>
+
+                <h3>{{ suite.name }}</h3>
+                <p class="sub-text">{{ suite.equipment }}</p>
+
+                <div class="suite-metrics-row">
+                  <div class="suite-stat">
+                    <span class="sub-text">Today's Scans</span>
+                    <strong>{{ suite.dailyScansCount }}</strong>
+                  </div>
+                  <div class="suite-stat">
+                    <span class="sub-text">Telemetry</span>
+                    <strong>{{ suite.tempOrHelium }}</strong>
+                  </div>
+                </div>
+
+                <div class="sub-text">Daily QA: {{ suite.lastQACheck }}</div>
+
+                @if (suite.activePatient) {
+                  <div class="active-patient-box">
+                    <span class="sub-text">Active Scan:</span>
+                    <strong>{{ suite.activePatient }} ({{ suite.activeAccession }})</strong>
+                  </div>
+                }
+
+                <div class="suite-footer">
+                  <button type="button" mat-stroked-button (click)="setTab('worklist')">
+                    Suite Queue
+                  </button>
+                  <button
+                    type="button"
+                    mat-flat-button
+                    color="primary"
+                    (click)="toast.success(suite.name + ': Calibration QA passed.')"
+                  >
+                    Quick QA
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+
+  <!-- MODAL: ORDER PLACEMENT (480px) -->
+  @if (isOrderModalOpen()) {
+    <div class="modal-backdrop" (click)="isOrderModalOpen.set(false)">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rad-order-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <h2 id="rad-order-dialog-title">Order Diagnostic Imaging Study</h2>
+          <button type="button" mat-icon-button aria-label="Close dialog" (click)="isOrderModalOpen.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form (submit)="$event.preventDefault(); createOrder()" class="modal-body">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select Patient</mat-label>
+            <mat-select [ngModel]="newOrderPatientId()" (ngModelChange)="newOrderPatientId.set($event)" name="patientId" required>
+              @for (p of patients(); track p.id) {
+                <mat-option [value]="p.id">{{ p.firstName }} {{ p.lastName }} (MRN: {{ p.medicalRecordNumber }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="modality-selector">
+            <span class="field-label">Imaging Modality *</span>
+            <div class="modality-btn-group">
+              @for (mod of ['X-Ray', 'Ultrasound', 'CT Scan', 'MRI', 'ECG / Echo']; track mod) {
+                <button
+                  type="button"
+                  class="filter-pill"
+                  [class.active]="newOrderModality() === mod"
+                  [attr.aria-pressed]="newOrderModality() === mod"
+                  (click)="applyModalityPreset($any(mod), 0)"
+                >
+                  {{ mod }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Procedure Name</mat-label>
+              <input matInput name="procedureName" [ngModel]="newOrderProcedureName()" (ngModelChange)="newOrderProcedureName.set($event)" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Target Body Part</mat-label>
+              <input matInput name="bodyPart" [ngModel]="newOrderBodyPart()" (ngModelChange)="newOrderBodyPart.set($event)" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Assigned Suite Room</mat-label>
+              <input matInput name="roomSuite" [ngModel]="newOrderRoomSuite()" (ngModelChange)="newOrderRoomSuite.set($event)" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Clinical Urgency</mat-label>
+              <mat-select [ngModel]="newOrderPriority()" (ngModelChange)="newOrderPriority.set($event)" name="priority">
+                <mat-option value="Routine">Routine</mat-option>
+                <mat-option value="Urgent">Urgent</mat-option>
+                <mat-option value="Stat">STAT (Emergency)</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Procedure Fee ($)</mat-label>
+              <input matInput type="number" step="0.01" name="price" [ngModel]="newOrderPrice()" (ngModelChange)="newOrderPrice.set($event)" />
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Clinical Indication &amp; Suspected Pathology</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              name="indication"
+              [ngModel]="newOrderClinicalIndication()"
+              (ngModelChange)="newOrderClinicalIndication.set($event)"
+              required
+            ></textarea>
+          </mat-form-field>
+
+          <footer class="modal-footer">
+            <button type="submit" mat-flat-button color="primary" [disabled]="isSubmitting()">
+              Transmit Requisition
+            </button>
+            <button type="button" mat-stroked-button (click)="isOrderModalOpen.set(false)" [disabled]="isSubmitting()">
+              Cancel
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: SUITE SCHEDULING (480px) -->
+  @if (isScheduleModalOpen()) {
+    <div class="modal-backdrop" (click)="isScheduleModalOpen.set(false)">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rad-schedule-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <h2 id="rad-schedule-dialog-title">Schedule Modality Suite &amp; Room</h2>
+          <button type="button" mat-icon-button aria-label="Close dialog" (click)="isScheduleModalOpen.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <div class="order-summary-box">
+            <strong>Accession {{ selectedOrder()?.accessionNumber }}: {{ selectedOrder()?.procedureName }}</strong>
+            <div class="sub-text">Patient: {{ selectedOrder()?.patientName }} (MRN: {{ selectedOrder()?.patientMedicalRecordNumber }})</div>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select Modality Suite</mat-label>
+            <mat-select [ngModel]="scheduleRoomSuite()" (ngModelChange)="scheduleRoomSuite.set($event)" required>
+              <mat-option value="Suite 1 - Digital Radiography (DR)">Suite 1 - Digital Radiography (Room 101)</mat-option>
+              <mat-option value="Suite 2 - Dual-Source High-Speed CT">Suite 2 - Dual-Source CT (Room 102)</mat-option>
+              <mat-option value="Suite 3 - 1.5T Superconducting MRI">Suite 3 - 1.5T MRI (Room 103)</mat-option>
+              <mat-option value="Suite 4 - Advanced Color Doppler Ultrasound">Suite 4 - Color Doppler US (Bay 104A)</mat-option>
+              <mat-option value="Suite 5 - Echocardiography & Vascular Lab">Suite 5 - Echo &amp; Vascular (Bay 104B)</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Equipment Model Description</mat-label>
+            <input matInput [ngModel]="scheduleEquipmentModel()" (ngModelChange)="scheduleEquipmentModel.set($event)" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Scheduled Date &amp; Time</mat-label>
+            <input matInput type="datetime-local" [ngModel]="scheduleDateTime()" (ngModelChange)="scheduleDateTime.set($event)" required />
+          </mat-form-field>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" mat-flat-button color="primary" [disabled]="isSubmitting()" (click)="submitSchedule()">
+            Confirm Suite Reservation
+          </button>
+          <button type="button" mat-stroked-button (click)="isScheduleModalOpen.set(false)" [disabled]="isSubmitting()">
+            Cancel
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: REPORT SUBMISSION POPUP (480px) -->
+  @if (isReportModalOpen()) {
+    <div class="modal-backdrop" (click)="isReportModalOpen.set(false)">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rad-report-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <h2 id="rad-report-dialog-title">
+            {{ isAddendumMode() ? 'Record Clinical Addendum' : 'Finalize Radiologist Report' }}
+          </h2>
+          <button type="button" mat-icon-button aria-label="Close dialog" (click)="isReportModalOpen.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form (submit)="$event.preventDefault(); submitReport()" class="modal-body">
+          <div class="order-summary-box">
+            <strong>Study: {{ selectedOrder()?.procedureName }}</strong>
+            <div class="sub-text">Accession: {{ selectedOrder()?.accessionNumber }} • {{ selectedOrder()?.patientName }}</div>
+            <div class="sub-text">Indication: {{ selectedOrder()?.clinicalIndication }}</div>
+          </div>
+
+          @if (isAddendumMode()) {
+            <div class="addendum-banner" role="note">
+              <mat-icon aria-hidden="true">history_edu</mat-icon>
+              <span>Original report signed by {{ originalSigningRadiologist() }}. Adding signed addendum.</span>
+            </div>
+          }
+
+          <div class="templates-section">
+            <span class="field-label">Quick Template</span>
+            <div class="tmpl-chips">
+              @for (t of reportingTemplates.slice(0, 4); track t.id) {
+                <button type="button" class="tmpl-chip" (click)="applyReportingTemplate(t)">{{ t.title }}</button>
+              }
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Objective Radiographic Findings</mat-label>
+            <textarea matInput rows="3" name="reportFindings" [ngModel]="reportFindings()" (ngModelChange)="reportFindings.set($event)" required></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Diagnostic Impression (Conclusion)</mat-label>
+            <textarea matInput rows="2" name="reportImpression" [ngModel]="reportImpression()" (ngModelChange)="reportImpression.set($event)" required></textarea>
+          </mat-form-field>
+
+          <mat-checkbox [ngModel]="reportIsCritical()" (ngModelChange)="reportIsCritical.set($event)" name="isCrit">
+            Flag as STAT Critical Finding Alert
+          </mat-checkbox>
+
+          @if (reportIsCritical()) {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Verbal Notification Notes</mat-label>
+              <input matInput name="critNotes" [ngModel]="reportCriticalNotes()" (ngModelChange)="reportCriticalNotes.set($event)" />
+            </mat-form-field>
+          }
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Attending Radiologist Signature</mat-label>
+            <input matInput name="signature" [ngModel]="reportSignature()" (ngModelChange)="reportSignature.set($event)" required />
+          </mat-form-field>
+
+          <footer class="modal-footer">
+            <button type="submit" mat-flat-button color="primary" [disabled]="isSubmitting()">
+              {{ isAddendumMode() ? 'Finalize & Transmit Addendum' : 'Finalize & Transmit Report' }}
+            </button>
+            <button type="button" mat-stroked-button (click)="isReportModalOpen.set(false)" [disabled]="isSubmitting()">
+              Cancel
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: NEW RADIATION DOSIMETRY & SAFETY ENTRY (480px) -->
+  @if (isNewSafetyEntryModalOpen()) {
+    <div class="modal-backdrop" (click)="isNewSafetyEntryModalOpen.set(false)">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rad-safety-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <h2 id="rad-safety-dialog-title">Log Radiation Dosimetry &amp; Safety</h2>
+          <button type="button" mat-icon-button aria-label="Close dialog" (click)="isNewSafetyEntryModalOpen.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form (ngSubmit)="saveNewSafetyEntry()" class="modal-body">
+          <div class="form-grid-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Accession Number</mat-label>
+              <input matInput name="safetyAccession" [ngModel]="newSafetyAccession()" (ngModelChange)="newSafetyAccession.set($event)" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Patient Full Name</mat-label>
+              <input matInput name="safetyPatient" [ngModel]="newSafetyPatient()" (ngModelChange)="newSafetyPatient.set($event)" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Imaging Modality</mat-label>
+              <mat-select name="safetyModality" [ngModel]="newSafetyModality()" (ngModelChange)="newSafetyModality.set($event)">
+                <mat-option value="CT Scan">CT Scan</mat-option>
+                <mat-option value="X-Ray">Digital X-Ray</mat-option>
+                <mat-option value="Fluoroscopy">Fluoroscopy</mat-option>
+                <mat-option value="Mammography">Mammography</mat-option>
+                <mat-option value="MRI">MRI</mat-option>
+                <mat-option value="Ultrasound">Ultrasound</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Procedure Protocol</mat-label>
+              <input matInput name="safetyProcedure" [ngModel]="newSafetyProcedure()" (ngModelChange)="newSafetyProcedure.set($event)" required />
+            </mat-form-field>
+          </div>
+
+          @if (newSafetyModality() !== 'MRI' && newSafetyModality() !== 'Ultrasound') {
+            <div class="form-grid-2">
+              @if (newSafetyModality() === 'CT Scan') {
+                <mat-form-field appearance="outline">
+                  <mat-label>DLP (mGy·cm)</mat-label>
+                  <input matInput type="number" name="safetyDlp" [ngModel]="newSafetyDlp()" (ngModelChange)="newSafetyDlp.set($event)" />
+                </mat-form-field>
+              }
+              <mat-form-field appearance="outline">
+                <mat-label>DAP (Gy·cm²)</mat-label>
+                <input matInput type="number" step="0.1" name="safetyDap" [ngModel]="newSafetyDap()" (ngModelChange)="newSafetyDap.set($event)" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Exposure Parameters (kVp, mAs, Pitch)</mat-label>
+              <input matInput name="safetyParams" [ngModel]="newSafetyParams()" (ngModelChange)="newSafetyParams.set($event)" />
+            </mat-form-field>
+          }
+
+          <mat-checkbox name="safetyContrastUsed" [ngModel]="newSafetyContrastUsed()" (ngModelChange)="newSafetyContrastUsed.set($event)">
+            Intravenous Contrast Administered
+          </mat-checkbox>
+
+          @if (newSafetyContrastUsed()) {
+            <div class="form-grid-2">
+              <mat-form-field appearance="outline">
+                <mat-label>Contrast Agent</mat-label>
+                <input matInput name="safetyContrastAgent" [ngModel]="newSafetyContrastAgent()" (ngModelChange)="newSafetyContrastAgent.set($event)" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Volume (mL)</mat-label>
+                <input matInput type="number" name="safetyContrastVolume" [ngModel]="newSafetyContrastVolume()" (ngModelChange)="newSafetyContrastVolume.set($event)" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Manufacturer Lot #</mat-label>
+                <input matInput name="safetyContrastLot" [ngModel]="newSafetyContrastLot()" (ngModelChange)="newSafetyContrastLot.set($event)" />
+              </mat-form-field>
+            </div>
+          }
+
+          <footer class="modal-footer">
+            <button type="submit" mat-flat-button color="primary">
+              Save Safety Record
+            </button>
+            <button type="button" mat-stroked-button (click)="isNewSafetyEntryModalOpen.set(false)">
+              Cancel
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: DICOM HEADER TAGS INSPECTOR (480px) -->
+  @if (viewerMetadataDrawerOpen()) {
+    <div class="modal-backdrop" (click)="viewerMetadataDrawerOpen.set(false)">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dicom-tags-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <h2 id="dicom-tags-title">DICOM 3.0 Header Tags Inspection</h2>
+          <button type="button" mat-icon-button aria-label="Close DICOM tags dialog" (click)="viewerMetadataDrawerOpen.set(false)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+        <div class="modal-body">
+          <div class="table-wrap">
+            <table class="clinical-table">
               <thead>
                 <tr>
-                  <th>Tag</th>
-                  <th>Attribute Name</th>
-                  <th>VR</th>
-                  <th>Value</th>
+                  <th scope="col">Tag</th>
+                  <th scope="col">Attribute Name</th>
+                  <th scope="col">VR</th>
+                  <th scope="col">Value</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>(0010,0010)</td><td>PatientName</td><td>PN</td><td>{{ viewerOrder()?.patientName | uppercase }}</td></tr>
-                <tr><td>(0010,0020)</td><td>PatientID (MRN)</td><td>LO</td><td>{{ viewerOrder()?.patientMedicalRecordNumber }}</td></tr>
-                <tr><td>(0008,0050)</td><td>AccessionNumber</td><td>SH</td><td>{{ viewerOrder()?.accessionNumber || 'ACC-20260920-0001' }}</td></tr>
-                <tr><td>(0008,0060)</td><td>Modality</td><td>CS</td><td>{{ viewerOrder()?.modality }}</td></tr>
-                <tr><td>(0008,1030)</td><td>StudyDescription</td><td>LO</td><td>{{ viewerOrder()?.procedureName }}</td></tr>
-                <tr><td>(0018,0050)</td><td>SliceThickness</td><td>DS</td><td>0.625 mm</td></tr>
-                <tr><td>(0018,0060)</td><td>KVP</td><td>DS</td><td>120.0</td></tr>
-                <tr><td>(0018,1151)</td><td>XRayTubeCurrent</td><td>IS</td><td>250 mA</td></tr>
-                <tr><td>(0028,1050)</td><td>WindowCenter</td><td>DS</td><td>400.0</td></tr>
-                <tr><td>(0028,1051)</td><td>WindowWidth</td><td>DS</td><td>2400.0</td></tr>
+                <tr><td class="mono-code">(0010,0010)</td><td>PatientName</td><td>PN</td><td>{{ viewerOrder()?.patientName | uppercase }}</td></tr>
+                <tr><td class="mono-code">(0010,0020)</td><td>PatientID (MRN)</td><td>LO</td><td>{{ viewerOrder()?.patientMedicalRecordNumber }}</td></tr>
+                <tr><td class="mono-code">(0008,0050)</td><td>AccessionNumber</td><td>SH</td><td>{{ viewerOrder()?.accessionNumber || 'ACC-20260920-0001' }}</td></tr>
+                <tr><td class="mono-code">(0008,0060)</td><td>Modality</td><td>CS</td><td>{{ viewerOrder()?.modality }}</td></tr>
+                <tr><td class="mono-code">(0008,1030)</td><td>StudyDescription</td><td>LO</td><td>{{ viewerOrder()?.procedureName }}</td></tr>
+                <tr><td class="mono-code">(0018,0050)</td><td>SliceThickness</td><td>DS</td><td>0.625 mm</td></tr>
+                <tr><td class="mono-code">(0018,0060)</td><td>KVP</td><td>DS</td><td>120.0</td></tr>
+                <tr><td class="mono-code">(0018,1151)</td><td>XRayTubeCurrent</td><td>IS</td><td>250 mA</td></tr>
+                <tr><td class="mono-code">(0028,1050)</td><td>WindowCenter</td><td>DS</td><td>400.0</td></tr>
+                <tr><td class="mono-code">(0028,1051)</td><td>WindowWidth</td><td>DS</td><td>2400.0</td></tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
-    </div>
-
-    <ng-template #noViewerSelected>
-      <div class="empty-state">
-        <mat-icon>center_focus_strong</mat-icon>
-        <h3>No Study Loaded in PACS Viewer</h3>
-        <p>Select a study from the RIS Worklist to load diagnostic imaging into the high-resolution PACS viewport.</p>
-        <button mat-flat-button color="primary" (click)="setTab('worklist')">Go to RIS Worklist</button>
-      </div>
-    </ng-template>
-  </div>
-
-  <!-- TAB 4: STRUCTURED DIAGNOSTIC REPORTING & CRITICAL ALERTING -->
-  <div class="tab-content" *ngIf="activeTab() === 'reports' && !isNurse()">
-    <div class="reporting-workspace">
-      <!-- Left: Studies Waiting Diagnostic Report -->
-      <aside class="reporting-queue-pane">
-        <div class="pane-header">
-          <div class="header-icon-title">
-            <mat-icon>pending_actions</mat-icon>
-            <h3>Diagnostic Reading Queue</h3>
-          </div>
-          <span class="queue-badge-pill">{{ filteredUnreportedOrders().length }} Pending</span>
-        </div>
-
-        <div class="queue-search-container">
-          <mat-icon>search</mat-icon>
-          <input
-            type="text"
-            placeholder="Search patient, accession, procedure..."
-            [ngModel]="reportsSearchQuery()"
-            (ngModelChange)="reportsSearchQuery.set($event)"
-          />
-        </div>
-
-        <div class="queue-list">
-          <div
-            class="queue-item"
-            *ngFor="let order of filteredUnreportedOrders()"
-            [class.active]="selectedOrder()?.id === order.id"
-            (click)="openReportingDesk(order)"
-          >
-            <div class="q-top">
-              <span class="q-acc">{{ order.accessionNumber || order.orderNumber }}</span>
-              <span class="q-prio" [attr.data-priority]="order.priority">{{ order.priority }}</span>
-            </div>
-            <div class="q-mid">
-              <strong class="q-pat">{{ order.patientName }}</strong>
-              <span class="q-mrn">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
-            </div>
-            <div class="q-bottom">
-              <span class="q-proc-badge">{{ order.modality }}</span>
-              <span class="q-proc">{{ order.procedureName }}</span>
-            </div>
-            <div class="q-dr-row">
-              <span class="q-dr"><mat-icon>stethoscope</mat-icon> Ref: Dr. {{ order.doctorName }}</span>
-              <span class="q-date">{{ order.orderedAt | date:'shortTime' }}</span>
-            </div>
-          </div>
-          <div class="empty-queue" *ngIf="filteredUnreportedOrders().length === 0">
-            <mat-icon>check_circle</mat-icon>
-            <p>All studies have finalized diagnostic reports!</p>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Right: Structured Reporting Desk -->
-      <main class="reporting-desk-pane">
-        <div class="desk-card" *ngIf="selectedOrder(); else selectOrderPrompt">
-          <!-- Reading Desk Clinical Header Card -->
-          <div class="desk-header-card">
-            <div class="dh-patient-cluster">
-              <div class="dh-avatar">
-                <mat-icon>person</mat-icon>
-              </div>
-              <div>
-                <div class="dh-title-row">
-                  <h3 class="dh-proc-name">{{ selectedOrder()?.procedureName }}</h3>
-                  <span class="dh-mod-pill" [attr.data-modality]="selectedOrder()?.modality">{{ selectedOrder()?.modality }}</span>
-                  <span class="dh-prio-pill" [class.stat]="selectedOrder()?.priority === 'Stat'">{{ selectedOrder()?.priority }}</span>
-                </div>
-                <div class="dh-patient-meta">
-                  <strong class="dh-name">{{ selectedOrder()?.patientName }}</strong>
-                  <span class="dh-divider">•</span>
-                  <span>MRN: {{ selectedOrder()?.patientMedicalRecordNumber || 'N/A' }}</span>
-                  <span class="dh-divider">•</span>
-                  <span class="dh-acc">Acc: {{ selectedOrder()?.accessionNumber }}</span>
-                  <span class="dh-divider">•</span>
-                  <span>Attending: Dr. {{ selectedOrder()?.doctorName }}</span>
-                </div>
-                <p class="dh-indication"><mat-icon>info</mat-icon> Clinical Indication: {{ selectedOrder()?.clinicalIndication || 'Routine Diagnostic Evaluation' }}</p>
-              </div>
-            </div>
-            <div class="dh-actions">
-              <button type="button" class="open-pacs-btn" (click)="openInViewer(selectedOrder()!)">
-                <mat-icon>center_focus_strong</mat-icon> Open Study in PACS
-              </button>
-            </div>
-          </div>
-
-          <!-- Addendum & Isolation Alert Banner -->
-          <div class="addendum-banner" *ngIf="isAddendumMode()" style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-            <mat-icon style="color: #d97706; font-size: 24px; width: 24px; height: 24px;">history_edu</mat-icon>
-            <div>
-              <strong style="color: #92400e; font-size: 0.9rem;">Official Amendment / Addendum Mode</strong>
-              <p style="margin: 2px 0 0 0; font-size: 0.82rem; color: #b45309;">
-                This diagnostic report was finalized and digitally signed by <strong>{{ originalSigningRadiologist() }}</strong>. Your submission will be recorded as a cryptographically signed addendum without erasing prior medical-legal findings.
-              </p>
-            </div>
-          </div>
-
-          <!-- Structured Clinical Templates Fast-Picker -->
-          <div class="templates-section">
-            <div class="tmpl-header">
-              <span class="tmpl-title"><mat-icon>auto_fix_high</mat-icon> Structured Clinical Reporting Templates:</span>
-              <span class="tmpl-sub">1-Click Auto-Populate Standard Negative & STAT Findings</span>
-            </div>
-            <div class="tmpl-chips">
-              <button
-                type="button"
-                class="tmpl-chip"
-                *ngFor="let t of reportingTemplates"
-                (click)="applyReportingTemplate(t)"
-                [class.critical-chip]="t.isCritical"
-              >
-                <mat-icon class="chip-ico">{{ t.isCritical ? 'warning' : 'description' }}</mat-icon>
-                <span>{{ t.title }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Objective Radiographic Findings Editor -->
-          <div class="clinical-editor-group">
-            <div class="editor-header">
-              <label><mat-icon>visibility</mat-icon> Objective Radiographic Findings *</label>
-              <span class="editor-hint">Detailed anatomic organ analysis, parenchymal density, fractures, opacities</span>
-            </div>
-            <textarea
-              rows="4"
-              class="clinical-textarea"
-              [ngModel]="reportFindings()"
-              (ngModelChange)="reportFindings.set($event)"
-              placeholder="Enter detailed radiographic findings (e.g. Lungs clear bilaterally, normal cardiomediastinal contour, no acute osseous fractures)..."
-              required
-            ></textarea>
-          </div>
-
-          <!-- Diagnostic Impression Editor -->
-          <div class="clinical-editor-group">
-            <div class="editor-header">
-              <label><mat-icon>fact_check</mat-icon> Diagnostic Impression & Recommendations (Conclusion) *</label>
-              <span class="editor-hint">Definitive radiological diagnosis, ACR/BI-RADS score, urgent recommendations</span>
-            </div>
-            <textarea
-              rows="3"
-              class="clinical-textarea impression-area"
-              [ngModel]="reportImpression()"
-              (ngModelChange)="reportImpression.set($event)"
-              placeholder="Enter clinical impression (e.g. No acute cardiopulmonary disease. Normal 2-view chest radiograph)..."
-              required
-            ></textarea>
-          </div>
-
-          <!-- STAT Critical Finding Emergency Alert Pod -->
-          <div class="critical-alert-config-box" [class.alert-active]="reportIsCritical()">
-            <div class="toggle-row">
-              <label class="switch-label">
-                <input
-                  type="checkbox"
-                  [ngModel]="reportIsCritical()"
-                  (ngModelChange)="reportIsCritical.set($event)"
-                />
-                <span class="custom-checkbox"></span>
-                <span class="label-text">
-                  <mat-icon>emergency</mat-icon>
-                  <strong>FLAG AS STAT CRITICAL FINDING (Immediate InBasket Notification)</strong>
-                </span>
-              </label>
-              <span class="critical-badge-pill" *ngIf="reportIsCritical()">URGENT NOTIFICATION REQUIRED</span>
-            </div>
-            <div class="alert-details-panel" *ngIf="reportIsCritical()">
-              <p class="alert-notice">
-                <mat-icon>warning</mat-icon>
-                Flagging this study triggers an emergency STAT notification in Dr. {{ selectedOrder()?.doctorName }}'s Physician InBasket.
-                ACR / Joint Commission standards require documented direct verbal telephone communication and read-back verification.
-              </p>
-              <div class="form-group-alert">
-                <label>Verbal Notification Read-Back Documentation *</label>
-                <input
-                  type="text"
-                  class="alert-input"
-                  [ngModel]="reportCriticalNotes()"
-                  (ngModelChange)="reportCriticalNotes.set($event)"
-                  placeholder="E.g., Dr. Sarah James notified by phone at 14:20. Verbal read-back verified."
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Radiation Dosimetry & IV Contrast Media Compliance Pod -->
-          <div class="safety-tracking-subpanel">
-            <div class="subpanel-title-row">
-              <h4><mat-icon>shield</mat-icon> Radiation Dosimetry & Contrast Media ALARA Compliance</h4>
-              <span class="subpanel-tag">Joint Commission & ACR Audit Ready</span>
-            </div>
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>Dose Length Product — DLP (mGy*cm)</label>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    [ngModel]="reportRadiationDlp()"
-                    (ngModelChange)="reportRadiationDlp.set($event)"
-                    placeholder="E.g., 420"
-                  />
-                  <span class="unit-tag">mGy*cm</span>
-                </div>
-              </div>
-              <div class="form-group flex-1">
-                <label>Dose Area Product — DAP (dGy*cm²)</label>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    [ngModel]="reportRadiationDap()"
-                    (ngModelChange)="reportRadiationDap.set($event)"
-                    placeholder="E.g., 18.2"
-                  />
-                  <span class="unit-tag">dGy*cm²</span>
-                </div>
-              </div>
-              <div class="form-group flex-1">
-                <label>Acquisition Exposure Parameters</label>
-                <input
-                  type="text"
-                  class="standard-input"
-                  [ngModel]="reportExposureParams()"
-                  (ngModelChange)="reportExposureParams.set($event)"
-                  placeholder="120 kVp, 250 mAs, Pitch 0.9"
-                />
-              </div>
-            </div>
-
-            <div class="contrast-row">
-              <label class="switch-label mini">
-                <input
-                  type="checkbox"
-                  [ngModel]="reportContrastUsed()"
-                  (ngModelChange)="reportContrastUsed.set($event)"
-                />
-                <span class="custom-checkbox"></span>
-                <span class="contrast-switch-text">Intravenous (IV) Contrast Media Administered</span>
-              </label>
-            </div>
-
-            <div class="form-row" *ngIf="reportContrastUsed()">
-              <div class="form-group flex-2">
-                <label>Contrast Agent Name</label>
-                <input
-                  type="text"
-                  class="standard-input"
-                  [ngModel]="reportContrastAgent()"
-                  (ngModelChange)="reportContrastAgent.set($event)"
-                  placeholder="Omnipaque 350 (Iohexol)"
-                />
-              </div>
-              <div class="form-group flex-1">
-                <label>Volume Administered (mL)</label>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    [ngModel]="reportContrastVolume()"
-                    (ngModelChange)="reportContrastVolume.set($event)"
-                    placeholder="85"
-                  />
-                  <span class="unit-tag">mL</span>
-                </div>
-              </div>
-              <div class="form-group flex-1">
-                <label>Lot Number & Expiration</label>
-                <input
-                  type="text"
-                  class="standard-input"
-                  [ngModel]="reportContrastLot()"
-                  (ngModelChange)="reportContrastLot.set($event)"
-                  placeholder="LOT-2026-X99"
-                />
-              </div>
-              <div class="form-group flex-1">
-                <label>Injection Route & Gauge</label>
-                <input
-                  type="text"
-                  class="standard-input"
-                  [ngModel]="reportContrastRoute()"
-                  (ngModelChange)="reportContrastRoute.set($event)"
-                  placeholder="IV Antecubital 18G"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Certified Radiologist Digital Signature Pad -->
-          <div class="digital-signature-card">
-            <div class="sig-seal-box">
-              <mat-icon>verified</mat-icon>
-            </div>
-            <div class="sig-content">
-              <div class="sig-header">
-                <label>Attending Diagnostic Radiologist Digital Signature & Certification *</label>
-                <span class="sig-verified-tag">Cryptographically Stamped</span>
-              </div>
-              <input
-                type="text"
-                class="sig-input"
-                [ngModel]="reportSignature()"
-                (ngModelChange)="reportSignature.set($event)"
-                placeholder="Attending Radiologist, MD"
-                required
-              />
-              <span class="sig-meta-text">Digital signature binds structured findings, dosimetry logs, and clinical impressions to this accession.</span>
-            </div>
-          </div>
-
-          <div class="desk-actions">
-            <button mat-stroked-button (click)="selectedOrder.set(null)" class="desk-cancel-btn">Close Study</button>
-            <button
-              mat-flat-button
-              class="submit-report-btn"
-              [disabled]="isSubmitting() || !reportFindings() || !reportImpression()"
-              (click)="submitReport()"
-            >
-              <mat-icon>verified</mat-icon>
-              <span>{{ isSubmitting() ? 'Transmitting & Signing...' : (isAddendumMode() ? 'Finalize & Digitally Sign Clinical Addendum' : 'Finalize & Digitally Sign Diagnostic Report') }}</span>
-            </button>
-          </div>
-        </div>
-
-        <ng-template #selectOrderPrompt>
-          <div class="empty-state select-prompt-card">
-            <div class="empty-prompt-icon">
-              <mat-icon>assignment_turned_in</mat-icon>
-            </div>
-            <h3>Select a Study for Structured Diagnostic Reporting</h3>
-            <p>Choose an examination from the queue on the left to begin structured reporting, dosimetry logging, and digital sign-off.</p>
-          </div>
-        </ng-template>
-      </main>
-    </div>
-  </div>
-
-  <!-- TAB 5: RADIATION SAFETY & CONTRAST MEDIA LOG -->
-  <div class="tab-content" *ngIf="activeTab() === 'safety' && !isNurse()">
-    <!-- Top Dosimetry Metrics Summary -->
-    <div class="safety-summary-grid">
-      <div class="safety-card">
-        <mat-icon class="card-ico blue">shield</mat-icon>
-        <div class="card-details">
-          <span class="val">{{ filteredSafetyLogs().length }}</span>
-          <span class="lbl">Radiation Dosimetry Audits</span>
-        </div>
-      </div>
-      <div class="safety-card">
-        <mat-icon class="card-ico purple">science</mat-icon>
-        <div class="card-details">
-          <span class="val">100%</span>
-          <span class="lbl">Contrast Lot Traceability</span>
-        </div>
-      </div>
-      <div class="safety-card">
-        <mat-icon class="card-ico green">verified</mat-icon>
-        <div class="card-details">
-          <span class="val">&lt; 850</span>
-          <span class="lbl">Mean Head CT DLP (mGy*cm)</span>
-        </div>
-      </div>
-      <div class="safety-card">
-        <mat-icon class="card-ico orange">thumb_up</mat-icon>
-        <div class="card-details">
-          <span class="val">0</span>
-          <span class="lbl">Adverse Contrast Reactions</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Safety Toolbar & Filters -->
-    <div class="filter-card safety-toolbar-card">
-      <div class="search-input-wrap">
-        <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          placeholder="Filter by accession, patient name, procedure, or contrast lot..."
-          [ngModel]="safetySearchQuery()"
-          (ngModelChange)="safetySearchQuery.set($event)"
-        />
-        <button class="clear-btn" *ngIf="safetySearchQuery()" (click)="safetySearchQuery.set('')">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <div class="filter-controls">
-        <select class="custom-select" [ngModel]="safetyModalityFilter()" (ngModelChange)="safetyModalityFilter.set($event)">
-          <option value="ALL">All Modalities</option>
-          <option value="CT Scan">CT Scans Only</option>
-          <option value="X-Ray">X-Ray DR Only</option>
-          <option value="MRI">MRI Dynamic Only</option>
-          <option value="Fluoroscopy">Fluoroscopy C-Arm</option>
-        </select>
-
-        <select class="custom-select" [ngModel]="safetyContrastFilter()" (ngModelChange)="safetyContrastFilter.set($event)">
-          <option value="ALL">All Studies</option>
-          <option value="CONTRAST">Contrast Administered</option>
-          <option value="NON_CONTRAST">Non-Contrast Only</option>
-        </select>
-
-        <button mat-flat-button color="primary" class="safety-action-btn" (click)="openNewSafetyEntryModal()">
-          <mat-icon>add_circle</mat-icon> Log Radiation / Contrast Record
-        </button>
-
-        <button mat-stroked-button class="safety-export-btn" (click)="exportSafetyAudit('PDF')">
-          <mat-icon>picture_as_pdf</mat-icon> Export PDF
-        </button>
-
-        <button mat-stroked-button class="safety-export-btn" (click)="exportSafetyAudit('CSV')">
-          <mat-icon>table_view</mat-icon> Export CSV
-        </button>
-
-        <button mat-icon-button class="refresh-btn" (click)="loadSafetyLogs()" matTooltip="Refresh Audit Registry">
-          <mat-icon>refresh</mat-icon>
-        </button>
-      </div>
-    </div>
-
-    <!-- Safety Logs Table Card -->
-    <div class="cockpit-card safety-table-card">
-      <div class="card-header">
-        <div class="card-title">
-          <mat-icon>receipt_long</mat-icon>
-          <h3>Radiation Dosimetry & Contrast Media Audit Registry</h3>
-          <span class="audit-counter-badge">{{ filteredSafetyLogs().length }} Records Audited</span>
-        </div>
-      </div>
-
-      <div class="table-container">
-        <table class="clinical-table" *ngIf="filteredSafetyLogs().length > 0; else noSafetyRecords">
-          <thead>
-            <tr>
-              <th>Accession & Order</th>
-              <th>Patient Name</th>
-              <th>Modality & Procedure</th>
-              <th>DLP (mGy*cm)</th>
-              <th>DAP (dGy*cm²)</th>
-              <th>Exposure Parameters</th>
-              <th>Contrast Media Tracking</th>
-              <th>Safety Compliance</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let log of filteredSafetyLogs()">
-              <td>
-                <div class="accession-cell">
-                  <strong class="acc-code">{{ log.accessionNumber }}</strong>
-                  <span class="sub-ord">{{ log.orderNumber }}</span>
-                </div>
-              </td>
-              <td>
-                <strong class="patient-name-text">{{ log.patientName }}</strong>
-              </td>
-              <td>
-                <div class="procedure-cell">
-                  <span class="mod-chip" [attr.data-modality]="log.modality">{{ log.modality }}</span>
-                  <span class="proc-title">{{ log.procedureName }}</span>
-                </div>
-              </td>
-              <td>
-                <span class="dose-badge" [class.high]="(log.radiationDoseDlp || 0) > 850" [class.normal]="log.radiationDoseDlp != null && (log.radiationDoseDlp || 0) <= 850">
-                  {{ log.radiationDoseDlp ? log.radiationDoseDlp + ' mGy*cm' : 'N/A' }}
-                </span>
-              </td>
-              <td>
-                <span class="dap-badge">{{ log.radiationDoseDap ? log.radiationDoseDap + ' dGy*cm²' : 'N/A' }}</span>
-              </td>
-              <td>
-                <span class="exp-code">{{ log.exposureParameters || 'Standard Protocol' }}</span>
-              </td>
-              <td>
-                <div *ngIf="log.contrastUsed; else noContrast" class="contrast-info-box">
-                  <strong class="contrast-agent">{{ log.contrastAgentName }}</strong>
-                  <span class="contrast-meta">{{ log.contrastVolumeMl }} mL • Lot: {{ log.contrastLotNumber }}</span>
-                  <span class="contrast-route" *ngIf="log.contrastRoute">{{ log.contrastRoute }}</span>
-                </div>
-                <ng-template #noContrast>
-                  <span class="no-contrast-tag">Non-Contrast</span>
-                </ng-template>
-              </td>
-              <td>
-                <span class="safety-pass-badge"><mat-icon>check_circle</mat-icon> ALARA Pass</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <ng-template #noSafetyRecords>
-          <div class="empty-state-card" style="padding: 40px; text-align: center;">
-            <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: #94a3b8;">shield</mat-icon>
-            <h3 style="margin: 12px 0 6px; color: #1e293b;">No Matching Dosimetry Logs</h3>
-            <p style="color: #64748b; font-size: 0.85rem;">No records matched your search or modality filters.</p>
-            <button mat-stroked-button (click)="safetySearchQuery.set(''); safetyModalityFilter.set('ALL'); safetyContrastFilter.set('ALL')">Clear Filters</button>
-          </div>
-        </ng-template>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 6: MODALITY EQUIPMENT SUITES -->
-  <div class="tab-content" *ngIf="activeTab() === 'suites' && !isNurse()">
-    <div class="suites-header-bar">
-      <div>
-        <h2>Diagnostic Modality Suites & Room Operational Readiness</h2>
-        <p>Real-time equipment telemetry, detector temperatures, cryogen liquid helium reserves, and daily QA calibration</p>
-      </div>
-      <button mat-stroked-button (click)="loadData()">
-        <mat-icon>autorenew</mat-icon> Check Room Sensors
-      </button>
-    </div>
-
-    <div class="suites-grid">
-      <div class="suite-card" *ngFor="let suite of modalitySuites()">
-        <div class="suite-card-top">
-          <div class="suite-badge-cluster">
-            <span class="suite-room-num">{{ suite.roomNumber }}</span>
-            <span class="suite-status-pill" [class.ready]="suite.status === 'Ready'" [class.in-scan]="suite.status === 'In Scan'">
-              <span class="pulse-dot" *ngIf="suite.status === 'In Scan'"></span>
-              {{ suite.status }}
-            </span>
-          </div>
-          <mat-icon class="suite-big-icon">{{ suite.modality === 'CT Scan' ? 'blur_circular' : (suite.modality === 'MRI' ? 'track_changes' : (suite.modality === 'Ultrasound' ? 'waves' : 'radiology')) }}</mat-icon>
-        </div>
-
-        <div class="suite-body">
-          <h3>{{ suite.name }}</h3>
-          <p class="equip-model">{{ suite.equipment }}</p>
-
-          <div class="suite-metrics-row">
-            <div class="s-metric">
-              <span class="m-val">{{ suite.dailyScansCount }}</span>
-              <span class="m-lbl">Today's Scans</span>
-            </div>
-            <div class="s-metric">
-              <span class="m-val">{{ suite.tempOrHelium }}</span>
-              <span class="m-lbl">Telemetry</span>
-            </div>
-          </div>
-
-          <div class="qa-status-box">
-            <mat-icon>verified</mat-icon>
-            <span>Daily QA: {{ suite.lastQACheck }}</span>
-          </div>
-
-          <div class="active-patient-box" *ngIf="suite.activePatient">
-            <span class="act-lbl">ACTIVE SCAN IN PROGRESS:</span>
-            <strong>{{ suite.activePatient }} ({{ suite.activeAccession }})</strong>
-          </div>
-        </div>
-
-        <div class="suite-footer">
-          <button class="suite-btn" (click)="setTab('worklist')">
-            <mat-icon>view_list</mat-icon> Suite Queue
-          </button>
-          <button class="suite-btn qa-btn" (click)="toast.success(suite.name + ': Calibration QA passed.')">
-            <mat-icon>check_circle</mat-icon> Quick QA
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: ORDER PLACEMENT MODAL -->
-  <div class="modal-backdrop" *ngIf="isOrderModalOpen()" (click)="isOrderModalOpen.set(false)">
-    <div class="modal-container form-modal" (click)="$event.stopPropagation()">
-      <header class="modal-header">
-        <h3><mat-icon>add_photo_alternate</mat-icon> Order Diagnostic Imaging Study</h3>
-        <button class="close-x" (click)="isOrderModalOpen.set(false)"><mat-icon>close</mat-icon></button>
-      </header>
-
-      <form (submit)="$event.preventDefault(); createOrder()" class="modal-body">
-        <div class="form-group">
-          <label>Select Patient *</label>
-          <select [ngModel]="newOrderPatientId()" (ngModelChange)="newOrderPatientId.set($event)" name="patientId" required>
-            <option value="" disabled>Select patient...</option>
-            <option *ngFor="let p of patients()" [value]="p.id">
-              {{ p.firstName }} {{ p.lastName }} (MRN: {{ p.medicalRecordNumber }})
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Imaging Modality *</label>
-          <div class="modality-select-row">
-            <button
-              type="button"
-              class="mod-btn"
-              [class.selected]="newOrderModality() === 'X-Ray'"
-              (click)="applyModalityPreset('X-Ray', 0)"
-            >
-              X-Ray
-            </button>
-            <button
-              type="button"
-              class="mod-btn"
-              [class.selected]="newOrderModality() === 'Ultrasound'"
-              (click)="applyModalityPreset('Ultrasound', 0)"
-            >
-              Ultrasound
-            </button>
-            <button
-              type="button"
-              class="mod-btn"
-              [class.selected]="newOrderModality() === 'CT Scan'"
-              (click)="applyModalityPreset('CT Scan', 0)"
-            >
-              CT Scan
-            </button>
-            <button
-              type="button"
-              class="mod-btn"
-              [class.selected]="newOrderModality() === 'MRI'"
-              (click)="applyModalityPreset('MRI', 0)"
-            >
-              MRI
-            </button>
-            <button
-              type="button"
-              class="mod-btn"
-              [class.selected]="newOrderModality() === 'ECG / Echo'"
-              (click)="applyModalityPreset('ECG / Echo', 0)"
-            >
-              ECG / Echo
-            </button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group flex-2">
-            <label>Procedure Name *</label>
-            <input
-              type="text"
-              name="procedureName"
-              [ngModel]="newOrderProcedureName()"
-              (ngModelChange)="newOrderProcedureName.set($event)"
-              placeholder="E.g. CT Pulmonary Angiography"
-              required
-            />
-          </div>
-          <div class="form-group flex-1">
-            <label>Target Body Part *</label>
-            <input
-              type="text"
-              name="bodyPart"
-              [ngModel]="newOrderBodyPart()"
-              (ngModelChange)="newOrderBodyPart.set($event)"
-              placeholder="E.g. Chest / Thorax"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group flex-1">
-            <label>Assigned Suite Room *</label>
-            <input
-              type="text"
-              name="roomSuite"
-              [ngModel]="newOrderRoomSuite()"
-              (ngModelChange)="newOrderRoomSuite.set($event)"
-              placeholder="Suite 2 - Dual-Source CT"
-              required
-            />
-          </div>
-          <div class="form-group flex-1">
-            <label>Clinical Urgency *</label>
-            <select [ngModel]="newOrderPriority()" (ngModelChange)="newOrderPriority.set($event)" name="priority">
-              <option value="Routine">Routine</option>
-              <option value="Urgent">Urgent</option>
-              <option value="Stat">STAT (Immediate Emergency)</option>
-            </select>
-          </div>
-          <div class="form-group flex-1">
-            <label>Procedure Fee ($)</label>
-            <input
-              type="number"
-              step="0.01"
-              name="price"
-              [ngModel]="newOrderPrice()"
-              (ngModelChange)="newOrderPrice.set($event)"
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Clinical Indication & Suspected Pathology *</label>
-          <textarea
-            rows="3"
-            name="indication"
-            [ngModel]="newOrderClinicalIndication()"
-            (ngModelChange)="newOrderClinicalIndication.set($event)"
-            placeholder="Document patient history, symptoms, or physical exam findings justifying this radiological examination..."
-            required
-          ></textarea>
-        </div>
-
         <footer class="modal-footer">
-          <button type="button" mat-stroked-button (click)="isOrderModalOpen.set(false)">Cancel</button>
-          <button type="submit" mat-flat-button color="primary" [disabled]="isSubmitting()">
-            <mat-icon>check</mat-icon> Transmit Imaging Requisition
-          </button>
-        </footer>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: SUITE SCHEDULING MODAL -->
-  <div class="modal-backdrop" *ngIf="isScheduleModalOpen()" (click)="isScheduleModalOpen.set(false)">
-    <div class="modal-container form-modal" (click)="$event.stopPropagation()">
-      <header class="modal-header">
-        <h3><mat-icon>event</mat-icon> Schedule Modality Suite & Room</h3>
-        <button class="close-x" (click)="isScheduleModalOpen.set(false)"><mat-icon>close</mat-icon></button>
-      </header>
-
-      <div class="modal-body">
-        <div class="order-summary-box">
-          <strong>Accession {{ selectedOrder()?.accessionNumber }}: {{ selectedOrder()?.procedureName }}</strong>
-          <span>Patient: {{ selectedOrder()?.patientName }} (MRN: {{ selectedOrder()?.patientMedicalRecordNumber }})</span>
-        </div>
-
-        <div class="form-group">
-          <label>Select Modality Suite *</label>
-          <select [ngModel]="scheduleRoomSuite()" (ngModelChange)="scheduleRoomSuite.set($event)">
-            <option value="Suite 1 - Digital Radiography (DR)">Suite 1 - Digital Radiography (DR) [Room 101]</option>
-            <option value="Suite 2 - Dual-Source High-Speed CT">Suite 2 - Dual-Source High-Speed CT [Room 102]</option>
-            <option value="Suite 3 - 1.5T Superconducting MRI">Suite 3 - 1.5T Superconducting MRI [Room 103]</option>
-            <option value="Suite 4 - Advanced Color Doppler Ultrasound">Suite 4 - Advanced Color Doppler Ultrasound [Bay 104A]</option>
-            <option value="Suite 5 - Echocardiography & Vascular Lab">Suite 5 - Echocardiography & Vascular Lab [Bay 104B]</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Equipment Model Description</label>
-          <input
-            type="text"
-            [ngModel]="scheduleEquipmentModel()"
-            (ngModelChange)="scheduleEquipmentModel.set($event)"
-            placeholder="E.g. Siemens SOMATOM Force 128"
-          />
-        </div>
-
-        <div class="form-group">
-          <label>Scheduled Date & Time *</label>
-          <input
-            type="datetime-local"
-            [ngModel]="scheduleDateTime()"
-            (ngModelChange)="scheduleDateTime.set($event)"
-          />
-        </div>
-
-        <footer class="modal-footer">
-          <button type="button" mat-stroked-button (click)="isScheduleModalOpen.set(false)">Cancel</button>
-          <button type="button" mat-flat-button color="primary" [disabled]="isSubmitting()" (click)="submitSchedule()">
-            <mat-icon>check</mat-icon> Confirm Suite Reservation
-          </button>
+          <button type="button" mat-stroked-button (click)="viewerMetadataDrawerOpen.set(false)">Close</button>
         </footer>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- MODAL: REPORT SUBMISSION MODAL (IF TRIGGERED AS POPUP) -->
-  <div class="modal-backdrop" *ngIf="isReportModalOpen()" (click)="isReportModalOpen.set(false)">
-    <div class="modal-container form-modal" (click)="$event.stopPropagation()">
-      <header class="modal-header">
-        <h3><mat-icon>rate_review</mat-icon> {{ isAddendumMode() ? 'Record Clinical Addendum / Amendment' : 'Finalize Radiologist Diagnostic Report' }}</h3>
-        <button class="close-x" (click)="isReportModalOpen.set(false)"><mat-icon>close</mat-icon></button>
-      </header>
-
-      <form (submit)="$event.preventDefault(); submitReport()" class="modal-body">
-        <div class="order-summary-box">
-          <strong>Study: {{ selectedOrder()?.procedureName }}</strong>
-          <span>Accession: {{ selectedOrder()?.accessionNumber }} • Patient: {{ selectedOrder()?.patientName }}</span>
-          <p>Indication: {{ selectedOrder()?.clinicalIndication }}</p>
-          <div *ngIf="isAddendumMode()" style="margin-top: 6px; padding: 6px 10px; background: #fef3c7; color: #92400e; border-radius: 6px; font-size: 0.8rem; font-weight: 500;">
-            <mat-icon style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">history_edu</mat-icon>
-            Original Report Signed by {{ originalSigningRadiologist() }}. Adding official signed Addendum.
-          </div>
-        </div>
-
-        <div class="templates-section mini">
-          <span class="tmpl-title">Fast Template:</span>
-          <div class="tmpl-chips">
-            <button
-              type="button"
-              class="tmpl-chip"
-              *ngFor="let t of reportingTemplates.slice(0, 4)"
-              (click)="applyReportingTemplate(t)"
-            >
-              {{ t.title }}
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Objective Radiographic Findings *</label>
-          <textarea
-            rows="3"
-            name="reportFindings"
-            [ngModel]="reportFindings()"
-            (ngModelChange)="reportFindings.set($event)"
-            required
-          ></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Diagnostic Impression (Conclusion) *</label>
-          <textarea
-            rows="2"
-            name="reportImpression"
-            [ngModel]="reportImpression()"
-            (ngModelChange)="reportImpression.set($event)"
-            required
-          ></textarea>
-        </div>
-
-        <div class="critical-alert-config-box mini" [class.alert-active]="reportIsCritical()">
-          <label class="switch-label">
-            <input type="checkbox" [ngModel]="reportIsCritical()" (ngModelChange)="reportIsCritical.set($event)" />
-            <span class="custom-checkbox"></span>
-            <span>Flag as STAT Critical Finding Alert</span>
-          </label>
-          <div *ngIf="reportIsCritical()" class="alert-details-panel">
-            <input
-              type="text"
-              [ngModel]="reportCriticalNotes()"
-              (ngModelChange)="reportCriticalNotes.set($event)"
-              placeholder="Verbal notification notes..."
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Attending Radiologist Signature *</label>
-          <input
-            type="text"
-            name="signature"
-            [ngModel]="reportSignature()"
-            (ngModelChange)="reportSignature.set($event)"
-            required
-          />
-        </div>
-
-        <footer class="modal-footer">
-          <button type="button" mat-stroked-button (click)="isReportModalOpen.set(false)">Cancel</button>
-          <button type="submit" mat-flat-button color="primary" [disabled]="isSubmitting()">
-            <mat-icon>verified</mat-icon> {{ isAddendumMode() ? 'Finalize & Transmit Addendum' : 'Finalize & Transmit Report' }}
-          </button>
-        </footer>
-      </form>
-    </div>
-  </div>
-
-  <!-- ==================== RECORD DOSIMETRY & SAFETY AUDIT MODAL ==================== -->
-  <div class="modal-backdrop" *ngIf="isNewSafetyEntryModalOpen()">
-    <div class="modal-content large-modal">
-      <header class="modal-header">
-        <div class="header-title">
-          <div class="icon-circle safety-accent">
-            <mat-icon>security</mat-icon>
-          </div>
+  <!-- MODAL: NURSE CLINICAL STUDY & REPORT REVIEW SHEET (720px clinical sheet) -->
+  @if (isNurseStudyModalOpen() && nurseSelectedStudy(); as study) {
+    <div class="modal-backdrop" (click)="closeNurseStudyDetails()">
+      <div
+        class="modal-dialog clinical-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nurse-study-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
           <div>
-            <h3>Hospital Radiation Dosimetry & Safety Entry</h3>
-            <span class="subtext">Joint Commission & ALARA National Registry Audit Form</span>
+            <h2 id="nurse-study-dialog-title">Diagnostic Imaging Report &amp; Care Summary</h2>
+            <p class="sub-text">Nursing Clinical Chart Review — Read-Only View</p>
           </div>
-        </div>
-        <button type="button" class="btn-close" (click)="isNewSafetyEntryModalOpen.set(false)">
-          <mat-icon>close</mat-icon>
-        </button>
-      </header>
-
-      <form (ngSubmit)="saveNewSafetyEntry()" class="modal-body">
-        <div class="form-row">
-          <div class="form-group flex-1">
-            <label>Accession Number *</label>
-            <input
-              type="text"
-              name="safetyAccession"
-              [ngModel]="newSafetyAccession()"
-              (ngModelChange)="newSafetyAccession.set($event)"
-              required
-            />
-          </div>
-          <div class="form-group flex-2">
-            <label>Patient Full Name *</label>
-            <input
-              type="text"
-              name="safetyPatient"
-              [ngModel]="newSafetyPatient()"
-              (ngModelChange)="newSafetyPatient.set($event)"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group flex-1">
-            <label>Imaging Modality *</label>
-            <select
-              name="safetyModality"
-              [ngModel]="newSafetyModality()"
-              (ngModelChange)="newSafetyModality.set($event)"
-            >
-              <option value="CT Scan">CT Scan (Computed Tomography)</option>
-              <option value="X-Ray">Digital Radiography (X-Ray)</option>
-              <option value="Fluoroscopy">C-Arm Fluoroscopy / Interventional</option>
-              <option value="Mammography">Digital Breast Tomosynthesis (Mammography)</option>
-              <option value="MRI">Magnetic Resonance Imaging (MRI)</option>
-              <option value="Ultrasound">Diagnostic Sonography (US)</option>
-            </select>
-          </div>
-          <div class="form-group flex-2">
-            <label>Procedure Name / Protocol *</label>
-            <input
-              type="text"
-              name="safetyProcedure"
-              [ngModel]="newSafetyProcedure()"
-              (ngModelChange)="newSafetyProcedure.set($event)"
-              placeholder="e.g. CT Chest / Abdomen with IV Contrast"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="form-row" *ngIf="newSafetyModality() !== 'MRI' && newSafetyModality() !== 'Ultrasound'">
-          <div class="form-group flex-1" *ngIf="newSafetyModality() === 'CT Scan'">
-            <label>Dose Length Product (DLP - mGy·cm)</label>
-            <input
-              type="number"
-              name="safetyDlp"
-              [ngModel]="newSafetyDlp()"
-              (ngModelChange)="newSafetyDlp.set($event)"
-              placeholder="e.g. 480"
-            />
-          </div>
-          <div class="form-group flex-1">
-            <label>Dose Area Product (DAP - Gy·cm²)</label>
-            <input
-              type="number"
-              step="0.1"
-              name="safetyDap"
-              [ngModel]="newSafetyDap()"
-              (ngModelChange)="newSafetyDap.set($event)"
-              placeholder="e.g. 18.2"
-            />
-          </div>
-          <div class="form-group flex-2">
-            <label>Exposure Parameters (Tube Voltage, Current, Pitch)</label>
-            <input
-              type="text"
-              name="safetyParams"
-              [ngModel]="newSafetyParams()"
-              (ngModelChange)="newSafetyParams.set($event)"
-              placeholder="e.g. 120 kVp, 240 mAs, Pitch 0.9"
-            />
-          </div>
-        </div>
-
-        <div class="contrast-fieldset">
-          <div class="toggle-row">
-            <label class="switch-label">
-              <input
-                type="checkbox"
-                name="safetyContrastUsed"
-                [ngModel]="newSafetyContrastUsed()"
-                (ngModelChange)="newSafetyContrastUsed.set($event)"
-              />
-              <span class="custom-checkbox"></span>
-              <strong>Intravenous Contrast Administered</strong>
-            </label>
-          </div>
-
-          <div class="form-row" *ngIf="newSafetyContrastUsed()">
-            <div class="form-group flex-2">
-              <label>Contrast Agent Name</label>
-              <input
-                type="text"
-                name="safetyContrastAgent"
-                [ngModel]="newSafetyContrastAgent()"
-                (ngModelChange)="newSafetyContrastAgent.set($event)"
-                placeholder="e.g. Omnipaque 350 (Iohexol)"
-              />
-            </div>
-            <div class="form-group flex-1">
-              <label>Volume Administered (mL)</label>
-              <input
-                type="number"
-                name="safetyContrastVolume"
-                [ngModel]="newSafetyContrastVolume()"
-                (ngModelChange)="newSafetyContrastVolume.set($event)"
-                placeholder="e.g. 85"
-              />
-            </div>
-            <div class="form-group flex-1">
-              <label>Manufacturer Lot #</label>
-              <input
-                type="text"
-                name="safetyContrastLot"
-                [ngModel]="newSafetyContrastLot()"
-                (ngModelChange)="newSafetyContrastLot.set($event)"
-                placeholder="e.g. LOT-2026-OMN91"
-              />
-            </div>
-          </div>
-        </div>
-
-        <footer class="modal-footer">
-          <button type="button" mat-stroked-button (click)="isNewSafetyEntryModalOpen.set(false)">Cancel</button>
-          <button type="submit" mat-flat-button color="primary">
-            <mat-icon>save</mat-icon> Commit to Radiation Safety Registry
+          <button type="button" mat-icon-button aria-label="Close report summary" (click)="closeNurseStudyDetails()">
+            <mat-icon>close</mat-icon>
           </button>
-        </footer>
-      </form>
-    </div>
-  </div>
+        </header>
 
-  <!-- ==================== NURSE CLINICAL STUDY & REPORT REVIEW MODAL ==================== -->
-  <div class="modal-backdrop nurse-modal-backdrop" *ngIf="isNurseStudyModalOpen()" (click)="closeNurseStudyDetails()">
-    <div class="modal-container nurse-report-modal" (click)="$event.stopPropagation()">
-      <header class="modal-header nurse-modal-header">
-        <div class="header-left-cluster">
-          <div class="icon-circle nurse-accent">
-            <mat-icon>medical_services</mat-icon>
-          </div>
-          <div>
-            <div class="title-badge-row">
-              <h3>Diagnostic Imaging Report &amp; Clinical Care Summary</h3>
-              <span class="nurse-role-pill">Nursing Clinical Review</span>
+        <div class="modal-body">
+          <div class="nurse-summary-pod">
+            <div class="chip-inline">
+              <span class="mono-code">{{ study.accessionNumber || 'ACC-PENDING' }}</span>
+              <span class="sub-text">Order #{{ study.orderNumber }}</span>
+              <app-status-chip tone="info" [label]="study.modality" />
+              <app-status-chip [tone]="getPriorityTone(study.priority)" [label]="study.priority" />
             </div>
-            <p class="subtext">Verified PACS Interpretation &bull; Patient Care Coordination</p>
-          </div>
-        </div>
-        <button type="button" class="close-x" (click)="closeNurseStudyDetails()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </header>
-
-      <div class="modal-body nurse-modal-body" *ngIf="nurseSelectedStudy() as study">
-        <!-- Clinical Governance Notice Banner -->
-        <div class="nurse-governance-banner">
-          <mat-icon>info</mat-icon>
-          <div class="gov-text">
-            <strong>Clinical Scope Notice:</strong>
-            <span>You are viewing this radiological report under Nursing Clinical Chart Review. Diagnostic sign-off and interpretation alterations are restricted to licensed attending physicians and diagnostic radiologists.</span>
-          </div>
-        </div>
-
-        <!-- Study & Patient Header Summary Pod -->
-        <div class="nurse-summary-pod">
-          <div class="pod-col primary">
-            <div class="acc-row">
-              <span class="acc-tag">{{ study.accessionNumber || 'ACC-PENDING' }}</span>
-              <span class="order-tag">Order #{{ study.orderNumber }}</span>
-              <span class="mod-badge" [attr.data-modality]="study.modality">{{ study.modality }}</span>
-              <span class="priority-pill" [attr.data-priority]="study.priority">
-                <span class="pulse-dot" *ngIf="study.priority === 'Stat'"></span>
-                {{ study.priority }} Urgency
-              </span>
-            </div>
-            <h2 class="proc-title">{{ study.procedureName }}</h2>
-            <span class="body-site-text"><mat-icon>accessibility</mat-icon> Anatomical Region: {{ study.bodyPart || 'Standard Protocol' }}</span>
-          </div>
-
-          <div class="pod-col patient-info">
-            <div class="pt-field">
-              <label>Patient</label>
-              <strong>{{ study.patientName }}</strong>
-            </div>
-            <div class="pt-field">
-              <label>MRN</label>
-              <span>{{ study.patientMedicalRecordNumber || 'N/A' }}</span>
-            </div>
-            <div class="pt-field">
-              <label>Attending Physician</label>
-              <span>Dr. {{ study.doctorName }}</span>
-            </div>
-            <div class="pt-field">
-              <label>Location / Room</label>
-              <span>{{ study.roomSuite || 'Suite 1 - Digital Radiography' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Clinical Indication -->
-        <div class="nurse-section">
-          <div class="section-label-row">
-            <mat-icon>help_outline</mat-icon>
-            <h4>CLINICAL INDICATION &amp; REASON FOR EXAM</h4>
-          </div>
-          <div class="section-content-box indication-box">
-            <p>{{ study.clinicalIndication || 'Routine diagnostic evaluation. No specific indications documented.' }}</p>
-          </div>
-        </div>
-
-        <!-- STAT Critical Alert Warning (if applicable) -->
-        <div class="nurse-critical-alert-box" *ngIf="study.isCritical">
-          <div class="alert-icon-ring">
-            <mat-icon>warning</mat-icon>
-          </div>
-          <div class="alert-msg">
-            <strong>STAT CRITICAL ALERT NOTIFIED</strong>
-            <p>{{ study.criticalAlertNotes || 'Immediate critical finding recorded by radiologist. Immediate physician attention required.' }}</p>
-            <span class="ack-status" *ngIf="study.criticalAlertAcknowledgedByDoctor">
-              <mat-icon>check_circle</mat-icon> Formally acknowledged by Dr. {{ study.doctorName }}
-            </span>
-            <span class="ack-status pending" *ngIf="!study.criticalAlertAcknowledgedByDoctor">
-              <mat-icon>schedule</mat-icon> Awaiting attending physician formal acknowledgment
-            </span>
-          </div>
-        </div>
-
-        <!-- Diagnostic Findings & Radiologist Impression -->
-        <div class="nurse-two-col-grid">
-          <!-- Objective Radiographic Findings -->
-          <div class="nurse-section flex-1">
-            <div class="section-label-row">
-              <mat-icon>receipt_long</mat-icon>
-              <h4>OBJECTIVE RADIOGRAPHIC FINDINGS</h4>
-            </div>
-            <div class="section-content-box findings-box">
-              <p class="findings-text">{{ study.findings || 'Formal radiologist descriptive findings pending transcription.' }}</p>
+            <h3>{{ study.procedureName }}</h3>
+            <div class="meta-grid-4">
+              <div><span class="sub-text">Patient</span><strong>{{ study.patientName }}</strong></div>
+              <div><span class="sub-text">MRN</span><strong>{{ study.patientMedicalRecordNumber || 'N/A' }}</strong></div>
+              <div><span class="sub-text">Attending Physician</span><strong>Dr. {{ study.doctorName }}</strong></div>
+              <div><span class="sub-text">Suite / Site</span><strong>{{ study.roomSuite || study.bodyPart || 'Standard' }}</strong></div>
             </div>
           </div>
 
-          <!-- Diagnostic Impression / Conclusion -->
-          <div class="nurse-section flex-1">
-            <div class="section-label-row highlight">
-              <mat-icon>verified</mat-icon>
-              <h4>DIAGNOSTIC CONCLUSION &amp; IMPRESSION</h4>
+          <div class="sheet-section">
+            <span class="section-label">Clinical Indication</span>
+            <p class="sheet-box">{{ study.clinicalIndication || 'Routine diagnostic evaluation.' }}</p>
+          </div>
+
+          @if (study.isCritical) {
+            <div class="critical-alert-config-box alert-active">
+              <strong>STAT Critical Finding Alert</strong>
+              <p>{{ study.criticalAlertNotes || 'Immediate physician attention required.' }}</p>
+              <app-status-chip
+                [tone]="study.criticalAlertAcknowledgedByDoctor ? 'success' : 'warning'"
+                [label]="study.criticalAlertAcknowledgedByDoctor ? 'Acknowledged by Dr. ' + study.doctorName : 'Awaiting Attending Acknowledgment'"
+              />
             </div>
-            <div class="section-content-box impression-box">
-              <p class="impression-text">{{ study.impression || 'Imaging acquisition completed. Formal radiologist impression in progress.' }}</p>
-              
-              <div class="sig-stamp-container" *ngIf="study.radiologistSignature">
-                <mat-icon>verified_user</mat-icon>
-                <div class="sig-details">
-                  <span class="sig-title">Digitally Certified &amp; Signed By:</span>
-                  <strong>{{ study.radiologistSignature }}</strong>
-                  <span class="sig-date">{{ (study.reportedAt || study.orderedAt) | date:'medium' }}</span>
-                </div>
+          }
+
+          <div class="form-grid-2">
+            <div class="sheet-section">
+              <span class="section-label">Objective Radiographic Findings</span>
+              <p class="sheet-box">{{ study.findings || 'Formal radiologist findings pending transcription.' }}</p>
+            </div>
+            <div class="sheet-section">
+              <span class="section-label">Diagnostic Impression</span>
+              <div class="sheet-box">
+                <p>{{ study.impression || 'Radiologist impression in progress.' }}</p>
+                @if (study.radiologistSignature) {
+                  <div class="sub-text">Signed: {{ study.radiologistSignature }} ({{ (study.reportedAt || study.orderedAt) | date:'medium' }})</div>
+                }
               </div>
             </div>
           </div>
+
+          @if (study.contrastUsed || study.radiationDoseDlp) {
+            <div class="sheet-section">
+              <span class="section-label">Post-Procedure Contrast &amp; Dosimetry Notes</span>
+              <div class="sheet-box">
+                @if (study.contrastUsed) {
+                  <div>IV Contrast: <strong>{{ study.contrastAgentName || 'Omnipaque 350' }}</strong> ({{ study.contrastVolumeMl ? study.contrastVolumeMl + ' mL' : 'Standard' }})</div>
+                }
+                @if (study.radiationDoseDlp) {
+                  <div>Dose: <strong>{{ study.radiationDoseDlp }} mGy·cm</strong> (DAP: {{ study.radiationDoseDap || 'Compliant' }})</div>
+                }
+                <div class="sub-text">Ensure post-scan hydration for 24h and monitor for delayed reaction.</div>
+              </div>
+            </div>
+          }
+
+          @if (study.imageUrl) {
+            <div class="sheet-section">
+              <span class="section-label">Diagnostic Reference Preview</span>
+              <img [src]="study.imageUrl" alt="Diagnostic radiographic study preview" class="nurse-preview-img" />
+            </div>
+          }
         </div>
 
-        <!-- Attending Physician Review Status -->
-        <div class="physician-status-card">
-          <div class="md-status-icon" [class.signed]="study.doctorSignedOffAt">
-            <mat-icon>{{ study.doctorSignedOffAt ? 'task_alt' : 'hourglass_top' }}</mat-icon>
-          </div>
-          <div class="md-status-content">
-            <span class="status-lbl">Attending Physician Clinical Review</span>
-            <div *ngIf="study.doctorSignedOffAt; else mdPending">
-              <strong>Reviewed &amp; Signed by Dr. {{ study.doctorName }} on {{ study.doctorSignedOffAt | date:'medium' }}</strong>
-              <p class="md-signoff-note">Physician acknowledged diagnostic impression and updated patient clinical management plan.</p>
-            </div>
-            <ng-template #mdPending>
-              <strong class="pending-text">Pending Attending Physician Sign-Off (Dr. {{ study.doctorName }})</strong>
-              <p class="md-signoff-note">Report is ready for bedside nursing review; attending physician signature pending.</p>
-            </ng-template>
-          </div>
-        </div>
-
-        <!-- Dosimetry & IV Contrast Protocol Record -->
-        <div class="nurse-section contrast-dosimetry-section" *ngIf="study.contrastUsed || study.radiationDoseDlp">
-          <div class="section-label-row">
-            <mat-icon>shield</mat-icon>
-            <h4>DOSIMETRY &amp; CONTRAST SAFETY LOG (FOR POST-PROCEDURE NURSING CARE)</h4>
-          </div>
-          <div class="dosimetry-details-grid">
-            <div class="dosi-tile" *ngIf="study.contrastUsed">
-              <label>IV Contrast Media Administered</label>
-              <strong>{{ study.contrastAgentName || 'Omnipaque 350' }}</strong>
-              <span>{{ study.contrastVolumeMl ? study.contrastVolumeMl + ' mL' : 'Standard Dose' }} ({{ study.contrastRoute || 'IV Peripheral' }})</span>
-            </div>
-            <div class="dosi-tile" *ngIf="study.radiationDoseDlp">
-              <label>Radiation Dose (DLP)</label>
-              <strong>{{ study.radiationDoseDlp }} mGy&bull;cm</strong>
-              <span>DAP: {{ study.radiationDoseDap ? study.radiationDoseDap + ' Gy·cm²' : 'Compliant' }}</span>
-            </div>
-            <div class="dosi-tile advisory">
-              <label>Nursing Post-Contrast Care</label>
-              <span class="care-tip">&bull; Ensure adequate oral or IV hydration for 24h.</span>
-              <span class="care-tip">&bull; Monitor for delayed urticaria or renal insufficiency.</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Radiographic Study Image Preview (if image available) -->
-        <div class="nurse-section image-preview-section" *ngIf="study.imageUrl">
-          <div class="section-label-row">
-            <mat-icon>image</mat-icon>
-            <h4>DIAGNOSTIC REFERENCE IMAGE PREVIEW</h4>
-          </div>
-          <div class="image-preview-frame">
-            <img [src]="study.imageUrl" alt="Diagnostic Radiographic Image" class="radiology-img-preview" />
-            <div class="img-overlay-info">
-              <span>{{ study.modality }} &bull; {{ study.procedureName }}</span>
-              <span>Accession: {{ study.accessionNumber }}</span>
-            </div>
-          </div>
-        </div>
+        <footer class="modal-footer">
+          <button type="button" mat-flat-button color="primary" (click)="closeNurseStudyDetails()">
+            Acknowledge Chart Review
+          </button>
+          <button type="button" mat-stroked-button (click)="closeNurseStudyDetails()">
+            Close
+          </button>
+        </footer>
       </div>
-
-      <footer class="modal-footer nurse-modal-footer">
-        <button type="button" mat-stroked-button (click)="closeNurseStudyDetails()">Close Report</button>
-        <button type="button" mat-flat-button color="primary" (click)="closeNurseStudyDetails()">
-          <mat-icon>check</mat-icon> Acknowledge Nursing Chart Review
-        </button>
-      </footer>
     </div>
-  </div>
+  }
 </div>
