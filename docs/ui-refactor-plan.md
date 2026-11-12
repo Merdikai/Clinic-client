@@ -155,3 +155,48 @@ Before beginning Phase 1, the following discrepancies between the prompt assumpt
   - Verify all **9 roles** (`Admin`, `Doctor`, `Nurse`, `Receptionist`, `Pharmacist`, `LabTechnician`, `Radiologist`, `Accountant`, `Patient`) display only authorized navigation links and controls
   - Remove unused imports (`MatProgressSpinnerModule` where no longer needed), dead CSS classes, and update this plan (`docs/ui-refactor-plan.md`) with final completion status.
 
+---
+
+## Phase 1 Baseline Audit & Quantitative Inventory (`ab5a376`)
+
+Static baseline scan executed across all source files under `C:\Users\hp\clinic-client\src\` prior to any application code edits:
+
+| Component / Area | Lines (HTML+SCSS+TS) | Hardcoded Hex Matches | `<h1>` Tags | Spinners / Bars | Decorative Gradients / Glow | Clickable `<div>` Elements | Inline `style=` Attributes |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| `src/styles.scss` + `theme` | 1,074 | Global | N/A | 0 | 20+ | 0 | N/A |
+| `shell` | 3,133 | 141 | 0 | 0 | 89 | 2 | 10 |
+| `features/access-denied` | 105 | 4 | 1 | 0 | 1 | 0 | 0 |
+| `features/not-found` | 110 | 4 | 1 | 0 | 1 | 0 | 0 |
+| `features/login` | 390 | 14 | 1 | 0 | 2 | 0 | 0 |
+| `features/register` | 513 | 7 | 1 | 0 | 2 | 0 | 0 |
+| `features/forgot-password` | 469 | 17 | 1 | 0 | 1 | 0 | 0 |
+| `features/reset-password` | 585 | 23 | 1 | 0 | 1 | 0 | 0 |
+| `features/dashboard` | 5,854 | 505 | 1 | 3 | 36 | 10 | 131 |
+| `features/patient-list` | 679 | 16 | 1 | 3 | 10 | 2 | 0 |
+| `features/patient-form` | 1,334 | 118 | 1 | 5 | 6 | 0 | 0 |
+| `features/patient-detail` | 3,274 | 240 | 1 | 6 | 25 | 3 | 66 |
+| `features/appointment-list` | 2,034 | 55 | 1 | 3 | 11 | 10 | 37 |
+| `features/appointment-booking` | 604 | 19 | **0** (`<h2>`) | 0 | 4 | 0 | 3 |
+| `features/doctor-portal/my-consultations` | 2,559 | 348 | 1 | 1 | 15 | 6 | 0 |
+| `features/doctor-portal/doctor-inbasket` | 2,756 | 303 | 1 | 1 | 15 | 2 | 0 |
+| `features/doctor-portal/my-patients` | 415 | 56 | 1 | 1 | 1 | 0 | 13 |
+| `features/doctor-schedules` | 3,155 | 300 | 1 | 3 | 18 | 1 | 0 |
+| `features/patient-portal/my-appointments` | 898 | 89 | 1 | 1 (`spin-icon`) | 1 | 2 | 0 |
+| `features/patient-portal/my-medical-file` | 664 | 71 | 1 | 0 | 1 | 0 | 1 |
+| `features/patient-portal/my-prescriptions` | 778 | 73 | 1 | 1 (`spin-icon`) | 1 | 2 | 0 |
+| `features/patient-portal/my-invoices` | 664 | 66 | 1 | 1 (`spin-icon`) | 1 | 2 | 4 |
+| `features/pharmacy` | 4,065 | 63 | 1 | 3 | 9 | 17 | 2 |
+| `features/laboratory` | 6,795 | 460 | 1 | 15 | 29 | 32 | 4 |
+| `features/radiology` | 7,923 | 917 | 1 | 1 (`progress-bar`) | 25 | 19 | 11 |
+| `features/nursing-procedures` | 1,293 | 108 | 1 | 3 | 8 | 4 | 1 |
+| `features/shift-handover` | 720 | 67 | 1 | 3 | 2 | 0 | 0 |
+| `features/billing` | 3,582 | 199 | **3** | 2 | 7 | 29 | 19 |
+| `features/reports` | 1,657 | 166 | 1 | 2 | 7 | 5 | 7 |
+| `features/user-management` | 3,076 | 81 | 1 | 3 | 24 | 10 | 3 |
+
+### Baseline Bundle Size (`ng build`)
+- Initial `styles.css`: **414.59 kB** (`25.66 kB` transfer)
+- Initial `main.js`: **272.19 kB** (`47.69 kB` transfer)
+- Total initial bundle: **1.25 MB**
+
+
