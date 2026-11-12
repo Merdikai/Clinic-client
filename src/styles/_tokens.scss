@@ -1,0 +1,154 @@
+/* ==========================================================================
+   CLINICAL EHR DESIGN SYSTEM — FOUNDATION TOKENS (Phase 2)
+   Strict light-first neutral palette, WCAG 2.1 AA contrast, 4px grid, 6 type sizes
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Typography Families */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Typography Scale — Strictly 6 sizes (12 / 14 / 16 / 20 / 24 / 32 px via rem) */
+  --text-12: 0.75rem;
+  --text-14: 0.875rem;
+  --text-16: 1rem;
+  --text-20: 1.25rem;
+  --text-24: 1.5rem;
+  --text-32: 2rem;
+
+  --text-xs: var(--text-12);
+  --text-sm: var(--text-14);
+  --text-base: var(--text-16);
+  --text-lg: var(--text-20);
+  --text-xl: var(--text-24);
+  --text-2xl: var(--text-32);
+
+  /* Unitless Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.5;
+
+  /* Spacing Scale — Strictly multiples of 4px (4 / 8 / 12 / 16 / 24 / 32 / 48) */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+
+  /* Border Radius — Strictly 2 values (4px controls/chips, 8px cards/dialogs) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Elevation — Flat or single subtle card shadow only (no layering or blur) */
+  --shadow-none: none;
+  --shadow-card: 0 1px 2px 0 rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+
+  /* Neutral Surfaces */
+  --surface-page: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-subtle: #f1f5f9;
+  --surface-hover: #e2e8f0;
+  --surface-sidebar: #ffffff;
+  --surface-modal: #ffffff;
+  --modal-scrim: rgba(15, 23, 42, 0.45);
+
+  /* Neutral Borders (WCAG 1.4.11 compliant control borders >= 3:1 on white) */
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-control: #64748b;
+  --border-focus: #0f172a;
+
+  /* Neutral Text (WCAG 1.4.3 compliant >= 4.5:1 on white & subtle grey) */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --text-disabled: #64748b;
+  --text-inverse: #ffffff;
+
+  /* Primary Interactive Action (Neutral Slate) */
+  --action-primary: #1e293b;
+  --action-primary-hover: #0f172a;
+  --action-primary-active: #334155;
+  --focus-ring-color: #0f172a;
+
+  /* Semantic Status Colors — Strict Meaning Only (Muted Clinical Hues, >= 4.5:1 text) */
+  /* Success: Completed, Paid, CheckedIn, Active, Normal */
+  --semantic-success-text: #1b5e20;
+  --semantic-success-accent: #2e7d32;
+  --semantic-success-bg: #edf7ed;
+  --semantic-success-border: #81c784;
+
+  /* Warning: PartiallyPaid, LowStock, Scheduled, Ordered, Pending */
+  --semantic-warning-text: #7c2d12;
+  --semantic-warning-accent: #c2410c;
+  --semantic-warning-bg: #fff7ed;
+  --semantic-warning-border: #fdba74;
+
+  /* Danger: Cancelled, Unpaid, OutOfStock, Critical, Rejected, Overdue */
+  --semantic-danger-text: #991b1b;
+  --semantic-danger-accent: #c62828;
+  --semantic-danger-bg: #fef2f2;
+  --semantic-danger-border: #fca5a5;
+
+  /* Info: InConsultation, InProgress, SampleCollected, Informational */
+  --semantic-info-text: #075985;
+  --semantic-info-accent: #0277bd;
+  --semantic-info-bg: #f0f9ff;
+  --semantic-info-border: #7dd3fc;
+
+  /* Neutral / Inactive: Disabled, Archived, Routine, Draft */
+  --semantic-neutral-text: #334155;
+  --semantic-neutral-accent: #475569;
+  --semantic-neutral-bg: #f1f5f9;
+  --semantic-neutral-border: #cbd5e1;
+
+  /* Skeleton Loading Surfaces */
+  --skeleton-base: #e2e8f0;
+  --skeleton-highlight: #f1f5f9;
+
+  /* Compatibility Aliases for Incremental Component Refactoring (Phases 10-30) */
+  --primary-color: var(--action-primary);
+  --primary-hover: var(--action-primary-hover);
+  --primary-active: var(--action-primary-active);
+  --primary-600: var(--action-primary);
+  --bg-app: var(--surface-page);
+  --bg-main: var(--surface-page);
+  --bg-body: var(--surface-page);
+  --bg-surface: var(--surface-card);
+  --bg-surface-elevated: var(--surface-card);
+  --bg-surface-card: var(--surface-card);
+  --bg-subtle: var(--surface-subtle);
+  --bg-hover: var(--surface-hover);
+  --bg-input: var(--surface-card);
+  --bg-card: var(--surface-card);
+  --bg-modal: var(--surface-modal);
+  --modal-overlay: var(--modal-scrim);
+  --surface-card-bg: var(--surface-card);
+  --surface-input: var(--surface-card);
+  --surface-ground: var(--surface-page);
+  --surface-border: var(--border-subtle);
+  --surface-secondary: var(--surface-subtle);
+  --card-bg: var(--surface-card);
+  --text-main: var(--text-primary);
+  --text-heading: var(--text-primary);
+  --border-color: var(--border-default);
+  --success-bg: var(--semantic-success-bg);
+  --success-text: var(--semantic-success-text);
+  --success-border: var(--semantic-success-border);
+  --warning-bg: var(--semantic-warning-bg);
+  --warning-text: var(--semantic-warning-text);
+  --warning-border: var(--semantic-warning-border);
+  --danger-bg: var(--semantic-danger-bg);
+  --danger-text: var(--semantic-danger-text);
+  --danger-border: var(--semantic-danger-border);
+  --info-bg: var(--semantic-info-bg);
+  --info-text: var(--semantic-info-text);
+  --info-border: var(--semantic-info-border);
+  --shadow-sm: var(--shadow-card);
+  --shadow-xs: var(--shadow-card);
+}
+
