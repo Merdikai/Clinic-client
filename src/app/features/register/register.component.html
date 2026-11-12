@@ -1,164 +1,156 @@
-<div class="register-container">
-  <div class="theme-switch-floating">
-    <button mat-icon-button (click)="toggleTheme()" [matTooltip]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
-      <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-    </button>
-  </div>
+<main id="main-content" class="auth-page">
+  <mat-card class="auth-card">
+    <header class="auth-header">
+      <div class="wordmark">MedFlow ClinicOS</div>
+      <h1>Create account</h1>
+      <p>Register a patient or healthcare workspace account.</p>
+    </header>
 
-  <mat-card class="register-card mat-elevation-z12">
-    <div class="brand-banner">
-      <div class="brand-icon-wrapper">
-        <mat-icon>person_add</mat-icon>
-      </div>
-      <h1>MedFlow Clinical OS</h1>
-      <p>Create a new patient or staff workspace account</p>
-    </div>
-
-    <!-- Quick Auto-Fill Demo Button -->
-    <div class="quick-demo-container">
-      <button type="button" class="demo-autofill-btn" (click)="fillDemoPatient()" matTooltip="Populate valid mock patient credentials for fast testing">
-        <mat-icon>auto_awesome</mat-icon>
-        <span>Auto-Fill Demo Patient Credentials</span>
-      </button>
-    </div>
-
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
       <div class="form-row">
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" class="field-item">
           <mat-label>First Name</mat-label>
-          <input matInput formControlName="firstName" placeholder="e.g. John" autocomplete="given-name">
-          <mat-icon matPrefix>badge</mat-icon>
+          <input matInput formControlName="firstName" placeholder="e.g. John" autocomplete="given-name"
+            [attr.aria-describedby]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched ? 'reg-firstName-error' : null">
           @if (registerForm.get('firstName')?.hasError('required') && registerForm.get('firstName')?.touched) {
-            <mat-error>First name is required</mat-error>
+          <mat-error id="reg-firstName-error">First name is required</mat-error>
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" class="field-item">
           <mat-label>Last Name</mat-label>
-          <input matInput formControlName="lastName" placeholder="e.g. Doe" autocomplete="family-name">
+          <input matInput formControlName="lastName" placeholder="e.g. Doe" autocomplete="family-name"
+            [attr.aria-describedby]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched ? 'reg-lastName-error' : null">
           @if (registerForm.get('lastName')?.hasError('required') && registerForm.get('lastName')?.touched) {
-            <mat-error>Last name is required</mat-error>
+          <mat-error id="reg-lastName-error">Last name is required</mat-error>
           }
         </mat-form-field>
       </div>
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Username</mat-label>
-        <input matInput formControlName="username" placeholder="e.g. john.doe" autocomplete="username">
-        <mat-icon matPrefix>alternate_email</mat-icon>
+        <input matInput formControlName="username" placeholder="e.g. john.doe" autocomplete="username"
+          [attr.aria-describedby]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched ? 'reg-username-error' : null">
         @if (registerForm.get('username')?.hasError('required') && registerForm.get('username')?.touched) {
-          <mat-error>Username is required</mat-error>
-        }
-        @if (registerForm.get('username')?.hasError('minlength')) {
-          <mat-error>Minimum 3 characters required</mat-error>
-        }
-        @if (registerForm.get('username')?.hasError('pattern')) {
-          <mat-error>Only letters, numbers, underscores and dots allowed</mat-error>
+        <mat-error id="reg-username-error">Username is required</mat-error>
+        } @else if (registerForm.get('username')?.hasError('minlength') && registerForm.get('username')?.touched) {
+        <mat-error id="reg-username-error">Minimum 3 characters required</mat-error>
+        } @else if (registerForm.get('username')?.hasError('pattern') && registerForm.get('username')?.touched) {
+        <mat-error id="reg-username-error">Only letters, numbers, underscores, and dots allowed</mat-error>
         }
       </mat-form-field>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" class="field-item">
           <mat-label>Email Address</mat-label>
-          <input matInput formControlName="email" type="email" placeholder="e.g. user@clinic.com" autocomplete="email">
-          <mat-icon matPrefix>email</mat-icon>
+          <input matInput formControlName="email" type="email" placeholder="e.g. user@clinic.com" autocomplete="email"
+            [attr.aria-describedby]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched ? 'reg-email-error' : null">
           @if (registerForm.get('email')?.hasError('required') && registerForm.get('email')?.touched) {
-            <mat-error>Email is required</mat-error>
-          }
-          @if (registerForm.get('email')?.hasError('email')) {
-            <mat-error>Valid email address required</mat-error>
+          <mat-error id="reg-email-error">Email is required</mat-error>
+          } @else if (registerForm.get('email')?.hasError('email') && registerForm.get('email')?.touched) {
+          <mat-error id="reg-email-error">Valid email address required</mat-error>
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" class="field-item">
           <mat-label>Phone Number</mat-label>
-          <input matInput formControlName="phoneNumber" placeholder="+1-555-010-0000" autocomplete="tel">
-          <mat-icon matPrefix>phone</mat-icon>
+          <input matInput formControlName="phoneNumber" placeholder="+1-555-010-0000" autocomplete="tel"
+            [attr.aria-describedby]="registerForm.get('phoneNumber')?.invalid && registerForm.get('phoneNumber')?.touched ? 'reg-phone-error' : null">
           @if (registerForm.get('phoneNumber')?.hasError('required') && registerForm.get('phoneNumber')?.touched) {
-            <mat-error>Phone number is required</mat-error>
+          <mat-error id="reg-phone-error">Phone number is required</mat-error>
           }
         </mat-form-field>
       </div>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" class="field-item">
           <mat-label>Password</mat-label>
-          <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password" placeholder="Min. 12 characters" autocomplete="new-password">
-          <mat-icon matPrefix>lock</mat-icon>
-          <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())" tabindex="-1">
-            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password"
+            placeholder="Min. 12 characters" autocomplete="new-password" aria-describedby="hipaa-password-rules">
+          <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())"
+            [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+            [attr.aria-pressed]="!hidePassword()">
+            <mat-icon aria-hidden="true">{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
           @if (registerForm.get('password')?.hasError('required') && registerForm.get('password')?.touched) {
-            <mat-error>Password is required</mat-error>
-          }
-          @if (registerForm.get('password')?.hasError('minlength')) {
-            <mat-error>Minimum 12 characters required</mat-error>
+          <mat-error>Password is required</mat-error>
+          } @else if (registerForm.get('password')?.hasError('minlength') && registerForm.get('password')?.touched) {
+          <mat-error>Minimum 12 characters required</mat-error>
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" class="field-item">
           <mat-label>Confirm Password</mat-label>
-          <input matInput [type]="hideConfirmPassword() ? 'password' : 'text'" formControlName="confirmPassword" placeholder="Re-enter password" autocomplete="new-password">
-          <mat-icon matPrefix>lock_reset</mat-icon>
-          <button mat-icon-button matSuffix type="button" (click)="hideConfirmPassword.set(!hideConfirmPassword())" tabindex="-1">
-            <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          <input matInput [type]="hideConfirmPassword() ? 'password' : 'text'" formControlName="confirmPassword"
+            placeholder="Re-enter password" autocomplete="new-password"
+            [attr.aria-describedby]="registerForm.get('confirmPassword')?.touched && !passwordsMatch() ? 'reg-confirm-error' : null">
+          <button mat-icon-button matSuffix type="button" (click)="hideConfirmPassword.set(!hideConfirmPassword())"
+            [attr.aria-label]="hideConfirmPassword() ? 'Show confirm password' : 'Hide confirm password'"
+            [attr.aria-pressed]="!hideConfirmPassword()">
+            <mat-icon aria-hidden="true">{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
           @if (registerForm.get('confirmPassword')?.touched && !passwordsMatch()) {
-            <mat-error>Passwords must match</mat-error>
+          <mat-error id="reg-confirm-error">Passwords must match</mat-error>
           }
         </mat-form-field>
       </div>
 
-      <!-- Password Requirements Helper Checklist -->
-      <div class="password-criteria-panel">
-        <div class="criteria-title">HIPAA Password Security Standard:</div>
-        <div class="criteria-grid">
-          <span class="criterion" [class.met]="hasMinLength()">
-            <mat-icon>{{ hasMinLength() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-            12+ Characters
-          </span>
-          <span class="criterion" [class.met]="hasUpper()">
-            <mat-icon>{{ hasUpper() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-            Uppercase (A-Z)
-          </span>
-          <span class="criterion" [class.met]="hasLower()">
-            <mat-icon>{{ hasLower() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-            Lowercase (a-z)
-          </span>
-          <span class="criterion" [class.met]="hasNumber()">
-            <mat-icon>{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-            Number (0-9)
-          </span>
-          <span class="criterion" [class.met]="hasSpecial()">
-            <mat-icon>{{ hasSpecial() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-            Special Symbol
-          </span>
-          <span class="criterion" [class.met]="passwordsMatch()">
-            <mat-icon>{{ passwordsMatch() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-            Passwords Match
-          </span>
-        </div>
-      </div>
+      <section id="hipaa-password-rules" class="password-criteria-panel" aria-label="Password requirements">
+        <div class="criteria-title">HIPAA Password Requirements</div>
+        <ul class="criteria-grid">
+          <li class="criterion" [class.met]="hasMinLength()">
+            <mat-icon aria-hidden="true">{{ hasMinLength() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>12+ Characters</span>
+          </li>
+          <li class="criterion" [class.met]="hasUpper()">
+            <mat-icon aria-hidden="true">{{ hasUpper() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Uppercase (A-Z)</span>
+          </li>
+          <li class="criterion" [class.met]="hasLower()">
+            <mat-icon aria-hidden="true">{{ hasLower() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Lowercase (a-z)</span>
+          </li>
+          <li class="criterion" [class.met]="hasNumber()">
+            <mat-icon aria-hidden="true">{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Number (0-9)</span>
+          </li>
+          <li class="criterion" [class.met]="hasSpecial()">
+            <mat-icon aria-hidden="true">{{ hasSpecial() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Special Symbol</span>
+          </li>
+          <li class="criterion" [class.met]="passwordsMatch()">
+            <mat-icon aria-hidden="true">{{ passwordsMatch() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Passwords Match</span>
+          </li>
+        </ul>
+      </section>
 
       @if (errorMessage()) {
-        <div class="error-alert">
-          <mat-icon>error</mat-icon>
-          <span>{{ errorMessage() }}</span>
-        </div>
+      <div class="auth-error-alert" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ errorMessage() }}</span>
+      </div>
       }
 
-      <button mat-raised-button color="primary" type="submit" [disabled]="registerForm.invalid || isSubmitting() || !passwordsMatch()" class="full-width submit-btn">
-        @if (isSubmitting()) {
-          <span>Registering Account...</span>
-        } @else {
-          <span>Create Account</span>
-        }
+      <button mat-flat-button color="primary" type="submit"
+        [disabled]="registerForm.invalid || isSubmitting() || !passwordsMatch()" [attr.aria-busy]="isSubmitting()"
+        class="full-width submit-btn">
+        {{ isSubmitting() ? 'Creating account...' : 'Create Account' }}
       </button>
 
-      <div class="extra-links">
+      <nav class="auth-links" aria-label="Account navigation">
         <span>Already have an account?</span>
-        <a routerLink="/login">Sign In Instead</a>
-      </div>
+        <a routerLink="/login">Sign in</a>
+      </nav>
     </form>
+
+    <details class="demo-panel">
+      <summary class="demo-summary">Demo patient quick-fill</summary>
+      <div class="demo-actions">
+        <button type="button" mat-stroked-button (click)="fillDemoPatient()">
+          Populate Sample Patient Details
+        </button>
+      </div>
+    </details>
   </mat-card>
-</div>
+</main>

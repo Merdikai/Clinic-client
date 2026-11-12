@@ -7,10 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../services/auth.service';
-import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../ui/toast/toast.service';
 
 @Component({
@@ -24,9 +21,7 @@ import { ToastService } from '../../ui/toast/toast.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule,
-    MatTooltipModule,
-    MatSnackBarModule
+    MatIconModule
   ],
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss']
@@ -36,13 +31,11 @@ export class RegisterComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private toast = inject(ToastService);
-  themeService = inject(ThemeService);
 
   isSubmitting = signal(false);
   errorMessage = signal('');
   hidePassword = signal(true);
   hideConfirmPassword = signal(true);
-  isDarkMode = this.themeService.isDark;
 
   registerForm = this.fb.group({
     firstName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -63,7 +56,6 @@ export class RegisterComponent {
     confirmPassword: ['', Validators.required]
   });
 
-  // Password criteria reactive signal helpers
   passwordValue = signal('');
   confirmValue = signal('');
 
@@ -81,10 +73,6 @@ export class RegisterComponent {
   constructor() {
     this.registerForm.get('password')?.valueChanges.subscribe(v => this.passwordValue.set(v || ''));
     this.registerForm.get('confirmPassword')?.valueChanges.subscribe(v => this.confirmValue.set(v || ''));
-  }
-
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
   }
 
   fillDemoPatient(): void {
@@ -131,7 +119,7 @@ export class RegisterComponent {
     this.authService.register(request).subscribe({
       next: () => {
         this.isSubmitting.set(false);
-        this.toast.success('Registration successful! Please sign in to your new workspace.');
+        this.toast.success('Registration successful. Please sign in to continue.');
         this.router.navigate(['/login']);
       },
       error: (error) => {
