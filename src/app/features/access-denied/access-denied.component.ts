@@ -1,107 +1,78 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
 @Component({
   selector: 'app-access-denied',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatButtonModule, MatIconModule],
+  imports: [RouterModule, MatButtonModule, StatusChipComponent],
   template: `
-    <div class="error-container">
+    <section class="error-page" aria-labelledby="error-title">
       <div class="error-card">
-        <div class="icon-bubble">
-          <mat-icon class="status-icon">shield</mat-icon>
+        <div class="error-status">
+          <app-status-chip tone="danger" label="403 Forbidden" />
         </div>
-        <span class="error-code">403 FORBIDDEN</span>
-        <h1 class="error-title">Access Restricted</h1>
+        <h1 id="error-title" class="error-title">Access Restricted</h1>
         <p class="error-desc">
-          Your active clinical credentials or role permissions do not authorize access to this department or administrative workflow.
+          Your active clinical role or permission policy does not authorize access to this workflow or record.
         </p>
         <div class="action-row">
-          <a mat-flat-button color="primary" routerLink="/dashboard" class="action-btn">
-            <mat-icon>dashboard</mat-icon> Return to Dashboard
+          <a mat-flat-button color="primary" routerLink="/dashboard">
+            Return to Dashboard
           </a>
         </div>
       </div>
-    </div>
+    </section>
   `,
   styles: [`
-    .error-container {
-      min-height: 80vh;
+    .error-page {
+      min-block-size: calc(100vh - 120px);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      font-family: inherit;
+      padding: var(--space-24);
+      background-color: var(--surface-page);
     }
+
     .error-card {
-      max-width: 480px;
-      width: 100%;
-      text-align: center;
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      border-radius: 20px;
-      padding: 48px 32px;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-    }
-    .icon-bubble {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      max-inline-size: 480px;
+      inline-size: 100%;
+      background-color: var(--surface-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: var(--space-32);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-12);
     }
-    .status-icon {
-      font-size: 36px;
-      width: 36px;
-      height: 36px;
-      color: #ef4444;
+
+    .error-status {
+      margin-block-end: var(--space-4);
     }
-    .error-code {
-      display: inline-block;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.1);
-      padding: 4px 12px;
-      border-radius: 12px;
-      margin-bottom: 8px;
-    }
+
     .error-title {
-      font-size: 26px;
-      font-weight: 700;
-      color: #f8fafc;
-      margin: 8px 0 12px;
+      margin: 0;
+      font-size: var(--text-24);
+      font-weight: 600;
+      line-height: var(--leading-tight);
+      color: var(--text-primary);
     }
+
     .error-desc {
-      color: #94a3b8;
-      font-size: 15px;
-      line-height: 1.6;
-      margin-bottom: 32px;
+      margin: 0 0 var(--space-12);
+      font-size: var(--text-14);
+      line-height: var(--leading-normal);
+      color: var(--text-secondary);
     }
+
     .action-row {
       display: flex;
-      gap: 12px;
-      justify-content: center;
-    }
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 10px;
-      padding: 0 24px;
-      height: 44px;
+      flex-wrap: wrap;
+      gap: var(--space-12);
     }
   `]
 })
 export class AccessDeniedComponent {}
-
