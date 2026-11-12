@@ -1,15 +1,19 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
 import { PatientService } from '../../../services/patient.service';
 import { AuthService } from '../../../services/auth.service';
 import { Patient } from '../../../models/patient.model';
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-my-patients',
@@ -17,11 +21,15 @@ import { Patient } from '../../../models/patient.model';
   imports: [
     CommonModule,
     FormsModule,
-    MatCardModule,
-    MatIconModule,
+    RouterLink,
     MatButtonModule,
-    MatProgressBarModule,
-    RouterLink
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './my-patients.component.html',
   styleUrls: ['./my-patients.component.scss']
@@ -39,8 +47,8 @@ export class MyPatientsComponent implements OnInit {
   filteredPatients = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
     if (!q) return this.patients();
-    return this.patients().filter(p => 
-      (`${p.firstName} ${p.lastName}`).toLowerCase().includes(q) ||
+    return this.patients().filter(p =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
       (p.allergies || '').toLowerCase().includes(q) ||
       (p.id || '').toLowerCase().includes(q) ||
       (p.phone || '').toLowerCase().includes(q)
@@ -49,6 +57,10 @@ export class MyPatientsComponent implements OnInit {
 
   ngOnInit() {
     this.loadPatients();
+  }
+
+  hasKnownAllergy(patient: Patient): boolean {
+    return !!(patient.allergies && patient.allergies !== 'None');
   }
 
   loadPatients() {
@@ -60,7 +72,6 @@ export class MyPatientsComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: () => {
-        // Fallback to all patients if admin
         this.patientService.getAll(1, 100).subscribe({
           next: (allRes: any) => {
             this.patients.set(allRes?.items || allRes || []);

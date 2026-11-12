@@ -1,649 +1,719 @@
 <div class="consultations-workspace">
-  <!-- PAGE HEADER -->
-  <div class="workspace-header">
-    <div class="title-cluster">
-      <div class="header-icon-box">
-        <mat-icon>medical_information</mat-icon>
-      </div>
-      <div>
-        <h1>My Consultations & Encounters</h1>
-        <p class="subtitle">Clinical Examination Cockpit, Multi-Disciplinary Orders & Real-Time E-Prescribing</p>
-      </div>
-    </div>
-
-    <div class="header-actions">
-      <div class="duty-status-pill">
-        <span class="status-dot online"></span>
-        <span class="duty-text">On Duty • Examination Suite 3B</span>
-      </div>
-      <button mat-flat-button color="primary" class="refresh-btn" (click)="loadData()">
-        <mat-icon>refresh</mat-icon> Refresh Queue
+  <app-page-header
+    title="My Consultations & Encounters"
+    subtitle="Clinical Examination, Diagnostic Orders & E-Prescribing"
+  >
+    <div actions>
+      <button mat-flat-button color="primary" type="button" (click)="loadData()">
+        Refresh Queue
       </button>
     </div>
-  </div>
+  </app-page-header>
 
-  <!-- METRIC SUMMARY TILES -->
-  <div class="metrics-grid">
-    <div class="metric-card" (click)="activeTab.set('today')" [class.active-card]="activeTab() === 'today'">
-      <div class="metric-icon-box today">
-        <mat-icon>today</mat-icon>
-      </div>
-      <div class="metric-content">
-        <span class="metric-value">{{ filteredAppointments().length }}</span>
-        <span class="metric-label">Today's Patient Queue</span>
-      </div>
+  <!-- READ-ONLY KPI SUMMARY STRIP -->
+  <section class="metrics-grid" aria-label="Consultation Queue Summary">
+    <div class="metric-card">
+      <span class="metric-label">Today's Queue</span>
+      <span class="metric-value">{{ todayQueueCount() }}</span>
     </div>
-
-    <div class="metric-card" (click)="activeTab.set('scheduled')" [class.active-card]="activeTab() === 'scheduled'">
-      <div class="metric-icon-box scheduled">
-        <mat-icon>event_available</mat-icon>
-      </div>
-      <div class="metric-content">
-        <span class="metric-value">{{ appointments().filter(a => a.status === 'Scheduled').length }}</span>
-        <span class="metric-label">Scheduled & Ready</span>
-      </div>
+    <div class="metric-card">
+      <span class="metric-label">Scheduled &amp; Ready</span>
+      <span class="metric-value">{{ scheduledCount() }}</span>
     </div>
-
-    <div class="metric-card" (click)="activeTab.set('pending')" [class.active-card]="activeTab() === 'pending'">
-      <div class="metric-icon-box pending">
-        <mat-icon>hourglass_top</mat-icon>
-      </div>
-      <div class="metric-content">
-        <span class="metric-value">{{ appointments().filter(a => a.status === 'PendingApproval').length }}</span>
-        <span class="metric-label">Pending Approval</span>
-      </div>
+    <div class="metric-card">
+      <span class="metric-label">Pending Approval</span>
+      <span class="metric-value">{{ pendingCount() }}</span>
     </div>
-
-    <div class="metric-card" (click)="activeTab.set('completed')" [class.active-card]="activeTab() === 'completed'">
-      <div class="metric-icon-box completed">
-        <mat-icon>check_circle</mat-icon>
-      </div>
-      <div class="metric-content">
-        <span class="metric-value">{{ appointments().filter(a => a.status === 'Completed').length }}</span>
-        <span class="metric-label">Completed Encounters</span>
-      </div>
+    <div class="metric-card">
+      <span class="metric-label">Completed Encounters</span>
+      <span class="metric-value">{{ completedCount() }}</span>
     </div>
-  </div>
+  </section>
 
-  <!-- QUEUE FILTER BAR -->
-  <div class="filter-bar">
-    <div class="tab-pills">
-      <button class="tab-pill" [class.active]="activeTab() === 'today'" (click)="activeTab.set('today')">
-        <mat-icon>schedule</mat-icon> Today's Queue
+  <!-- QUEUE FILTER TOOLBAR -->
+  <section class="filter-bar" aria-label="Filter Consultations">
+    <div class="tab-pills" role="group" aria-label="Queue filter views">
+      <button
+        type="button"
+        class="tab-pill"
+        [class.active]="activeTab() === 'today'"
+        [attr.aria-pressed]="activeTab() === 'today'"
+        (click)="activeTab.set('today')"
+      >
+        Today's Queue ({{ todayQueueCount() }})
       </button>
-      <button class="tab-pill" [class.active]="activeTab() === 'scheduled'" (click)="activeTab.set('scheduled')">
-        <mat-icon>pending_actions</mat-icon> Scheduled Consults
+      <button
+        type="button"
+        class="tab-pill"
+        [class.active]="activeTab() === 'scheduled'"
+        [attr.aria-pressed]="activeTab() === 'scheduled'"
+        (click)="activeTab.set('scheduled')"
+      >
+        Scheduled ({{ scheduledCount() }})
       </button>
-      <button class="tab-pill" [class.active]="activeTab() === 'pending'" (click)="activeTab.set('pending')">
-        <mat-icon>hourglass_empty</mat-icon> Needs Approval ({{ appointments().filter(a => a.status === 'PendingApproval').length }})
+      <button
+        type="button"
+        class="tab-pill"
+        [class.active]="activeTab() === 'pending'"
+        [attr.aria-pressed]="activeTab() === 'pending'"
+        (click)="activeTab.set('pending')"
+      >
+        Pending Approval ({{ pendingCount() }})
       </button>
-      <button class="tab-pill" [class.active]="activeTab() === 'completed'" (click)="activeTab.set('completed')">
-        <mat-icon>task_alt</mat-icon> Completed Visits
+      <button
+        type="button"
+        class="tab-pill"
+        [class.active]="activeTab() === 'completed'"
+        [attr.aria-pressed]="activeTab() === 'completed'"
+        (click)="activeTab.set('completed')"
+      >
+        Completed ({{ completedCount() }})
       </button>
-      <button class="tab-pill" [class.active]="activeTab() === 'all'" (click)="activeTab.set('all')">
-        <mat-icon>list_alt</mat-icon> All Records
+      <button
+        type="button"
+        class="tab-pill"
+        [class.active]="activeTab() === 'all'"
+        [attr.aria-pressed]="activeTab() === 'all'"
+        (click)="activeTab.set('all')"
+      >
+        All ({{ appointments().length }})
       </button>
     </div>
 
-    <div class="search-box">
-      <mat-icon>search</mat-icon>
-      <input type="text" placeholder="Search patient name, MRN, complaint..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
-      <button *ngIf="searchQuery()" mat-icon-button class="clear-btn" (click)="searchQuery.set('')">
-        <mat-icon>close</mat-icon>
-      </button>
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+      <mat-label>Search Consultations</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Patient name, MRN, or reason..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+      @if (searchQuery()) {
+        <button
+          matSuffix
+          mat-icon-button
+          type="button"
+          aria-label="Clear consultation search"
+          (click)="searchQuery.set('')"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </section>
+
+  <!-- LOADING SKELETON -->
+  @if (isLoading()) {
+    <div aria-busy="true" aria-label="Loading clinical consultations">
+      <app-skeleton variant="card" [count]="4" />
     </div>
-  </div>
-
-  <!-- PATIENT CONSULTATION CARDS LIST -->
-  <div *ngIf="isLoading()" class="loading-state">
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-    <p>Loading clinical schedules and patient consultations...</p>
-  </div>
-
-  <div *ngIf="!isLoading() && filteredAppointments().length === 0" class="empty-state">
-    <mat-icon>inbox</mat-icon>
-    <h3>No Appointments In This Queue</h3>
-    <p>There are currently no patients matching the selected filter criteria.</p>
-  </div>
-
-  <div *ngIf="!isLoading() && filteredAppointments().length > 0" class="appointments-grid">
-    <div *ngFor="let appt of filteredAppointments()" class="appt-card" [class.status-completed]="appt.status === 'Completed'" [class.status-pending]="appt.status === 'PendingApproval'">
-      <div class="card-header">
-        <div class="patient-cluster">
-          <div class="avatar-circle">
-            <mat-icon>person</mat-icon>
-          </div>
-          <div>
-            <h3>{{ appt.patientName }}</h3>
-            <div class="patient-badges-row">
-              <span class="mrn-tag">MRN: {{ (appt.patientId || '').substring(0, 8).toUpperCase() }}</span>
-              <span class="attending-badge" [class.my-patient]="isMyAppointment(appt)" [class.other-patient]="!isMyAppointment(appt)">
-                <mat-icon class="badge-icon">stethoscope</mat-icon>
-                Attending: Dr. {{ appt.doctorName || 'Assigned Physician' }}
-              </span>
+  } @else if (filteredAppointments().length === 0) {
+    <app-empty-state
+      icon="inbox"
+      title="No Appointments In This Queue"
+      description="There are no clinical visits matching the active queue filter and search query."
+    />
+  } @else {
+    <div class="appointments-grid">
+      @for (appt of filteredAppointments(); track appt.id) {
+        <article class="appt-card">
+          <div class="card-header">
+            <div class="patient-cluster">
+              <h2 class="patient-name">{{ appt.patientName }}</h2>
+              <div class="patient-meta-row">
+                <span class="mrn-tag">MRN {{ (appt.patientId || '').substring(0, 8).toUpperCase() }}</span>
+                <span class="attending-note">
+                  {{ isMyAppointment(appt) ? 'Attending: You' : ('Attending: Dr. ' + (appt.doctorName || 'Assigned Physician') + ' (Read-Only)') }}
+                </span>
+              </div>
             </div>
+            <app-status-chip [status]="appt.status" />
           </div>
-        </div>
 
-        <span class="status-badge" [attr.data-status]="appt.status">
-          {{ appt.status }}
-        </span>
-      </div>
+          <dl class="card-body">
+            <div class="info-row">
+              <dt>Scheduled</dt>
+              <dd>{{ appt.scheduledDateTime | date:'medium' }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Reason</dt>
+              <dd>{{ appt.reasonForVisit || 'General Medical Consultation' }}</dd>
+            </div>
+            @if (hasKnownAllergy(getPatient(appt.patientId))) {
+              <div class="info-row">
+                <dt>Allergies</dt>
+                <dd>
+                  <app-status-chip
+                    tone="danger"
+                    [label]="getPatient(appt.patientId)?.allergies || ''"
+                  />
+                </dd>
+              </div>
+            }
+          </dl>
 
-      <div class="card-body">
-        <div class="info-row">
-          <mat-icon>schedule</mat-icon>
-          <span>{{ appt.scheduledDateTime | date:'medium' }}</span>
-        </div>
-        <div class="info-row">
-          <mat-icon>clinical_notes</mat-icon>
-          <span><strong>Reason:</strong> {{ appt.reasonForVisit || 'General Medical Consultation' }}</span>
-        </div>
-        <div class="info-row" *ngIf="getPatient(appt.patientId)?.allergies">
-          <mat-icon class="allergy-icon">warning</mat-icon>
-          <span class="allergy-text"><strong>Allergies:</strong> {{ getPatient(appt.patientId)?.allergies }}</span>
-        </div>
-      </div>
+          <div class="card-actions">
+            @if (appt.status === 'PendingApproval' && isMyAppointment(appt)) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="approveAppointment(appt)"
+              >
+                Approve Appointment
+              </button>
+            }
 
-      <div class="card-actions">
-        <button
-          *ngIf="appt.status === 'PendingApproval' && isMyAppointment(appt)"
-          mat-flat-button
-          color="accent"
-          class="action-btn"
-          (click)="approveAppointment(appt)"
-        >
-          <mat-icon>check_circle</mat-icon> Approve Appointment
-        </button>
+            @if (isMyAppointment(appt) && (appt.status === 'Scheduled' || appt.status === 'CheckedIn' || appt.status === 'TriageComplete')) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="openEncounter(appt)"
+              >
+                Start Clinical Encounter
+              </button>
+            }
 
-        <!-- Attending Physician Actions -->
-        <ng-container *ngIf="isMyAppointment(appt)">
-          <button
-            *ngIf="appt.status === 'Scheduled' || appt.status === 'CheckedIn' || appt.status === 'TriageComplete'"
-            mat-flat-button
-            color="primary"
-            class="action-btn"
-            (click)="openEncounter(appt)"
-          >
-            <mat-icon>stethoscope</mat-icon> Start Clinical Encounter
-          </button>
-        </ng-container>
+            @if (!isMyAppointment(appt) && appt.status !== 'Completed') {
+              <a
+                mat-stroked-button
+                [routerLink]="['/patients', appt.patientId]"
+              >
+                View Patient EMR
+              </a>
+            }
 
-        <!-- Isolated Account / Other Doctor's Patient -->
-        <div *ngIf="!isMyAppointment(appt) && appt.status !== 'Completed'" class="isolation-action-group">
-          <span class="isolation-badge">
-            <mat-icon class="lock-icon">lock</mat-icon> Assigned to Dr. {{ appt.doctorName }} (Read-Only)
-          </span>
-          <a mat-stroked-button color="primary" [routerLink]="['/patients', appt.patientId]" class="chart-view-btn">
-            <mat-icon>visibility</mat-icon> View EMR
-          </a>
-        </div>
-
-        <button
-          *ngIf="appt.status === 'Completed'"
-          mat-stroked-button
-          class="action-btn completed-view-btn"
-          (click)="openEncounter(appt)"
-        >
-          <mat-icon>visibility</mat-icon> View Completed Record
-        </button>
-      </div>
+            @if (appt.status === 'Completed') {
+              <button
+                mat-stroked-button
+                type="button"
+                (click)="openEncounter(appt)"
+              >
+                View Completed Record
+              </button>
+            }
+          </div>
+        </article>
+      }
     </div>
-  </div>
+  }
 </div>
 
-<!-- ========================================================== -->
-<!-- CLINICAL SOAP CONSULTATION & MULTI-ORDER ENCOUNTER MODAL   -->
-<!-- ========================================================== -->
-<div class="modal-backdrop" *ngIf="isEncounterModalOpen()" (click)="closeEncounter()">
-  <div class="modal-container encounter-modal" (click)="$event.stopPropagation()">
-    <!-- MODAL HEADER -->
-    <div class="encounter-header">
-      <div class="header-patient-info">
-        <div class="modal-avatar">
-          <mat-icon>stethoscope</mat-icon>
-        </div>
-        <div>
-          <h2>Clinical Consultation & Multi-Disciplinary Encounter</h2>
-          <div class="modal-patient-meta">
-            <strong>{{ activeEncounterAppt()?.patientName }}</strong>
-            <span>• MRN: {{ (activeEncounterAppt()?.patientId || '').substring(0, 8).toUpperCase() }}</span>
-            <span>• Gender: {{ activePatient()?.gender || 'N/A' }}</span>
-            <span>• Blood: {{ activePatient()?.bloodGroup || 'O+' }}</span>
-            <span>• Appt ID: {{ (activeEncounterAppt()?.id || '').substring(0, 8) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <button mat-icon-button class="close-modal-btn" (click)="closeEncounter()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-
-    <!-- ALLERGY SAFETY BANNER -->
+<!-- CLINICAL SOAP ENCOUNTER MODAL -->
+@if (isEncounterModalOpen()) {
+  <div class="modal-backdrop" (click)="closeEncounter()">
     <div
-      class="modal-allergy-banner"
-      [class.alert-danger]="activePatient()?.allergies && activePatient()?.allergies !== 'None'"
-      [class.alert-safe]="!activePatient()?.allergies || activePatient()?.allergies === 'None'"
+      class="modal-container encounter-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="encounter-modal-title"
+      (click)="$event.stopPropagation()"
     >
-      <div class="allergy-banner-icon">
-        <mat-icon>{{ activePatient()?.allergies && activePatient()?.allergies !== 'None' ? 'gpp_maybe' : 'verified_user' }}</mat-icon>
-      </div>
-      <div class="allergy-banner-text">
-        <strong *ngIf="activePatient()?.allergies && activePatient()?.allergies !== 'None'">
-          CLINICAL SAFETY ALERT: Patient has documented allergies to: {{ activePatient()?.allergies }}.
-        </strong>
-        <strong *ngIf="!activePatient()?.allergies || activePatient()?.allergies === 'None'">
-          NO KNOWN DRUG ALLERGIES (NKDA) RECORDED FOR THIS PATIENT.
-        </strong>
-        <span>Verify pharmacotherapy contraindications prior to ordering antibiotics or NSAIDs.</span>
-      </div>
-    </div>
+      <header class="encounter-header">
+        <div class="header-patient-info">
+          <h2 id="encounter-modal-title">Clinical Consultation &amp; Encounter</h2>
+          <p class="modal-patient-meta">
+            <strong>{{ activeEncounterAppt()?.patientName }}</strong>
+            <span>&middot; MRN {{ (activeEncounterAppt()?.patientId || '').substring(0, 8).toUpperCase() }}</span>
+            <span>&middot; Gender: {{ activePatient()?.gender || 'N/A' }}</span>
+            <span>&middot; Blood Group: {{ activePatient()?.bloodGroup || 'O+' }}</span>
+            <span>&middot; Appt {{ (activeEncounterAppt()?.id || '').substring(0, 8) }}</span>
+          </p>
+        </div>
 
-    <!-- TRIAGE VITALS COCKPIT (NURSE STATION INTEGRATION) -->
-    <div class="triage-vitals-cockpit">
-      <div class="cockpit-header">
-        <div class="cockpit-title">
-          <mat-icon>monitor_heart</mat-icon>
-          <span>Nurse Intake Triage Vitals</span>
-        </div>
-        <div class="cockpit-actions">
-          <button mat-button class="toggle-vitals-btn" (click)="isRecordingVitals.set(!isRecordingVitals())">
-            <mat-icon>{{ isRecordingVitals() ? 'expand_less' : 'edit' }}</mat-icon>
-            {{ isRecordingVitals() ? 'Close Entry' : 'Update Vitals' }}
-          </button>
-        </div>
-      </div>
+        <button
+          mat-icon-button
+          type="button"
+          class="close-modal-btn"
+          aria-label="Close clinical encounter dialog"
+          [disabled]="isSubmittingEncounter()"
+          (click)="closeEncounter()"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
 
-      <!-- Vitals Metrics Bar -->
-      <div class="vitals-metric-strip" *ngIf="triageVitals(); else noTriageVitals">
-        <div class="vital-tile" [class.alert-border]="triageVitals()!.systolicBP >= 140 || triageVitals()!.diastolicBP >= 90">
-          <span class="vital-label">Blood Pressure</span>
-          <span class="vital-value">{{ triageVitals()!.systolicBP }} / {{ triageVitals()!.diastolicBP }}</span>
-          <span class="vital-unit">mmHg</span>
-        </div>
-        <div class="vital-tile" [class.alert-border]="triageVitals()!.heartRateBpm > 100 || triageVitals()!.heartRateBpm < 55">
-          <span class="vital-label">Pulse / HR</span>
-          <span class="vital-value">{{ triageVitals()!.heartRateBpm }}</span>
-          <span class="vital-unit">bpm</span>
-        </div>
-        <div class="vital-tile" [class.alert-border]="triageVitals()!.temperatureC >= 38.0">
-          <span class="vital-label">Body Temp</span>
-          <span class="vital-value">{{ triageVitals()!.temperatureC }}</span>
-          <span class="vital-unit">°C</span>
-        </div>
-        <div class="vital-tile">
-          <span class="vital-label">Resp Rate</span>
-          <span class="vital-value">{{ triageVitals()!.respiratoryRate }}</span>
-          <span class="vital-unit">/min</span>
-        </div>
-        <div class="vital-tile" *ngIf="triageVitals()!.oxygenSaturation">
-          <span class="vital-label">Oxygen SpO2</span>
-          <span class="vital-value">{{ triageVitals()!.oxygenSaturation }}</span>
-          <span class="vital-unit">%</span>
-        </div>
-        <div class="vital-tile">
-          <span class="vital-label">BMI</span>
-          <span class="vital-value">{{ triageVitals()!.bmi | number:'1.1-1' }}</span>
-          <span class="vital-unit">kg/m²</span>
+      <!-- ALLERGY SAFETY BANNER -->
+      <div
+        class="modal-allergy-banner"
+        role="status"
+        [class.alert-danger]="hasKnownAllergy(activePatient())"
+        [class.alert-safe]="!hasKnownAllergy(activePatient())"
+      >
+        <mat-icon aria-hidden="true">{{ hasKnownAllergy(activePatient()) ? 'warning' : 'check_circle' }}</mat-icon>
+        <div class="allergy-banner-text">
+          @if (hasKnownAllergy(activePatient())) {
+            <strong>Clinical Safety Alert: Documented allergies — {{ activePatient()?.allergies }}.</strong>
+          } @else {
+            <strong>No Known Drug Allergies (NKDA) documented.</strong>
+          }
+          <span>Verify pharmacotherapy contraindications before signing prescriptions.</span>
         </div>
       </div>
 
-      <!-- Clinical Vitals Alerts -->
-      <div class="vitals-alerts-row" *ngIf="vitalsAlerts().length > 0">
-        <span class="alert-pill" *ngFor="let alert of vitalsAlerts()" [attr.data-level]="alert.level">
-          <mat-icon>warning</mat-icon> {{ alert.text }}
-        </span>
-      </div>
-
-      <ng-template #noTriageVitals>
-        <div class="no-vitals-notice">
-          <mat-icon>info</mat-icon>
-          <span>No intake vitals logged yet by Nurse station for this visit. Click "Update Vitals" to record intra-consultation measurements.</span>
-        </div>
-      </ng-template>
-
-      <!-- Intra-consultation vitals entry form -->
-      <div class="vitals-entry-form" *ngIf="isRecordingVitals()">
-        <div class="entry-grid">
-          <div class="input-col">
-            <label>Systolic (mmHg)</label>
-            <input type="number" placeholder="120" [ngModel]="bpSystolic()" (ngModelChange)="bpSystolic.set($event)" />
-          </div>
-          <div class="input-col">
-            <label>Diastolic (mmHg)</label>
-            <input type="number" placeholder="80" [ngModel]="bpDiastolic()" (ngModelChange)="bpDiastolic.set($event)" />
-          </div>
-          <div class="input-col">
-            <label>Pulse (BPM)</label>
-            <input type="number" placeholder="72" [ngModel]="pulse()" (ngModelChange)="pulse.set($event)" />
-          </div>
-          <div class="input-col">
-            <label>Temp (°C)</label>
-            <input type="number" step="0.1" placeholder="37.0" [ngModel]="temperature()" (ngModelChange)="temperature.set($event)" />
-          </div>
-          <div class="input-col">
-            <label>Resp (/min)</label>
-            <input type="number" placeholder="16" [ngModel]="respiratoryRate()" (ngModelChange)="respiratoryRate.set($event)" />
-          </div>
-          <div class="input-col">
-            <label>Weight (kg)</label>
-            <input type="number" step="0.1" placeholder="70" [ngModel]="weight()" (ngModelChange)="weight.set($event)" />
-          </div>
-          <div class="input-col action-col">
-            <button mat-flat-button color="accent" (click)="recordVitalsProgression()">
-              <mat-icon>save</mat-icon> Save Vitals
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ENCOUNTER BODY: SOAP CLINICAL SECTIONS -->
-    <div class="encounter-body">
-      <!-- S: SUBJECTIVE -->
-      <div class="soap-card">
-        <div class="soap-header">
-          <span class="soap-badge s">S</span>
-          <div>
-            <h3>Subjective (Chief Complaint & History of Present Illness)</h3>
-            <p>Patient-reported symptoms, onset, severity, and aggravating factors</p>
-          </div>
-        </div>
-
-        <div class="macro-chips">
-          <span class="macro-label">Quick Macros:</span>
-          <button type="button" class="macro-btn" *ngFor="let s of commonSymptoms" (click)="addSymptomChip(s)">
-            + {{ s }}
-          </button>
-        </div>
-
-        <textarea
-          class="soap-textarea"
-          rows="3"
-          placeholder="Document patient chief complaints, history, and duration..."
-          [ngModel]="symptoms()"
-          (ngModelChange)="symptoms.set($event)"
-        ></textarea>
-      </div>
-
-      <!-- O: OBJECTIVE -->
-      <div class="soap-card">
-        <div class="soap-header">
-          <span class="soap-badge o">O</span>
-          <div>
-            <h3>Objective (Physical Examination & Clinical Observations)</h3>
-            <p>Systemic organ examination (HEENT, Lungs, CVS, Abdomen, Neuro)</p>
-          </div>
-        </div>
-
-        <div class="macro-chips">
-          <span class="macro-label">Exam Presets:</span>
-          <button type="button" class="macro-btn" *ngFor="let f of commonFindings" (click)="addFindingChip(f)">
-            + {{ f.split(':')[0] }}
-          </button>
-        </div>
-
-        <textarea
-          class="soap-textarea"
-          rows="4"
-          placeholder="Document systemic physical examination findings..."
-          [ngModel]="findings()"
-          (ngModelChange)="findings.set($event)"
-        ></textarea>
-      </div>
-
-      <!-- A: ASSESSMENT -->
-      <div class="soap-card">
-        <div class="soap-header">
-          <span class="soap-badge a">A</span>
-          <div>
-            <h3>Assessment (Primary Clinical Diagnosis & ICD-10 Coding)</h3>
-            <p>Clinical impression, differential diagnoses, and etiology</p>
-          </div>
-        </div>
-
-        <div class="macro-chips">
-          <span class="macro-label">ICD-10 Presets:</span>
-          <button type="button" class="macro-btn" *ngFor="let d of diagnosisPresets" (click)="setDiagnosisPreset(d.code, d.name)">
-            + [{{ d.code }}] {{ d.name }}
-          </button>
-        </div>
-
-        <div class="form-row">
-          <input
-            type="text"
-            class="soap-input"
-            placeholder="Primary Diagnosis (e.g. [I10] Essential Hypertension)..."
-            [ngModel]="diagnosis()"
-            (ngModelChange)="diagnosis.set($event)"
-          />
-        </div>
-
-        <textarea
-          class="soap-textarea mt-2"
-          rows="2"
-          placeholder="Differential diagnoses, rationale, and clinical commentary..."
-          [ngModel]="clinicalNotes()"
-          (ngModelChange)="clinicalNotes.set($event)"
-        ></textarea>
-      </div>
-
-      <!-- P: PLAN & MULTI-ROLE ORDER DISPATCH -->
-      <div class="soap-card plan-card">
-        <div class="soap-header">
-          <span class="soap-badge p">P</span>
-          <div>
-            <h3>Plan (Therapeutics, Diagnostics & In-Clinic Orders)</h3>
-            <p>Multi-disciplinary orders dispatched atomically across Hospital subsystems</p>
-          </div>
-        </div>
-
-        <!-- SUBSECTION 1: E-PRESCRIPTIONS WITH LIVE FORMULARY STOCK -->
-        <div class="order-submodule rx-module">
-          <div class="submodule-header">
-            <div class="submodule-title">
-              <mat-icon>medication</mat-icon>
-              <h4>1. Electronic Prescriptions (E-Rx Formulary)</h4>
-            </div>
-            <button type="button" mat-stroked-button class="add-btn" (click)="addPrescriptionRow()">
-              <mat-icon>add</mat-icon> Add Medication
+      <div class="encounter-body">
+        <!-- TRIAGE VITALS COCKPIT -->
+        <section class="triage-vitals-cockpit" aria-label="Triage Vital Signs">
+          <div class="cockpit-header">
+            <h3>Intake Triage Vitals</h3>
+            <button
+              mat-stroked-button
+              type="button"
+              [attr.aria-expanded]="isRecordingVitals()"
+              (click)="isRecordingVitals.set(!isRecordingVitals())"
+            >
+              {{ isRecordingVitals() ? 'Close Entry' : 'Update Vitals' }}
             </button>
           </div>
 
-          <div *ngIf="prescriptionItems().length === 0" class="empty-submodule">
-            <span>No medications added yet. Prescribe from the live pharmacy formulary.</span>
-          </div>
-
-          <div *ngIf="prescriptionItems().length > 0" class="rx-table">
-            <div class="rx-thead">
-              <span class="col-med">Medication & Formulary Stock</span>
-              <span class="col-qty">Quantity</span>
-              <span class="col-inst">Dosage, Route & Frequency Instructions</span>
-              <span class="col-act">Action</span>
+          @if (triageVitals(); as vitals) {
+            <div class="vitals-metric-strip">
+              <div class="vital-tile" [class.alert-border]="vitals.systolicBP >= 140 || vitals.diastolicBP >= 90">
+                <span class="vital-label">Blood Pressure</span>
+                <span class="vital-value">{{ vitals.systolicBP }} / {{ vitals.diastolicBP }}</span>
+                <span class="vital-unit">mmHg</span>
+              </div>
+              <div class="vital-tile" [class.alert-border]="vitals.heartRateBpm > 100 || vitals.heartRateBpm < 55">
+                <span class="vital-label">Pulse</span>
+                <span class="vital-value">{{ vitals.heartRateBpm }}</span>
+                <span class="vital-unit">bpm</span>
+              </div>
+              <div class="vital-tile" [class.alert-border]="vitals.temperatureC >= 38.0">
+                <span class="vital-label">Temperature</span>
+                <span class="vital-value">{{ vitals.temperatureC }}</span>
+                <span class="vital-unit">&deg;C</span>
+              </div>
+              <div class="vital-tile">
+                <span class="vital-label">Resp Rate</span>
+                <span class="vital-value">{{ vitals.respiratoryRate }}</span>
+                <span class="vital-unit">/min</span>
+              </div>
+              @if (vitals.oxygenSaturation) {
+                <div class="vital-tile">
+                  <span class="vital-label">SpO2</span>
+                  <span class="vital-value">{{ vitals.oxygenSaturation }}</span>
+                  <span class="vital-unit">%</span>
+                </div>
+              }
+              <div class="vital-tile">
+                <span class="vital-label">BMI</span>
+                <span class="vital-value">{{ vitals.bmi | number:'1.1-1' }}</span>
+                <span class="vital-unit">kg/m&sup2;</span>
+              </div>
             </div>
 
-            <div class="rx-row" *ngFor="let item of prescriptionItems(); let i = index">
-              <div class="col-med">
-                <select [(ngModel)]="item.medicineId" class="form-select">
-                  <option *ngFor="let m of medicines()" [value]="m.id">
-                    {{ m.name }} • Stock: {{ m.stockQuantity }} • ${{ m.unitPrice | number:'1.2-2' }}
-                  </option>
-                </select>
+            @if (vitalsAlerts().length > 0) {
+              <div class="vitals-alerts-row" role="alert">
+                @for (alert of vitalsAlerts(); track alert.text) {
+                  <app-status-chip
+                    [tone]="alert.level === 'critical' ? 'danger' : 'warning'"
+                    [label]="alert.text"
+                  />
+                }
               </div>
-              <div class="col-qty">
-                <input type="number" min="1" [(ngModel)]="item.quantity" class="form-input qty" />
+            }
+          } @else {
+            <p class="no-vitals-notice">
+              No intake vitals logged yet for this visit. Use "Update Vitals" to record intra-consultation measurements.
+            </p>
+          }
+
+          @if (isRecordingVitals()) {
+            <div class="vitals-entry-form">
+              <div class="entry-grid">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Systolic (mmHg)</mat-label>
+                  <input matInput type="number" placeholder="120" [ngModel]="bpSystolic()" (ngModelChange)="bpSystolic.set($event)" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Diastolic (mmHg)</mat-label>
+                  <input matInput type="number" placeholder="80" [ngModel]="bpDiastolic()" (ngModelChange)="bpDiastolic.set($event)" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Pulse (bpm)</mat-label>
+                  <input matInput type="number" placeholder="72" [ngModel]="pulse()" (ngModelChange)="pulse.set($event)" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Temp (&deg;C)</mat-label>
+                  <input matInput type="number" step="0.1" placeholder="37.0" [ngModel]="temperature()" (ngModelChange)="temperature.set($event)" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Resp (/min)</mat-label>
+                  <input matInput type="number" placeholder="16" [ngModel]="respiratoryRate()" (ngModelChange)="respiratoryRate.set($event)" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Weight (kg)</mat-label>
+                  <input matInput type="number" step="0.1" placeholder="70" [ngModel]="weight()" (ngModelChange)="weight.set($event)" />
+                </mat-form-field>
               </div>
-              <div class="col-inst">
-                <input type="text" [(ngModel)]="item.dosageInstructions" class="form-input inst" placeholder="E.g., 1 tablet orally twice daily after meals for 7 days" />
-              </div>
-              <div class="col-act">
-                <button type="button" mat-icon-button color="warn" (click)="removePrescriptionRow(i)">
-                  <mat-icon>delete</mat-icon>
+              <div class="vitals-entry-actions">
+                <button mat-flat-button color="primary" type="button" (click)="recordVitalsProgression()">
+                  Save Vitals
                 </button>
               </div>
             </div>
-          </div>
+          }
+        </section>
 
-          <textarea
-            class="soap-textarea mt-2"
-            rows="2"
-            placeholder="Pharmacist instructions, patient counselling, dietary precautions..."
-            [ngModel]="prescriptionNotes()"
-            (ngModelChange)="prescriptionNotes.set($event)"
-          ></textarea>
-        </div>
-
-        <!-- SUBSECTION 2: REAL LABORATORY DIAGNOSTIC CATALOG -->
-        <div class="order-submodule lab-module">
-          <div class="submodule-header">
-            <div class="submodule-title">
-              <mat-icon>biotech</mat-icon>
-              <h4>2. Laboratory Diagnostic Workup (Diagnostic Catalog)</h4>
+        <!-- S: SUBJECTIVE -->
+        <section class="soap-card">
+          <div class="soap-header">
+            <span class="soap-badge" aria-hidden="true">S</span>
+            <div>
+              <h3>Subjective (Chief Complaint &amp; History)</h3>
+              <p>Patient-reported symptoms, onset, severity, and aggravating factors</p>
             </div>
-            <span class="count-badge" *ngIf="selectedLabTemplateIds().length > 0">
-              {{ selectedLabTemplateIds().length }} Tests Selected
-            </span>
           </div>
 
-          <p class="submodule-desc">Select standardized laboratory test templates from the diagnostic catalog for immediate technician intake:</p>
+          <div class="macro-chips">
+            <span class="macro-label">Quick Macros:</span>
+            @for (s of commonSymptoms; track s) {
+              <button type="button" class="macro-btn" (click)="addSymptomChip(s)">
+                + {{ s }}
+              </button>
+            }
+          </div>
 
-          <div class="catalog-selection-grid">
-            <label
-              class="catalog-card"
-              *ngFor="let tmpl of labTemplates()"
-              [class.selected]="isLabTemplateSelected(tmpl.id)"
-            >
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+            <mat-label>Chief Complaints &amp; History</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              placeholder="Document patient chief complaints, history, and duration..."
+              [ngModel]="symptoms()"
+              (ngModelChange)="symptoms.set($event)"
+            ></textarea>
+          </mat-form-field>
+        </section>
+
+        <!-- O: OBJECTIVE -->
+        <section class="soap-card">
+          <div class="soap-header">
+            <span class="soap-badge" aria-hidden="true">O</span>
+            <div>
+              <h3>Objective (Physical Examination)</h3>
+              <p>Systemic organ examination (HEENT, Lungs, CVS, Abdomen, Neuro)</p>
+            </div>
+          </div>
+
+          <div class="macro-chips">
+            <span class="macro-label">Exam Presets:</span>
+            @for (f of commonFindings; track f) {
+              <button type="button" class="macro-btn" (click)="addFindingChip(f)">
+                + {{ f.split(':')[0] }}
+              </button>
+            }
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+            <mat-label>Physical Examination Findings</mat-label>
+            <textarea
+              matInput
+              rows="4"
+              placeholder="Document systemic physical examination findings..."
+              [ngModel]="findings()"
+              (ngModelChange)="findings.set($event)"
+            ></textarea>
+          </mat-form-field>
+        </section>
+
+        <!-- A: ASSESSMENT -->
+        <section class="soap-card">
+          <div class="soap-header">
+            <span class="soap-badge" aria-hidden="true">A</span>
+            <div>
+              <h3>Assessment (Primary Diagnosis &amp; ICD-10)</h3>
+              <p>Clinical impression, differential diagnoses, and etiology</p>
+            </div>
+          </div>
+
+          <div class="macro-chips">
+            <span class="macro-label">ICD-10 Presets:</span>
+            @for (d of diagnosisPresets; track d.code) {
+              <button type="button" class="macro-btn" (click)="setDiagnosisPreset(d.code, d.name)">
+                + [{{ d.code }}] {{ d.name }}
+              </button>
+            }
+          </div>
+
+          <div class="assessment-fields">
+            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+              <mat-label>Primary Diagnosis</mat-label>
               <input
-                type="checkbox"
-                [checked]="isLabTemplateSelected(tmpl.id)"
-                (change)="toggleLabTemplate(tmpl.id)"
+                matInput
+                type="text"
+                required
+                placeholder="Primary Diagnosis (e.g. [I10] Essential Hypertension)"
+                [ngModel]="diagnosis()"
+                (ngModelChange)="diagnosis.set($event)"
               />
-              <div class="catalog-details">
-                <span class="tmpl-name">{{ tmpl.testName }}</span>
-                <span class="tmpl-sub">{{ tmpl.category }} • {{ tmpl.sampleType }} • ${{ tmpl.price }}</span>
-              </div>
-            </label>
-          </div>
-        </div>
+            </mat-form-field>
 
-        <!-- SUBSECTION 3: RADIOLOGY & DIAGNOSTIC IMAGING ORDERS -->
-        <div class="order-submodule radiology-module">
-          <div class="submodule-header">
-            <div class="submodule-title">
-              <mat-icon>camera</mat-icon>
-              <h4>3. Diagnostic Imaging & Radiology Orders</h4>
+            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+              <mat-label>Differential Diagnoses &amp; Clinical Notes</mat-label>
+              <textarea
+                matInput
+                rows="2"
+                placeholder="Differential diagnoses, rationale, and clinical commentary..."
+                [ngModel]="clinicalNotes()"
+                (ngModelChange)="clinicalNotes.set($event)"
+              ></textarea>
+            </mat-form-field>
+          </div>
+        </section>
+
+        <!-- P: PLAN & ORDERS -->
+        <section class="soap-card">
+          <div class="soap-header">
+            <span class="soap-badge" aria-hidden="true">P</span>
+            <div>
+              <h3>Plan (Therapeutics, Diagnostics &amp; In-Clinic Orders)</h3>
+              <p>Orders dispatched atomically across pharmacy, laboratory, imaging, and nursing</p>
             </div>
-            <span class="count-badge" *ngIf="radiologyOrders().length > 0">
-              {{ radiologyOrders().length }} Studies Ordered
-            </span>
           </div>
 
-          <!-- Quick presets buttons -->
-          <div class="quick-order-presets">
-            <span class="presets-label">Quick Order:</span>
-            <button type="button" class="preset-pill" (click)="addRadiologyOrder('X-Ray', 'Chest PA & Lateral (2 Views)', 'Thorax', 65.00)">
-              <mat-icon>radiology</mat-icon> + Chest X-Ray ($65)
-            </button>
-            <button type="button" class="preset-pill" (click)="addRadiologyOrder('Ultrasound', 'Abdominal Complete US', 'Abdomen', 120.00)">
-              <mat-icon>waves</mat-icon> + Abdominal US ($120)
-            </button>
-            <button type="button" class="preset-pill" (click)="addRadiologyOrder('CT Scan', 'CT Brain Non-Contrast', 'Brain / Head', 250.00)">
-              <mat-icon>blur_circular</mat-icon> + Head CT ($250)
-            </button>
-            <button type="button" class="preset-pill" (click)="addRadiologyOrder('ECG / Echo', '12-Lead Diagnostic ECG', 'Cardiovascular', 45.00)">
-              <mat-icon>monitor_heart</mat-icon> + 12-Lead ECG ($45)
-            </button>
-          </div>
-
-          <!-- Queued radiology orders list -->
-          <div *ngIf="radiologyOrders().length > 0" class="queued-orders-list">
-            <div class="queued-order-item" *ngFor="let order of radiologyOrders(); let i = index">
-              <div class="order-modality-badge">{{ order.modality }}</div>
-              <div class="order-info-block">
-                <strong>{{ order.procedureName }}</strong>
-                <span>Target: {{ order.bodyPart }} • Indication: {{ order.clinicalIndication }}</span>
-              </div>
-              <div class="order-pricing">${{ order.price | number:'1.2-2' }}</div>
-              <button type="button" mat-icon-button color="warn" (click)="removeRadiologyOrder(i)">
-                <mat-icon>close</mat-icon>
+          <!-- 1. E-PRESCRIPTIONS -->
+          <div class="order-submodule">
+            <div class="submodule-header">
+              <h4>1. Electronic Prescriptions</h4>
+              <button type="button" mat-stroked-button (click)="addPrescriptionRow()">
+                Add Medication
               </button>
             </div>
-          </div>
-        </div>
 
-        <!-- SUBSECTION 4: IN-CLINIC NURSING PROCEDURES -->
-        <div class="order-submodule nursing-module">
-          <div class="submodule-header">
-            <div class="submodule-title">
-              <mat-icon>vaccines</mat-icon>
-              <h4>4. In-Clinic Nursing Procedures (Floor Delegation)</h4>
-            </div>
-            <span class="count-badge" *ngIf="nursingProcedureOrders().length > 0">
-              {{ nursingProcedureOrders().length }} Procedures Ordered
-            </span>
-          </div>
-
-          <!-- Quick nursing procedure presets -->
-          <div class="quick-order-presets">
-            <span class="presets-label">Quick Order:</span>
-            <button type="button" class="preset-pill" (click)="addNursingProcedure('IV Normal Saline 500ml Infusion', 'Left Antecubital Fossa', 35.00)">
-              <mat-icon>water_drop</mat-icon> + IV Fluid Infusion ($35)
-            </button>
-            <button type="button" class="preset-pill" (click)="addNursingProcedure('Intramuscular Injection (Analgesic / Anti-inflammatory)', 'Gluteus Medius', 25.00)">
-              <mat-icon>vaccines</mat-icon> + IM Injection ($25)
-            </button>
-            <button type="button" class="preset-pill" (click)="addNursingProcedure('Nebulization Therapy (Salbutamol 2.5mg)', 'Respiratory Tract', 25.00)">
-              <mat-icon>air</mat-icon> + Nebulization ($25)
-            </button>
-            <button type="button" class="preset-pill" (click)="addNursingProcedure('Sterile Wound Dressing & Antiseptic Care', 'Target Wound Site', 30.00)">
-              <mat-icon>healing</mat-icon> + Wound Dressing ($30)
-            </button>
-          </div>
-
-          <!-- Queued nursing orders list -->
-          <div *ngIf="nursingProcedureOrders().length > 0" class="queued-orders-list">
-            <div class="queued-order-item" *ngFor="let proc of nursingProcedureOrders(); let i = index">
-              <div class="order-nursing-badge">Nursing</div>
-              <div class="order-info-block">
-                <strong>{{ proc.procedureType }}</strong>
-                <span>Site: {{ proc.bodySite }} • Instructions: {{ proc.notes }}</span>
+            @if (prescriptionItems().length === 0) {
+              <p class="empty-submodule">No medications added yet.</p>
+            } @else {
+              <div class="rx-table-wrap">
+                <table class="rx-table" aria-label="Prescription medications">
+                  <thead>
+                    <tr>
+                      <th scope="col">Medication &amp; Stock</th>
+                      <th scope="col">Quantity</th>
+                      <th scope="col">Dosage Instructions</th>
+                      <th scope="col">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of prescriptionItems(); track $index) {
+                      <tr>
+                        <td>
+                          <select
+                            [(ngModel)]="item.medicineId"
+                            class="native-control"
+                            [attr.aria-label]="'Medication for row ' + ($index + 1)"
+                          >
+                            @for (m of medicines(); track m.id) {
+                              <option [value]="m.id">
+                                {{ m.name }} (Stock: {{ m.stockQuantity }}, ${{ m.unitPrice | number:'1.2-2' }})
+                              </option>
+                            }
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            [(ngModel)]="item.quantity"
+                            class="native-control qty-input"
+                            [attr.aria-label]="'Quantity for row ' + ($index + 1)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            [(ngModel)]="item.dosageInstructions"
+                            class="native-control"
+                            placeholder="1 tablet orally twice daily"
+                            [attr.aria-label]="'Dosage instructions for row ' + ($index + 1)"
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            mat-icon-button
+                            aria-label="Remove medication row"
+                            (click)="removePrescriptionRow($index)"
+                          >
+                            <mat-icon aria-hidden="true">delete</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
-              <div class="order-pricing">${{ proc.price | number:'1.2-2' }}</div>
-              <button type="button" mat-icon-button color="warn" (click)="removeNursingProcedure(i)">
-                <mat-icon>close</mat-icon>
+            }
+
+            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+              <mat-label>Pharmacist Counselling &amp; Precautions</mat-label>
+              <textarea
+                matInput
+                rows="2"
+                placeholder="Pharmacist instructions, patient counselling, dietary precautions..."
+                [ngModel]="prescriptionNotes()"
+                (ngModelChange)="prescriptionNotes.set($event)"
+              ></textarea>
+            </mat-form-field>
+          </div>
+
+          <!-- 2. LABORATORY DIAGNOSTIC CATALOG -->
+          <div class="order-submodule">
+            <div class="submodule-header">
+              <h4>2. Laboratory Diagnostic Catalog</h4>
+              @if (selectedLabTemplateIds().length > 0) {
+                <app-status-chip tone="info" [label]="selectedLabTemplateIds().length + ' Selected'" />
+              }
+            </div>
+
+            <div class="catalog-selection-grid">
+              @for (tmpl of labTemplates(); track tmpl.id) {
+                <label class="catalog-card" [class.selected]="isLabTemplateSelected(tmpl.id)">
+                  <input
+                    type="checkbox"
+                    [checked]="isLabTemplateSelected(tmpl.id)"
+                    (change)="toggleLabTemplate(tmpl.id)"
+                  />
+                  <span class="catalog-details">
+                    <span class="tmpl-name">{{ tmpl.testName }}</span>
+                    <span class="tmpl-sub">{{ tmpl.category }} &middot; {{ tmpl.sampleType }} &middot; ${{ tmpl.price }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- 3. RADIOLOGY ORDERS -->
+          <div class="order-submodule">
+            <div class="submodule-header">
+              <h4>3. Diagnostic Imaging &amp; Radiology</h4>
+              @if (radiologyOrders().length > 0) {
+                <app-status-chip tone="info" [label]="radiologyOrders().length + ' Ordered'" />
+              }
+            </div>
+
+            <div class="quick-order-presets">
+              <span class="presets-label">Quick Order:</span>
+              <button type="button" class="preset-pill" (click)="addRadiologyOrder('X-Ray', 'Chest PA & Lateral (2 Views)', 'Thorax', 65.00)">
+                + Chest X-Ray ($65)
+              </button>
+              <button type="button" class="preset-pill" (click)="addRadiologyOrder('Ultrasound', 'Abdominal Complete US', 'Abdomen', 120.00)">
+                + Abdominal US ($120)
+              </button>
+              <button type="button" class="preset-pill" (click)="addRadiologyOrder('CT Scan', 'CT Brain Non-Contrast', 'Brain / Head', 250.00)">
+                + Head CT ($250)
+              </button>
+              <button type="button" class="preset-pill" (click)="addRadiologyOrder('ECG / Echo', '12-Lead Diagnostic ECG', 'Cardiovascular', 45.00)">
+                + 12-Lead ECG ($45)
               </button>
             </div>
-          </div>
-        </div>
 
-        <!-- Automatic Billing Sync Note -->
-        <div class="billing-sync-notice">
-          <mat-icon>receipt_long</mat-icon>
-          <div>
-            <strong>Automated Billing & Revenue Synchronization</strong>
-            <p>Upon physician sign-off, all consultation fees ($50.00), laboratory diagnostic requisitions, radiological studies, and nursing floor procedures will automatically generate structured line items on the patient's billing invoice.</p>
+            @if (radiologyOrders().length > 0) {
+              <div class="queued-orders-list">
+                @for (order of radiologyOrders(); track $index) {
+                  <div class="queued-order-item">
+                    <app-status-chip tone="neutral" [label]="order.modality" [showIcon]="false" />
+                    <div class="order-info-block">
+                      <strong>{{ order.procedureName }}</strong>
+                      <span>Target: {{ order.bodyPart }} &middot; Indication: {{ order.clinicalIndication }}</span>
+                    </div>
+                    <span class="order-pricing">${{ order.price | number:'1.2-2' }}</span>
+                    <button
+                      type="button"
+                      mat-icon-button
+                      aria-label="Remove radiology order"
+                      (click)="removeRadiologyOrder($index)"
+                    >
+                      <mat-icon aria-hidden="true">delete</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </div>
+
+          <!-- 4. NURSING FLOOR PROCEDURES -->
+          <div class="order-submodule">
+            <div class="submodule-header">
+              <h4>4. In-Clinic Nursing Procedures</h4>
+              @if (nursingProcedureOrders().length > 0) {
+                <app-status-chip tone="info" [label]="nursingProcedureOrders().length + ' Ordered'" />
+              }
+            </div>
+
+            <div class="quick-order-presets">
+              <span class="presets-label">Quick Order:</span>
+              <button type="button" class="preset-pill" (click)="addNursingProcedure('IV Normal Saline 500ml Infusion', 'Left Antecubital Fossa', 35.00)">
+                + IV Fluid Infusion ($35)
+              </button>
+              <button type="button" class="preset-pill" (click)="addNursingProcedure('Intramuscular Injection (Analgesic / Anti-inflammatory)', 'Gluteus Medius', 25.00)">
+                + IM Injection ($25)
+              </button>
+              <button type="button" class="preset-pill" (click)="addNursingProcedure('Nebulization Therapy (Salbutamol 2.5mg)', 'Respiratory Tract', 25.00)">
+                + Nebulization ($25)
+              </button>
+              <button type="button" class="preset-pill" (click)="addNursingProcedure('Sterile Wound Dressing & Antiseptic Care', 'Target Wound Site', 30.00)">
+                + Wound Dressing ($30)
+              </button>
+            </div>
+
+            @if (nursingProcedureOrders().length > 0) {
+              <div class="queued-orders-list">
+                @for (proc of nursingProcedureOrders(); track $index) {
+                  <div class="queued-order-item">
+                    <app-status-chip tone="neutral" label="Nursing" [showIcon]="false" />
+                    <div class="order-info-block">
+                      <strong>{{ proc.procedureType }}</strong>
+                      <span>Site: {{ proc.bodySite }} &middot; {{ proc.notes }}</span>
+                    </div>
+                    <span class="order-pricing">${{ proc.price | number:'1.2-2' }}</span>
+                    <button
+                      type="button"
+                      mat-icon-button
+                      aria-label="Remove nursing procedure"
+                      (click)="removeNursingProcedure($index)"
+                    >
+                      <mat-icon aria-hidden="true">delete</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="billing-sync-notice" role="note">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <p>
+              <strong>Automated Billing Synchronization:</strong> Signing this encounter posts the consultation fee and all ordered diagnostics and procedures directly to the patient invoice.
+            </p>
+          </div>
+        </section>
       </div>
-    </div>
 
-    <!-- MODAL FOOTER -->
-    <div class="encounter-footer">
-      <button mat-button class="cancel-btn" (click)="closeEncounter()" [disabled]="isSubmittingEncounter()">
-        Cancel
-      </button>
+      <!-- MODAL FOOTER: PRIMARY LEFT, CANCEL RIGHT -->
+      <footer class="encounter-footer">
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="isSubmittingEncounter()"
+          [attr.aria-busy]="isSubmittingEncounter()"
+          (click)="submitEncounter()"
+        >
+          {{ isSubmittingEncounter() ? 'Transmitting Orders & Finalizing...' : 'Sign & Finalize Clinical Encounter' }}
+        </button>
 
-      <button
-        mat-flat-button
-        color="primary"
-        class="sign-encounter-btn"
-        (click)="submitEncounter()"
-        [disabled]="isSubmittingEncounter()"
-      >
-        <mat-icon>{{ isSubmittingEncounter() ? 'hourglass_bottom' : 'verified' }}</mat-icon>
-        {{ isSubmittingEncounter() ? 'Transmitting Orders & Finalizing...' : 'Sign & Finalize Clinical Encounter' }}
-      </button>
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="isSubmittingEncounter()"
+          (click)="closeEncounter()"
+        >
+          Cancel
+        </button>
+      </footer>
     </div>
   </div>
-</div>
+}

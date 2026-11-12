@@ -1,106 +1,105 @@
 <div class="patients-panel-container">
-  <div class="panel-header">
-    <div class="title-left">
-      <div class="icon-box">
-        <mat-icon>groups</mat-icon>
-      </div>
-      <div>
-        <h1>My Clinical Patient Panel</h1>
-        <p class="subtitle">Active roster of patients under physician care with allergy alerts and EMR links</p>
-      </div>
-    </div>
-
-    <div class="search-bar">
-      <mat-icon>search</mat-icon>
-      <input type="text" placeholder="Search by name, allergy, MRN..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
-    </div>
-  </div>
-
-  <!-- Account Isolation Banner -->
-  <div class="isolation-notice-banner" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 0.9rem 1.25rem; margin: 1rem 0 1.5rem;">
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <mat-icon style="color: #0284c7;">shield</mat-icon>
-      <div>
-        <strong style="color: #0369a1; font-size: 0.92rem;">Physician Account Isolation Active</strong>
-        <p style="margin: 2px 0 0; color: #475569; font-size: 0.8rem;">
-          Displaying only patients assigned to your care. Use Patient EMR Records to search the hospital-wide directory.
-        </p>
-      </div>
-    </div>
-    <a mat-stroked-button routerLink="/patients" style="border-color: #0284c7; color: #0284c7; font-size: 0.8rem; font-weight: 600; white-space: nowrap;">
-      <mat-icon>folder_shared</mat-icon> All Hospital Patients
-    </a>
-  </div>
-
-  @if (isLoading()) {
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-  } @else if (filteredPatients().length === 0) {
-    <div class="empty-panel-state" style="text-align: center; padding: 3.5rem 1.5rem; background: white; border-radius: 16px; border: 1.5px dashed #cbd5e1; margin-top: 1rem;">
-      <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: #94a3b8; margin-bottom: 0.75rem;">person_search</mat-icon>
-      <h3 style="color: #1e293b; font-weight: 700; margin-bottom: 0.5rem;">No Patients Assigned To Your Active Panel</h3>
-      <p style="color: #64748b; font-size: 0.9rem; max-width: 460px; margin: 0 auto 1.25rem;">
-        You currently have no patient appointments or consultations scheduled under your physician ID. You can still look up any patient file across the hospital for consultation review.
-      </p>
-      <a mat-flat-button color="primary" routerLink="/patients">
-        <mat-icon>folder_shared</mat-icon> Search Hospital Patient Directory
+  <app-page-header
+    title="My Clinical Patient Panel"
+    subtitle="Patients assigned under your physician care with allergy alerts and EMR links"
+  >
+    <div actions>
+      <a mat-stroked-button routerLink="/patients">
+        All Hospital Patients
       </a>
     </div>
+  </app-page-header>
+
+  <section class="panel-toolbar" aria-label="Patient panel controls">
+    <div class="isolation-notice" role="note">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <div>
+        <strong>Physician Account Isolation Active:</strong> Displaying patients assigned to your care ({{ doctorName() }}).
+      </div>
+    </div>
+
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+      <mat-label>Search Patient Panel</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Name, allergy, MRN, or phone..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+      @if (searchQuery()) {
+        <button
+          matSuffix
+          mat-icon-button
+          type="button"
+          aria-label="Clear search query"
+          (click)="searchQuery.set('')"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </section>
+
+  @if (isLoading()) {
+    <div aria-busy="true" aria-label="Loading clinical patient panel">
+      <app-skeleton variant="card" [count]="6" />
+    </div>
+  } @else if (filteredPatients().length === 0) {
+    <app-empty-state
+      icon="person_search"
+      title="No Patients Assigned To Your Active Panel"
+      description="No patient appointments or consultations match your active panel or search filter."
+    >
+      <a mat-flat-button color="primary" routerLink="/patients">
+        Search Hospital Patient Directory
+      </a>
+    </app-empty-state>
   } @else {
     <div class="patient-grid">
       @for (p of filteredPatients(); track p.id) {
-        <div class="patient-card">
+        <article class="patient-card">
           <div class="card-top">
-            <div class="avatar-circle">
-              <mat-icon>{{ p.gender === 'Female' ? 'face_3' : 'face' }}</mat-icon>
-            </div>
-            <div class="basic-info">
-              <h3>{{ p.firstName }} {{ p.lastName }}</h3>
-              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <span class="mrn">MRN-{{ p.id.substring(0, 8).toUpperCase() }}</span>
-                <span style="font-size: 0.7rem; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;">
-                  <mat-icon style="font-size: 12px; width: 12px; height: 12px;">stethoscope</mat-icon> Attending: {{ doctorName() }}
-                </span>
-              </div>
+            <h2 class="patient-name">{{ p.firstName }} {{ p.lastName }}</h2>
+            <div class="patient-meta-row">
+              <span class="mrn-tag">MRN {{ p.id.substring(0, 8).toUpperCase() }}</span>
+              <span class="attending-note">Attending: {{ doctorName() }}</span>
             </div>
           </div>
 
-          <div class="safety-badge-container">
-            @if (p.allergies && p.allergies !== 'None') {
-              <div class="allergy-alert">
-                <mat-icon>warning</mat-icon> ALLERGIC: {{ p.allergies }}
-              </div>
+          <div class="safety-status">
+            @if (hasKnownAllergy(p)) {
+              <app-status-chip tone="danger" [label]="'Allergic: ' + p.allergies" />
             } @else {
-              <div class="allergy-clean">
-                <mat-icon>verified</mat-icon> NKDA (No Known Allergies)
-              </div>
+              <app-status-chip tone="success" label="NKDA (No Known Allergies)" />
             }
           </div>
 
-          <div class="vitals-row">
+          <dl class="vitals-row">
             <div class="vital-item">
-              <span class="v-label">Gender</span>
-              <span class="v-val">{{ p.gender || 'N/A' }}</span>
+              <dt>Gender</dt>
+              <dd>{{ p.gender || 'N/A' }}</dd>
             </div>
             <div class="vital-item">
-              <span class="v-label">Blood Group</span>
-              <span class="v-val">{{ p.bloodGroup || 'O+' }}</span>
+              <dt>Blood Group</dt>
+              <dd>{{ p.bloodGroup || 'O+' }}</dd>
             </div>
             <div class="vital-item">
-              <span class="v-label">DOB</span>
-              <span class="v-val">{{ (p.dateOfBirth || '') | date:'mediumDate' }}</span>
+              <dt>DOB</dt>
+              <dd>{{ (p.dateOfBirth || '') | date:'mediumDate' }}</dd>
             </div>
-          </div>
+          </dl>
 
-          <div class="contact-info">
-            <span class="phone"><mat-icon>call</mat-icon> {{ p.phone || 'No phone recorded' }}</span>
-          </div>
+          <p class="contact-info">
+            Phone: {{ p.phone || 'Not recorded' }}
+          </p>
 
           <div class="card-bottom">
-            <a mat-flat-button color="primary" class="emr-btn" [routerLink]="['/patients', p.id]">
-              <mat-icon>folder_shared</mat-icon> Open Patient EMR File
+            <a mat-flat-button color="primary" [routerLink]="['/patients', p.id]">
+              Open Patient EMR File
             </a>
           </div>
-        </div>
+        </article>
       }
     </div>
   }

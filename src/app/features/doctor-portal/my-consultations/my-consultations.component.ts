@@ -1,17 +1,11 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { RouterLink, ActivatedRoute } from '@angular/router';
 
 import { AppointmentService } from '../../../services/appointment.service';
 import { ConsultationService } from '../../../services/consultation.service';
@@ -21,6 +15,11 @@ import { MedicineService } from '../../../services/medicine.service';
 import { LabService } from '../../../services/lab.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../ui/toast/toast.service';
+
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
 import { Appointment } from '../../../models/appointment.model';
 import { Patient } from '../../../models/patient.model';
@@ -54,16 +53,14 @@ interface NursingProcedureDraft {
     CommonModule,
     FormsModule,
     RouterLink,
-    MatCardModule,
-    MatIconModule,
     MatButtonModule,
-    MatChipsModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
-    MatSelectModule,
-    MatTooltipModule,
-    MatTabsModule,
-    MatProgressBarModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './my-consultations.component.html',
   styleUrls: ['./my-consultations.component.scss']
@@ -155,6 +152,17 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
     { code: 'N39.0', name: 'Urinary Tract Infection (UTI), site not specified' }
   ];
 
+  todayQueueCount = computed(() => {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    return this.appointments().filter(
+      a => (a.scheduledDateTime || '').substring(0, 10) === todayStr || a.status === 'Scheduled'
+    ).length;
+  });
+
+  scheduledCount = computed(() => this.appointments().filter(a => a.status === 'Scheduled').length);
+  pendingCount = computed(() => this.appointments().filter(a => a.status === 'PendingApproval').length);
+  completedCount = computed(() => this.appointments().filter(a => a.status === 'Completed').length);
+
   filteredAppointments = computed(() => {
     let list = this.appointments();
     const tab = this.activeTab();
@@ -211,6 +219,13 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
     return alerts;
   });
 
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isEncounterModalOpen() && !this.isSubmittingEncounter()) {
+      this.closeEncounter();
+    }
+  }
+
   ngOnInit() {
     this.loadData();
   }
@@ -220,6 +235,10 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
     if (this.authService.isAdmin()) return true;
     if (!appt.doctorId || !currentId) return true;
     return appt.doctorId.toLowerCase() === currentId.toLowerCase();
+  }
+
+  hasKnownAllergy(patient: Patient | null | undefined): boolean {
+    return !!(patient?.allergies && patient.allergies !== 'None');
   }
 
   loadData() {
@@ -287,7 +306,7 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
   approveAppointment(appt: Appointment) {
     this.appointmentService.approveAppointment(appt.id).subscribe({
       next: () => {
-        this.toast.success(`Appointment for ${appt.patientName} approved and scheduled!`);
+        this.toast.success(`Appointment for ${appt.patientName} approved and scheduled.`);
         this.loadData();
       },
       error: (err: any) => this.toast.error('Failed to approve appointment: ' + (err.error?.detail || err.message))
@@ -339,7 +358,7 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
 
   addSymptomChip(chip: string) {
     const cur = this.symptoms();
-    this.symptoms.set(cur ? `${cur}\n• ${chip}` : `• ${chip}`);
+    this.symptoms.set(cur ? `${cur}\n- ${chip}` : `- ${chip}`);
   }
 
   addFindingChip(chip: string) {
@@ -439,7 +458,7 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
     this.vitalSignsService.record(payload, user?.id).subscribe({
       next: (v) => {
         this.triageVitals.set(v);
-        this.toast.success('Consultation vital signs recorded successfully!');
+        this.toast.success('Consultation vital signs recorded successfully.');
         this.isRecordingVitals.set(false);
       },
       error: (err) => this.toast.error('Failed to record vitals: ' + (err.error?.detail || err.message))
@@ -473,7 +492,7 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
 
     this.consultationService.create(consultationPayload).subscribe({
       next: () => {
-        this.toast.success(`Clinical encounter signed! Consultation, Diagnostics & In-Clinic Orders dispatched for ${appt.patientName}!`);
+        this.toast.success(`Clinical encounter signed. Orders dispatched for ${appt.patientName}.`);
         this.isSubmittingEncounter.set(false);
         this.closeEncounter();
         this.loadData();

@@ -1,729 +1,779 @@
 <div class="inbasket-container">
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- 1. INBASKET HEADER & CLINICAL TELEMETRY HUD     -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="inbasket-header">
-    <div class="header-left">
-      <div class="icon-badge">
-        <mat-icon>inbox</mat-icon>
-      </div>
-      <div>
-        <div class="title-row">
-          <h1>Physician InBasket & Clinical Sign-Off Suite</h1>
-          <span class="physician-hud-pill">
-            <span class="pulse-dot"></span>
-            Attending MD: <strong>Dr. {{ currentUserName() }}</strong>
-          </span>
-        </div>
-        <p class="subtitle">Multi-role clinical worklists with strict physician-account isolation and cross-specialty review transparency</p>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <!-- SCOPE TOGGLE: My Practice vs All Clinic -->
-      <div class="scope-toggle-group">
-        <button
-          type="button"
-          class="scope-btn"
-          [class.active]="scopeFilter() === 'my'"
-          (click)="scopeFilter.set('my')"
-          matTooltip="Display only patients & orders under your direct care"
-        >
-          <mat-icon>verified_user</mat-icon>
-          <span>My Practice</span>
-        </button>
-        <button
-          type="button"
-          class="scope-btn"
-          [class.active]="scopeFilter() === 'all'"
-          (click)="scopeFilter.set('all')"
-          matTooltip="Display all clinic records (cross-doctor read-only access)"
-        >
-          <mat-icon>public</mat-icon>
-          <span>All Clinic (Shared)</span>
-        </button>
-      </div>
-
-      <div class="search-box">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input
-          type="text"
-          class="inbasket-search-input"
-          [ngModel]="searchQuery()"
-          (ngModelChange)="searchQuery.set($event)"
-          placeholder="Filter by patient, MRN, test, drug, or doctor..."
-        />
-        <button *ngIf="searchQuery()" class="clear-search-btn" (click)="searchQuery.set('')" title="Clear">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <button mat-flat-button color="primary" class="refresh-btn" (click)="loadInbasket()">
-        <mat-icon>sync</mat-icon> Refresh InBasket
+  <app-page-header
+    title="Physician InBasket"
+    [subtitle]="headerSubtitle()"
+  >
+    <div actions>
+      <button mat-flat-button color="primary" type="button" (click)="loadInbasket()">
+        Refresh InBasket
       </button>
     </div>
-  </div>
+  </app-page-header>
 
-  <!-- CROSS-CLINIC AUDIT BANNER -->
-  <div class="cross-clinic-notice" *ngIf="scopeFilter() === 'all'">
-    <mat-icon>policy</mat-icon>
-    <div class="notice-text">
-      <strong>Cross-Specialty Collaboration Mode Active:</strong> You are viewing records across all clinical staff.
-      By clinical governance, you may review diagnostic findings across patients, but only the assigned attending physician (or Medical Director) has authority to sign off, approve, or alter clinical orders.
+  <!-- SCOPE & SEARCH TOOLBAR -->
+  <section class="inbasket-toolbar" aria-label="Worklist Scope and Search">
+    <div class="scope-toggle-group" role="group" aria-label="InBasket record scope">
+      <button
+        type="button"
+        class="scope-btn"
+        [class.active]="scopeFilter() === 'my'"
+        [attr.aria-pressed]="scopeFilter() === 'my'"
+        (click)="scopeFilter.set('my')"
+      >
+        My Practice
+      </button>
+      <button
+        type="button"
+        class="scope-btn"
+        [class.active]="scopeFilter() === 'all'"
+        [attr.aria-pressed]="scopeFilter() === 'all'"
+        (click)="scopeFilter.set('all')"
+      >
+        All Clinic (Read-Only Cross Review)
+      </button>
     </div>
-  </div>
 
-  <!-- EMERGENCY STAT CRITICAL RADIOLOGY FINDINGS ALERT BANNER -->
-  <div class="stat-critical-inbasket-banner" *ngIf="criticalRadiologyOrders().length > 0">
-    <div class="crit-badge-icon">
-      <mat-icon>warning</mat-icon>
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+      <mat-label>Search InBasket</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Patient, MRN, test, drug, or doctor..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+      @if (searchQuery()) {
+        <button
+          matSuffix
+          mat-icon-button
+          type="button"
+          aria-label="Clear search query"
+          (click)="searchQuery.set('')"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </section>
+
+  @if (scopeFilter() === 'all') {
+    <div class="cross-clinic-notice" role="note">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <p>
+        <strong>Cross-Specialty Review Mode:</strong> Diagnostic results across all clinic staff are visible for consultation review, while sign-off authority remains restricted to the attending physician.
+      </p>
     </div>
-    <div class="crit-content">
+  }
+
+  <!-- STAT CRITICAL RADIOLOGY ALERT BANNER -->
+  @if (criticalRadiologyOrders().length > 0) {
+    <section class="stat-critical-banner" role="alert" aria-label="Critical Radiology Findings">
       <div class="crit-head">
-        <h4>STAT CRITICAL RADIOLOGY FINDING REQUIRING ATTENDING PHYSICIAN ACKNOWLEDGMENT</h4>
-        <span class="crit-count-tag">{{ criticalRadiologyOrders().length }} Urgent Alert</span>
+        <h2>Critical Radiology Findings Requiring Physician Acknowledgment</h2>
+        <app-status-chip tone="danger" [label]="criticalRadiologyOrders().length + ' Urgent'" />
       </div>
-      <div class="crit-card-row" *ngFor="let alert of criticalRadiologyOrders()">
-        <div class="crit-info">
-          <span class="crit-acc">{{ alert.accessionNumber || alert.orderNumber }}</span>
-          <strong>{{ alert.patientName }} (MRN: {{ alert.patientMedicalRecordNumber }})</strong>
-          <span class="crit-mod">{{ alert.modality }}: {{ alert.procedureName }}</span>
-        </div>
-        <p class="crit-notes">
-          <mat-icon>phone_in_talk</mat-icon> {{ alert.criticalAlertNotes || 'Immediate attention required for acute diagnostic finding.' }}
-        </p>
-        <div class="crit-btns">
-          <a [routerLink]="['/radiology']" [queryParams]="{tab: 'viewer'}" class="pacs-link-btn">
-            <mat-icon>center_focus_strong</mat-icon> View in PACS
-          </a>
-          <button class="ack-btn" (click)="acknowledgeCriticalRadiology(alert)">
-            <mat-icon>task_alt</mat-icon> Acknowledge & Document Read-Back
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- 2. CATEGORY FOLDER TABS (5 PRIMARY SECTIONS)   -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="inbasket-tabs">
-    <button class="inbasket-tab-btn" [class.active]="activeTab() === 'labs'" (click)="activeTab.set('labs')">
-      <mat-icon>science</mat-icon>
+      @for (alert of criticalRadiologyOrders(); track alert.id) {
+        <div class="crit-card-row">
+          <div class="crit-info">
+            <span class="mrn-tag">{{ alert.accessionNumber || alert.orderNumber }}</span>
+            <strong>{{ alert.patientName }} (MRN: {{ alert.patientMedicalRecordNumber }})</strong>
+            <span>{{ alert.modality }}: {{ alert.procedureName }}</span>
+          </div>
+          <p class="crit-notes">
+            {{ alert.criticalAlertNotes || 'Immediate clinical attention required for acute diagnostic finding.' }}
+          </p>
+          <div class="crit-btns">
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="acknowledgeCriticalRadiology(alert)"
+            >
+              Acknowledge &amp; Document Read-Back
+            </button>
+            @if (canAccessRadiology()) {
+              <a
+                mat-stroked-button
+                [routerLink]="['/radiology']"
+                [queryParams]="{tab: 'viewer'}"
+              >
+                View in PACS
+              </a>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- CATEGORY WORKLIST TABS -->
+  <nav class="inbasket-tabs" aria-label="InBasket Worklists" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="inbasket-tab-btn"
+      [class.active]="activeTab() === 'labs'"
+      [attr.aria-selected]="activeTab() === 'labs'"
+      (click)="activeTab.set('labs')"
+    >
       <span>Lab Results</span>
-      <span class="badge red-badge" *ngIf="unreviewedLabsCount() > 0">{{ unreviewedLabsCount() }}</span>
+      @if (unreviewedLabsCount() > 0) {
+        <span class="tab-count">{{ unreviewedLabsCount() }}</span>
+      }
     </button>
 
-    <button class="inbasket-tab-btn" [class.active]="activeTab() === 'radiology'" (click)="activeTab.set('radiology')">
-      <mat-icon>camera</mat-icon>
+    <button
+      type="button"
+      role="tab"
+      class="inbasket-tab-btn"
+      [class.active]="activeTab() === 'radiology'"
+      [attr.aria-selected]="activeTab() === 'radiology'"
+      (click)="activeTab.set('radiology')"
+    >
       <span>Radiology Reports</span>
-      <span class="badge purple-badge" *ngIf="unreviewedRadiologyCount() > 0">{{ unreviewedRadiologyCount() }}</span>
+      @if (unreviewedRadiologyCount() > 0) {
+        <span class="tab-count">{{ unreviewedRadiologyCount() }}</span>
+      }
     </button>
 
-    <button class="inbasket-tab-btn" [class.active]="activeTab() === 'nursing'" (click)="activeTab.set('nursing')">
-      <mat-icon>vaccines</mat-icon>
+    <button
+      type="button"
+      role="tab"
+      class="inbasket-tab-btn"
+      [class.active]="activeTab() === 'nursing'"
+      [attr.aria-selected]="activeTab() === 'nursing'"
+      (click)="activeTab.set('nursing')"
+    >
       <span>Nursing Floor Orders</span>
-      <span class="badge green-badge" *ngIf="activeNursingCount() > 0">{{ activeNursingCount() }}</span>
+      @if (activeNursingCount() > 0) {
+        <span class="tab-count">{{ activeNursingCount() }}</span>
+      }
     </button>
 
-    <button class="inbasket-tab-btn" [class.active]="activeTab() === 'approvals'" (click)="activeTab.set('approvals')">
-      <mat-icon>event_repeat</mat-icon>
+    <button
+      type="button"
+      role="tab"
+      class="inbasket-tab-btn"
+      [class.active]="activeTab() === 'approvals'"
+      [attr.aria-selected]="activeTab() === 'approvals'"
+      (click)="activeTab.set('approvals')"
+    >
       <span>Appointment Approvals</span>
-      <span class="badge yellow-badge" *ngIf="pendingApprovalsCount() > 0">{{ pendingApprovalsCount() }}</span>
+      @if (pendingApprovalsCount() > 0) {
+        <span class="tab-count">{{ pendingApprovalsCount() }}</span>
+      }
     </button>
 
-    <button class="inbasket-tab-btn" [class.active]="activeTab() === 'rx'" (click)="activeTab.set('rx')">
-      <mat-icon>medication</mat-icon>
-      <span>e-Rx & Formulary</span>
-      <span class="badge blue-badge" *ngIf="displayedPrescriptions().length > 0">{{ displayedPrescriptions().length }}</span>
+    <button
+      type="button"
+      role="tab"
+      class="inbasket-tab-btn"
+      [class.active]="activeTab() === 'rx'"
+      [attr.aria-selected]="activeTab() === 'rx'"
+      (click)="activeTab.set('rx')"
+    >
+      <span>e-Rx &amp; Formulary</span>
+      @if (displayedPrescriptions().length > 0) {
+        <span class="tab-count">{{ displayedPrescriptions().length }}</span>
+      }
     </button>
-  </div>
+  </nav>
 
-  <mat-progress-bar *ngIf="isLoading()" mode="indeterminate"></mat-progress-bar>
-
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- TAB 1: LAB RESULTS SIGN-OFF                     -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="tab-panel" *ngIf="activeTab() === 'labs'">
-    <div class="panel-header">
-      <div>
-        <h2>Diagnostic Laboratory Results</h2>
-        <span class="item-count">{{ displayedLabs().length }} order(s) displayed • Scope: {{ scopeFilter() === 'my' ? 'My Assigned Patients' : 'Entire Clinic' }}</span>
-      </div>
-
-      <div class="filter-pills">
-        <button class="pill-btn" [class.active]="labStatusFilter() === 'ALL'" (click)="labStatusFilter.set('ALL')">
-          All ({{ labOrders().length }})
-        </button>
-        <button class="pill-btn" [class.active]="labStatusFilter() === 'PendingReview'" (click)="labStatusFilter.set('PendingReview')">
-          Needs MD Sign-off ({{ myUnreviewedLabsCount() }})
-        </button>
-        <button class="pill-btn" [class.active]="labStatusFilter() === 'Abnormal'" (click)="labStatusFilter.set('Abnormal')">
-          <mat-icon>warning</mat-icon> Abnormal
-        </button>
-        <button class="pill-btn" [class.active]="labStatusFilter() === 'Completed'" (click)="labStatusFilter.set('Completed')">
-          Completed
-        </button>
-        <button class="pill-btn" [class.active]="labStatusFilter() === 'Stat'" (click)="labStatusFilter.set('Stat')">
-          Stat / Urgent
-        </button>
-      </div>
+  @if (isLoading()) {
+    <div aria-busy="true" aria-label="Loading physician worklists">
+      <app-skeleton variant="card" [count]="3" />
     </div>
-
-    <div class="empty-inbasket" *ngIf="displayedLabs().length === 0">
-      <mat-icon>check_circle_outline</mat-icon>
-      <h3>All Diagnostic Results Clear</h3>
-      <p>No lab reports matching active filters require your clinical verification.</p>
-    </div>
-
-    <div class="inbasket-cards-list" *ngIf="displayedLabs().length > 0">
-      <div class="inbasket-card lab-card" *ngFor="let order of displayedLabs()" [class.signed-off]="order.verifiedByDoctorId">
-        <div class="card-left-strip" [class.stat-strip]="order.priority === 'Stat'" [class.urgent-strip]="order.priority === 'Urgent'"></div>
-
-        <div class="card-main-content">
-          <div class="card-top-row">
-            <div class="patient-id-cluster">
-              <span class="patient-name">{{ order.patientName }}</span>
-              <span class="mrn-tag">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
-              <span class="order-num">Order: {{ order.orderNumber }}</span>
-            </div>
-
-            <div class="status-priority-cluster">
-              <!-- DOCTOR ISOLATION BADGE -->
-              <span class="isolation-badge mine" *ngIf="canManageLabOrder(order)">
-                <mat-icon>verified_user</mat-icon> Attending: You (Actionable)
-              </span>
-              <span class="isolation-badge other" *ngIf="!canManageLabOrder(order)">
-                <mat-icon>lock</mat-icon> Attending: {{ order.doctorName || 'Other MD' }} (Read-Only)
-              </span>
-
-              <span class="priority-pill" [attr.data-priority]="order.priority">{{ order.priority }}</span>
-              <span class="status-pill" [attr.data-status]="order.status">{{ order.status }}</span>
-              <span class="verified-pill" *ngIf="order.verifiedByDoctorId">
-                <mat-icon>verified</mat-icon> Signed in DB
-              </span>
-            </div>
+  } @else {
+    <!-- TAB 1: LAB RESULTS SIGN-OFF -->
+    @if (activeTab() === 'labs') {
+      <section class="tab-panel" role="tabpanel" aria-label="Laboratory Results">
+        <div class="panel-header">
+          <div>
+            <h2>Diagnostic Laboratory Results</h2>
+            <p class="item-count">
+              {{ displayedLabs().length }} order(s) displayed &middot; Scope: {{ scopeFilter() === 'my' ? 'My Assigned Patients' : 'Entire Clinic' }}
+            </p>
           </div>
 
-          <div class="order-tests-section">
-            <div class="test-item-row" *ngFor="let item of order.items">
-              <div class="test-name-box">
-                <mat-icon class="test-icon">biotech</mat-icon>
-                <strong>{{ item.testName }}</strong>
-                <span class="sample-type" *ngIf="item.sampleType">({{ item.sampleType }})</span>
-              </div>
-
-              <div class="test-result-values" *ngIf="item.result; else pendingResult">
-                <span class="result-val" *ngIf="item.result.remarks">{{ item.result.remarks }}</span>
-                <span class="abnormal-badge" *ngIf="item.result.hasAbnormalFlag">ABNORMAL</span>
-                <span class="result-date" *ngIf="item.result.resultDate">Recorded {{ item.result.resultDate | date:'short' }}</span>
-              </div>
-              <ng-template #pendingResult>
-                <span class="pending-txt">Analysis In Progress</span>
-              </ng-template>
-            </div>
-          </div>
-
-          <div class="clinical-notes-quote" *ngIf="order.clinicalNotes">
-            <mat-icon>format_quote</mat-icon>
-            <span>{{ order.clinicalNotes }}</span>
-          </div>
-
-          <div class="card-footer-row">
-            <span class="order-time"><mat-icon>schedule</mat-icon> Ordered: {{ order.orderDate | date:'medium' }}</span>
-
-            <div class="action-buttons">
-              <!-- ACTIONABLE IF CURRENT DOCTOR OR ADMIN -->
-              <ng-container *ngIf="canManageLabOrder(order)">
-                <button
-                  *ngIf="!order.verifiedByDoctorId"
-                  mat-flat-button
-                  color="primary"
-                  class="sign-btn"
-                  (click)="signOffLab(order)"
-                >
-                  <mat-icon>done_all</mat-icon> Physician Sign-Off & Acknowledge
-                </button>
-                <span class="signed-off-label" *ngIf="order.verifiedByDoctorId">
-                  <mat-icon>verified</mat-icon> Reviewed & Verified by Physician
-                </span>
-              </ng-container>
-
-              <!-- READ-ONLY ISOLATION IF CROSS-DOCTOR -->
-              <ng-container *ngIf="!canManageLabOrder(order)">
-                <span class="cross-doctor-lock-note" matTooltip="Only assigned attending physician Dr. {{ order.doctorName }} can sign off">
-                  <mat-icon>shield</mat-icon> Cross-Physician Review Only
-                </span>
-                <a [routerLink]="['/patients', order.patientId]" class="view-emr-btn">
-                  <mat-icon>assignment_ind</mat-icon> View Patient EMR
-                </a>
-              </ng-container>
-            </div>
+          <div class="filter-pills" role="group" aria-label="Laboratory result status filters">
+            <button type="button" class="pill-btn" [class.active]="labStatusFilter() === 'ALL'" [attr.aria-pressed]="labStatusFilter() === 'ALL'" (click)="labStatusFilter.set('ALL')">
+              All ({{ labOrders().length }})
+            </button>
+            <button type="button" class="pill-btn" [class.active]="labStatusFilter() === 'PendingReview'" [attr.aria-pressed]="labStatusFilter() === 'PendingReview'" (click)="labStatusFilter.set('PendingReview')">
+              Needs Sign-Off ({{ myUnreviewedLabsCount() }})
+            </button>
+            <button type="button" class="pill-btn" [class.active]="labStatusFilter() === 'Abnormal'" [attr.aria-pressed]="labStatusFilter() === 'Abnormal'" (click)="labStatusFilter.set('Abnormal')">
+              Abnormal
+            </button>
+            <button type="button" class="pill-btn" [class.active]="labStatusFilter() === 'Completed'" [attr.aria-pressed]="labStatusFilter() === 'Completed'" (click)="labStatusFilter.set('Completed')">
+              Completed
+            </button>
+            <button type="button" class="pill-btn" [class.active]="labStatusFilter() === 'Stat'" [attr.aria-pressed]="labStatusFilter() === 'Stat'" (click)="labStatusFilter.set('Stat')">
+              Stat / Urgent
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- TAB 2: RADIOLOGY REPORTS SIGN-OFF              -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="tab-panel" *ngIf="activeTab() === 'radiology'">
-    <div class="panel-header">
-      <div>
-        <h2>Radiology & Diagnostic Imaging Studies</h2>
-        <span class="item-count">{{ displayedRadiology().length }} study/studies displayed • Scope: {{ scopeFilter() === 'my' ? 'My Assigned Patients' : 'Entire Clinic' }}</span>
-      </div>
-      <a routerLink="/radiology" class="open-suite-link">
-        <mat-icon>open_in_new</mat-icon> Open PACS Suite
-      </a>
-    </div>
+        @if (displayedLabs().length === 0) {
+          <app-empty-state
+            icon="check_circle_outline"
+            title="All Diagnostic Results Clear"
+            description="No laboratory reports matching your active filters require verification."
+          />
+        } @else {
+          <div class="inbasket-cards-list">
+            @for (order of displayedLabs(); track order.id) {
+              <article class="inbasket-card" [class.signed-off]="order.verifiedByDoctorId">
+                <div class="card-top-row">
+                  <div class="patient-id-cluster">
+                    <h3 class="patient-name">{{ order.patientName }}</h3>
+                    <span class="mrn-tag">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
+                    <span class="meta-code">Order: {{ order.orderNumber }}</span>
+                    <span class="ownership-note">
+                      {{ canManageLabOrder(order) ? 'Attending: You' : ('Attending: ' + (order.doctorName || 'Other MD') + ' (Read-Only)') }}
+                    </span>
+                  </div>
 
-    <!-- Modality & Status Categorization Bar -->
-    <div class="sub-filter-row">
-      <div class="filter-pills modality-pills">
-        <span class="filter-label">Modality:</span>
-        <button class="pill-btn" [class.active]="radModalityFilter() === 'ALL'" (click)="radModalityFilter.set('ALL')">All</button>
-        <button class="pill-btn" [class.active]="radModalityFilter() === 'X-Ray'" (click)="radModalityFilter.set('X-Ray')">X-Ray</button>
-        <button class="pill-btn" [class.active]="radModalityFilter() === 'CT Scan'" (click)="radModalityFilter.set('CT Scan')">CT Scan</button>
-        <button class="pill-btn" [class.active]="radModalityFilter() === 'MRI'" (click)="radModalityFilter.set('MRI')">MRI</button>
-        <button class="pill-btn" [class.active]="radModalityFilter() === 'Ultrasound'" (click)="radModalityFilter.set('Ultrasound')">Ultrasound</button>
-        <button class="pill-btn" [class.active]="radModalityFilter() === 'ECG / Echo'" (click)="radModalityFilter.set('ECG / Echo')">ECG / Echo</button>
-      </div>
-
-      <div class="filter-pills status-pills">
-        <span class="filter-label">Review:</span>
-        <button class="pill-btn" [class.active]="radStatusFilter() === 'ALL'" (click)="radStatusFilter.set('ALL')">All</button>
-        <button class="pill-btn" [class.active]="radStatusFilter() === 'PendingReview'" (click)="radStatusFilter.set('PendingReview')">Needs MD Sign-Off</button>
-        <button class="pill-btn" [class.active]="radStatusFilter() === 'SignedOff'" (click)="radStatusFilter.set('SignedOff')">Signed Off</button>
-        <button class="pill-btn" [class.active]="radStatusFilter() === 'Stat'" (click)="radStatusFilter.set('Stat')">Stat / Urgent</button>
-      </div>
-    </div>
-
-    <div class="empty-inbasket" *ngIf="displayedRadiology().length === 0">
-      <mat-icon>photo_library</mat-icon>
-      <h3>No Imaging Studies in InBasket</h3>
-      <p>All radiological studies matching your filters have been reviewed or none are pending.</p>
-    </div>
-
-    <div class="inbasket-cards-list" *ngIf="displayedRadiology().length > 0">
-      <div class="inbasket-card rad-card" *ngFor="let order of displayedRadiology()" [class.signed-off]="order.doctorSignedOffAt">
-        <div class="card-left-strip" [class.stat-strip]="order.priority === 'Stat'"></div>
-
-        <div class="card-main-content">
-          <div class="card-top-row">
-            <div class="patient-id-cluster">
-              <span class="patient-name">{{ order.patientName }}</span>
-              <span class="mrn-tag">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
-              <span class="order-num">Study: {{ order.orderNumber }}</span>
-            </div>
-
-            <div class="status-priority-cluster">
-              <!-- DOCTOR / RADIOLOGIST ROLE ISOLATION BADGE -->
-              <span class="isolation-badge mine" *ngIf="isRadiologist()">
-                <mat-icon>biotech</mat-icon> Diagnostic Reading Worklist
-              </span>
-              <span class="isolation-badge mine" *ngIf="!isRadiologist() && canSignOffRadiology(order)">
-                <mat-icon>verified_user</mat-icon> Attending: You (Actionable)
-              </span>
-              <span class="isolation-badge other" *ngIf="!isRadiologist() && !canSignOffRadiology(order)">
-                <mat-icon>lock</mat-icon> Attending: {{ order.doctorName || 'Other MD' }} (Read-Only)
-              </span>
-
-              <span class="modality-chip">{{ order.modality }}</span>
-              <span class="priority-pill" [attr.data-priority]="order.priority">{{ order.priority }}</span>
-              <span class="status-pill" [attr.data-status]="order.status">{{ order.status }}</span>
-            </div>
-          </div>
-
-          <div class="rad-detail-section">
-            <strong class="proc-title">{{ order.procedureName }} (Target: {{ order.bodyPart }})</strong>
-            <p class="indication-line"><strong>Indication:</strong> {{ order.clinicalIndication }}</p>
-
-            <div class="impression-highlight" *ngIf="order.impression">
-              <mat-icon>psychology</mat-icon>
-              <div>
-                <strong>Radiologist Impression:</strong>
-                <p>{{ order.impression }}</p>
-                <span class="sig-note" *ngIf="order.radiologistSignature">Signed by: {{ order.radiologistSignature }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-footer-row">
-            <span class="order-time"><mat-icon>schedule</mat-icon> Ordered: {{ order.orderedAt | date:'medium' }}</span>
-
-            <div class="action-buttons">
-              <button mat-stroked-button class="view-scan-btn" (click)="openRadiologyPreview(order)">
-                <mat-icon>image</mat-icon> View Scan & Report
-              </button>
-
-              <!-- ACTIONABLE IF CURRENT ATTENDING DOCTOR OR ADMIN -->
-              <ng-container *ngIf="canSignOffRadiology(order)">
-                <button
-                  *ngIf="!order.doctorSignedOffAt && (order.status === 'Reported' || order.status === 'Completed')"
-                  mat-flat-button
-                  color="primary"
-                  class="sign-btn"
-                  (click)="signOffRadiology(order)"
-                >
-                  <mat-icon>verified</mat-icon> Physician Sign-Off
-                </button>
-                <span class="signed-off-label" *ngIf="order.doctorSignedOffAt">
-                  <mat-icon>check_circle</mat-icon> Signed Off {{ order.doctorSignedOffAt | date:'short' }}
-                </span>
-              </ng-container>
-
-              <!-- IF RADIOLOGIST VIEWING INBASKET -->
-              <ng-container *ngIf="isRadiologist()">
-                <a
-                  routerLink="/radiology"
-                  mat-flat-button
-                  color="accent"
-                  class="sign-btn"
-                >
-                  <mat-icon>rate_review</mat-icon> {{ order.status === 'Completed' || order.status === 'Reported' ? 'View / Edit in PACS' : 'Report in PACS' }}
-                </a>
-              </ng-container>
-
-              <!-- READ-ONLY ISOLATION IF CROSS-DOCTOR (NOT ATTENDING AND NOT RADIOLOGIST) -->
-              <ng-container *ngIf="!canSignOffRadiology(order) && !isRadiologist()">
-                <span class="cross-doctor-lock-note" matTooltip="Only assigned attending physician Dr. {{ order.doctorName }} can sign off">
-                  <mat-icon>shield</mat-icon> Attending: Dr. {{ order.doctorName || 'Assigned MD' }}
-                </span>
-                <a [routerLink]="['/patients', order.patientId]" class="view-emr-btn">
-                  <mat-icon>assignment_ind</mat-icon> View Patient EMR
-                </a>
-              </ng-container>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- TAB 3: NURSING FLOOR PROCEDURES                -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="tab-panel" *ngIf="activeTab() === 'nursing'">
-    <div class="panel-header">
-      <div>
-        <h2>In-Clinic Nursing Floor Procedures</h2>
-        <span class="item-count">{{ displayedNursing().length }} floor procedure(s) • Scope: {{ scopeFilter() === 'my' ? 'My Assigned Orders' : 'Entire Clinic' }}</span>
-      </div>
-
-      <div class="filter-pills">
-        <button class="pill-btn" [class.active]="nursingStatusFilter() === 'ALL'" (click)="nursingStatusFilter.set('ALL')">
-          All ({{ nursingProcedures().length }})
-        </button>
-        <button class="pill-btn" [class.active]="nursingStatusFilter() === 'Active'" (click)="nursingStatusFilter.set('Active')">
-          Active / In Progress ({{ myActiveNursingCount() }})
-        </button>
-        <button class="pill-btn" [class.active]="nursingStatusFilter() === 'Completed'" (click)="nursingStatusFilter.set('Completed')">
-          Completed
-        </button>
-        <button class="pill-btn" [class.active]="nursingStatusFilter() === 'Stat'" (click)="nursingStatusFilter.set('Stat')">
-          Stat / Urgent
-        </button>
-      </div>
-    </div>
-
-    <div class="empty-inbasket" *ngIf="displayedNursing().length === 0">
-      <mat-icon>healing</mat-icon>
-      <h3>No In-Clinic Procedures Logged</h3>
-      <p>Order IV infusions, injections, or wound care directly from the Clinical Encounter.</p>
-    </div>
-
-    <div class="inbasket-cards-list" *ngIf="displayedNursing().length > 0">
-      <div class="inbasket-card nurse-card" *ngFor="let proc of displayedNursing()">
-        <div class="card-left-strip" [class.completed-strip]="proc.status === 'Completed'"></div>
-
-        <div class="card-main-content">
-          <div class="card-top-row">
-            <div class="patient-id-cluster">
-              <span class="patient-name">{{ proc.patientName || 'Patient' }}</span>
-              <span class="mrn-tag">Order ID: {{ (proc.id || '').substring(0, 8) }}</span>
-            </div>
-
-            <div class="status-priority-cluster">
-              <!-- DOCTOR ISOLATION BADGE -->
-              <span class="isolation-badge mine" *ngIf="canManageNursingProcedure(proc)">
-                <mat-icon>verified_user</mat-icon> Ordered by You
-              </span>
-              <span class="isolation-badge other" *ngIf="!canManageNursingProcedure(proc)">
-                <mat-icon>lock</mat-icon> Ordered by Dr. {{ proc.orderedByDoctorName || 'Other MD' }}
-              </span>
-
-              <span class="priority-pill" [attr.data-priority]="proc.priority">{{ proc.priority }}</span>
-              <span class="status-pill" [attr.data-status]="proc.status">{{ proc.status }}</span>
-            </div>
-          </div>
-
-          <div class="nursing-proc-details">
-            <strong class="proc-title">{{ proc.procedureType }}</strong>
-            <span class="site-sub" *ngIf="proc.bodySite">Site: {{ proc.bodySite }}</span>
-            <p class="notes-line" *ngIf="proc.notes"><strong>Clinical Notes:</strong> {{ proc.notes }}</p>
-            <div class="tolerance-line" *ngIf="proc.patientTolerance">
-              <mat-icon>sentiment_satisfied</mat-icon> Tolerance: {{ proc.patientTolerance }}
-            </div>
-            <div class="nurse-performer" *ngIf="proc.performedByUserName">
-              <mat-icon>badge</mat-icon> Administered By Nurse: {{ proc.performedByUserName }} ({{ proc.performedAt | date:'medium' }})
-            </div>
-          </div>
-
-          <div class="card-footer-row">
-            <span class="order-time"><mat-icon>schedule</mat-icon> Ordered: {{ proc.orderedAt | date:'medium' }}</span>
-
-            <div class="action-buttons">
-              <span class="billed-tag" [class.is-billed]="proc.isBilled">
-                {{ proc.isBilled ? 'Billed on Invoice' : 'Billing Synchronized' }} (${{ proc.price | number:'1.2-2' }})
-              </span>
-              <a [routerLink]="['/patients', proc.patientId]" class="view-emr-btn">
-                <mat-icon>assignment_ind</mat-icon> View Patient EMR
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- TAB 4: APPOINTMENT APPROVALS & QUEUE           -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="tab-panel" *ngIf="activeTab() === 'approvals'">
-    <div class="panel-header">
-      <div>
-        <h2>Appointment Booking Requests & Approvals</h2>
-        <span class="item-count">{{ displayedAppointments().length }} appointment request(s) • Scope: {{ scopeFilter() === 'my' ? 'My Assigned Schedule' : 'Entire Clinic' }}</span>
-      </div>
-
-      <div class="filter-pills">
-        <button class="pill-btn" [class.active]="appointmentFilter() === 'PendingApproval'" (click)="appointmentFilter.set('PendingApproval')">
-          Pending Approval ({{ myPendingApprovalsCount() }})
-        </button>
-        <button class="pill-btn" [class.active]="appointmentFilter() === 'Scheduled'" (click)="appointmentFilter.set('Scheduled')">
-          Scheduled
-        </button>
-        <button class="pill-btn" [class.active]="appointmentFilter() === 'ALL'" (click)="appointmentFilter.set('ALL')">
-          All
-        </button>
-      </div>
-    </div>
-
-    <div class="empty-inbasket" *ngIf="displayedAppointments().length === 0">
-      <mat-icon>event_available</mat-icon>
-      <h3>No Pending Booking Requests</h3>
-      <p>All incoming patient bookings and clinical delegations have been processed.</p>
-    </div>
-
-    <div class="inbasket-cards-list" *ngIf="displayedAppointments().length > 0">
-      <div class="inbasket-card appt-card" *ngFor="let appt of displayedAppointments()">
-        <div class="card-left-strip" [class.pending-strip]="appt.status === 'PendingApproval'"></div>
-
-        <div class="card-main-content">
-          <div class="card-top-row">
-            <div class="patient-id-cluster">
-              <span class="patient-name">{{ appt.patientName }}</span>
-              <span class="mrn-tag">MRN: {{ (appt.patientId || '').substring(0, 8).toUpperCase() }}</span>
-            </div>
-
-            <div class="status-priority-cluster">
-              <!-- DOCTOR ISOLATION BADGE -->
-              <span class="isolation-badge mine" *ngIf="canManageAppointment(appt)">
-                <mat-icon>verified_user</mat-icon> Assigned: You
-              </span>
-              <span class="isolation-badge other" *ngIf="!canManageAppointment(appt)">
-                <mat-icon>lock</mat-icon> Assigned: Dr. {{ appt.doctorName || 'Other MD' }} (Read-Only)
-              </span>
-
-              <span class="status-pill" [attr.data-status]="appt.status">{{ appt.status }}</span>
-            </div>
-          </div>
-
-          <div class="appt-info-body">
-            <div class="info-item">
-              <mat-icon>event</mat-icon>
-              <span>{{ appt.scheduledDateTime | date:'fullDate' }} at {{ appt.scheduledDateTime | date:'shortTime' }}</span>
-            </div>
-            <div class="info-item">
-              <mat-icon>help_outline</mat-icon>
-              <span><strong>Reason for Visit:</strong> {{ appt.reasonForVisit || 'Routine Consultation' }}</span>
-            </div>
-          </div>
-
-          <div class="card-footer-row">
-            <span class="order-time"><mat-icon>timer</mat-icon> Requested: {{ appt.scheduledDateTime | date:'short' }}</span>
-
-            <div class="action-buttons">
-              <!-- ACTIONABLE IF CURRENT DOCTOR OR ADMIN -->
-              <ng-container *ngIf="canManageAppointment(appt)">
-                <div class="button-pair" *ngIf="appt.status === 'PendingApproval'">
-                  <button mat-flat-button color="primary" class="approve-btn" (click)="approveAppointment(appt)">
-                    <mat-icon>check</mat-icon> Approve Booking
-                  </button>
-                  <button mat-stroked-button color="warn" class="reject-btn" (click)="rejectAppointment(appt)">
-                    <mat-icon>close</mat-icon> Decline
-                  </button>
+                  <div class="status-priority-cluster">
+                    <app-status-chip [status]="order.priority" />
+                    <app-status-chip [status]="order.status" />
+                    @if (order.verifiedByDoctorId) {
+                      <app-status-chip tone="success" label="Signed Off" />
+                    }
+                  </div>
                 </div>
-                <span class="signed-off-label" *ngIf="appt.status === 'Scheduled'">
-                  <mat-icon>event_available</mat-icon> Confirmed on Clinical Schedule
-                </span>
-              </ng-container>
 
-              <!-- READ-ONLY ISOLATION IF CROSS-DOCTOR -->
-              <ng-container *ngIf="!canManageAppointment(appt)">
-                <span class="cross-doctor-lock-note" matTooltip="Only Dr. {{ appt.doctorName }} can approve bookings for their calendar">
-                  <mat-icon>shield</mat-icon> Reserved for Dr. {{ appt.doctorName }}
-                </span>
-                <a [routerLink]="['/patients', appt.patientId]" class="view-emr-btn">
-                  <mat-icon>assignment_ind</mat-icon> View Patient EMR
-                </a>
-              </ng-container>
-            </div>
+                <div class="order-tests-section">
+                  @for (item of order.items; track item.testName) {
+                    <div class="test-item-row">
+                      <div class="test-name-box">
+                        <strong>{{ item.testName }}</strong>
+                        @if (item.sampleType) {
+                          <span class="sample-type">({{ item.sampleType }})</span>
+                        }
+                      </div>
+
+                      @if (item.result; as res) {
+                        <div class="test-result-values">
+                          @if (res.remarks) {
+                            <span class="result-val">{{ res.remarks }}</span>
+                          }
+                          @if (res.hasAbnormalFlag) {
+                            <app-status-chip tone="danger" label="Abnormal" />
+                          }
+                          @if (res.resultDate) {
+                            <span class="result-date">Recorded {{ res.resultDate | date:'short' }}</span>
+                          }
+                        </div>
+                      } @else {
+                        <span class="pending-txt">Analysis In Progress</span>
+                      }
+                    </div>
+                  }
+                </div>
+
+                @if (order.clinicalNotes) {
+                  <p class="clinical-notes-quote">{{ order.clinicalNotes }}</p>
+                }
+
+                <div class="card-footer-row">
+                  <span class="order-time">Ordered: {{ order.orderDate | date:'medium' }}</span>
+
+                  <div class="action-buttons">
+                    @if (canManageLabOrder(order)) {
+                      @if (!order.verifiedByDoctorId) {
+                        <button mat-flat-button color="primary" type="button" (click)="signOffLab(order)">
+                          Physician Sign-Off &amp; Acknowledge
+                        </button>
+                      }
+                    } @else {
+                      <span class="cross-doctor-lock-note" matTooltip="Only attending physician Dr. {{ order.doctorName }} can sign off">
+                        Cross-Physician Review Only
+                      </span>
+                      <a mat-stroked-button [routerLink]="['/patients', order.patientId]">
+                        View Patient EMR
+                      </a>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB 2: RADIOLOGY REPORTS SIGN-OFF -->
+    @if (activeTab() === 'radiology') {
+      <section class="tab-panel" role="tabpanel" aria-label="Radiology Reports">
+        <div class="panel-header">
+          <div>
+            <h2>Radiology &amp; Diagnostic Imaging Studies</h2>
+            <p class="item-count">
+              {{ displayedRadiology().length }} study/studies displayed &middot; Scope: {{ scopeFilter() === 'my' ? 'My Assigned Patients' : 'Entire Clinic' }}
+            </p>
+          </div>
+          @if (canAccessRadiology()) {
+            <a mat-stroked-button routerLink="/radiology">
+              Open PACS Suite
+            </a>
+          }
+        </div>
+
+        <div class="sub-filter-row">
+          <div class="filter-pills" role="group" aria-label="Filter by imaging modality">
+            <span class="filter-label">Modality:</span>
+            <button type="button" class="pill-btn" [class.active]="radModalityFilter() === 'ALL'" [attr.aria-pressed]="radModalityFilter() === 'ALL'" (click)="radModalityFilter.set('ALL')">All</button>
+            <button type="button" class="pill-btn" [class.active]="radModalityFilter() === 'X-Ray'" [attr.aria-pressed]="radModalityFilter() === 'X-Ray'" (click)="radModalityFilter.set('X-Ray')">X-Ray</button>
+            <button type="button" class="pill-btn" [class.active]="radModalityFilter() === 'CT Scan'" [attr.aria-pressed]="radModalityFilter() === 'CT Scan'" (click)="radModalityFilter.set('CT Scan')">CT Scan</button>
+            <button type="button" class="pill-btn" [class.active]="radModalityFilter() === 'MRI'" [attr.aria-pressed]="radModalityFilter() === 'MRI'" (click)="radModalityFilter.set('MRI')">MRI</button>
+            <button type="button" class="pill-btn" [class.active]="radModalityFilter() === 'Ultrasound'" [attr.aria-pressed]="radModalityFilter() === 'Ultrasound'" (click)="radModalityFilter.set('Ultrasound')">Ultrasound</button>
+            <button type="button" class="pill-btn" [class.active]="radModalityFilter() === 'ECG / Echo'" [attr.aria-pressed]="radModalityFilter() === 'ECG / Echo'" (click)="radModalityFilter.set('ECG / Echo')">ECG / Echo</button>
+          </div>
+
+          <div class="filter-pills" role="group" aria-label="Filter by review status">
+            <span class="filter-label">Review:</span>
+            <button type="button" class="pill-btn" [class.active]="radStatusFilter() === 'ALL'" [attr.aria-pressed]="radStatusFilter() === 'ALL'" (click)="radStatusFilter.set('ALL')">All</button>
+            <button type="button" class="pill-btn" [class.active]="radStatusFilter() === 'PendingReview'" [attr.aria-pressed]="radStatusFilter() === 'PendingReview'" (click)="radStatusFilter.set('PendingReview')">Needs Sign-Off</button>
+            <button type="button" class="pill-btn" [class.active]="radStatusFilter() === 'SignedOff'" [attr.aria-pressed]="radStatusFilter() === 'SignedOff'" (click)="radStatusFilter.set('SignedOff')">Signed Off</button>
+            <button type="button" class="pill-btn" [class.active]="radStatusFilter() === 'Stat'" [attr.aria-pressed]="radStatusFilter() === 'Stat'" (click)="radStatusFilter.set('Stat')">Stat / Urgent</button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- TAB 5: E-PRESCRIPTIONS & FORMULARY             -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="tab-panel" *ngIf="activeTab() === 'rx'">
-    <div class="panel-header">
-      <div>
-        <h2>Active Electronic Prescriptions & Formulary</h2>
-        <span class="item-count">{{ displayedPrescriptions().length }} prescription(s) • Scope: {{ scopeFilter() === 'my' ? 'My Prescriptions' : 'Entire Clinic' }}</span>
-      </div>
+        @if (displayedRadiology().length === 0) {
+          <app-empty-state
+            icon="photo_library"
+            title="No Imaging Studies in InBasket"
+            description="All radiological studies matching your filters have been reviewed or none are pending."
+          />
+        } @else {
+          <div class="inbasket-cards-list">
+            @for (order of displayedRadiology(); track order.id) {
+              <article class="inbasket-card" [class.signed-off]="order.doctorSignedOffAt">
+                <div class="card-top-row">
+                  <div class="patient-id-cluster">
+                    <h3 class="patient-name">{{ order.patientName }}</h3>
+                    <span class="mrn-tag">MRN: {{ order.patientMedicalRecordNumber || 'N/A' }}</span>
+                    <span class="meta-code">Study: {{ order.orderNumber }}</span>
+                    <span class="ownership-note">
+                      @if (isRadiologist()) {
+                        Diagnostic Reading Worklist
+                      } @else if (canSignOffRadiology(order)) {
+                        Attending: You
+                      } @else {
+                        Attending: {{ order.doctorName || 'Other MD' }} (Read-Only)
+                      }
+                    </span>
+                  </div>
 
-      <div class="filter-pills">
-        <button class="pill-btn" [class.active]="rxStatusFilter() === 'ALL'" (click)="rxStatusFilter.set('ALL')">
-          All ({{ prescriptions().length }})
-        </button>
-        <button class="pill-btn" [class.active]="rxStatusFilter() === 'Active'" (click)="rxStatusFilter.set('Active')">
-          Pending Dispensation
-        </button>
-        <button class="pill-btn" [class.active]="rxStatusFilter() === 'Dispensed'" (click)="rxStatusFilter.set('Dispensed')">
-          Dispensed by Pharmacy
-        </button>
-      </div>
-    </div>
+                  <div class="status-priority-cluster">
+                    <app-status-chip tone="neutral" [label]="order.modality" [showIcon]="false" />
+                    <app-status-chip [status]="order.priority" />
+                    <app-status-chip [status]="order.status" />
+                  </div>
+                </div>
 
-    <div class="empty-inbasket" *ngIf="displayedPrescriptions().length === 0">
-      <mat-icon>medication_liquid</mat-icon>
-      <h3>No Prescriptions Found</h3>
-      <p>Prescriptions dispatched during clinical encounters will appear here for review.</p>
-    </div>
+                <div class="rad-detail-section">
+                  <strong class="proc-title">{{ order.procedureName }} (Target: {{ order.bodyPart }})</strong>
+                  <p class="indication-line"><strong>Indication:</strong> {{ order.clinicalIndication }}</p>
 
-    <div class="inbasket-cards-list" *ngIf="displayedPrescriptions().length > 0">
-      <div class="inbasket-card rx-card" *ngFor="let rx of displayedPrescriptions()">
-        <div class="card-left-strip rx-strip"></div>
+                  @if (order.impression) {
+                    <div class="impression-highlight">
+                      <strong>Radiologist Impression</strong>
+                      <p>{{ order.impression }}</p>
+                      @if (order.radiologistSignature) {
+                        <span class="sig-note">Signed by: {{ order.radiologistSignature }}</span>
+                      }
+                    </div>
+                  }
+                </div>
 
-        <div class="card-main-content">
-          <div class="card-top-row">
-            <div class="patient-id-cluster">
-              <span class="patient-name">{{ rx.patientName }}</span>
-              <span class="mrn-tag">MRN: {{ rx.patientMrn || 'N/A' }}</span>
-            </div>
+                <div class="card-footer-row">
+                  <span class="order-time">Ordered: {{ order.orderedAt | date:'medium' }}</span>
 
-            <div class="status-priority-cluster">
-              <!-- DOCTOR ISOLATION BADGE -->
-              <span class="isolation-badge mine" *ngIf="canManagePrescription(rx)">
-                <mat-icon>verified_user</mat-icon> Prescribed by You
-              </span>
-              <span class="isolation-badge other" *ngIf="!canManagePrescription(rx)">
-                <mat-icon>lock</mat-icon> Prescribed by Dr. {{ rx.doctorName || 'Other MD' }}
-              </span>
+                  <div class="action-buttons">
+                    <button mat-stroked-button type="button" (click)="openRadiologyPreview(order)">
+                      View Scan &amp; Report
+                    </button>
 
-              <span class="status-pill" [class.status-active]="!rx.isDispensed" [class.status-completed]="rx.isDispensed">
-                {{ rx.isDispensed ? 'Dispensed' : 'Active e-Rx' }}
-              </span>
-            </div>
+                    @if (canSignOffRadiology(order)) {
+                      @if (!order.doctorSignedOffAt && (order.status === 'Reported' || order.status === 'Completed')) {
+                        <button mat-flat-button color="primary" type="button" (click)="signOffRadiology(order)">
+                          Physician Sign-Off
+                        </button>
+                      } @else if (order.doctorSignedOffAt) {
+                        <app-status-chip tone="success" [label]="'Signed Off ' + (order.doctorSignedOffAt | date:'short')" />
+                      }
+                    }
+
+                    @if (isRadiologist() && canAccessRadiology()) {
+                      <a routerLink="/radiology" mat-flat-button color="primary">
+                        {{ order.status === 'Completed' || order.status === 'Reported' ? 'View / Edit in PACS' : 'Report in PACS' }}
+                      </a>
+                    }
+
+                    @if (!canSignOffRadiology(order) && !isRadiologist()) {
+                      <a mat-stroked-button [routerLink]="['/patients', order.patientId]">
+                        View Patient EMR
+                      </a>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB 3: NURSING FLOOR PROCEDURES -->
+    @if (activeTab() === 'nursing') {
+      <section class="tab-panel" role="tabpanel" aria-label="Nursing Floor Procedures">
+        <div class="panel-header">
+          <div>
+            <h2>In-Clinic Nursing Floor Procedures</h2>
+            <p class="item-count">
+              {{ displayedNursing().length }} procedure(s) &middot; Scope: {{ scopeFilter() === 'my' ? 'My Assigned Orders' : 'Entire Clinic' }}
+            </p>
           </div>
 
-          <div class="rx-items-list">
-            <div class="rx-item-chip" *ngFor="let item of rx.items">
-              <mat-icon>medication</mat-icon>
-              <strong>{{ item.medicineName }}</strong>
-              <span>Qty: {{ item.quantity }} • {{ item.dosageInstructions }}</span>
-            </div>
-          </div>
-
-          <div class="card-footer-row">
-            <span class="order-time"><mat-icon>schedule</mat-icon> Issued: {{ rx.issuedAt || rx.createdAt | date:'medium' }}</span>
-
-            <div class="action-buttons">
-              <span class="rx-notes-text" *ngIf="rx.notes">{{ rx.notes }}</span>
-              <a [routerLink]="['/patients', rx.patientId]" class="view-emr-btn" *ngIf="rx.patientId">
-                <mat-icon>assignment_ind</mat-icon> View Patient EMR
-              </a>
-            </div>
+          <div class="filter-pills" role="group" aria-label="Filter nursing procedures by status">
+            <button type="button" class="pill-btn" [class.active]="nursingStatusFilter() === 'ALL'" [attr.aria-pressed]="nursingStatusFilter() === 'ALL'" (click)="nursingStatusFilter.set('ALL')">
+              All ({{ nursingProcedures().length }})
+            </button>
+            <button type="button" class="pill-btn" [class.active]="nursingStatusFilter() === 'Active'" [attr.aria-pressed]="nursingStatusFilter() === 'Active'" (click)="nursingStatusFilter.set('Active')">
+              Active / In Progress ({{ myActiveNursingCount() }})
+            </button>
+            <button type="button" class="pill-btn" [class.active]="nursingStatusFilter() === 'Completed'" [attr.aria-pressed]="nursingStatusFilter() === 'Completed'" (click)="nursingStatusFilter.set('Completed')">
+              Completed
+            </button>
+            <button type="button" class="pill-btn" [class.active]="nursingStatusFilter() === 'Stat'" [attr.aria-pressed]="nursingStatusFilter() === 'Stat'" (click)="nursingStatusFilter.set('Stat')">
+              Stat / Urgent
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+
+        @if (displayedNursing().length === 0) {
+          <app-empty-state
+            icon="healing"
+            title="No In-Clinic Procedures Logged"
+            description="IV infusions, injections, or wound care ordered during encounters will appear here."
+          />
+        } @else {
+          <div class="inbasket-cards-list">
+            @for (proc of displayedNursing(); track proc.id) {
+              <article class="inbasket-card">
+                <div class="card-top-row">
+                  <div class="patient-id-cluster">
+                    <h3 class="patient-name">{{ proc.patientName || 'Patient' }}</h3>
+                    <span class="mrn-tag">Order {{ (proc.id || '').substring(0, 8) }}</span>
+                    <span class="ownership-note">
+                      {{ canManageNursingProcedure(proc) ? 'Ordered by You' : ('Ordered by Dr. ' + (proc.orderedByDoctorName || 'Other MD')) }}
+                    </span>
+                  </div>
+
+                  <div class="status-priority-cluster">
+                    <app-status-chip [status]="proc.priority" />
+                    <app-status-chip [status]="proc.status" />
+                  </div>
+                </div>
+
+                <div class="nursing-proc-details">
+                  <strong class="proc-title">{{ proc.procedureType }}</strong>
+                  @if (proc.bodySite) {
+                    <span class="site-sub">Site: {{ proc.bodySite }}</span>
+                  }
+                  @if (proc.notes) {
+                    <p class="notes-line"><strong>Clinical Notes:</strong> {{ proc.notes }}</p>
+                  }
+                  @if (proc.patientTolerance) {
+                    <p class="notes-line"><strong>Tolerance:</strong> {{ proc.patientTolerance }}</p>
+                  }
+                  @if (proc.performedByUserName) {
+                    <p class="notes-line">
+                      <strong>Administered By Nurse:</strong> {{ proc.performedByUserName }} ({{ proc.performedAt | date:'medium' }})
+                    </p>
+                  }
+                </div>
+
+                <div class="card-footer-row">
+                  <span class="order-time">Ordered: {{ proc.orderedAt | date:'medium' }}</span>
+
+                  <div class="action-buttons">
+                    <app-status-chip
+                      [tone]="proc.isBilled ? 'success' : 'neutral'"
+                      [label]="(proc.isBilled ? 'Billed' : 'Billing Synchronized') + ' ($' + (proc.price | number:'1.2-2') + ')'"
+                    />
+                    <a mat-stroked-button [routerLink]="['/patients', proc.patientId]">
+                      View Patient EMR
+                    </a>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB 4: APPOINTMENT APPROVALS -->
+    @if (activeTab() === 'approvals') {
+      <section class="tab-panel" role="tabpanel" aria-label="Appointment Approvals">
+        <div class="panel-header">
+          <div>
+            <h2>Appointment Booking Requests &amp; Approvals</h2>
+            <p class="item-count">
+              {{ displayedAppointments().length }} request(s) &middot; Scope: {{ scopeFilter() === 'my' ? 'My Assigned Schedule' : 'Entire Clinic' }}
+            </p>
+          </div>
+
+          <div class="filter-pills" role="group" aria-label="Filter appointments by approval status">
+            <button type="button" class="pill-btn" [class.active]="appointmentFilter() === 'PendingApproval'" [attr.aria-pressed]="appointmentFilter() === 'PendingApproval'" (click)="appointmentFilter.set('PendingApproval')">
+              Pending Approval ({{ myPendingApprovalsCount() }})
+            </button>
+            <button type="button" class="pill-btn" [class.active]="appointmentFilter() === 'Scheduled'" [attr.aria-pressed]="appointmentFilter() === 'Scheduled'" (click)="appointmentFilter.set('Scheduled')">
+              Scheduled
+            </button>
+            <button type="button" class="pill-btn" [class.active]="appointmentFilter() === 'ALL'" [attr.aria-pressed]="appointmentFilter() === 'ALL'" (click)="appointmentFilter.set('ALL')">
+              All
+            </button>
+          </div>
+        </div>
+
+        @if (displayedAppointments().length === 0) {
+          <app-empty-state
+            icon="event_available"
+            title="No Pending Booking Requests"
+            description="All incoming patient bookings matching your filter criteria have been processed."
+          />
+        } @else {
+          <div class="inbasket-cards-list">
+            @for (appt of displayedAppointments(); track appt.id) {
+              <article class="inbasket-card">
+                <div class="card-top-row">
+                  <div class="patient-id-cluster">
+                    <h3 class="patient-name">{{ appt.patientName }}</h3>
+                    <span class="mrn-tag">MRN {{ (appt.patientId || '').substring(0, 8).toUpperCase() }}</span>
+                    <span class="ownership-note">
+                      {{ canManageAppointment(appt) ? 'Assigned: You' : ('Assigned: Dr. ' + (appt.doctorName || 'Other MD') + ' (Read-Only)') }}
+                    </span>
+                  </div>
+
+                  <div class="status-priority-cluster">
+                    <app-status-chip [status]="appt.status" />
+                  </div>
+                </div>
+
+                <div class="appt-info-body">
+                  <p><strong>Scheduled:</strong> {{ appt.scheduledDateTime | date:'fullDate' }} at {{ appt.scheduledDateTime | date:'shortTime' }}</p>
+                  <p><strong>Reason for Visit:</strong> {{ appt.reasonForVisit || 'Routine Consultation' }}</p>
+                </div>
+
+                <div class="card-footer-row">
+                  <span class="order-time">Requested: {{ appt.scheduledDateTime | date:'short' }}</span>
+
+                  <div class="action-buttons">
+                    @if (canManageAppointment(appt)) {
+                      @if (appt.status === 'PendingApproval') {
+                        <button mat-flat-button color="primary" type="button" (click)="approveAppointment(appt)">
+                          Approve Booking
+                        </button>
+                        <button mat-stroked-button color="warn" type="button" (click)="rejectAppointment(appt)">
+                          Decline
+                        </button>
+                      }
+                    } @else {
+                      <span class="cross-doctor-lock-note" matTooltip="Only Dr. {{ appt.doctorName }} can approve bookings for their calendar">
+                        Reserved for Dr. {{ appt.doctorName }}
+                      </span>
+                      <a mat-stroked-button [routerLink]="['/patients', appt.patientId]">
+                        View Patient EMR
+                      </a>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB 5: E-PRESCRIPTIONS & FORMULARY -->
+    @if (activeTab() === 'rx') {
+      <section class="tab-panel" role="tabpanel" aria-label="Electronic Prescriptions">
+        <div class="panel-header">
+          <div>
+            <h2>Electronic Prescriptions &amp; Formulary</h2>
+            <p class="item-count">
+              {{ displayedPrescriptions().length }} prescription(s) &middot; Scope: {{ scopeFilter() === 'my' ? 'My Prescriptions' : 'Entire Clinic' }}
+            </p>
+          </div>
+
+          <div class="filter-pills" role="group" aria-label="Filter prescriptions by dispensation status">
+            <button type="button" class="pill-btn" [class.active]="rxStatusFilter() === 'ALL'" [attr.aria-pressed]="rxStatusFilter() === 'ALL'" (click)="rxStatusFilter.set('ALL')">
+              All ({{ prescriptions().length }})
+            </button>
+            <button type="button" class="pill-btn" [class.active]="rxStatusFilter() === 'Active'" [attr.aria-pressed]="rxStatusFilter() === 'Active'" (click)="rxStatusFilter.set('Active')">
+              Pending Dispensation
+            </button>
+            <button type="button" class="pill-btn" [class.active]="rxStatusFilter() === 'Dispensed'" [attr.aria-pressed]="rxStatusFilter() === 'Dispensed'" (click)="rxStatusFilter.set('Dispensed')">
+              Dispensed
+            </button>
+          </div>
+        </div>
+
+        @if (displayedPrescriptions().length === 0) {
+          <app-empty-state
+            icon="medication_liquid"
+            title="No Prescriptions Found"
+            description="Prescriptions dispatched during clinical encounters will appear here for review."
+          />
+        } @else {
+          <div class="inbasket-cards-list">
+            @for (rx of displayedPrescriptions(); track rx.id) {
+              <article class="inbasket-card">
+                <div class="card-top-row">
+                  <div class="patient-id-cluster">
+                    <h3 class="patient-name">{{ rx.patientName }}</h3>
+                    <span class="mrn-tag">MRN: {{ rx.patientMrn || 'N/A' }}</span>
+                    <span class="ownership-note">
+                      {{ canManagePrescription(rx) ? 'Prescribed by You' : ('Prescribed by Dr. ' + (rx.doctorName || 'Other MD')) }}
+                    </span>
+                  </div>
+
+                  <div class="status-priority-cluster">
+                    <app-status-chip
+                      [tone]="rx.isDispensed ? 'success' : 'info'"
+                      [label]="rx.isDispensed ? 'Dispensed' : 'Active e-Rx'"
+                    />
+                  </div>
+                </div>
+
+                <ul class="rx-items-list">
+                  @for (item of rx.items; track item.medicineName) {
+                    <li class="rx-item-chip">
+                      <strong>{{ item.medicineName }}</strong>
+                      <span>Qty: {{ item.quantity }} &middot; {{ item.dosageInstructions }}</span>
+                    </li>
+                  }
+                </ul>
+
+                <div class="card-footer-row">
+                  <span class="order-time">Issued: {{ rx.issuedAt || rx.createdAt | date:'medium' }}</span>
+
+                  <div class="action-buttons">
+                    @if (rx.notes) {
+                      <span class="rx-notes-text">{{ rx.notes }}</span>
+                    }
+                    @if (rx.patientId) {
+                      <a mat-stroked-button [routerLink]="['/patients', rx.patientId]">
+                        View Patient EMR
+                      </a>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
 </div>
 
-<!-- ══════════════════════════════════════════════════════════ -->
-<!-- RADIOLOGY QUICK VIEW MODAL INSIDE INBASKET                 -->
-<!-- ══════════════════════════════════════════════════════════ -->
-<div class="modal-backdrop" *ngIf="isRadModalOpen()" (click)="isRadModalOpen.set(false)">
-  <div class="modal-container preview-modal" (click)="$event.stopPropagation()">
-    <header class="modal-header">
-      <div class="modal-header-left">
-        <mat-icon>camera</mat-icon>
+<!-- RADIOLOGY QUICK VIEW MODAL -->
+@if (isRadModalOpen()) {
+  <div class="modal-backdrop" (click)="isRadModalOpen.set(false)">
+    <div
+      class="modal-container preview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rad-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
         <div>
-          <h3>{{ selectedRadOrder()?.modality }}: {{ selectedRadOrder()?.procedureName }}</h3>
-          <span class="modal-sub">Order {{ selectedRadOrder()?.orderNumber }} • Attending: Dr. {{ selectedRadOrder()?.doctorName || 'Attending MD' }}</span>
+          <h2 id="rad-modal-title">{{ selectedRadOrder()?.modality }}: {{ selectedRadOrder()?.procedureName }}</h2>
+          <p class="modal-sub">
+            Order {{ selectedRadOrder()?.orderNumber }} &middot; Attending: Dr. {{ selectedRadOrder()?.doctorName || 'Attending MD' }}
+          </p>
         </div>
-      </div>
-      <button class="close-x" (click)="isRadModalOpen.set(false)"><mat-icon>close</mat-icon></button>
-    </header>
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Close radiology report modal"
+          (click)="isRadModalOpen.set(false)"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
 
-    <div class="preview-body">
-      <!-- CROSS-DOCTOR ISOLATION WARNING IN MODAL -->
-      <div class="modal-isolation-banner" *ngIf="selectedRadOrder() && !canManageRadiologyOrder(selectedRadOrder()!)">
-        <mat-icon>shield</mat-icon>
-        <div>
-          <strong>Cross-Specialty Collaboration View:</strong> This imaging study was ordered by 
-          <strong>Dr. {{ selectedRadOrder()?.doctorName }}</strong>. You have read-only clinical chart access. Only the attending physician can sign off and acknowledge findings.
+      <div class="preview-body">
+        @if (selectedRadOrder() && !canManageRadiologyOrder(selectedRadOrder()!)) {
+          <div class="cross-clinic-notice" role="note">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <p>
+              <strong>Cross-Specialty Review:</strong> Ordered by Dr. {{ selectedRadOrder()?.doctorName }}. Only the attending physician may sign off.
+            </p>
+          </div>
+        }
+
+        <div class="preview-img-box">
+          @if (selectedRadOrder()?.imageUrl) {
+            <img
+              [src]="selectedRadOrder()?.imageUrl"
+              [alt]="selectedRadOrder()?.modality + ' scan for ' + (selectedRadOrder()?.patientName || 'patient')"
+            />
+          } @else {
+            <p class="no-preview-note">Diagnostic image preview unavailable here. Open the PACS Suite for full DICOM review.</p>
+          }
         </div>
+
+        <dl class="preview-details">
+          <div>
+            <dt>Patient</dt>
+            <dd>{{ selectedRadOrder()?.patientName }} (MRN: {{ selectedRadOrder()?.patientMedicalRecordNumber }})</dd>
+          </div>
+          <div>
+            <dt>Clinical Indication</dt>
+            <dd>{{ selectedRadOrder()?.clinicalIndication }}</dd>
+          </div>
+          <div>
+            <dt>Findings</dt>
+            <dd>{{ selectedRadOrder()?.findings || 'Findings pending' }}</dd>
+          </div>
+          <div>
+            <dt>Impression</dt>
+            <dd>{{ selectedRadOrder()?.impression || 'Interpretation in progress' }}</dd>
+          </div>
+          @if (selectedRadOrder()?.radiologistSignature) {
+            <div>
+              <dt>Radiologist</dt>
+              <dd>{{ selectedRadOrder()?.radiologistSignature }}</dd>
+            </div>
+          }
+        </dl>
       </div>
 
-      <div class="preview-img-box">
-        <img [src]="selectedRadOrder()?.imageUrl || 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80'" alt="Scan" />
-      </div>
-
-      <div class="preview-details">
-        <p><strong>Patient:</strong> {{ selectedRadOrder()?.patientName }} (MRN: {{ selectedRadOrder()?.patientMedicalRecordNumber }})</p>
-        <p><strong>Clinical Indication:</strong> {{ selectedRadOrder()?.clinicalIndication }}</p>
-        <p><strong>Findings:</strong> {{ selectedRadOrder()?.findings || 'Findings pending' }}</p>
-        <p class="impression-p"><strong>Impression:</strong> {{ selectedRadOrder()?.impression || 'Interpretation in progress' }}</p>
-        <p *ngIf="selectedRadOrder()?.radiologistSignature"><strong>Radiologist:</strong> {{ selectedRadOrder()?.radiologistSignature }}</p>
-
-        <!-- ACTION BUTTONS IN MODAL -->
-        <div class="modal-actions-bar">
-          <button
-            *ngIf="selectedRadOrder() && canManageRadiologyOrder(selectedRadOrder()!) && !selectedRadOrder()?.doctorSignedOffAt"
-            mat-flat-button
-            color="primary"
-            class="sign-btn"
-            (click)="signOffRadiology(selectedRadOrder()!)"
-          >
-            <mat-icon>verified</mat-icon> Physician Sign-Off & Acknowledge
+      <footer class="modal-footer">
+        @if (selectedRadOrder() && canSignOffRadiology(selectedRadOrder()!) && !selectedRadOrder()?.doctorSignedOffAt) {
+          <button mat-flat-button color="primary" type="button" (click)="signOffRadiology(selectedRadOrder()!)">
+            Physician Sign-Off &amp; Acknowledge
           </button>
+        }
 
-          <span class="signed-off-label" *ngIf="selectedRadOrder()?.doctorSignedOffAt">
-            <mat-icon>verified</mat-icon> Signed Off on {{ selectedRadOrder()?.doctorSignedOffAt | date:'medium' }}
-          </span>
-
-          <a [routerLink]="['/patients', selectedRadOrder()?.patientId]" (click)="isRadModalOpen.set(false)" class="view-emr-btn">
-            <mat-icon>assignment_ind</mat-icon> View Full Patient EMR
+        @if (selectedRadOrder()?.patientId) {
+          <a mat-stroked-button [routerLink]="['/patients', selectedRadOrder()?.patientId]" (click)="isRadModalOpen.set(false)">
+            View Patient EMR
           </a>
-        </div>
-      </div>
+        }
+
+        <button mat-stroked-button type="button" (click)="isRadModalOpen.set(false)">
+          Close
+        </button>
+      </footer>
     </div>
   </div>
-</div>
+}

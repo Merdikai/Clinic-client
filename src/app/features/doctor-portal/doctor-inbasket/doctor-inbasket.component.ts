@@ -1,14 +1,12 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { LabService } from '../../../services/lab.service';
 import { RadiologyService } from '../../../services/radiology.service';
@@ -18,6 +16,11 @@ import { PatientService } from '../../../services/patient.service';
 import { PrescriptionService } from '../../../services/prescription.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../ui/toast/toast.service';
+
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
 import { LabOrder } from '../../../models/lab.model';
 import { RadiologyOrder } from '../../../models/radiology.model';
@@ -32,14 +35,16 @@ import { Prescription } from '../../../models/prescription.model';
   imports: [
     CommonModule,
     FormsModule,
-    MatCardModule,
-    MatIconModule,
+    RouterLink,
     MatButtonModule,
-    MatChipsModule,
-    MatTabsModule,
-    MatProgressBarModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
     MatTooltipModule,
-    RouterLink
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './doctor-inbasket.component.html',
   styleUrls: ['./doctor-inbasket.component.scss']
@@ -85,6 +90,18 @@ export class DoctorInbasketComponent implements OnInit {
   currentUserName = computed(() => this.authService.currentUserName());
   isDoctor = computed(() => this.authService.isDoctor());
   isAdmin = computed(() => this.authService.isAdmin());
+  canAccessRadiology = computed(() => this.authService.hasAnyRole(['Doctor', 'Radiologist', 'Nurse']));
+
+  headerSubtitle = computed(
+    () => `Attending MD: Dr. ${this.currentUserName() || 'Physician'} — Multi-disciplinary worklist review`
+  );
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isRadModalOpen()) {
+      this.isRadModalOpen.set(false);
+    }
+  }
 
   // Doctor Isolation Checking Helpers
   isItemOwnedByDoctor(doctorId?: string, doctorName?: string): boolean {
@@ -209,10 +226,8 @@ export class DoctorInbasketComponent implements OnInit {
     const scope = this.scopeFilter();
 
     return list.filter(o => {
-      // Doctor Isolation Filter
       if (scope === 'my' && !this.canManageLabOrder(o)) return false;
 
-      // Sub-category Filter
       if (statusFilter === 'PendingReview' && o.verifiedByDoctorId) return false;
       if (statusFilter === 'Completed' && o.status !== 'Completed') return false;
       if (statusFilter === 'Abnormal') {
@@ -221,11 +236,10 @@ export class DoctorInbasketComponent implements OnInit {
       }
       if (statusFilter === 'Stat' && o.priority !== 'Stat' && o.priority !== 'Urgent') return false;
 
-      // Search Query
       if (query) {
         const pName = (o.patientName || '').toLowerCase();
         const pMrn = (o.patientMedicalRecordNumber || '').toLowerCase();
-        const testName = (o.items && o.items[0]?.testName || '').toLowerCase();
+        const testName = ((o.items && o.items[0]?.testName) || '').toLowerCase();
         const orderNum = (o.orderNumber || '').toLowerCase();
         const docName = (o.doctorName || '').toLowerCase();
         return pName.includes(query) || pMrn.includes(query) || testName.includes(query) || orderNum.includes(query) || docName.includes(query);
@@ -235,7 +249,6 @@ export class DoctorInbasketComponent implements OnInit {
     });
   });
 
-  // Backward compatibility alias for template
   unreviewedLabs = computed(() => this.displayedLabs());
 
   // Filtered Radiology orders
@@ -247,18 +260,12 @@ export class DoctorInbasketComponent implements OnInit {
     const statusFilter = this.radStatusFilter();
 
     return list.filter(r => {
-      // Doctor Isolation Filter
       if (scope === 'my' && !this.canManageRadiologyOrder(r)) return false;
-
-      // Modality Category Filter
       if (modalityFilter !== 'ALL' && r.modality !== modalityFilter) return false;
-
-      // Status Sub-category Filter
       if (statusFilter === 'PendingReview' && (r.doctorSignedOffAt || (r.status !== 'Reported' && r.status !== 'Completed'))) return false;
       if (statusFilter === 'SignedOff' && !r.doctorSignedOffAt) return false;
       if (statusFilter === 'Stat' && r.priority !== 'Stat' && r.priority !== 'Urgent') return false;
 
-      // Search Query
       if (query) {
         const pName = (r.patientName || '').toLowerCase();
         const proc = (r.procedureName || '').toLowerCase();
@@ -279,15 +286,11 @@ export class DoctorInbasketComponent implements OnInit {
     const statusFilter = this.nursingStatusFilter();
 
     return list.filter(p => {
-      // Doctor Isolation Filter
       if (scope === 'my' && !this.canManageNursingProcedure(p)) return false;
-
-      // Status Filter
       if (statusFilter === 'Active' && p.status !== 'Ordered' && p.status !== 'InProgress') return false;
       if (statusFilter === 'Completed' && p.status !== 'Completed') return false;
       if (statusFilter === 'Stat' && p.priority !== 'Stat' && p.priority !== 'Urgent') return false;
 
-      // Search Query
       if (query) {
         const pName = (p.patientName || '').toLowerCase();
         const type = (p.procedureType || '').toLowerCase();
@@ -307,13 +310,9 @@ export class DoctorInbasketComponent implements OnInit {
     const filter = this.appointmentFilter();
 
     return list.filter(a => {
-      // Doctor Isolation Filter
       if (scope === 'my' && !this.canManageAppointment(a)) return false;
-
-      // Status Filter
       if (filter !== 'ALL' && a.status !== filter) return false;
 
-      // Search Query
       if (query) {
         const pName = (a.patientName || '').toLowerCase();
         const docName = (a.doctorName || '').toLowerCase();
@@ -333,14 +332,10 @@ export class DoctorInbasketComponent implements OnInit {
     const statusFilter = this.rxStatusFilter();
 
     return list.filter(rx => {
-      // Doctor Isolation Filter
       if (scope === 'my' && !this.canManagePrescription(rx)) return false;
-
-      // Status Filter
       if (statusFilter === 'Active' && rx.isDispensed) return false;
       if (statusFilter === 'Dispensed' && !rx.isDispensed) return false;
 
-      // Search Query
       if (query) {
         const pName = (rx.patientName || '').toLowerCase();
         const pMrn = (rx.patientMrn || '').toLowerCase();
@@ -362,7 +357,6 @@ export class DoctorInbasketComponent implements OnInit {
   loadInbasket() {
     this.isLoading.set(true);
 
-    // 1. Fetch Lab orders
     this.labService.getOrders(1, 100).subscribe({
       next: (res: any) => {
         const list = res?.items || (Array.isArray(res) ? res : []);
@@ -372,31 +366,26 @@ export class DoctorInbasketComponent implements OnInit {
       error: () => this.isLoading.set(false)
     });
 
-    // 2. Fetch Radiology orders
     this.radiologyService.getOrders().subscribe({
       next: (orders) => this.radiologyOrders.set(orders || []),
       error: () => this.radiologyOrders.set([])
     });
 
-    // 3. Fetch Nursing procedures
     this.nursingService.getProcedures().subscribe({
       next: (procs) => this.nursingProcedures.set(procs || []),
       error: () => this.nursingProcedures.set([])
     });
 
-    // 4. Fetch Appointments
     this.appointmentService.getAll(1, 100).subscribe({
       next: (res: any) => this.appointments.set(res?.items || res || []),
       error: () => this.appointments.set([])
     });
 
-    // 5. Fetch Prescriptions
     this.prescriptionService.getAll().subscribe({
       next: (res: any) => this.prescriptions.set(res?.items || res || []),
       error: () => this.prescriptions.set([])
     });
 
-    // 6. Fetch Patients
     this.patientService.getAll(1, 100).subscribe({
       next: (res: any) => this.patients.set(res?.items || res || []),
       error: () => this.patients.set([])
@@ -408,7 +397,6 @@ export class DoctorInbasketComponent implements OnInit {
     return this.patients().find(p => p.id?.toLowerCase() === patientId.toLowerCase());
   }
 
-  // Persistent Doctor Sign-Off in PostgreSQL
   signOffLab(order: LabOrder) {
     if (!this.canManageLabOrder(order)) {
       this.toast.error(`Doctor Isolation: Only Dr. ${order.doctorName || 'the attending physician'} can sign off on this lab result.`);
@@ -418,7 +406,7 @@ export class DoctorInbasketComponent implements OnInit {
       next: () => {
         const testName = (order.items && order.items[0]?.testName) || 'Lab Order';
         const patientName = order.patientName || 'Patient';
-        this.toast.success(`Physician verification recorded in DB for ${testName} (${patientName}).`);
+        this.toast.success(`Physician verification recorded for ${testName} (${patientName}).`);
         this.loadInbasket();
       },
       error: (err) => {
@@ -439,7 +427,7 @@ export class DoctorInbasketComponent implements OnInit {
     }
     this.radiologyService.doctorSignOff(order.id, 'Reviewed and acknowledged by attending physician.').subscribe({
       next: () => {
-        this.toast.success(`Physician clinical review signed for ${order.modality}: ${order.procedureName}!`);
+        this.toast.success(`Physician clinical review signed for ${order.modality}: ${order.procedureName}.`);
         this.isRadModalOpen.set(false);
         this.loadInbasket();
       },
@@ -451,7 +439,7 @@ export class DoctorInbasketComponent implements OnInit {
 
   acknowledgeCriticalRadiology(order: RadiologyOrder) {
     this.radiologyService.acknowledgeCriticalAlert(order.id, {
-      acknowledgmentNotes: `Verbal and InBasket alert acknowledged by attending MD. Emergency clinical pathway initiated.`
+      acknowledgmentNotes: 'Verbal and InBasket alert acknowledged by attending MD. Emergency clinical pathway initiated.'
     }).subscribe({
       next: () => {
         this.toast.success(`STAT Critical Finding for ${order.patientName} (${order.accessionNumber || order.orderNumber}) acknowledged.`);
@@ -470,7 +458,7 @@ export class DoctorInbasketComponent implements OnInit {
     }
     this.appointmentService.approveAppointment(appt.id).subscribe({
       next: () => {
-        this.toast.success(`Appointment for ${appt.patientName} successfully approved!`);
+        this.toast.success(`Appointment for ${appt.patientName} approved.`);
         this.appointments.update(list => list.map(a => a.id === appt.id ? { ...a, status: 'Scheduled' } : a));
       },
       error: (err) => this.toast.error('Failed to approve appointment: ' + (err.error?.detail || err.message))
