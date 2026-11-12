@@ -3,1074 +3,284 @@
 @use './styles/material-theme';
 
 /* ==========================================================================
-   ENTERPRISE DESIGN SYSTEM - CLINIC MANAGEMENT SUITE
-   Professional Light & Dark Adaptive Design Tokens
+   CLINICAL EHR GLOBAL STYLESHEET (Phase 4)
+   Enterprise neutral light layout, WCAG 2.1 AA focus & contrast primitives,
+   reduced-motion-safe skeleton shimmer, and Material structural defaults.
    ========================================================================== */
-
-:root {
-  /* Core Color Palette */
-  --primary-color: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-active: #075985;
-  --accent-color: #10b981;
-  --warn-color: #ef4444;
-
-  /* Surfaces & Backgrounds - LIGHT MODE */
-  --bg-app: #f1f5f9;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #f8fafc;
-  --bg-surface-card: #ffffff;
-  --bg-surface-glass: rgba(255, 255, 255, 0.9);
-  --bg-subtle: #f8fafc;
-  --bg-input: #ffffff;
-  --bg-modal: #ffffff;
-  --modal-overlay: rgba(15, 23, 42, 0.5);
-
-  --bg-sidebar: #0f172a;
-  --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
-  --bg-sidebar-active: rgba(14, 165, 233, 0.25);
-
-  /* Typography & Text */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-inverse: #ffffff;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-
-  /* Borders & Dividers */
-  --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
-  --border-focus: #0284c7;
-
-  /* Universal Component Aliases */
-  --bg-main: var(--bg-app);
-  --bg-body: var(--bg-app);
-  --bg-hover: #f1f5f9;
-  --bg-card: var(--bg-surface);
-  --surface-card: #ffffff;
-  --card-bg: #ffffff;
-  --surface-input: #ffffff;
-  --surface-ground: #f1f5f9;
-  --surface-border: #e2e8f0;
-  --surface-secondary: var(--bg-subtle);
-  --text-main: #0f172a;
-  --text-heading: #0f172a;
-
-  /* Gradients */
-  --primary-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  --secondary-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --hero-gradient: linear-gradient(135deg, #f8fafc 0%, #edf4fc 100%);
-
-  /* Semantic Alerts */
-  --success-bg: #ecfdf5;
-  --success-text: #047857;
-  --success-border: #a7f3d0;
-  --warning-bg: #fffbeb;
-  --warning-text: #b45309;
-  --warning-border: #fde68a;
-  --danger-bg: #fef2f2;
-  --danger-text: #b91c1c;
-  --danger-border: #fecaca;
-  --info-bg: #f0f9ff;
-  --info-text: #0369a1;
-  --info-border: #bae6fd;
-
-  /* Elevation Shadows */
-  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 2px 6px -1px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10px 25px -3px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 32px -4px rgba(15, 23, 42, 0.1);
-  --shadow-xl: 0 25px 50px -12px rgba(15, 23, 42, 0.16);
-
-  /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-full: 9999px;
-}
-
-/* ==========================================================================
-   DARK MODE ADAPTATION TOKENS
-   ========================================================================== */
-html.dark-theme, [data-theme='dark'], .dark-mode, body.dark-theme {
-  --primary-color: #38bdf8;
-  --primary-hover: #0284c7;
-
-  /* Surfaces & Backgrounds - DARK MODE */
-  --bg-app: #090d16;
-  --bg-surface: #0f172a;
-  --bg-surface-elevated: #1e293b;
-  --bg-surface-card: #131d31;
-  --bg-surface-glass: rgba(15, 23, 42, 0.85);
-  --bg-subtle: #172238;
-  --bg-input: #172238;
-  --bg-modal: #0f172a;
-  --modal-overlay: rgba(0, 0, 0, 0.8);
-
-  --bg-sidebar: #060910;
-  --bg-sidebar-hover: rgba(255, 255, 255, 0.06);
-  --bg-sidebar-active: rgba(14, 165, 233, 0.2);
-
-  /* Typography & Text */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
-
-  /* Borders & Dividers */
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-focus: #38bdf8;
-
-  /* Universal Component Aliases - Dark Mode */
-  --bg-main: var(--bg-app);
-  --bg-body: var(--bg-app);
-  --bg-hover: var(--bg-subtle);
-  --bg-card: var(--bg-surface);
-  --surface-card: var(--bg-surface-card);
-  --card-bg: var(--bg-surface-card);
-  --surface-input: var(--bg-input);
-  --surface-ground: var(--bg-app);
-  --surface-border: var(--border-color);
-  --surface-secondary: var(--bg-subtle);
-  --text-main: var(--text-primary);
-  --text-heading: var(--text-primary);
-
-  /* Gradients */
-  --hero-gradient: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.75));
-
-  /* Semantic Alerts */
-  --success-bg: rgba(16, 185, 129, 0.15);
-  --success-text: #34d399;
-  --success-border: rgba(16, 185, 129, 0.3);
-  --warning-bg: rgba(245, 158, 11, 0.15);
-  --warning-text: #fbbf24;
-  --warning-border: rgba(245, 158, 11, 0.3);
-  --danger-bg: rgba(239, 68, 68, 0.15);
-  --danger-text: #f87171;
-  --danger-border: rgba(239, 68, 68, 0.3);
-  --info-bg: rgba(14, 165, 233, 0.15);
-  --info-text: #38bdf8;
-  --info-border: rgba(14, 165, 233, 0.3);
-
-  /* Shadows */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-}
 
 *, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html, body {
   height: 100%;
+  margin: 0;
+}
+
+body {
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
+  font-size: var(--text-14);
+  line-height: var(--leading-normal);
   color: var(--text-primary);
-  line-height: 1.5;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  background-color: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ==========================================================================
-   GLOBAL ANGULAR MATERIAL CONTROLS OVERRIDES (LIGHT & DARK ADAPTIVE)
-   ========================================================================== */
+h1, h2, h3, h4, h5, h6, p {
+  margin-top: 0;
+}
 
-/* Cards */
+h1 {
+  font-size: var(--text-24);
+  line-height: var(--leading-tight);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: var(--text-20);
+  line-height: var(--leading-tight);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+h3 {
+  font-size: var(--text-16);
+  line-height: var(--leading-normal);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Accessibility Primitives */
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: var(--space-16);
+  z-index: 2000;
+  padding: var(--space-8) var(--space-16);
+  background-color: var(--action-primary);
+  color: var(--text-inverse);
+  font-size: var(--text-14);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  border: 2px solid var(--surface-card);
+}
+
+.skip-link:focus-visible {
+  top: var(--space-12);
+  outline: 3px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+:where(a:any-link, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* Reduced-Motion-Safe Skeleton Shimmer */
+@keyframes app-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.app-skeleton-bar {
+  background-color: var(--skeleton-base);
+  border-radius: var(--radius-sm);
+
+  @media (prefers-reduced-motion: no-preference) {
+    background-image: linear-gradient(
+      90deg,
+      var(--skeleton-base) 25%,
+      var(--skeleton-highlight) 50%,
+      var(--skeleton-base) 75%
+    );
+    background-size: 200% 100%;
+    animation: app-skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+/* Angular Material Structural Normalization */
 .mat-mdc-card {
-  background-color: var(--bg-surface) !important;
-  color: var(--text-primary) !important;
-  border-radius: var(--radius-xl) !important;
-  border: 1px solid var(--border-color) !important;
-  box-shadow: var(--shadow-sm) !important;
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
 }
 
-/* Text Fields / Form Fields */
 .mat-mdc-form-field {
-  .mat-mdc-text-field-wrapper {
-    background-color: var(--bg-input) !important;
-    border-radius: var(--radius-md) !important;
-    color: var(--text-primary) !important;
-  }
-
-  .mat-mdc-form-field-flex {
-    background-color: transparent !important;
-  }
-
-  input.mat-mdc-input-element, textarea.mat-mdc-input-element {
-    color: var(--text-primary) !important;
-    caret-color: var(--primary-color) !important;
-  }
-
-  .mat-mdc-floating-label, .mat-mdc-select-placeholder {
-    color: var(--text-secondary) !important;
-  }
-
-  .mat-mdc-select-value-text {
-    color: var(--text-primary) !important;
-  }
-
-  .mdc-notched-outline__leading,
-  .mdc-notched-outline__notch,
-  .mdc-notched-outline__trailing {
-    border-color: var(--border-color) !important;
-  }
-
-  &.mat-focused {
-    .mdc-notched-outline__leading,
-    .mdc-notched-outline__notch,
-    .mdc-notched-outline__trailing {
-      border-color: var(--border-focus) !important;
-      border-width: 2px !important;
-    }
-  }
+  --mdc-outlined-text-field-container-shape: var(--radius-sm);
+  --mdc-outlined-text-field-outline-color: var(--border-control);
+  --mdc-outlined-text-field-hover-outline-color: var(--text-secondary);
+  --mdc-outlined-text-field-focus-outline-color: var(--action-primary);
+  --mdc-outlined-text-field-label-text-color: var(--text-secondary);
+  --mdc-outlined-text-field-input-text-color: var(--text-primary);
+  --mdc-outlined-text-field-error-outline-color: var(--semantic-danger-accent);
+  --mdc-outlined-text-field-error-label-text-color: var(--semantic-danger-text);
 }
 
-/* Select Dropdown Menus */
-.mat-mdc-select-panel {
-  background-color: var(--bg-surface-elevated) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-lg) !important;
-
-  .mat-mdc-option {
-    color: var(--text-primary) !important;
-    &:hover:not(.mdc-list-item--disabled) {
-      background-color: var(--bg-subtle) !important;
-    }
-    &.mdc-list-item--selected {
-      background-color: var(--info-bg) !important;
-      color: var(--info-text) !important;
-      font-weight: 700 !important;
-    }
-  }
+.mat-mdc-select-panel,
+.mat-mdc-menu-panel,
+.mat-mdc-autocomplete-panel {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 
-/* Tables */
+/* Standardized Data Tables (48px row rhythm, 14px text, hover highlight, no zebra) */
 .mat-mdc-table {
-  background-color: transparent !important;
+  width: 100%;
+  background-color: var(--surface-card);
 
   th.mat-mdc-header-cell {
-    background-color: var(--bg-subtle) !important;
-    color: var(--text-secondary) !important;
-    font-size: 0.8125rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    padding: 14px 18px !important;
+    background-color: var(--surface-subtle);
+    color: var(--text-secondary);
+    font-size: var(--text-12);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-default);
+    padding: var(--space-12) var(--space-16);
+    text-wrap: balance;
   }
 
   td.mat-mdc-cell {
-    color: var(--text-primary) !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
-    padding: 14px 18px !important;
+    font-size: var(--text-14);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: var(--space-12) var(--space-16);
+  }
+
+  tr.mat-mdc-header-row {
+    min-block-size: 44px;
+  }
+
+  tr.mat-mdc-row {
+    min-block-size: 48px;
   }
 
   tr.mat-mdc-row:hover {
-    background-color: var(--bg-subtle) !important;
+    background-color: var(--surface-page);
   }
 }
 
-/* Buttons */
-.mat-mdc-button, .mat-mdc-raised-button, .mat-mdc-flat-button, .mat-mdc-stroked-button {
-  font-family: var(--font-sans) !important;
-  font-weight: 700 !important;
-  border-radius: var(--radius-md) !important;
-  letter-spacing: 0.01em !important;
+/* Standardized Buttons (3 variants only: flat/filled, stroked/outlined, text) */
+.mat-mdc-button-base {
+  font-family: var(--font-sans);
+  border-radius: var(--radius-sm);
+  min-block-size: 36px;
 }
 
-.mat-mdc-raised-button.mat-primary, .mat-mdc-flat-button.mat-primary {
-  background: var(--primary-gradient) !important;
-  color: #ffffff !important;
+.mat-mdc-unelevated-button,
+.mat-mdc-flat-button,
+.mat-mdc-raised-button {
+  --mdc-filled-button-container-shape: var(--radius-sm);
+  --mdc-protected-button-container-shape: var(--radius-sm);
+  border-radius: var(--radius-sm);
 }
 
-.mat-mdc-stroked-button {
-  border-color: var(--border-color) !important;
-  color: var(--text-primary) !important;
+.mat-mdc-outlined-button {
+  --mdc-outlined-button-container-shape: var(--radius-sm);
+  --mdc-outlined-button-outline-color: var(--border-control);
+  border-radius: var(--radius-sm);
 }
 
-/* Tabs */
-.mat-mdc-tab-header {
-  border-bottom: 1px solid var(--border-color) !important;
-}
-.mat-mdc-tab .mdc-tab__text-label {
-  color: var(--text-secondary) !important;
-  font-weight: 600 !important;
-}
-.mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
-  color: var(--primary-color) !important;
-  font-weight: 800 !important;
-}
-.mat-mdc-tab-body-wrapper {
-  padding-top: 1rem;
+/* Standardized Dialog Surface */
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  background-color: var(--surface-modal);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 
-/* Premium UI Overrides */
-.premium-page {
-  background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.01) 100%);
+.ehr-dialog-standard .mat-mdc-dialog-container {
+  max-width: min(100vw - 32px, 480px);
 }
 
-.premium-card, .premium-drawer, .premium-hero-card {
-  background: var(--bg-surface) !important;
-  border-radius: 16px !important;
-  box-shadow: var(--shadow-sm) !important;
-  border: 1px solid var(--border-color) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Standardized Semantic Toast Snackbars (3000ms, bottom-center, polite) */
+.mat-mdc-snack-bar-container.toast-success .mdc-snackbar__surface {
+  background-color: var(--semantic-success-bg);
+  color: var(--semantic-success-text);
+  border: 1px solid var(--semantic-success-accent);
+  border-radius: var(--radius-sm);
 }
 
-.premium-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 40px -10px rgba(0,0,0,0.15) !important;
+.mat-mdc-snack-bar-container.toast-error .mdc-snackbar__surface {
+  background-color: var(--semantic-danger-bg);
+  color: var(--semantic-danger-text);
+  border: 1px solid var(--semantic-danger-accent);
+  border-radius: var(--radius-sm);
 }
 
-.export-header-premium, .premium-title, .premium-hero-content, .premium-modal-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+.mat-mdc-snack-bar-container.toast-warning .mdc-snackbar__surface {
+  background-color: var(--semantic-warning-bg);
+  color: var(--semantic-warning-text);
+  border: 1px solid var(--semantic-warning-accent);
+  border-radius: var(--radius-sm);
 }
 
-.icon-glow-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  color: white;
-}
-.giant-glow-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  color: white;
+.mat-mdc-snack-bar-container.toast-info .mdc-snackbar__surface {
+  background-color: var(--semantic-info-bg);
+  color: var(--semantic-info-text);
+  border: 1px solid var(--semantic-info-accent);
+  border-radius: var(--radius-sm);
 }
 
-.primary-glow {
-  background: linear-gradient(135deg, #0284c7, #38bdf8);
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
-}
-
-.accent-glow {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
-}
-
-.gradient-text, .hero-title {
-  background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 800;
-}
-
-.hero-subtitle { color: var(--text-secondary); font-size: 1.1rem; font-weight: 500; }
-
-.premium-badge {
-  background: var(--primary-color);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-left: 8px;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
-}
-
-.premium-tab-text {
+.mat-mdc-snack-bar-container .mat-mdc-snack-bar-label,
+.mat-mdc-snack-bar-container .mdc-button__label {
+  color: inherit;
   font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
-.premium-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  margin-top: 24px;
-}
-
-/* Fix dark mode for new cards */
-html.dark-theme .premium-card, html.dark-theme .premium-drawer, html.dark-theme .premium-hero-card,
-[data-theme='dark'] .premium-card, [data-theme='dark'] .premium-drawer, [data-theme='dark'] .premium-hero-card,
-.dark-mode .premium-card, .dark-mode .premium-drawer, .dark-mode .premium-hero-card,
-body.dark-theme .premium-card, body.dark-theme .premium-drawer, body.dark-theme .premium-hero-card {
-  background: rgba(30, 41, 59, 0.7) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.7) !important;
-}
-
-
-.modal-overlay {
-  background: var(--modal-overlay) !important;
-}
-.modal-card {
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border-color) !important;
-}
-
-
-/* ADDITIONAL PREMIUM EFFECTS */
-button.mat-mdc-button-base, button.mat-mdc-raised-button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  border-radius: 8px !important;
-}
-button.mat-mdc-button-base:hover, button.mat-mdc-raised-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3), 0 4px 6px -2px rgba(2, 132, 199, 0.15) !important;
-}
-.mat-mdc-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-.mat-mdc-card:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-}
-input.mat-mdc-input-element {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
-}
-input.mat-mdc-input-element:focus {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
-}
-/* Glassmorphism Backgrounds - Light Theme Only */
-html:not(.dark-theme) body:not(.dark-theme) {
-  .premium-card, .dashboard-card {
-    background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85)) !important;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
-  }
-}
-
-/* ==========================================================================
-   GLOBAL DARK THEME SURFACE & SECTION ADAPTATION (UN-ENCAPSULATED)
-   ========================================================================== */
-html.dark-theme, [data-theme='dark'], .dark-mode, body.dark-theme {
-  background-color: var(--bg-app, #090d16) !important;
-  color: var(--text-primary, #f8fafc) !important;
-
-  /* Universal Cards, Cockpits, Containers */
-  .premium-card,
-  .dashboard-card,
+/* Forced Colors (Windows High Contrast) Fallbacks */
+@media (forced-colors: active) {
   .mat-mdc-card,
-  .metric-card,
-  .cockpit-card,
-  .recent-studies-card,
-  .search-filter-card,
-  .table-container,
-  .radiology-nav-tabs,
-  .filters-card,
-  .stat-card,
-  .filter-card,
-  .duty-roster-card,
-  .schedule-card,
-  .hero-card,
-  .empty-state-card {
-    background: #131d31 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    color: #f8fafc !important;
+  .mat-mdc-dialog-container .mdc-dialog__surface,
+  .app-skeleton-bar {
+    border: 1px solid CanvasText;
   }
 
-  /* Universal Modals & Popups */
-  .modal-dialog,
-  .modal-card,
-  .modal-container,
-  .modal-content,
-  .nurse-report-modal,
-  .payment-modal-card,
-  .edit-patient-card,
-  .form-modal,
-  .custom-modal-dialog,
-  .duty-modal,
-  .mat-mdc-dialog-surface {
-    background: #0f172a !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    color: #f8fafc !important;
-
-    .modal-header, .edit-modal-header, .payment-modal-header, .duty-modal-header {
-      background: #131d31 !important;
-      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-      h1, h2, h3, h4 { color: #f8fafc !important; }
-      p, .subtext, .modal-subtitle { color: #94a3b8 !important; }
-    }
-
-    .modal-body, .edit-modal-body, .nurse-modal-body, .payment-modal-body, .duty-modal-body {
-      background: #090d16 !important;
-      color: #f8fafc !important;
-    }
-
-    .modal-footer, .edit-modal-footer, .nurse-modal-footer, .payment-modal-footer, .duty-modal-footer {
-      background: #131d31 !important;
-      border-top-color: rgba(255, 255, 255, 0.08) !important;
-    }
-  }
-
-  /* CDK Overlays, Menus, Popups, Dialogs */
-  .cdk-overlay-backdrop {
-    background-color: rgba(0, 0, 0, 0.75) !important;
-  }
-  .cdk-overlay-pane {
-    .mat-mdc-menu-panel,
-    .mat-mdc-select-panel,
-    .mat-mdc-autocomplete-panel,
-    .mat-datepicker-content {
-      background-color: #0f172a !important;
-      border: 1px solid rgba(255, 255, 255, 0.12) !important;
-      color: #f8fafc !important;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
-
-      .mat-mdc-option {
-        color: #f8fafc !important;
-        &:hover:not(.mdc-list-item--disabled),
-        &.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-          background-color: #172238 !important;
-        }
-        .mdc-list-item__primary-text {
-          color: #f8fafc !important;
-        }
-      }
-    }
-  }
-
-  /* Universal Buttons Darkening */
-  button.refresh-btn,
-  button.mini-btn,
-  button.dept-tab,
-  button.page-btn,
-  button.action-link-btn,
-  button.template-btn,
-  button.modal-cancel-btn,
-  .close-x,
-  .close-btn,
-  button.mat-mdc-outlined-button,
-  button.mat-mdc-stroked-button:not(.action-btn):not([color='primary']):not([color='accent']):not([color='warn']) {
-    background-color: #172238 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    color: #cbd5e1 !important;
-
-    mat-icon {
-      color: #94a3b8 !important;
-    }
-
-    &:hover {
-      background-color: #1e293b !important;
-      color: #f8fafc !important;
-      border-color: rgba(255, 255, 255, 0.22) !important;
-    }
-  }
-
-  /* Sub-Boxes, Detail Cards & Tiles */
-  .order-notes-box p,
-  .section-content-box,
-  .indication-box,
-  .findings-box,
-  .findings-text,
-  .physician-status-card,
-  .dosi-tile,
-  .suite-card,
-  .suite-metrics-row,
-  .wday-pill,
-  .my-shift-card,
-  .readonly-roster-badge,
-  .active-patient-box,
-  .s-metric,
-  .pt-field,
-  .prep-item,
-  .mod-tile,
-  .suite-mini-item,
-  .order-summary-card,
-  .nurse-summary-pod,
-  .patient-card,
-  .catalog-card,
-  .preset-pill,
-  .queued-order-item,
-  .vital-tile,
-  .vitals-entry-form,
-  .rx-table,
-  .order-section-block,
-  .order-test-card,
-  .format-note-box,
-  .search-bar {
-    background-color: #131d31 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    color: #cbd5e1 !important;
-
-    h1, h2, h3, h4, strong, .mod-name, .s-info strong, .proc-title, .pt-field strong, .m-val, .card-title {
-      color: #f8fafc !important;
-    }
-    p, span, label, .mod-count, .s-mod, .care-tip, .status-lbl, .pt-field span, .pt-field label, .m-lbl {
-      color: #94a3b8 !important;
-    }
-  }
-
-  .section-content-box.impression-box {
-    background-color: rgba(16, 185, 129, 0.1) !important;
-    border-color: rgba(16, 185, 129, 0.3) !important;
-    border-left: 4px solid #10b981 !important;
-    .impression-text { color: #6ee7b7 !important; }
-  }
-
-  .sig-stamp-container {
-    background-color: rgba(16, 185, 129, 0.12) !important;
-    border-color: rgba(16, 185, 129, 0.25) !important;
-    .sig-details {
-      .sig-title { color: #6ee7b7 !important; }
-      strong { color: #a7f3d0 !important; }
-      .sig-date { color: #34d399 !important; }
-    }
-  }
-
-  .nurse-governance-banner {
-    background-color: rgba(30, 64, 175, 0.2) !important;
-    border-color: rgba(59, 130, 246, 0.4) !important;
-    color: #93c5fd !important;
-    span, strong { color: #bfdbfe !important; }
-  }
-
-  .wday-pill.has-shift {
-    background-color: rgba(124, 58, 237, 0.2) !important;
-    border-color: rgba(124, 58, 237, 0.4) !important;
-    .wday-label { color: #c4b5fd !important; }
-    .wday-time { color: #ddd6fe !important; }
-  }
-
-  .wday-pill.active-shift {
-    background-color: rgba(124, 58, 237, 0.35) !important;
-    border-color: #8b5cf6 !important;
-    .wday-label, .wday-time { color: #f5f3ff !important; }
-  }
-
-  /* Universal Tables & Grids */
-  .table-container, .table-responsive, .roster-table-wrap {
-    background-color: #131d31 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-
-    table, .clinical-table, .proc-table, .recent-table, .patient-table, .appointments-table, mat-table {
-      background: transparent !important;
-
-      th, .mat-mdc-header-cell {
-        background-color: #172238 !important;
-        color: #94a3b8 !important;
-        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-      }
-
-      td, .mat-mdc-cell {
-        background-color: transparent !important;
-        color: #cbd5e1 !important;
-        border-bottom-color: rgba(255, 255, 255, 0.04) !important;
-        strong, .patient-name, .proc-name { color: #f8fafc !important; }
-        span, .dr-sub, .body-site, .m-lbl { color: #94a3b8 !important; }
-      }
-
-      tr:hover, .proc-row:hover, .clinical-row:hover {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-      }
-    }
-
-    .table-pagination {
-      background-color: #131d31 !important;
-      border-top-color: rgba(255, 255, 255, 0.08) !important;
-      color: #94a3b8 !important;
-    }
-  }
-
-  /* Universal Form Controls & Text Inputs */
-  input,
-  select,
-  textarea,
-  .form-control,
-  .clinical-textarea,
-  .standard-input,
-  .search-input-wrap input,
-  .search-box input,
-  .filter-select,
-  .custom-select,
-  input.mat-mdc-input-element,
-  textarea.mat-mdc-input-element {
-    background-color: #172238 !important;
-    color: #f8fafc !important;
-    border-color: rgba(255, 255, 255, 0.15) !important;
-    caret-color: #38bdf8 !important;
-
-    &::placeholder {
-      color: #64748b !important;
-    }
-
-    &:focus {
-      border-color: #38bdf8 !important;
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
-    }
-
-    option {
-      background-color: #172238 !important;
-      color: #f8fafc !important;
-    }
-  }
-
-  /* Angular Material MDC Form Fields & Containers */
-  .mat-mdc-form-field {
-    --mdc-filled-text-field-container-color: #172238 !important;
-    --mdc-filled-text-field-input-text-color: #f8fafc !important;
-    --mdc-filled-text-field-label-text-color: #94a3b8 !important;
-    --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, 0.15) !important;
-    --mdc-outlined-text-field-input-text-color: #f8fafc !important;
-    --mdc-outlined-text-field-label-text-color: #94a3b8 !important;
-    --mat-form-field-focus-select-arrow-color: #38bdf8 !important;
-
-    .mat-mdc-text-field-wrapper {
-      background-color: #172238 !important;
-      color: #f8fafc !important;
-    }
-
-    .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-      background-color: #172238 !important;
-    }
-
-    .mat-mdc-form-field-focus-overlay {
-      background-color: rgba(255, 255, 255, 0.04) !important;
-    }
-
-    .mdc-floating-label,
-    .mat-mdc-floating-label,
-    .mat-mdc-select-placeholder,
-    .mdc-text-field__input::placeholder {
-      color: #94a3b8 !important;
-    }
-
-    .mat-mdc-select-value,
-    .mat-mdc-select-value-text {
-      color: #f8fafc !important;
-    }
-
-    .mat-mdc-select-arrow {
-      color: #94a3b8 !important;
-    }
-
-    .mdc-notched-outline__leading,
-    .mdc-notched-outline__notch,
-    .mdc-notched-outline__trailing {
-      border-color: rgba(255, 255, 255, 0.15) !important;
-    }
-  }
-
-  /* Additional Sub-Boxes & Grids */
-  .reporting-queue-pane,
-  .desk-card,
-  .desk-header-card,
-  .safety-tracking-subpanel,
-  .safety-card,
-  .safety-toolbar-card,
-  .contrast-fieldset,
-  .order-summary-box,
-  .select-prompt-card,
-  .empty-state,
-  .critical-alert-config-box {
-    background-color: #131d31 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    color: #cbd5e1 !important;
-
-    h1, h2, h3, h4, strong { color: #f8fafc !important; }
-    p, span, label { color: #94a3b8 !important; }
-  }
-
-  .mod-btn,
-  .suite-btn,
-  .tmpl-chip {
-    background-color: #172238 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    color: #cbd5e1 !important;
-
-    &:hover {
-      background-color: #1e293b !important;
-      color: #f8fafc !important;
-    }
-
-    &.selected, &.active {
-      background-color: #0284c7 !important;
-      color: #ffffff !important;
-      border-color: #38bdf8 !important;
-    }
-  }
-
-  /* Critical Alert Banner & Items */
-  .critical-alert-banner {
-    background: rgba(239, 68, 68, 0.12) !important;
-    border-color: rgba(239, 68, 68, 0.4) !important;
-
-    .alert-item {
-      background-color: #1e131d !important;
-      border-color: rgba(239, 68, 68, 0.3) !important;
-
-      .crit-patient { color: #f8fafc !important; }
-      .crit-proc { color: #94a3b8 !important; }
-      .crit-diag {
-        background-color: rgba(239, 68, 68, 0.15) !important;
-        color: #fca5a5 !important;
-      }
-      .crit-btn {
-        background-color: #2a151b !important;
-        color: #f87171 !important;
-        border-color: rgba(239, 68, 68, 0.4) !important;
-      }
-    }
-  }
-
-  /* Badges & Chips */
-  .tab-badge,
-  .suite-badge,
-  .suite-room-num,
-  .mrn-badge,
-  .view-only-badge,
-  .tab-badge.neutral,
-  .tolerance-chip.pending,
-  .order-chip.pending {
-    background-color: #1e293b !important;
-    color: #94a3b8 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  .nav-tab-btn {
-    color: #94a3b8 !important;
-    &:hover { background-color: #172238 !important; color: #f8fafc !important; }
-    &.active { background-color: #0284c7 !important; color: #ffffff !important; }
+  :where(a:any-link, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 }
 
-/* ==========================================================================
-   DARK THEME — Dashboard Cards, Radiology Worklist, Lab Bench, Appointments
-   ========================================================================== */
-html.dark-theme,
-html.dark-mode,
-body.dark-theme {
-
-  /* ── Dashboard patient list and date cards ── */
-  .patient-list-card {
-    background: var(--bg-surface-card) !important;
-    border-color: var(--border-color) !important;
-  }
-  .appt-date-box {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-    .day { color: #f8fafc !important; }
-  }
-  .mpi-match-card {
-    background: var(--bg-surface-card) !important;
-    border-color: var(--border-color) !important;
-  }
-
-  /* ── Dashboard pending-rx-card ── */
-  .pending-rx-card {
-    background: var(--bg-surface-card) !important;
-    border-color: var(--border-color) !important;
-  }
-
-  /* ── Dashboard table headers ── */
-  .custom-table th,
-  table.mat-mdc-table th.mat-mdc-header-cell {
-    background: rgba(255, 255, 255, 0.03) !important;
-    color: #94a3b8 !important;
-    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
-  }
-
-  /* ── Radiology RIS Worklist ── */
-  .accession-code {
-    background: rgba(99, 102, 241, 0.15) !important;
-    color: #818cf8 !important;
-  }
-  .priority-badge[data-priority="Routine"] {
-    background: rgba(71, 85, 105, 0.25) !important;
-    color: #94a3b8 !important;
-  }
-  .priority-badge[data-priority="Urgent"] {
-    background: rgba(180, 83, 9, 0.2) !important;
-    color: #fbbf24 !important;
-  }
-  .suite-badge {
-    background: rgba(14, 165, 233, 0.12) !important;
-    border-color: rgba(14, 165, 233, 0.25) !important;
-    color: #38bdf8 !important;
-  }
-
-  /* ── Radiology modality filter pills (tab bar) ── */
-  .modality-filter-btn,
-  .filter-pill,
-  .tab-filter-pill {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    color: #94a3b8 !important;
-    &.active, &[class*="active"] {
-      background: rgba(2, 132, 199, 0.2) !important;
-      border-color: rgba(56, 189, 248, 0.4) !important;
-      color: #38bdf8 !important;
-    }
-  }
-
-  /* ── Laboratory specimen bench ── */
-  .barcode-pill {
-    background: var(--bg-subtle) !important;
-    color: var(--text-primary) !important;
-    border-color: rgba(148, 163, 184, 0.4) !important;
-  }
-  .uncollected-pill {
-    background: rgba(194, 65, 12, 0.12) !important;
-    border-color: rgba(194, 65, 12, 0.3) !important;
-  }
-  .rejection-pill {
-    background: rgba(185, 28, 28, 0.12) !important;
-    border-color: rgba(185, 28, 28, 0.3) !important;
-  }
-  .lot-badge, .qty-badge {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-secondary) !important;
-  }
-
-  /* ── Appointment clinical status chips ── */
-  .room-assignment-chip {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-secondary) !important;
-  }
-  .visit-type-badge {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-secondary) !important;
-  }
-
-  /* ── Shell duty-summary-card ── */
-  .duty-summary-card {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-  }
-
-  /* ── SBAR preview card on dashboard ── */
-  .sbar-preview-card {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-  }
-
-  /* ── Generic dashboard panel sub-boxes ── */
-  .panel-box,
-  .section-box,
-  .info-summary-row {
-    background: var(--bg-subtle) !important;
-    border-color: var(--border-color) !important;
-  }
-
-  /* ── Duty Roster / Staff Schedules ── */
-  .schedules-page {
-    .page-header,
-    .toolbar-card,
-    .shift-card,
-    .empty-state-card {
-      background: var(--bg-surface-card) !important;
-      border-color: var(--border-color) !important;
-    }
-    .my-shifts-section {
-      background: var(--bg-surface-card) !important;
-      border-color: rgba(99, 102, 241, 0.3) !important;
-    }
-    .my-week-day,
-    .my-shift-card,
-    .timing-box,
-    .notes-box,
-    .search-box {
-      background: var(--bg-subtle) !important;
-      border-color: var(--border-color) !important;
-    }
-    .my-card-topbar {
-      background: rgba(0, 0, 0, 0.2) !important;
-      border-bottom-color: var(--border-color) !important;
-    }
-    .day-badge {
-      background: var(--bg-subtle) !important;
-      border-color: var(--border-color) !important;
-      color: var(--text-primary) !important;
-    }
-    .dept-tab {
-      background: var(--bg-subtle) !important;
-      border-color: var(--border-color) !important;
-      color: var(--text-secondary) !important;
-      &:hover {
-        background: var(--bg-hover) !important;
-        color: var(--text-primary) !important;
-      }
-    }
-    .custom-select {
-      background: var(--bg-subtle) !important;
-      border-color: var(--border-color) !important;
-      color: var(--text-primary) !important;
-      option {
-        background: #172238 !important;
-        color: #f8fafc !important;
-      }
-    }
-  }
-
-  /* ── Doctor Portal (Consultations, InBasket, Patient Panel) ── */
-  .consultations-workspace,
-  .inbasket-container,
-  .patients-panel-container {
-    color: #f8fafc !important;
-
-    .metric-card,
-    .filter-bar,
-    .appt-card,
-    .inbasket-header,
-    .inbasket-tabs,
-    .inbasket-card,
-    .patient-card,
-    .soap-card,
-    .encounter-header,
-    .encounter-footer {
-      background-color: var(--bg-surface-card) !important;
-      border-color: var(--border-color) !important;
-      color: #f8fafc !important;
-    }
-
-    .triage-vitals-cockpit {
-      background-color: #112638 !important;
-      border-color: #1e3a5f !important;
-    }
-
-    .vital-tile,
-    .rx-table,
-    .catalog-card,
-    .preset-pill,
-    .queued-order-item,
-    .vitals-row,
-    .sub-filter-row {
-      background-color: var(--bg-subtle) !important;
-      border-color: var(--border-color) !important;
-    }
-
-    .search-box,
-    .search-bar {
-      background-color: var(--bg-input) !important;
-      border-color: var(--border-color) !important;
-      input {
-        color: #f8fafc !important;
-        &::placeholder { color: #64748b !important; }
-      }
-    }
-  }
-
-  .modal-container.encounter-modal,
-  .preview-modal {
-    background-color: var(--bg-surface) !important;
-    border-color: var(--border-color) !important;
-  }
+/* Incremental Refactor Compatibility Aliases (Cleanly retired in Phase 32) */
+:root {
+  --auth-bg-gradient: var(--surface-page);
+  --primary-gradient: var(--action-primary);
+  --secondary-gradient: var(--action-primary);
+  --hero-gradient: var(--surface-card);
+  --radius-lg: var(--radius-md);
+  --radius-xl: var(--radius-md);
+  --radius-full: var(--radius-sm);
+  --shadow-md: var(--shadow-card);
+  --shadow-lg: var(--shadow-card);
+  --shadow-xl: var(--shadow-card);
+  --accent-color: var(--action-primary);
+  --warn-color: var(--semantic-danger-accent);
+  --border-focus: var(--focus-ring-color);
+  --bg-sidebar: var(--surface-sidebar);
+  --bg-sidebar-hover: var(--surface-subtle);
+  --bg-sidebar-active: var(--surface-hover);
 }
-
-
