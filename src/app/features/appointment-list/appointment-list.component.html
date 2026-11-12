@@ -1,319 +1,262 @@
-<div class="page-container">
-
-  <!-- HERO BANNER -->
-  <div class="hero-card">
-    <div class="hero-content">
-      <div class="schedule-badge">
-        <span class="pulse-dot"></span>
-        <span>Real-Time Clinical Workflow Suite</span>
-      </div>
-      <h1 class="hero-title">Appointment Master Schedule</h1>
-      <p class="hero-subtitle">Real-time consultation queues, live patient triage check-ins, and physician clinical suite</p>
-    </div>
-    <div class="hero-actions">
-      <a mat-raised-button color="primary" routerLink="/appointments/book" class="book-hero-btn">
-        <mat-icon>add_alarm</mat-icon>
-        <span>Schedule Consultation</span>
+<div class="ehr-page appointment-list-page">
+  <app-page-header
+    title="Appointment Schedule"
+    subtitle="Consultation queues, triage check-in, and visit lifecycle tracking">
+    @if (canBookAppointment()) {
+      <a mat-flat-button color="primary" routerLink="/appointments/book">
+        Schedule Appointment
       </a>
-    </div>
-  </div>
+    }
+  </app-page-header>
 
-  <!-- STATS OVERVIEW CARDS -->
-  <div class="stats-grid">
-    <div class="stat-card" [class.active]="selectedStatusFilter() === 'ALL'" (click)="selectedStatusFilter.set('ALL')">
-      <div class="icon-wrap all-icon"><mat-icon>event_note</mat-icon></div>
-      <div class="stat-info">
-        <span class="stat-label">Total Appointments</span>
-        <h3 class="stat-value">{{ appointments().length }}</h3>
-      </div>
+  <section class="kpi-strip" aria-label="Appointment schedule metrics">
+    <div class="kpi-card">
+      <span class="kpi-label">Total Loaded</span>
+      <span class="kpi-value">{{ appointments().length }}</span>
     </div>
-
-    <div class="stat-card" [class.active]="selectedStatusFilter() === 'CheckedIn'" (click)="selectedStatusFilter.set(selectedStatusFilter() === 'CheckedIn' ? 'ALL' : 'CheckedIn')">
-      <div class="icon-wrap waiting-icon"><mat-icon>hourglass_top</mat-icon></div>
-      <div class="stat-info">
-        <span class="stat-label">Waiting in Queue</span>
-        <h3 class="stat-value">{{ checkedInCount() }}</h3>
-      </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Waiting Queue</span>
+      <span class="kpi-value tone-warning">{{ checkedInCount() }}</span>
     </div>
-
-    <div class="stat-card" [class.active]="selectedStatusFilter() === 'Scheduled'" (click)="selectedStatusFilter.set(selectedStatusFilter() === 'Scheduled' ? 'ALL' : 'Scheduled')">
-      <div class="icon-wrap sched-icon"><mat-icon>schedule</mat-icon></div>
-      <div class="stat-info">
-        <span class="stat-label">Upcoming / Scheduled</span>
-        <h3 class="stat-value">{{ scheduledCount() }}</h3>
-      </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Scheduled</span>
+      <span class="kpi-value tone-info">{{ scheduledCount() }}</span>
     </div>
-
-    <div class="stat-card" [class.active]="selectedStatusFilter() === 'Completed'" (click)="selectedStatusFilter.set(selectedStatusFilter() === 'Completed' ? 'ALL' : 'Completed')">
-      <div class="icon-wrap done-icon"><mat-icon>verified</mat-icon></div>
-      <div class="stat-info">
-        <span class="stat-label">Consultations Completed</span>
-        <h3 class="stat-value">{{ completedCount() }}</h3>
-      </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Completed</span>
+      <span class="kpi-value tone-success">{{ completedCount() }}</span>
     </div>
-  </div>
+  </section>
 
-  <!-- MAIN TABLE CONTAINER -->
-  <div class="content-glass-card">
-    
-    <!-- Doctor Workspace Filter Switcher -->
-    <div class="workspace-scope-toolbar" *ngIf="authService.hasRole('Doctor')">
-      <div class="scope-pill-group">
+  <section class="schedule-surface" aria-label="Appointments queue table">
+    @if (authService.hasRole('Doctor')) {
+      <div class="scope-toolbar" role="group" aria-label="Physician schedule scope">
         <button
           type="button"
-          class="scope-pill-btn"
+          mat-stroked-button
+          class="filter-btn"
           [class.active]="doctorFilterScope() === 'my'"
-          (click)="doctorFilterScope.set('my')"
-        >
-          <mat-icon>person</mat-icon>
-          <span>My Assigned Appointments ({{ scopedAppointments().length }})</span>
+          [attr.aria-pressed]="doctorFilterScope() === 'my'"
+          (click)="doctorFilterScope.set('my')">
+          My Assigned ({{ scopedAppointments().length }})
         </button>
         <button
           type="button"
-          class="scope-pill-btn"
+          mat-stroked-button
+          class="filter-btn"
           [class.active]="doctorFilterScope() === 'all'"
-          (click)="doctorFilterScope.set('all')"
-        >
-          <mat-icon>domain</mat-icon>
-          <span>All Clinic Appointments ({{ appointments().length }})</span>
+          [attr.aria-pressed]="doctorFilterScope() === 'all'"
+          (click)="doctorFilterScope.set('all')">
+          All Clinic ({{ appointments().length }})
         </button>
       </div>
-    </div>
-  
-    <div class="table-toolbar">
-      <div class="date-filter-box">
-        <mat-form-field appearance="outline" class="date-picker-input">
-          <mat-label>Filter By Date</mat-label>
-          <input matInput [matDatepicker]="picker" (dateChange)="onDateChange($event.value)" placeholder="Choose consultation date">
-          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-          <mat-datepicker #picker></mat-datepicker>
-        </mat-form-field>
-      </div>
+    }
 
-      <div class="filter-chips">
-        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'ALL'" (click)="selectedStatusFilter.set('ALL')">
+    <div class="table-toolbar">
+      <mat-form-field appearance="outline" class="date-field" subscriptSizing="dynamic">
+        <mat-label>Filter by date</mat-label>
+        <input matInput [matDatepicker]="picker" (dateChange)="onDateChange($event.value)" placeholder="Select date">
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+
+      <div class="filter-group" role="group" aria-label="Filter appointments by status">
+        <button
+          type="button"
+          mat-stroked-button
+          class="filter-btn"
+          [class.active]="selectedStatusFilter() === 'ALL'"
+          [attr.aria-pressed]="selectedStatusFilter() === 'ALL'"
+          (click)="selectedStatusFilter.set('ALL')">
           All ({{ appointments().length }})
         </button>
-        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'CheckedIn'" (click)="selectedStatusFilter.set('CheckedIn')">
-          Waiting Queue ({{ checkedInCount() }})
+        <button
+          type="button"
+          mat-stroked-button
+          class="filter-btn"
+          [class.active]="selectedStatusFilter() === 'CheckedIn'"
+          [attr.aria-pressed]="selectedStatusFilter() === 'CheckedIn'"
+          (click)="selectedStatusFilter.set('CheckedIn')">
+          Waiting ({{ checkedInCount() }})
         </button>
-        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'Scheduled'" (click)="selectedStatusFilter.set('Scheduled')">
+        <button
+          type="button"
+          mat-stroked-button
+          class="filter-btn"
+          [class.active]="selectedStatusFilter() === 'Scheduled'"
+          [attr.aria-pressed]="selectedStatusFilter() === 'Scheduled'"
+          (click)="selectedStatusFilter.set('Scheduled')">
           Scheduled ({{ scheduledCount() }})
         </button>
-        <button class="filter-btn" [class.active]="selectedStatusFilter() === 'Completed'" (click)="selectedStatusFilter.set('Completed')">
+        <button
+          type="button"
+          mat-stroked-button
+          class="filter-btn"
+          [class.active]="selectedStatusFilter() === 'Completed'"
+          [attr.aria-pressed]="selectedStatusFilter() === 'Completed'"
+          (click)="selectedStatusFilter.set('Completed')">
           Completed ({{ completedCount() }})
         </button>
       </div>
     </div>
 
     @if (isLoading()) {
-      <div class="loading-state">
-        <mat-spinner diameter="44"></mat-spinner>
-        <p>Syncing live appointment queues...</p>
-      </div>
+      <app-skeleton variant="table" [count]="8" [columns]="5" label="Loading appointments schedule"></app-skeleton>
+    } @else if (filteredAppointments().length === 0) {
+      <app-empty-state
+        icon="event_busy"
+        title="No appointments found"
+        description="No scheduled or active visits match the current filters.">
+        <button type="button" mat-stroked-button (click)="selectedStatusFilter.set('ALL')">Show All Statuses</button>
+      </app-empty-state>
     } @else {
       <div class="table-responsive">
-        <table mat-table [dataSource]="filteredAppointments()" class="custom-table">
-
-          <!-- Date & Time Column -->
+        <table mat-table [dataSource]="filteredAppointments()" class="schedule-table">
           <ng-container matColumnDef="date">
-            <th mat-header-cell *matHeaderCellDef>Scheduled Timing</th>
+            <th mat-header-cell *matHeaderCellDef scope="col">Date &amp; Time</th>
             <td mat-cell *matCellDef="let a">
-              <div class="date-badge-box">
-                <div class="date-primary">
-                  <mat-icon class="inline-icon">calendar_today</mat-icon>
-                  <span>{{ (a.scheduledDateTime || a.date || a.scheduledAt) | date:'mediumDate' }}</span>
-                </div>
-                <div class="time-secondary">
-                  <mat-icon class="inline-icon">schedule</mat-icon>
-                  <span>{{ (a.scheduledDateTime || a.date || a.scheduledAt) | date:'shortTime' }}</span>
-                </div>
+              <div class="date-cell">
+                <span class="date-primary">{{ (a.scheduledDateTime || a.date || a.scheduledAt) | date:'mediumDate' }}</span>
+                <span class="time-secondary">{{ (a.scheduledDateTime || a.date || a.scheduledAt) | date:'shortTime' }}</span>
               </div>
             </td>
           </ng-container>
 
-          <!-- Patient Profile -->
           <ng-container matColumnDef="patient">
-            <th mat-header-cell *matHeaderCellDef>Patient Profile</th>
+            <th mat-header-cell *matHeaderCellDef scope="col">Patient</th>
             <td mat-cell *matCellDef="let a">
               <div class="patient-cell">
-                <div class="patient-avatar-mini">
+                <div class="avatar-box" aria-hidden="true">
                   {{ getInitials(a.patientName || a.patient?.fullName || 'PT') }}
                 </div>
-                <div class="patient-text">
+                <div class="patient-meta">
                   <span class="person-name">{{ a.patientName || a.patient?.fullName || 'Patient' }}</span>
-                  <div class="appt-token-visit-row">
+                  <div class="meta-badges">
                     @if (a.tokenNumber) {
-                      <span class="token-pill-badge">
-                        🎟️ {{ a.tokenNumber }}
-                      </span>
+                      <span class="token-badge">Token {{ a.tokenNumber }}</span>
                     }
                     @if (a.visitType) {
-                      <span class="visit-type-badge">
-                        {{ a.visitType }}
-                      </span>
+                      <span class="visit-badge">{{ a.visitType }}</span>
+                    }
+                    @if (a.patientId) {
+                      <a [routerLink]="['/patients', a.patientId]" class="chart-link">Medical Chart</a>
                     }
                   </div>
-                  @if (a.patientId) {
-                    <a [routerLink]="['/patients', a.patientId]" class="patient-sub-link">
-                      <mat-icon class="tiny-icon">open_in_new</mat-icon>
-                      <span>Medical Chart</span>
-                    </a>
-                  }
                 </div>
               </div>
             </td>
           </ng-container>
 
-          <!-- Assigned Doctor -->
           <ng-container matColumnDef="doctor">
-            <th mat-header-cell *matHeaderCellDef>Attending Physician</th>
+            <th mat-header-cell *matHeaderCellDef scope="col">Physician</th>
             <td mat-cell *matCellDef="let a">
-              <div class="doctor-badge-box">
-                <mat-icon class="doc-icon">stethoscope</mat-icon>
-                <span>Dr. {{ a.doctorName || a.doctor?.fullName || 'Physician' }}</span>
-              </div>
+              <span class="doctor-text">Dr. {{ a.doctorName || a.doctor?.fullName || 'Physician' }}</span>
             </td>
           </ng-container>
 
-          <!-- Status -->
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Clinical Status</th>
+            <th mat-header-cell *matHeaderCellDef scope="col">Status</th>
             <td mat-cell *matCellDef="let a">
-              <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-                <span class="status-pill" [class.info]="a.status === 'Scheduled'" [class.warning]="a.status === 'CheckedIn' || a.status === 'WaitingForDoctor'" [class.success]="a.status === 'Completed' || a.status === 'TriageComplete'" [class.danger]="a.status === 'Cancelled' || a.status === 'NoShow'">
-                  <span class="pill-dot"></span>
-                  <span>{{ a.status === 'NoShow' ? 'No-Show' : a.status }}</span>
-                </span>
+              <div class="status-stack">
+                <app-status-chip [status]="a.status"></app-status-chip>
                 @if (a.roomAssignment) {
-                  <span class="room-assignment-chip">
-                    <mat-icon style="font-size: 13px; width: 13px; height: 13px;">meeting_room</mat-icon>
-                    {{ a.roomAssignment }}
-                  </span>
+                  <span class="room-tag">{{ a.roomAssignment }}</span>
                 }
                 @if (a.triageUrgency && a.triageUrgency !== 'Routine') {
-                  <span class="urgency-chip">
-                    <mat-icon style="font-size: 13px; width: 13px; height: 13px;">priority_high</mat-icon>
-                    {{ a.triageUrgency }}
-                  </span>
+                  <app-status-chip
+                    [status]="a.triageUrgency"
+                    [tone]="a.triageUrgency === 'Emergency' ? 'danger' : 'warning'">
+                  </app-status-chip>
                 }
               </div>
             </td>
           </ng-container>
 
-          <!-- Actions Column -->
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Operations Desk</th>
+            <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
             <td mat-cell *matCellDef="let a">
-              <div class="actions-group" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-
-                <!-- AUDIT / ADMIN VIEW ONLY -->
+              <div class="actions-cell">
                 @if (isAdmin()) {
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span class="audited-text" style="display: inline-flex; align-items: center; gap: 4px; color: #64748b; font-size: 0.8rem; font-weight: 500;">
-                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">visibility</mat-icon>
-                      <span>Audit View</span>
-                    </span>
-                    @if (a.vitalSigns) {
-                      <span class="vitals-badge-pill" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(14, 165, 233, 0.1); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.2);">
-                        🩺 {{ a.vitalSigns.systolicBP }}/{{ a.vitalSigns.diastolicBP }}
-                      </span>
-                    }
-                  </div>
+                  <span class="muted-label">Audit View</span>
+                  @if (a.vitalSigns) {
+                    <span class="vitals-tag">BP {{ a.vitalSigns.systolicBP }}/{{ a.vitalSigns.diastolicBP }}</span>
+                  }
                 } @else if (isReceptionist()) {
                   @if (a.status === 'Scheduled') {
-                    <button mat-flat-button class="reception-checkin-btn" (click)="openReceptionCheckInModal(a)" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-radius: 10px; font-weight: 600;">
-                      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">confirmation_number</mat-icon>
-                      <span>Desk Check In</span>
+                    <button type="button" mat-flat-button color="primary" (click)="openReceptionCheckInModal(a)">
+                      Desk Check In
                     </button>
-                    <button mat-stroked-button (click)="openRescheduleModal(a)" style="border-radius: 10px; font-weight: 600; border-color: #cbd5e1;">
-                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">calendar_month</mat-icon>
-                      <span>Reschedule</span>
+                    <button type="button" mat-stroked-button (click)="openRescheduleModal(a)">
+                      Reschedule
                     </button>
-                    <button mat-stroked-button color="warn" (click)="markNoShow(a)" matTooltip="Flag No-Show for patient" style="border-radius: 10px; font-weight: 600;">
-                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">person_off</mat-icon>
-                      <span>No-Show</span>
+                    <button type="button" mat-button class="danger-text-btn" (click)="markNoShow(a)">
+                      No-Show
                     </button>
                   } @else if (a.status !== 'Completed' && a.status !== 'Cancelled' && a.status !== 'NoShow') {
-                    <button mat-stroked-button (click)="openRescheduleModal(a)" style="border-radius: 10px; font-weight: 600; border-color: #cbd5e1;">
-                      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">calendar_month</mat-icon>
-                      <span>Reschedule</span>
+                    <button type="button" mat-stroked-button (click)="openRescheduleModal(a)">
+                      Reschedule
                     </button>
-                    <button mat-icon-button color="warn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
-                      <mat-icon>close</mat-icon>
+                    <button
+                      type="button"
+                      mat-icon-button
+                      class="danger-icon-btn"
+                      (click)="cancel(a.id)"
+                      matTooltip="Cancel Appointment"
+                      [attr.aria-label]="'Cancel appointment for ' + (a.patientName || 'patient')">
+                      <mat-icon aria-hidden="true">close</mat-icon>
                     </button>
                   }
                 } @else {
-                  <!-- CLINICAL / DOCTOR / NURSE ACTIONS -->
-                  <button mat-flat-button class="vitals-btn" (click)="openVitalsModal(a)" matTooltip="Record or Edit Patient Vital Signs" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; border-radius: 10px; font-weight: 600;">
-                    <mat-icon style="font-size: 18px; width: 18px; height: 18px;">monitor_heart</mat-icon>
-                    <span>{{ a.vitalSigns ? 'Edit Vitals' : 'Record Vitals' }}</span>
+                  <button type="button" mat-stroked-button (click)="openVitalsModal(a)">
+                    {{ a.vitalSigns ? 'Edit Vitals' : 'Record Vitals' }}
                   </button>
                   @if (a.vitalSigns) {
-                    <span class="vitals-badge-pill" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(14, 165, 233, 0.1); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.2);">
-                      🩺 {{ a.vitalSigns.systolicBP }}/{{ a.vitalSigns.diastolicBP }}
-                    </span>
+                    <span class="vitals-tag">BP {{ a.vitalSigns.systolicBP }}/{{ a.vitalSigns.diastolicBP }}</span>
                   }
 
                   @if (a.status === 'Scheduled') {
-                    <button mat-flat-button color="primary" class="checkin-btn" (click)="checkIn(a.id)" style="border-radius: 10px; font-weight: 600;">
-                      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">how_to_reg</mat-icon>
-                      <span>Check In</span>
+                    <button type="button" mat-flat-button color="primary" (click)="checkIn(a.id)">
+                      Check In
                     </button>
-                    <button mat-icon-button color="warn" class="cancel-btn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
-                      <mat-icon>close</mat-icon>
+                    <button
+                      type="button"
+                      mat-icon-button
+                      class="danger-icon-btn"
+                      (click)="cancel(a.id)"
+                      matTooltip="Cancel Appointment"
+                      [attr.aria-label]="'Cancel appointment for ' + (a.patientName || 'patient')">
+                      <mat-icon aria-hidden="true">close</mat-icon>
                     </button>
                   } @else if (a.status === 'CheckedIn' || a.status === 'TriageComplete' || a.status === 'WaitingForDoctor') {
                     @if (canConsultFor(a)) {
-                      <a mat-flat-button class="prescribe-btn" [routerLink]="['/my-consultations']" [queryParams]="{ appointmentId: a.id }" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 10px; font-weight: 600;">
-                        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">medical_services</mat-icon>
-                        <span>Conduct Consultation</span>
+                      <a mat-flat-button color="primary" [routerLink]="['/my-consultations']" [queryParams]="{ appointmentId: a.id }">
+                        Consult
                       </a>
                     } @else if (canConsult()) {
-                      <!-- Cross-Physician View: Account Isolation Active -->
-                      <div class="isolation-chip-group">
-                        <span class="isolated-lock-badge" [matTooltip]="'Attending: Dr. ' + (a.doctorName || 'Assigned Physician') + '. Account Isolation: Only the assigned physician can conduct consultations.'">
-                          <mat-icon class="lock-icon">lock</mat-icon>
-                          <span>Dr. {{ a.doctorName || 'Attending' }}</span>
-                        </span>
-                        <a mat-stroked-button [routerLink]="['/patients', a.patientId]" class="chart-btn" matTooltip="View Patient Chart (Read-Only)">
-                          <mat-icon class="chart-icon">visibility</mat-icon> Chart
-                        </a>
-                      </div>
+                      <span class="muted-label" [matTooltip]="'Attending: Dr. ' + (a.doctorName || 'Assigned Physician')">
+                        Dr. {{ a.doctorName || 'Attending' }}
+                      </span>
+                      <a mat-button color="primary" [routerLink]="['/patients', a.patientId]">Chart</a>
                     } @else if (isNurse()) {
-                      <button mat-flat-button class="triage-btn" (click)="openVitalsModal(a)" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border-radius: 10px; font-weight: 600;">
-                        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">local_hospital</mat-icon>
-                        <span>Triage & Vitals</span>
+                      <button type="button" mat-flat-button color="primary" (click)="openVitalsModal(a)">
+                        Triage
                       </button>
                     } @else {
-                      <div class="waiting-badge" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 20px; background: rgba(59, 130, 246, 0.12); color: #2563eb; font-weight: 600; font-size: 0.85rem;">
-                        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">hourglass_top</mat-icon>
-                        <span>In Queue</span>
-                      </div>
+                      <app-status-chip status="In Queue" tone="info"></app-status-chip>
                     }
-                    <button mat-icon-button color="warn" class="cancel-btn" (click)="cancel(a.id)" matTooltip="Cancel Appointment">
-                      <mat-icon>close</mat-icon>
+                    <button
+                      type="button"
+                      mat-icon-button
+                      class="danger-icon-btn"
+                      (click)="cancel(a.id)"
+                      matTooltip="Cancel Appointment"
+                      [attr.aria-label]="'Cancel appointment for ' + (a.patientName || 'patient')">
+                      <mat-icon aria-hidden="true">close</mat-icon>
                     </button>
-                  } @else if (a.status === 'InConsultation') {
-                    <div class="consult-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 600; font-size: 0.85rem;">
-                      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">stethoscope</mat-icon>
-                      <span>With Doctor</span>
-                    </div>
-                  } @else if (a.status === 'InProcedure') {
-                    <div class="proc-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(139, 92, 246, 0.12); color: #7c3aed; font-weight: 600; font-size: 0.85rem;">
-                      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">healing</mat-icon>
-                      <span>In Procedure</span>
-                    </div>
                   } @else if (a.status === 'ReadyForDischarge') {
-                    <button mat-flat-button color="accent" (click)="dischargePatient(a.id)" style="border-radius: 10px; font-weight: 600;">
-                      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">check_circle</mat-icon>
-                      <span>Discharge</span>
+                    <button type="button" mat-flat-button color="primary" (click)="dischargePatient(a.id)">
+                      Discharge
                     </button>
-                  } @else {
-                    <div class="completed-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 600; font-size: 0.85rem;">
-                      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">verified</mat-icon>
-                      <span>Completed</span>
-                    </div>
                   }
                 }
               </div>
@@ -321,303 +264,240 @@
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="appt-row"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
-
-        @if (filteredAppointments().length === 0) {
-          <div class="empty-state">
-            <mat-icon class="empty-icon">event_busy</mat-icon>
-            <h3>No Appointments Found</h3>
-            <p>No appointments match the selected filter criteria.</p>
-          </div>
-        }
       </div>
     }
-  </div>
+  </section>
 </div>
 
+<!-- VITAL SIGNS & TRIAGE MODAL -->
+@if (isVitalsModalOpen()) {
+  <div class="ehr-modal-backdrop" (click)="closeVitalsModal()">
+    <div
+      class="ehr-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="vitals-modal-title"
+      (click)="$event.stopPropagation()">
+      <header class="ehr-modal-header">
+        <div>
+          <h2 id="vitals-modal-title">Record Vital Signs &amp; Triage</h2>
+          <p>{{ activeVitalsAppointment()?.patientName || 'Patient' }}</p>
+        </div>
+        <button type="button" mat-icon-button (click)="closeVitalsModal()" aria-label="Close vital signs modal">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
 
-  <!-- VITAL SIGNS RECORDING MODAL -->
-  @if (isVitalsModalOpen()) {
-    <div class="modal-backdrop fade-in" (click)="closeVitalsModal()">
-      <div class="modal-dialog vitals-modal mat-elevation-z24 scale-in" (click)="$event.stopPropagation()">
-        <div class="modal-header gradient-header-vitals">
-          <div class="header-info">
-            <div class="header-icon-box">
-              <mat-icon class="pulse-icon">monitor_heart</mat-icon>
-            </div>
-            <div>
-              <h2 class="modal-title">Record Patient Vital Signs</h2>
-              <p class="modal-subtitle">Appointment with <strong>{{ activeVitalsAppointment()?.patientName }}</strong></p>
-            </div>
-          </div>
-          <button mat-icon-button (click)="closeVitalsModal()" class="close-btn" matTooltip="Close">
-            <mat-icon>close</mat-icon>
-          </button>
+      <div class="ehr-modal-body">
+        <div class="vitals-summary-chips">
+          <app-status-chip [status]="bpCategory().label + ' (' + vitalsSystolic() + '/' + vitalsDiastolic() + ')'" [tone]="bpCategory().tone"></app-status-chip>
+          <app-status-chip [status]="'BMI ' + computedBmi() + ' · ' + bmiCategory().label" [tone]="bmiCategory().tone"></app-status-chip>
+          <app-status-chip [status]="vitalsTemp() + ' °C' + (vitalsTemp() >= 38 ? ' (Fever)' : '')" [tone]="vitalsTemp() >= 38 ? 'danger' : 'success'"></app-status-chip>
         </div>
 
-        <div class="modal-body">
-          <!-- Real-Time Health Gauges Bar -->
-          <div class="vitals-kpi-bar">
-            <div class="vitals-indicator-chip" [ngClass]="bpCategory().class">
-              <mat-icon>favorite</mat-icon>
-              <span>{{ bpCategory().label }} ({{ vitalsSystolic() }}/{{ vitalsDiastolic() }} mmHg)</span>
-            </div>
-            <div class="vitals-indicator-chip" [ngClass]="bmiCategory().class">
-              <mat-icon>accessibility_new</mat-icon>
-              <span>BMI {{ computedBmi() }} &bull; {{ bmiCategory().label }}</span>
-            </div>
-            <div class="vitals-indicator-chip" [class.fever]="vitalsTemp() >= 38.0">
-              <mat-icon>thermostat</mat-icon>
-              <span>{{ vitalsTemp() }} &deg;C {{ vitalsTemp() >= 38.0 ? '(Fever)' : '(Normal Temp)' }}</span>
-            </div>
-          </div>
+        <div class="modal-form-grid">
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Systolic BP (mmHg)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsSystolic()" (ngModelChange)="vitalsSystolic.set($event)" min="50" max="250">
+          </mat-form-field>
 
-          <!-- Vitals Input Grid -->
-          <div class="vitals-form-grid">
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>speed</mat-icon> Blood Pressure (mmHg)</label>
-              <div class="bp-inputs">
-                <mat-form-field appearance="outline" class="inline-field">
-                  <mat-label>Systolic</mat-label>
-                  <input matInput type="number" [ngModel]="vitalsSystolic()" (ngModelChange)="vitalsSystolic.set($event)" min="50" max="250">
-                </mat-form-field>
-                <span class="bp-slash">/</span>
-                <mat-form-field appearance="outline" class="inline-field">
-                  <mat-label>Diastolic</mat-label>
-                  <input matInput type="number" [ngModel]="vitalsDiastolic()" (ngModelChange)="vitalsDiastolic.set($event)" min="30" max="150">
-                </mat-form-field>
-              </div>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Diastolic BP (mmHg)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsDiastolic()" (ngModelChange)="vitalsDiastolic.set($event)" min="30" max="150">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>favorite</mat-icon> Heart Rate (BPM)</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Beats per minute</mat-label>
-                <input matInput type="number" [ngModel]="vitalsHeartRate()" (ngModelChange)="vitalsHeartRate.set($event)" min="30" max="220">
-                <mat-icon matSuffix>timeline</mat-icon>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Heart Rate (bpm)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsHeartRate()" (ngModelChange)="vitalsHeartRate.set($event)" min="30" max="220">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>device_thermostat</mat-icon> Body Temperature (&deg;C)</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Celsius</mat-label>
-                <input matInput type="number" step="0.1" [ngModel]="vitalsTemp()" (ngModelChange)="vitalsTemp.set($event)" min="30" max="45">
-                <mat-icon matSuffix>thermostat</mat-icon>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Temperature (°C)</mat-label>
+            <input matInput type="number" step="0.1" [ngModel]="vitalsTemp()" (ngModelChange)="vitalsTemp.set($event)" min="30" max="45">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>air</mat-icon> Respiratory Rate</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Breaths / min</mat-label>
-                <input matInput type="number" [ngModel]="vitalsRespiratory()" (ngModelChange)="vitalsRespiratory.set($event)" min="5" max="60">
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Respiratory Rate (/min)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsRespiratory()" (ngModelChange)="vitalsRespiratory.set($event)" min="5" max="60">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>height</mat-icon> Height (cm)</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Centimeters</mat-label>
-                <input matInput type="number" [ngModel]="vitalsHeight()" (ngModelChange)="vitalsHeight.set($event)" min="30" max="250">
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>SpO2 (%)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsOxygenSaturation()" (ngModelChange)="vitalsOxygenSaturation.set($event)" min="50" max="100">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>scale</mat-icon> Weight (kg)</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Kilograms</mat-label>
-                <input matInput type="number" step="0.5" [ngModel]="vitalsWeight()" (ngModelChange)="vitalsWeight.set($event)" min="2" max="300">
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Height (cm)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsHeight()" (ngModelChange)="vitalsHeight.set($event)" min="30" max="250">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>bubble_chart</mat-icon> Pulse Oximetry (SpO2 %)</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Oxygen Saturation %</mat-label>
-                <input matInput type="number" [ngModel]="vitalsOxygenSaturation()" (ngModelChange)="vitalsOxygenSaturation.set($event)" min="50" max="100">
-                <span matSuffix style="font-weight: 600; color: #0284c7; margin-right: 8px;">%</span>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Weight (kg)</mat-label>
+            <input matInput type="number" step="0.5" [ngModel]="vitalsWeight()" (ngModelChange)="vitalsWeight.set($event)" min="2" max="300">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>sentiment_dissatisfied</mat-icon> Pain Score (0 - 10)</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>0 (No Pain) - 10 (Worst)</mat-label>
-                <input matInput type="number" [ngModel]="vitalsPainScore()" (ngModelChange)="vitalsPainScore.set($event)" min="0" max="10">
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Pain Score (0–10)</mat-label>
+            <input matInput type="number" [ngModel]="vitalsPainScore()" (ngModelChange)="vitalsPainScore.set($event)" min="0" max="10">
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>emergency</mat-icon> Triage Urgency</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Acuity Level</mat-label>
-                <mat-select [ngModel]="vitalsTriageUrgency()" (ngModelChange)="vitalsTriageUrgency.set($event)">
-                  <mat-option value="Routine">Routine (Level 3 - Standard)</mat-option>
-                  <mat-option value="Urgent">Urgent (Level 2 - Priority)</mat-option>
-                  <mat-option value="Emergency">Emergency (Level 1 - Critical)</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Triage Urgency</mat-label>
+            <mat-select [ngModel]="vitalsTriageUrgency()" (ngModelChange)="vitalsTriageUrgency.set($event)">
+              <mat-option value="Routine">Routine (Standard)</mat-option>
+              <mat-option value="Urgent">Urgent (Priority)</mat-option>
+              <mat-option value="Emergency">Emergency (Critical)</mat-option>
+            </mat-select>
+          </mat-form-field>
 
-            <div class="vitals-input-card">
-              <label class="vitals-label"><mat-icon>meeting_room</mat-icon> Room / Bay Assignment</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Clinical Location</mat-label>
-                <mat-select [ngModel]="vitalsRoomAssignment()" (ngModelChange)="vitalsRoomAssignment.set($event)">
-                  <mat-option value="Exam Room 1">Exam Room 1</mat-option>
-                  <mat-option value="Exam Room 2">Exam Room 2</mat-option>
-                  <mat-option value="Exam Room 3">Exam Room 3</mat-option>
-                  <mat-option value="Triage Bay A">Triage Bay A</mat-option>
-                  <mat-option value="Triage Bay B">Triage Bay B</mat-option>
-                  <mat-option value="Procedure Room">Procedure Room</mat-option>
-                  <mat-option value="Observation Bed 1">Observation Bed 1</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="outline" class="field-full grid-span-2">
+            <mat-label>Room Assignment</mat-label>
+            <mat-select [ngModel]="vitalsRoomAssignment()" (ngModelChange)="vitalsRoomAssignment.set($event)">
+              <mat-option value="Exam Room 1">Exam Room 1</mat-option>
+              <mat-option value="Exam Room 2">Exam Room 2</mat-option>
+              <mat-option value="Exam Room 3">Exam Room 3</mat-option>
+              <mat-option value="Triage Bay A">Triage Bay A</mat-option>
+              <mat-option value="Triage Bay B">Triage Bay B</mat-option>
+              <mat-option value="Procedure Room">Procedure Room</mat-option>
+              <mat-option value="Observation Bed 1">Observation Bed 1</mat-option>
+            </mat-select>
+          </mat-form-field>
 
-            <div class="vitals-input-card" style="grid-column: 1 / -1;">
-              <label class="vitals-label"><mat-icon>notes</mat-icon> Chief Complaint & Triage Assessment Notes</label>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Symptoms presentation, allergies check, and nurse observations</mat-label>
-                <textarea matInput rows="2" [ngModel]="vitalsTriageNotes()" (ngModelChange)="vitalsTriageNotes.set($event)" placeholder="e.g. Patient presents with sore throat and mild fever for 2 days. NKDA verified."></textarea>
-              </mat-form-field>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button mat-stroked-button (click)="closeVitalsModal()" [disabled]="isSubmittingVitals()">Cancel</button>
-          <button mat-flat-button color="primary" class="save-vitals-btn" (click)="submitVitals()" [disabled]="isSubmittingVitals()">
-            <mat-icon>check_circle</mat-icon>
-            <span>{{ isSubmittingVitals() ? 'Saving Vitals...' : 'Save & Record Vitals' }}</span>
-          </button>
+          <mat-form-field appearance="outline" class="field-full grid-span-2">
+            <mat-label>Triage Notes</mat-label>
+            <textarea matInput rows="2" [ngModel]="vitalsTriageNotes()" (ngModelChange)="vitalsTriageNotes.set($event)"></textarea>
+          </mat-form-field>
         </div>
       </div>
+
+      <footer class="ehr-modal-footer">
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="submitVitals()"
+          [disabled]="isSubmittingVitals()"
+          [attr.aria-busy]="isSubmittingVitals()">
+          {{ isSubmittingVitals() ? 'Saving Vitals...' : 'Save Vitals' }}
+        </button>
+        <button type="button" mat-stroked-button (click)="closeVitalsModal()" [disabled]="isSubmittingVitals()">Cancel</button>
+      </footer>
     </div>
-  }
+  </div>
+}
 
-  <!-- RECEPTIONIST CHECK-IN & QUEUE TOKEN MODAL -->
-  @if (showCheckInModal() && checkInTargetAppt()) {
-    <div class="modal-backdrop" (click)="closeReceptionCheckInModal()">
-      <div class="modal-content reception-modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <mat-icon class="header-icon checkin-icon">confirmation_number</mat-icon>
-            <div>
-              <h3>Front Desk Patient Check-In</h3>
-              <p>Issue queue token, select visit type, and route patient to clinical station.</p>
-            </div>
+<!-- RECEPTIONIST CHECK-IN MODAL -->
+@if (showCheckInModal() && checkInTargetAppt()) {
+  <div class="ehr-modal-backdrop" (click)="closeReceptionCheckInModal()">
+    <div
+      class="ehr-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkin-modal-title"
+      (click)="$event.stopPropagation()">
+      <header class="ehr-modal-header">
+        <div>
+          <h2 id="checkin-modal-title">Front Desk Check-In</h2>
+          <p>Assign queue token and route patient to clinical station</p>
+        </div>
+        <button type="button" mat-icon-button (click)="closeReceptionCheckInModal()" aria-label="Close check-in modal">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
+
+      <div class="ehr-modal-body modal-form-stack">
+        <div class="modal-summary-box">
+          <div>
+            <strong>{{ checkInTargetAppt()?.patientName }}</strong>
+            <span>Dr. {{ checkInTargetAppt()?.doctorName }} · {{ checkInTargetAppt()?.scheduledDateTime | date:'shortTime' }}</span>
           </div>
-          <button mat-icon-button (click)="closeReceptionCheckInModal()"><mat-icon>close</mat-icon></button>
+          <span class="token-badge">{{ tokenInput() || 'AUTO' }}</span>
         </div>
 
-        <div class="modal-body reception-modal-body">
-          <div class="patient-summary-box">
-            <div>
-              <div class="patient-checkin-name">{{ checkInTargetAppt()?.patientName }}</div>
-              <div class="patient-checkin-sub">
-                Physician: Dr. {{ checkInTargetAppt()?.doctorName }} • Scheduled: {{ checkInTargetAppt()?.scheduledDateTime | date:'shortTime' }}
-              </div>
-            </div>
-            <div class="queue-token-badge">
-              <div class="queue-token-label">Queue Token</div>
-              <div class="queue-token-value">{{ tokenInput() || 'AUTO' }}</div>
-            </div>
-          </div>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Queue Token</mat-label>
+          <input matInput [ngModel]="tokenInput()" (ngModelChange)="tokenInput.set($event)" placeholder="e.g. Q-104">
+        </mat-form-field>
 
-          <div class="checkin-form-stack">
-            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-              <mat-label>Assign / Custom Token Number</mat-label>
-              <input matInput [ngModel]="tokenInput()" (ngModelChange)="tokenInput.set($event)" placeholder="e.g. Q-104 or A-01" />
-              <mat-icon matPrefix>tag</mat-icon>
-            </mat-form-field>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Visit Type</mat-label>
+          <mat-select [ngModel]="visitTypeInput()" (ngModelChange)="visitTypeInput.set($event)">
+            <mat-option value="General Consultation">General Consultation</mat-option>
+            <mat-option value="Follow-up Visit">Follow-up Visit</mat-option>
+            <mat-option value="Routine Vaccination">Routine Vaccination</mat-option>
+            <mat-option value="Diagnostic Check">Diagnostic Check</mat-option>
+            <mat-option value="Prescription Refill">Prescription Refill</mat-option>
+            <mat-option value="Urgent Walk-in">Urgent Walk-in</mat-option>
+          </mat-select>
+        </mat-form-field>
 
-            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-              <mat-label>Visit Reason / Type</mat-label>
-              <mat-select [ngModel]="visitTypeInput()" (ngModelChange)="visitTypeInput.set($event)">
-                <mat-option value="General Consultation">General Consultation</mat-option>
-                <mat-option value="Follow-up Visit">Follow-up Visit</mat-option>
-                <mat-option value="Routine Vaccination">Routine Vaccination</mat-option>
-                <mat-option value="Diagnostic Check">Diagnostic Check</mat-option>
-                <mat-option value="Prescription Refill">Prescription Refill</mat-option>
-                <mat-option value="Urgent Walk-in">Urgent Walk-in</mat-option>
-              </mat-select>
-              <mat-icon matPrefix>category</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-              <mat-label>Route Patient To</mat-label>
-              <mat-select [ngModel]="routingStation()" (ngModelChange)="routingStation.set($event)">
-                <mat-option value="Nurse Triage Station">Nurse Triage Station (Vital Signs)</mat-option>
-                <mat-option value="Main Waiting Lounge">Main Waiting Lounge</mat-option>
-                <mat-option value="Physician Consultation Desk">Direct to Doctor Consultation</mat-option>
-                <mat-option value="Phlebotomy & Labs">Phlebotomy & Specimen Collection</mat-option>
-              </mat-select>
-              <mat-icon matPrefix>alt_route</mat-icon>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <div class="modal-footer reception-modal-footer">
-          <button mat-stroked-button (click)="closeReceptionCheckInModal()">Cancel</button>
-          <button mat-flat-button class="checkin-confirm-btn" (click)="confirmReceptionCheckIn()">
-            <mat-icon>check_circle</mat-icon>
-            <span>Confirm Arrival & Issue Token</span>
-          </button>
-        </div>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Route Patient To</mat-label>
+          <mat-select [ngModel]="routingStation()" (ngModelChange)="routingStation.set($event)">
+            <mat-option value="Nurse Triage Station">Nurse Triage Station</mat-option>
+            <mat-option value="Main Waiting Lounge">Main Waiting Lounge</mat-option>
+            <mat-option value="Physician Consultation Desk">Direct to Doctor</mat-option>
+            <mat-option value="Phlebotomy & Labs">Phlebotomy &amp; Labs</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
+
+      <footer class="ehr-modal-footer">
+        <button type="button" mat-flat-button color="primary" (click)="confirmReceptionCheckIn()">
+          Confirm Arrival
+        </button>
+        <button type="button" mat-stroked-button (click)="closeReceptionCheckInModal()">Cancel</button>
+      </footer>
     </div>
-  }
+  </div>
+}
 
-  <!-- RECEPTIONIST RESCHEDULE MODAL -->
-  @if (showRescheduleModal() && rescheduleTargetAppt()) {
-    <div class="modal-backdrop" (click)="closeRescheduleModal()">
-      <div class="modal-content reschedule-modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <mat-icon class="header-icon reschedule-icon">calendar_month</mat-icon>
-            <div>
-              <h3>Reschedule Appointment</h3>
-              <p>Pick a new date, consultation time, and document patient rationale.</p>
-            </div>
-          </div>
-          <button mat-icon-button (click)="closeRescheduleModal()"><mat-icon>close</mat-icon></button>
+<!-- RESCHEDULE MODAL -->
+@if (showRescheduleModal() && rescheduleTargetAppt()) {
+  <div class="ehr-modal-backdrop" (click)="closeRescheduleModal()">
+    <div
+      class="ehr-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reschedule-modal-title"
+      (click)="$event.stopPropagation()">
+      <header class="ehr-modal-header">
+        <div>
+          <h2 id="reschedule-modal-title">Reschedule Appointment</h2>
+          <p>{{ rescheduleTargetAppt()?.patientName }} · {{ rescheduleTargetAppt()?.scheduledDateTime | date:'medium' }}</p>
         </div>
+        <button type="button" mat-icon-button (click)="closeRescheduleModal()" aria-label="Close reschedule modal">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
 
-        <div class="modal-body reception-modal-body">
-          <div class="reschedule-patient-info">
-            <div class="reschedule-patient-name">{{ rescheduleTargetAppt()?.patientName }}</div>
-            <div class="reschedule-patient-sub">Current: {{ rescheduleTargetAppt()?.scheduledDateTime | date:'medium' }}</div>
-          </div>
+      <div class="ehr-modal-body modal-form-stack">
+        <div class="modal-form-grid">
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>New Date</mat-label>
+            <input matInput type="date" [ngModel]="rescheduleDate()" (ngModelChange)="rescheduleDate.set($event)">
+          </mat-form-field>
 
-          <div class="reschedule-date-grid">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>New Date</mat-label>
-              <input matInput type="date" [ngModel]="rescheduleDate()" (ngModelChange)="rescheduleDate.set($event)" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>New Time</mat-label>
-              <input matInput type="time" [ngModel]="rescheduleTime()" (ngModelChange)="rescheduleTime.set($event)" />
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-            <mat-label>Reason for Rescheduling</mat-label>
-            <input matInput [ngModel]="rescheduleReason()" (ngModelChange)="rescheduleReason.set($event)" placeholder="e.g. Patient travel conflict or physician requested later slot" />
-            <mat-icon matPrefix>edit_note</mat-icon>
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>New Time</mat-label>
+            <input matInput type="time" [ngModel]="rescheduleTime()" (ngModelChange)="rescheduleTime.set($event)">
           </mat-form-field>
         </div>
 
-        <div class="modal-footer reception-modal-footer">
-          <button mat-stroked-button (click)="closeRescheduleModal()">Cancel</button>
-          <button mat-flat-button class="reschedule-confirm-btn" (click)="confirmReschedule()">
-            <mat-icon>event_available</mat-icon>
-            <span>Update Appointment Slot</span>
-          </button>
-        </div>
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Reason for Rescheduling</mat-label>
+          <input matInput [ngModel]="rescheduleReason()" (ngModelChange)="rescheduleReason.set($event)">
+        </mat-form-field>
       </div>
+
+      <footer class="ehr-modal-footer">
+        <button type="button" mat-flat-button color="primary" (click)="confirmReschedule()">
+          Update Slot
+        </button>
+        <button type="button" mat-stroked-button (click)="closeRescheduleModal()">Cancel</button>
+      </footer>
     </div>
-  }
+  </div>
+}

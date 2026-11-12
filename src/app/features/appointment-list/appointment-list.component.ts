@@ -1,28 +1,29 @@
-import { PermissionService } from '../../services/permission.service';
-import { PatientService } from '../../services/patient.service';
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { PermissionService } from '../../services/permission.service';
+import { PatientService } from '../../services/patient.service';
 import { AppointmentStore } from '../../store/appointment.store';
 import { LiveSyncService } from '../../services/live-sync.service';
 import { VitalSignsService } from '../../services/vital-signs.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { AuthService } from '../../services/auth.service';
 import { AppointmentService } from '../../services/appointment.service';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-appointment-list',
@@ -35,15 +36,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
-    MatSnackBarModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent,
+    EmptyStateComponent
   ],
   templateUrl: './appointment-list.component.html',
   styleUrls: ['./appointment-list.component.scss']
@@ -53,13 +55,16 @@ export class AppointmentListComponent implements OnInit {
   private patientService = inject(PatientService);
   public authService = inject(AuthService);
   private appointmentService = inject(AppointmentService);
+  private vitalSignsService = inject(VitalSignsService);
+  private toast = inject(ToastService);
+
   isPatient = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'patient' || this.authService.hasRole('Patient'));
   canConsult = computed(() => this.authService.hasRole('Doctor'));
-  isNurse = computed(() => this.authService.hasRole('Nurse'));
+  isNurse = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'nurse' || this.authService.hasRole('Nurse'));
   isReceptionist = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'receptionist' || this.authService.hasRole('Receptionist'));
   isAdmin = computed(() => (this.permissionService.activeRole() || '').toLowerCase() === 'admin' || this.authService.hasRole('Admin'));
+  canBookAppointment = computed(() => this.isNurse() || this.isReceptionist() || this.isPatient());
 
-  // Receptionist Workflows
   showCheckInModal = signal(false);
   checkInTargetAppt = signal<any>(null);
   tokenInput = signal<string>('');
@@ -78,12 +83,10 @@ export class AppointmentListComponent implements OnInit {
   apptStore = this.appointmentStore;
   private router = inject(Router);
   private liveSyncService = inject(LiveSyncService);
-  private snackBar = inject(MatSnackBar);
   appointments = this.appointmentStore.appointments;
   isLoading = this.appointmentStore.isLoading;
   displayedColumns = ['date', 'patient', 'doctor', 'status', 'actions'];
 
-  // Status Filter
   selectedStatusFilter = signal<string>('ALL');
 
   scopedAppointments = computed(() => {
@@ -109,10 +112,50 @@ export class AppointmentListComponent implements OnInit {
     return list;
   });
 
-  // Metrics
   scheduledCount = computed(() => (this.appointments() || []).filter(a => a.status === 'Scheduled').length);
   checkedInCount = computed(() => (this.appointments() || []).filter(a => a.status === 'CheckedIn').length);
   completedCount = computed(() => (this.appointments() || []).filter(a => a.status === 'Completed').length);
+
+  isVitalsModalOpen = signal(false);
+  vitalsHistory = signal<any[]>([]);
+  activeVitalsAppointment = signal<any>(null);
+  isSubmittingVitals = signal(false);
+  vitalsSystolic = signal<number>(120);
+  vitalsDiastolic = signal<number>(80);
+  vitalsHeartRate = signal<number>(72);
+  vitalsTemp = signal<number>(36.8);
+  vitalsRespiratory = signal<number>(16);
+  vitalsWeight = signal<number>(70);
+  vitalsHeight = signal<number>(170);
+  vitalsOxygenSaturation = signal<number>(98);
+  vitalsPainScore = signal<number>(0);
+  vitalsTriageUrgency = signal<string>('Routine');
+  vitalsRoomAssignment = signal<string>('Exam Room 1');
+  vitalsTriageNotes = signal<string>('');
+
+  computedBmi = computed(() => {
+    const hM = (this.vitalsHeight() || 170) / 100;
+    const wKg = this.vitalsWeight() || 70;
+    if (hM <= 0) return 0;
+    return parseFloat((wKg / (hM * hM)).toFixed(1));
+  });
+
+  bmiCategory = computed<{ label: string; tone: StatusTone }>(() => {
+    const bmi = this.computedBmi();
+    if (bmi < 18.5) return { label: 'Underweight', tone: 'info' };
+    if (bmi < 25) return { label: 'Normal Weight', tone: 'success' };
+    if (bmi < 30) return { label: 'Overweight', tone: 'warning' };
+    return { label: 'Obese', tone: 'danger' };
+  });
+
+  bpCategory = computed<{ label: string; tone: StatusTone }>(() => {
+    const sys = this.vitalsSystolic() || 120;
+    const dia = this.vitalsDiastolic() || 80;
+    if (sys < 120 && dia < 80) return { label: 'Normal BP', tone: 'success' };
+    if (sys <= 129 && dia < 80) return { label: 'Elevated BP', tone: 'warning' };
+    if (sys <= 139 || dia <= 89) return { label: 'Stage 1 HTN', tone: 'warning' };
+    return { label: 'Stage 2 HTN', tone: 'danger' };
+  });
 
   constructor() {
     this.liveSyncService.appointmentBooked$.pipe(
@@ -128,8 +171,18 @@ export class AppointmentListComponent implements OnInit {
     });
   }
 
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isVitalsModalOpen()) {
+      this.closeVitalsModal();
+    } else if (this.showCheckInModal()) {
+      this.closeReceptionCheckInModal();
+    } else if (this.showRescheduleModal()) {
+      this.closeRescheduleModal();
+    }
+  }
+
   ngOnInit() {
-    // Doctors must use the modern /my-consultations workspace with complete encounter documentation & account isolation
     if (this.authService.isDoctor()) {
       this.router.navigate(['/my-consultations']);
       return;
@@ -152,7 +205,7 @@ export class AppointmentListComponent implements OnInit {
 
   checkIn(appointmentId: string) {
     this.appointmentStore.checkIn(appointmentId);
-    this.snackBar.open('Patient checked in and added to Doctor Queue', 'Success', { duration: 3000 });
+    this.toast.success('Patient checked in and added to queue.');
   }
 
   openReceptionCheckInModal(appt: any) {
@@ -175,7 +228,7 @@ export class AppointmentListComponent implements OnInit {
 
     this.appointmentService.checkInWithDetails(appt.id, this.tokenInput(), this.visitTypeInput()).subscribe({
       next: () => {
-        this.toast.success(`Patient Checked In! Token [${this.tokenInput()}] issued and routed to ${this.routingStation()}.`);
+        this.toast.success(`Checked in with Token ${this.tokenInput()} and routed to ${this.routingStation()}.`);
         this.appointmentStore.loadAppointments();
         this.closeReceptionCheckInModal();
       },
@@ -245,54 +298,8 @@ export class AppointmentListComponent implements OnInit {
 
   cancel(appointmentId: string) {
     this.appointmentStore.cancel(appointmentId);
-    this.snackBar.open('Appointment cancelled.', 'Close', { duration: 3000 });
+    this.toast.info('Appointment cancelled.');
   }
-
-  private vitalSignsService = inject(VitalSignsService);
-  private toast = inject(ToastService);
-
-  // Vital Signs Modal State
-  isVitalsModalOpen = signal(false);
-  vitalsHistory = signal<any[]>([]);
-  activeVitalsAppointment = signal<any>(null);
-  isSubmittingVitals = signal(false);
-  vitalsSystolic = signal<number>(120);
-  vitalsDiastolic = signal<number>(80);
-  vitalsHeartRate = signal<number>(72);
-  vitalsTemp = signal<number>(36.8);
-  vitalsRespiratory = signal<number>(16);
-  vitalsWeight = signal<number>(70);
-  vitalsHeight = signal<number>(170);
-  vitalsOxygenSaturation = signal<number>(98);
-  vitalsPainScore = signal<number>(0);
-  vitalsTriageUrgency = signal<string>('Routine');
-  vitalsRoomAssignment = signal<string>('Exam Room 1');
-  vitalsTriageNotes = signal<string>('');
-
-  // Computed Live Health Indicators
-  computedBmi = computed(() => {
-    const hM = (this.vitalsHeight() || 170) / 100;
-    const wKg = this.vitalsWeight() || 70;
-    if (hM <= 0) return 0;
-    return parseFloat((wKg / (hM * hM)).toFixed(1));
-  });
-
-  bmiCategory = computed(() => {
-    const bmi = this.computedBmi();
-    if (bmi < 18.5) return { label: 'Underweight', class: 'bmi-under' };
-    if (bmi < 25) return { label: 'Normal Weight', class: 'bmi-normal' };
-    if (bmi < 30) return { label: 'Overweight', class: 'bmi-over' };
-    return { label: 'Obese', class: 'bmi-obese' };
-  });
-
-  bpCategory = computed(() => {
-    const sys = this.vitalsSystolic() || 120;
-    const dia = this.vitalsDiastolic() || 80;
-    if (sys < 120 && dia < 80) return { label: 'Normal BP', class: 'bp-normal' };
-    if (sys <= 129 && dia < 80) return { label: 'Elevated BP', class: 'bp-elevated' };
-    if (sys <= 139 || dia <= 89) return { label: 'Stage 1 HTN', class: 'bp-stage1' };
-    return { label: 'Stage 2 HTN', class: 'bp-stage2' };
-  });
 
   openVitalsModal(appointment: any) {
     this.activeVitalsAppointment.set(appointment);
@@ -300,7 +307,6 @@ export class AppointmentListComponent implements OnInit {
     this.vitalsRoomAssignment.set(appointment.roomAssignment || 'Exam Room 1');
     this.vitalsTriageNotes.set(appointment.triageNotes || '');
 
-    // If local appointment already has vital signs, populate immediately
     this.vitalsHistory.set(appointment.vitalSigns ? [appointment.vitalSigns] : []);
     if (appointment.vitalSigns) {
       this.populateVitals(appointment.vitalSigns);
@@ -308,7 +314,6 @@ export class AppointmentListComponent implements OnInit {
       this.resetVitalsToDefault();
     }
 
-    // Always fetch latest authoritative record from backend
     this.vitalSignsService.getByAppointment(appointment.id).subscribe({
       next: (res: any) => {
         const v = res?.value || res;
@@ -343,7 +348,7 @@ export class AppointmentListComponent implements OnInit {
           this.appointmentStore.updateAppointmentVitals(appointment.id, freshVitals);
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.isVitalsModalOpen.set(true);
@@ -432,22 +437,19 @@ export class AppointmentListComponent implements OnInit {
         this.activeVitalsAppointment.set({ ...appt });
         this.appointmentStore.updateAppointmentVitals(appt.id, freshVitals);
 
-        // Also record triage assessment & room assignment
         this.appointmentService.updateTriage(appt.id, {
           triageUrgency: this.vitalsTriageUrgency(),
           roomAssignment: this.vitalsRoomAssignment(),
           triageNotes: this.vitalsTriageNotes(),
           status: (appt.status === 'CheckedIn' || appt.status === 'Scheduled') ? 'TriageComplete' : undefined
         }).subscribe({
-          next: () => {
-            this.appointmentStore.loadAppointments();
-          },
-          error: () => {}
+          next: () => this.appointmentStore.loadAppointments(),
+          error: () => { }
         });
 
         this.isSubmittingVitals.set(false);
         this.isVitalsModalOpen.set(false);
-        this.toast.success(`Clinical triage and vital signs recorded for ${appt.patientName || 'patient'}!`);
+        this.toast.success(`Vital signs and triage saved for ${appt.patientName || 'patient'}.`);
         this.appointmentStore.loadAppointments();
       },
       error: (err: any) => {
@@ -460,7 +462,7 @@ export class AppointmentListComponent implements OnInit {
   dischargePatient(appointmentId: string) {
     this.appointmentService.updateStatus(appointmentId, { status: 'Completed' }).subscribe({
       next: () => {
-        this.toast.success('Patient discharged and appointment marked Completed.');
+        this.toast.success('Patient discharged and appointment completed.');
         this.appointmentStore.loadAppointments();
       },
       error: (err: any) => {
@@ -476,5 +478,3 @@ export class AppointmentListComponent implements OnInit {
     return name.substring(0, 2).toUpperCase();
   }
 }
-
-

@@ -363,7 +363,7 @@ export class PatientDetailComponent implements OnInit {
         const patient = (data as any)?.isSuccess !== undefined ? (data as any).value : data;
         this.patient.set(patient);
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -373,7 +373,7 @@ export class PatientDetailComponent implements OnInit {
         const data = h && h.isSuccess !== undefined ? h.value : h;
         this.history.set(data);
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -386,8 +386,8 @@ export class PatientDetailComponent implements OnInit {
         this.isLoading.set(false);
 
         this.emrAccessService.logAccess(this.id(), 'ViewChart', 'Clinical chart opened').subscribe({
-          next: () => {},
-          error: () => {}
+          next: () => { },
+          error: () => { }
         });
       },
       error: () => this.isLoading.set(false)
