@@ -42,8 +42,6 @@ export class ThemeService {
   }
 
   private getInitialTheme(): AppTheme {
-    const saved = localStorage.getItem(this.THEME_KEY) as AppTheme | null;
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'light';
   }
 }

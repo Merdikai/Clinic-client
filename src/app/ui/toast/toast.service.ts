@@ -7,21 +7,23 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class ToastService {
   private snackBar = inject(MatSnackBar);
 
-  success(message: string, duration = 3500) {
+  success(message: string, duration = 3000) {
     this.snackBar.open(message, 'Close', {
       duration,
       panelClass: ['toast-success'],
-      horizontalPosition: 'right',
-      verticalPosition: 'top'
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+      politeness: 'polite'
     });
   }
 
-  error(message: string, duration = 5000) {
+  error(message: string, duration = 3000) {
     this.snackBar.open(message, 'Close', {
       duration,
       panelClass: ['toast-error'],
-      horizontalPosition: 'right',
-      verticalPosition: 'top'
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+      politeness: 'polite'
     });
   }
 
@@ -29,17 +31,19 @@ export class ToastService {
     this.snackBar.open(message, 'Close', {
       duration,
       panelClass: ['toast-info'],
-      horizontalPosition: 'right',
-      verticalPosition: 'top'
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+      politeness: 'polite'
     });
   }
 
-  warning(message: string, duration = 4000) {
+  warning(message: string, duration = 3000) {
     this.snackBar.open(message, 'Close', {
       duration,
       panelClass: ['toast-warning'],
-      horizontalPosition: 'right',
-      verticalPosition: 'top'
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+      politeness: 'polite'
     });
   }
 }
