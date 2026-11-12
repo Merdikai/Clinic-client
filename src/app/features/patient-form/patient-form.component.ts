@@ -2,7 +2,6 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -10,11 +9,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { PatientService } from '../../services/patient.service';
 import { ToastService } from '../../ui/toast/toast.service';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
 @Component({
   selector: 'app-patient-form',
@@ -23,7 +22,6 @@ import { ToastService } from '../../ui/toast/toast.service';
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -31,9 +29,9 @@ import { ToastService } from '../../ui/toast/toast.service';
     MatIconModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatTooltipModule
+    PageHeaderComponent,
+    SkeletonComponent,
+    StatusChipComponent
   ],
   templateUrl: './patient-form.component.html',
   styleUrls: ['./patient-form.component.scss']
@@ -46,10 +44,10 @@ export class PatientFormComponent implements OnInit {
   private toast = inject(ToastService);
 
   editId = signal<string | null>(null);
+  isLoadingPatient = signal(false);
   isSubmitting = signal(false);
   errorMessage = signal('');
 
-  // Common quick allergy chips
   commonAllergies = [
     'No Known Drug Allergies (NKDA)',
     'Penicillin',
@@ -84,9 +82,7 @@ export class PatientFormComponent implements OnInit {
     emergencyContactPhone: ['']
   });
 
-  // Calculate form completion progress
   completionCount = computed(() => {
-    // Core required fields
     const f = this.patientForm.controls;
     let count = 0;
     if (f.firstName.value?.trim()) count++;
@@ -97,12 +93,21 @@ export class PatientFormComponent implements OnInit {
     return count;
   });
 
+  eligibilityTone(): 'success' | 'info' | 'neutral' {
+    if (this.eligibilityVerified()) return 'success';
+    const provider = this.patientForm.get('insuranceProvider')?.value || '';
+    if (provider.includes('Self-Pay')) return 'info';
+    return 'neutral';
+  }
+
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.editId.set(id);
+      this.isLoadingPatient.set(true);
       this.patientService.getById(id).subscribe({
         next: (p: any) => {
+          this.isLoadingPatient.set(false);
           const patient = p?.isSuccess !== undefined ? p.value : p;
           if (!patient) return;
 
@@ -146,12 +151,12 @@ export class PatientFormComponent implements OnInit {
           }
         },
         error: () => {
+          this.isLoadingPatient.set(false);
           this.toast.error('Failed to load patient information');
         }
       });
     }
 
-    // Set up real-time Master Patient Index (MPI) screening for new registrations
     if (!this.editId()) {
       this.patientForm.valueChanges.subscribe(val => {
         const phone = (val.phoneNumber || '').trim();

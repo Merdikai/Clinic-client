@@ -1,365 +1,258 @@
-<div class="patient-registration-container">
-  <div class="registration-layout">
+<div class="ehr-page patient-form-page">
+  <app-page-header [title]="editId() ? 'Edit Patient Record' : 'Register Patient'"
+    [subtitle]="editId() ? 'Modify demographics, clinical allergies, insurance coverage, and emergency contacts' : 'Create a patient chart; an MRN is automatically assigned on submission'"
+    backLink="/patients" backLabel="Patient Directory">
+    <app-status-chip [status]="completionCount() + ' / 5 Required'"
+      [tone]="completionCount() === 5 ? 'success' : 'neutral'" [showIcon]="false">
+    </app-status-chip>
+  </app-page-header>
 
-    <!-- BREADCRUMB & TOP NAV -->
-    <div class="registration-top-nav">
-      <button mat-stroked-button routerLink="/patients" class="back-btn">
-        <mat-icon>arrow_back</mat-icon> Patients Directory
-      </button>
-
-      <div class="intake-status-pill">
-        <span class="pulse-dot"></span>
-        <span>{{ editId() ? 'EMR Record Modification' : 'Clinical Intake Protocol' }}</span>
-      </div>
-    </div>
-
-    <!-- MAIN FORM CARD -->
-    <div class="intake-card">
-
-      <!-- HERO HEADER -->
-      <div class="intake-hero">
-        <div class="hero-left">
-          <div class="hero-icon-badge" [class.edit-badge]="editId()">
-            <mat-icon>{{ editId() ? 'manage_accounts' : 'person_add' }}</mat-icon>
-          </div>
-          <div>
-            <h1>{{ editId() ? 'Update Patient Clinical Record' : 'Register New Patient Profile' }}</h1>
-            <p class="hero-description">
-              {{ editId() ? 'Modify demographic data, clinical alerts, and emergency contact records.' : 'Create an Electronic Health Record (EHR) profile. Medical Record Number (MRN) is assigned upon registration.' }}
-            </p>
-          </div>
-        </div>
-
-        <div class="hero-right">
-          <div class="completion-pill" [class.complete]="completionCount() === 5">
-            <mat-icon>{{ completionCount() === 5 ? 'check_circle' : 'pending' }}</mat-icon>
-            <span>{{ completionCount() }} / 5 Required Fields</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- MASTER PATIENT INDEX (MPI) DUPLICATE SCREENING BANNER -->
-      @if (mpiMatches().length > 0 && !editId()) {
-        <div class="mpi-duplicate-alert">
-          <div class="mpi-alert-header">
-            <mat-icon class="mpi-alert-icon">warning_amber</mat-icon>
-            <div class="mpi-alert-title">
-              <strong>Master Patient Index (MPI) Screening Alert:</strong>
-              <span>{{ mpiMatches().length }} potential duplicate patient record(s) detected in database!</span>
-            </div>
-          </div>
-          <div class="mpi-matches-list">
-            @for (match of mpiMatches(); track match.id) {
-              <div class="mpi-match-item">
-                <div class="match-info">
-                  <span class="match-name">{{ match.fullName }}</span>
-                  <span class="match-mrn">MRN: {{ match.medicalRecordNumber }}</span>
-                  <span class="match-phone">Phone: {{ match.phone }}</span>
-                  @if (match.nationalId) {
-                    <span class="match-natid">ID: {{ match.nationalId }}</span>
-                  }
-                  <span class="match-reason-badge">{{ match.matchReason }}</span>
-                </div>
-                <button type="button" mat-stroked-button class="view-duplicate-btn" [routerLink]="['/patients', match.id]">
-                  <mat-icon>open_in_new</mat-icon> View Existing EMR
-                </button>
-              </div>
-            }
-          </div>
-          <p class="mpi-footer-notice">
-            Please verify patient identity carefully to avoid creating fragmented medical records.
-          </p>
-        </div>
-      }
-
-      <!-- THE REGISTRATION FORM -->
-      <form [formGroup]="patientForm" (ngSubmit)="onSubmit()" class="intake-form">
-
-        <!-- SECTION 1: PERSONAL DEMOGRAPHICS -->
-        <div class="form-section">
-          <div class="section-title-row">
-            <div class="section-badge">1</div>
-            <div>
-              <h2>Personal Demographics & Legal Identity</h2>
-              <p>Legal name, date of birth, biological sex, National ID, and blood type.</p>
-            </div>
-          </div>
-
-          <div class="form-grid grid-3">
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>First Name</mat-label>
-              <input matInput formControlName="firstName" placeholder="e.g. John" />
-              <mat-icon matPrefix>person</mat-icon>
-              @if (patientForm.get('firstName')?.hasError('required') && patientForm.get('firstName')?.touched) {
-                <mat-error>First name is required</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Last Name</mat-label>
-              <input matInput formControlName="lastName" placeholder="e.g. Doe" />
-              <mat-icon matPrefix>badge</mat-icon>
-              @if (patientForm.get('lastName')?.hasError('required') && patientForm.get('lastName')?.touched) {
-                <mat-error>Last name is required</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Date of Birth</mat-label>
-              <input matInput type="date" formControlName="dateOfBirth" />
-              <mat-icon matPrefix>cake</mat-icon>
-              @if (patientForm.get('dateOfBirth')?.hasError('required') && patientForm.get('dateOfBirth')?.touched) {
-                <mat-error>Date of birth is required</mat-error>
-              }
-            </mat-form-field>
-          </div>
-
-          <div class="form-grid grid-3">
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Biological Sex / Gender</mat-label>
-              <mat-select formControlName="gender">
-                <mat-option value="Male">
-                  <div class="select-opt"><mat-icon class="opt-icon">male</mat-icon> Male</div>
-                </mat-option>
-                <mat-option value="Female">
-                  <div class="select-opt"><mat-icon class="opt-icon">female</mat-icon> Female</div>
-                </mat-option>
-                <mat-option value="Other">
-                  <div class="select-opt"><mat-icon class="opt-icon">transgender</mat-icon> Other / Non-binary</div>
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix>wc</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>National ID / SSN / Passport #</mat-label>
-              <input matInput formControlName="nationalId" placeholder="e.g. NAT-902148" />
-              <mat-icon matPrefix>credit_card</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>ABO & Rh Blood Group</mat-label>
-              <mat-select formControlName="bloodGroup">
-                <mat-option value="A+"><span class="blood-pill">A+</span> Type A Positive</mat-option>
-                <mat-option value="A-"><span class="blood-pill">A-</span> Type A Negative</mat-option>
-                <mat-option value="B+"><span class="blood-pill">B+</span> Type B Positive</mat-option>
-                <mat-option value="B-"><span class="blood-pill">B-</span> Type B Negative</mat-option>
-                <mat-option value="AB+"><span class="blood-pill">AB+</span> Type AB Positive</mat-option>
-                <mat-option value="AB-"><span class="blood-pill">AB-</span> Type AB Negative</mat-option>
-                <mat-option value="O+"><span class="blood-pill">O+</span> Type O Positive</mat-option>
-                <mat-option value="O-"><span class="blood-pill">O-</span> Type O Negative</mat-option>
-              </mat-select>
-              <mat-icon matPrefix>bloodtype</mat-icon>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <!-- SECTION 2: CONTACT & RESIDENTIAL ADDRESS -->
-        <div class="form-section">
-          <div class="section-title-row">
-            <div class="section-badge badge-teal">2</div>
-            <div>
-              <h2>Contact Details & Residential Address</h2>
-              <p>Direct communication channels for appointment reminders, SMS confirmations, and records.</p>
-            </div>
-          </div>
-
-          <div class="form-grid grid-2">
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Primary Phone Number</mat-label>
-              <input matInput formControlName="phoneNumber" placeholder="+1 (555) 000-0000" />
-              <mat-icon matPrefix>phone</mat-icon>
-              @if (patientForm.get('phoneNumber')?.hasError('required') && patientForm.get('phoneNumber')?.touched) {
-                <mat-error>Primary phone number is required</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Email Address</mat-label>
-              <input matInput formControlName="email" type="email" placeholder="patient@example.com" />
-              <mat-icon matPrefix>mail</mat-icon>
-              @if (patientForm.get('email')?.hasError('email') && patientForm.get('email')?.touched) {
-                <mat-error>Please enter a valid email address</mat-error>
-              }
-            </mat-form-field>
-          </div>
-
-          <div class="form-row single-row">
-            <mat-form-field appearance="outline" class="custom-field full-width" subscriptSizing="dynamic">
-              <mat-label>Residential Home Address</mat-label>
-              <input matInput formControlName="address" placeholder="Street address, apartment or suite, city, state, postal code" />
-              <mat-icon matPrefix>home</mat-icon>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <!-- SECTION 3: INSURANCE & PAYER COVERAGE -->
-        <div class="form-section insurance-section">
-          <div class="section-title-row">
-            <div class="section-badge badge-indigo">3</div>
-            <div>
-              <h2>Insurance & Payer Coverage Verification</h2>
-              <p>Primary health insurer, policy certificate, and real-time electronic eligibility status.</p>
-            </div>
-          </div>
-
-          <div class="form-grid grid-3">
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Insurance / Payer Provider</mat-label>
-              <mat-select formControlName="insuranceProvider">
-                <mat-option value="Self-Pay / Private">Self-Pay / Private Patient</mat-option>
-                <mat-option value="BlueCross BlueShield">BlueCross BlueShield</mat-option>
-                <mat-option value="Aetna Healthcare">Aetna Healthcare</mat-option>
-                <mat-option value="Cigna Global">Cigna Global</mat-option>
-                <mat-option value="UnitedHealthcare">UnitedHealthcare</mat-option>
-                <mat-option value="State Medicaid / Medicare">State Medicaid / Medicare</mat-option>
-              </mat-select>
-              <mat-icon matPrefix>health_and_safety</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Policy / Member ID #</mat-label>
-              <input matInput formControlName="insurancePolicyNumber" placeholder="e.g. POL-882941" />
-              <mat-icon matPrefix>policy</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Coverage Plan / Tier</mat-label>
-              <input matInput formControlName="insuranceCoveragePlan" placeholder="e.g. Comprehensive Gold PPO" />
-              <mat-icon matPrefix>verified_user</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <div class="eligibility-verification-bar">
-            <div class="eligibility-status-pill" [class.verified]="eligibilityVerified()" [class.self-pay]="patientForm.get('insuranceProvider')?.value?.includes('Self-Pay')">
-              <mat-icon>{{ eligibilityVerified() ? 'check_circle' : 'verified_user' }}</mat-icon>
-              <span>Status: {{ patientForm.get('insuranceEligibilityStatus')?.value || 'Pending Verification' }}</span>
-            </div>
-
-            <button
-              type="button"
-              mat-flat-button
-              class="verify-eligibility-btn"
-              (click)="verifyInsurance()"
-              [disabled]="isVerifyingEligibility()"
-            >
-              @if (isVerifyingEligibility()) {
-                <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
-                <span>Querying Payer Gateway...</span>
-              } @else {
-                <ng-container>
-                  <mat-icon>bolt</mat-icon>
-                  <span>{{ eligibilityVerified() ? 'Re-Verify Coverage' : 'Verify Electronic Eligibility' }}</span>
-                </ng-container>
-              }
-            </button>
-          </div>
-        </div>
-
-        <!-- SECTION 4: CLINICAL ALERTS & ALLERGIES -->
-        <div class="form-section alert-section">
-          <div class="section-title-row">
-            <div class="section-badge badge-amber">4</div>
-            <div>
-              <h2>Clinical Alerts & Known Allergies</h2>
-              <p>Critical medical warnings flagged across prescriptions, consultations, and laboratory orders.</p>
-            </div>
-          </div>
-
-          <div class="allergy-box">
-            <mat-form-field appearance="outline" class="custom-field full-width" subscriptSizing="dynamic">
-              <mat-label>Allergies & Adverse Drug Reactions</mat-label>
-              <input matInput formControlName="allergies" placeholder="e.g. Penicillin, Amoxicillin, Peanuts, Latex, None Known" />
-              <mat-icon matPrefix class="amber-icon">warning</mat-icon>
-            </mat-form-field>
-
-            <div class="quick-tags-container">
-              <span class="quick-label">Quick Suggestions:</span>
-              <div class="chips-row">
-                @for (item of commonAllergies; track item) {
-                  <button type="button" class="quick-chip-btn" (click)="addAllergyTag(item)">
-                    <mat-icon class="chip-add-icon">add</mat-icon>
-                    {{ item }}
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 5: EMERGENCY CONTACT & NEXT OF KIN -->
-        <div class="form-section">
-          <div class="section-title-row">
-            <div class="section-badge badge-rose">5</div>
-            <div>
-              <h2>Emergency Contact / Next of Kin</h2>
-              <p>Designated contact person authorized for emergency medical notifications.</p>
-            </div>
-          </div>
-
-          <div class="form-grid grid-2">
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Emergency Contact Name & Relationship</mat-label>
-              <input matInput formControlName="emergencyContactName" placeholder="e.g. Mary Doe (Spouse) or John Smith (Father)" />
-              <mat-icon matPrefix>contact_emergency</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="custom-field" subscriptSizing="dynamic">
-              <mat-label>Emergency Contact Phone</mat-label>
-              <input matInput formControlName="emergencyContactPhone" placeholder="+1 (555) 999-9999" />
-              <mat-icon matPrefix>phone_in_talk</mat-icon>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <!-- ERROR BANNER -->
-        @if (errorMessage()) {
-          <div class="error-banner">
-            <mat-icon>error</mat-icon>
-            <span>{{ errorMessage() }}</span>
-          </div>
-        }
-
-        <!-- FORM ACTION CONTROLS -->
-        <div class="form-footer-actions">
-          <button mat-stroked-button type="button" routerLink="/patients" class="cancel-action-btn">
-            <mat-icon>close</mat-icon> Cancel & Return
-          </button>
-
-          <div class="submit-action-group">
-            <div class="status-indicator">
-              @if (patientForm.valid) {
-                <span class="status-valid">
-                  <mat-icon>check_circle</mat-icon> All required fields valid
-                </span>
-              } @else {
-                <span class="status-pending">
-                  <mat-icon>info</mat-icon> Please fill required fields
-                </span>
-              }
-            </div>
-
-            <button
-              mat-flat-button
-              color="primary"
-              type="submit"
-              [disabled]="patientForm.invalid || isSubmitting()"
-              class="register-action-btn"
-            >
-              <ng-container *ngIf="isSubmitting(); else readyState">
-                <mat-spinner diameter="20" class="btn-spinner"></mat-spinner>
-                <span>Processing Record...</span>
-              </ng-container>
-              <ng-template #readyState>
-                <mat-icon>{{ editId() ? 'save' : 'how_to_reg' }}</mat-icon>
-                <span>{{ editId() ? 'Save Patient Details' : 'Complete Intake & Assign MRN' }}</span>
-              </ng-template>
-            </button>
-          </div>
-        </div>
-
-      </form>
-
-    </div>
+  @if (isLoadingPatient()) {
+  <div class="form-skeleton-stack">
+    <app-skeleton variant="card" [count]="3" label="Loading patient record"></app-skeleton>
   </div>
+  } @else {
+  @if (mpiMatches().length > 0 && !editId()) {
+  <section class="mpi-alert" role="status" aria-live="polite">
+    <div class="mpi-alert-header">
+      <mat-icon aria-hidden="true">warning_amber</mat-icon>
+      <div>
+        <strong>Master Patient Index (MPI) Match Detected:</strong>
+        <span>{{ mpiMatches().length }} potential existing patient record(s) found.</span>
+      </div>
+    </div>
+    <div class="mpi-matches-list">
+      @for (match of mpiMatches(); track match.id) {
+      <div class="mpi-match-item">
+        <div class="match-info">
+          <span class="match-name">{{ match.fullName }}</span>
+          <span class="match-mrn">MRN: {{ match.medicalRecordNumber }}</span>
+          <span class="match-meta">Phone: {{ match.phone }}</span>
+          @if (match.nationalId) {
+          <span class="match-meta">ID: {{ match.nationalId }}</span>
+          }
+          <app-status-chip [status]="match.matchReason" tone="warning"></app-status-chip>
+        </div>
+        <a mat-stroked-button [routerLink]="['/patients', match.id]">
+          View Existing Chart
+        </a>
+      </div>
+      }
+    </div>
+    <p class="mpi-footnote">Verify identity before saving to prevent duplicate charts.</p>
+  </section>
+  }
+
+  <form [formGroup]="patientForm" (ngSubmit)="onSubmit()" class="intake-form">
+    <!-- SECTION 1: PERSONAL DEMOGRAPHICS -->
+    <section class="form-card" aria-labelledby="section-demographics">
+      <header class="section-header">
+        <h2 id="section-demographics">1. Personal Demographics &amp; Legal Identity</h2>
+        <p>Legal name, date of birth, sex, National ID, and blood group.</p>
+      </header>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>First Name</mat-label>
+          <input matInput formControlName="firstName" placeholder="e.g. John" autocomplete="given-name" />
+          @if (patientForm.get('firstName')?.hasError('required') && patientForm.get('firstName')?.touched) {
+          <mat-error>First name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Last Name</mat-label>
+          <input matInput formControlName="lastName" placeholder="e.g. Doe" autocomplete="family-name" />
+          @if (patientForm.get('lastName')?.hasError('required') && patientForm.get('lastName')?.touched) {
+          <mat-error>Last name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Date of Birth</mat-label>
+          <input matInput type="date" formControlName="dateOfBirth" autocomplete="bday" />
+          @if (patientForm.get('dateOfBirth')?.hasError('required') && patientForm.get('dateOfBirth')?.touched) {
+          <mat-error>Date of birth is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Sex / Gender</mat-label>
+          <mat-select formControlName="gender">
+            <mat-option value="Male">Male</mat-option>
+            <mat-option value="Female">Female</mat-option>
+            <mat-option value="Other">Other / Non-binary</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>National ID / SSN / Passport</mat-label>
+          <input matInput formControlName="nationalId" placeholder="e.g. NAT-902148" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>ABO &amp; Rh Blood Group</mat-label>
+          <mat-select formControlName="bloodGroup">
+            <mat-option value="A+">A+ (A Positive)</mat-option>
+            <mat-option value="A-">A- (A Negative)</mat-option>
+            <mat-option value="B+">B+ (B Positive)</mat-option>
+            <mat-option value="B-">B- (B Negative)</mat-option>
+            <mat-option value="AB+">AB+ (AB Positive)</mat-option>
+            <mat-option value="AB-">AB- (AB Negative)</mat-option>
+            <mat-option value="O+">O+ (O Positive)</mat-option>
+            <mat-option value="O-">O- (O Negative)</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </section>
+
+    <!-- SECTION 2: CONTACT & ADDRESS -->
+    <section class="form-card" aria-labelledby="section-contact">
+      <header class="section-header">
+        <h2 id="section-contact">2. Contact Details &amp; Residential Address</h2>
+        <p>Phone and email for appointment confirmations and patient communications.</p>
+      </header>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Primary Phone Number</mat-label>
+          <input matInput formControlName="phoneNumber" placeholder="+1 (555) 000-0000" autocomplete="tel" />
+          @if (patientForm.get('phoneNumber')?.hasError('required') && patientForm.get('phoneNumber')?.touched) {
+          <mat-error>Primary phone number is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Email Address</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="patient@example.com" autocomplete="email" />
+          @if (patientForm.get('email')?.hasError('email') && patientForm.get('email')?.touched) {
+          <mat-error>Please enter a valid email address</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full grid-span-2">
+          <mat-label>Residential Address</mat-label>
+          <input matInput formControlName="address" placeholder="Street address, suite, city, state, postal code"
+            autocomplete="street-address" />
+        </mat-form-field>
+      </div>
+    </section>
+
+    <!-- SECTION 3: INSURANCE & PAYER COVERAGE -->
+    <section class="form-card" aria-labelledby="section-insurance">
+      <header class="section-header">
+        <h2 id="section-insurance">3. Insurance &amp; Payer Coverage</h2>
+        <p>Health insurer, policy identifier, and electronic eligibility check.</p>
+      </header>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Insurance / Payer Provider</mat-label>
+          <mat-select formControlName="insuranceProvider">
+            <mat-option value="Self-Pay / Private">Self-Pay / Private Patient</mat-option>
+            <mat-option value="BlueCross BlueShield">BlueCross BlueShield</mat-option>
+            <mat-option value="Aetna Healthcare">Aetna Healthcare</mat-option>
+            <mat-option value="Cigna Global">Cigna Global</mat-option>
+            <mat-option value="UnitedHealthcare">UnitedHealthcare</mat-option>
+            <mat-option value="State Medicaid / Medicare">State Medicaid / Medicare</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Policy / Member ID</mat-label>
+          <input matInput formControlName="insurancePolicyNumber" placeholder="e.g. POL-882941" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full grid-span-2">
+          <mat-label>Coverage Plan / Tier</mat-label>
+          <input matInput formControlName="insuranceCoveragePlan" placeholder="e.g. Comprehensive Gold PPO" />
+        </mat-form-field>
+      </div>
+
+      <div class="eligibility-bar">
+        <div class="eligibility-meta">
+          <span class="eligibility-label">Eligibility Status</span>
+          <app-status-chip [status]="patientForm.get('insuranceEligibilityStatus')?.value || 'Pending Verification'"
+            [tone]="eligibilityTone()">
+          </app-status-chip>
+        </div>
+
+        <button type="button" mat-stroked-button (click)="verifyInsurance()" [disabled]="isVerifyingEligibility()"
+          [attr.aria-busy]="isVerifyingEligibility()">
+          {{ isVerifyingEligibility() ? 'Querying Payer Gateway...' : (eligibilityVerified() ? 'Re-Verify Coverage' :
+          'Verify Electronic Eligibility') }}
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 4: CLINICAL ALERTS & ALLERGIES -->
+    <section class="form-card" aria-labelledby="section-allergies">
+      <header class="section-header">
+        <h2 id="section-allergies">4. Clinical Alerts &amp; Known Allergies</h2>
+        <p>Allergies flagged during triage, consultation, and prescribing.</p>
+      </header>
+
+      <div class="allergy-stack">
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Allergies &amp; Adverse Drug Reactions</mat-label>
+          <input matInput formControlName="allergies" placeholder="e.g. Penicillin, Peanuts, Latex, or NKDA" />
+        </mat-form-field>
+
+        <div class="quick-tags-row" role="group" aria-label="Quick allergy presets">
+          <span class="quick-label">Quick Presets:</span>
+          @for (item of commonAllergies; track item) {
+          <button type="button" mat-stroked-button class="preset-btn" (click)="addAllergyTag(item)">
+            {{ item }}
+          </button>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: EMERGENCY CONTACT -->
+    <section class="form-card" aria-labelledby="section-emergency">
+      <header class="section-header">
+        <h2 id="section-emergency">5. Emergency Contact / Next of Kin</h2>
+        <p>Authorized contact for emergency medical notifications.</p>
+      </header>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Emergency Contact Name &amp; Relationship</mat-label>
+          <input matInput formControlName="emergencyContactName" placeholder="e.g. Mary Doe (Spouse)" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field-full">
+          <mat-label>Emergency Contact Phone</mat-label>
+          <input matInput formControlName="emergencyContactPhone" placeholder="+1 (555) 999-9999" />
+        </mat-form-field>
+      </div>
+    </section>
+
+    @if (errorMessage()) {
+    <div class="form-error-banner" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+    }
+
+    <footer class="form-footer">
+      <div class="validation-note" [class.valid]="patientForm.valid">
+        @if (patientForm.valid) {
+        <span>All required demographic fields are complete.</span>
+        } @else {
+        <span>Complete all 5 required fields before saving.</span>
+        }
+      </div>
+
+      <div class="footer-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="patientForm.invalid || isSubmitting()"
+          [attr.aria-busy]="isSubmitting()">
+          {{ isSubmitting() ? 'Saving Record...' : (editId() ? 'Save Patient Details' : 'Complete Registration') }}
+        </button>
+        <a mat-stroked-button routerLink="/patients">Cancel</a>
+      </div>
+    </footer>
+  </form>
+  }
 </div>
