@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { CreateMedicineRequest, Medicine } from '../models/medicine.model';
+import { PagedResponse } from '../models/patient.model';
 
 @Injectable({ providedIn: 'root' })
 export class MedicineService {
@@ -15,7 +16,7 @@ export class MedicineService {
 
     if (search) params = params.set('search', search);
 
-    return this.http.get<any>(this.apiUrl, { params });
+    return this.http.get<PagedResponse<Medicine>>(this.apiUrl, { params });
   }
 
   create(request: CreateMedicineRequest) {
@@ -27,15 +28,14 @@ export class MedicineService {
   }
 
   getById(id: string) {
-    return this.http.get<any>(`${this.apiUrl}/${id}`);
+    return this.http.get<Medicine>(`${this.apiUrl}/${id}`);
   }
 
-  update(id: string, request: any) {
-    return this.http.put<any>(`${this.apiUrl}/${id}`, request);
+  update(id: string, request: Partial<CreateMedicineRequest>) {
+    return this.http.put<Medicine>(`${this.apiUrl}/${id}`, request);
   }
 
   delete(id: string) {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
-
 }

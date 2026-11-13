@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
@@ -32,6 +32,7 @@ const INFO_STATUSES = new Set([
   selector: 'app-status-chip',
   standalone: true,
   imports: [MatIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <span class="status-chip" [class]="'status-chip tone-' + resolvedTone()">
       @if (showIcon()) {

@@ -2,13 +2,18 @@ export interface PrescriptionItem {
   id: string;
   medicineId: string;
   medicineName?: string;
+  genericName?: string;
   dosageInstructions: string;
   dosage?: string;
+  strength?: string;
+  dosageForm?: string;
   frequency?: string;
   route?: string;
   duration?: string;
   status?: string;
   dispensedQuantity?: number;
+  isControlledSubstance?: boolean;
+  availableStock?: number;
   quantity: number;
   unitPrice: number;
 }
@@ -26,7 +31,12 @@ export interface Prescription {
   notes?: string;
   verificationNotes?: string;
   invoiceId?: string;
+  invoiceNumber?: string;
   totalAmount?: number;
+  medicineName?: string;
+  genericName?: string;
+  dosageInstructions?: string;
+  quantity?: number;
   items: PrescriptionItem[];
   isDispensed: boolean;
   dispensedAt?: string;

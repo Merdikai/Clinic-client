@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,7 +6,9 @@ import { RouterLink } from '@angular/router';
 
 import { PrescriptionService } from '../../../services/prescription.service';
 import { PatientService } from '../../../services/patient.service';
-import { Patient } from '../../../models/patient.model';
+import { ToastService } from '../../../ui/toast/toast.service';
+import { PagedResponse, Patient } from '../../../models/patient.model';
+import { Prescription } from '../../../models/prescription.model';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
@@ -26,22 +28,24 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.
     EmptyStateComponent
   ],
   templateUrl: './my-prescriptions.component.html',
-  styleUrls: ['./my-prescriptions.component.scss']
+  styleUrls: ['./my-prescriptions.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MyPrescriptionsComponent implements OnInit {
-  private prescriptionService = inject(PrescriptionService);
-  private patientService = inject(PatientService);
+  private readonly prescriptionService = inject(PrescriptionService);
+  private readonly patientService = inject(PatientService);
+  private readonly toast = inject(ToastService);
 
   patient = signal<Patient | null>(null);
-  prescriptions = signal<any[]>([]);
+  prescriptions = signal<Prescription[]>([]);
   isLoading = signal(true);
 
   // Prescription Detail Modal
   isDetailModalOpen = signal(false);
-  selectedPrescription = signal<any | null>(null);
+  selectedPrescription = signal<Prescription | null>(null);
 
   pageSubtitle = computed(() => {
-    const mrn = this.patient()?.medicalRecordNumber || 'PAT-ALICE-001';
+    const mrn = this.patient()?.medicalRecordNumber || 'Pending Verification';
     return `MRN: ${mrn} · Track prescribed medications, dosage instructions, and dispensing statuses`;
   });
 
@@ -60,7 +64,7 @@ export class MyPrescriptionsComponent implements OnInit {
     }
   }
 
-  openDetailModal(rx: any) {
+  openDetailModal(rx: Prescription) {
     this.selectedPrescription.set(rx);
     this.isDetailModalOpen.set(true);
   }
@@ -78,22 +82,16 @@ export class MyPrescriptionsComponent implements OnInit {
         this.fetchPrescriptions(pat.id);
       },
       error: () => {
-        const fallbackId = 'a11ce000-0000-0000-0000-000000000001';
-        this.patient.set({
-          id: fallbackId,
-          firstName: 'Alice',
-          lastName: 'Patient',
-          medicalRecordNumber: 'PAT-ALICE-001'
-        } as any);
-        this.fetchPrescriptions(fallbackId);
+        this.isLoading.set(false);
+        this.toast.error('Unable to load your patient prescription profile.');
       }
     });
   }
 
   fetchPrescriptions(patientId: string) {
     this.prescriptionService.getAll(patientId).subscribe({
-      next: (res: any) => {
-        const list = Array.isArray(res) ? res : res?.items || [];
+      next: (res: Prescription[] | PagedResponse<Prescription>) => {
+        const list = Array.isArray(res) ? res : (res.items ?? []);
         this.prescriptions.set(list);
         this.isLoading.set(false);
       },

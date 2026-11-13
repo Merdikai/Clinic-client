@@ -1,12 +1,13 @@
-import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { BillingService } from '../../../services/billing.service';
 import { PatientService } from '../../../services/patient.service';
+import { ToastService } from '../../../ui/toast/toast.service';
 import { Invoice } from '../../../models/billing.model';
-import { Patient } from '../../../models/patient.model';
+import { PagedResponse, Patient } from '../../../models/patient.model';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
@@ -25,11 +26,13 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.
     EmptyStateComponent
   ],
   templateUrl: './my-invoices.component.html',
-  styleUrls: ['./my-invoices.component.scss']
+  styleUrls: ['./my-invoices.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MyInvoicesComponent implements OnInit {
-  private billingService = inject(BillingService);
-  private patientService = inject(PatientService);
+  private readonly billingService = inject(BillingService);
+  private readonly patientService = inject(PatientService);
+  private readonly toast = inject(ToastService);
 
   patient = signal<Patient | null>(null);
   invoices = signal<Invoice[]>([]);
@@ -40,7 +43,7 @@ export class MyInvoicesComponent implements OnInit {
   selectedInvoice = signal<Invoice | null>(null);
 
   pageSubtitle = computed(() => {
-    const mrn = this.patient()?.medicalRecordNumber || 'PAT-ALICE-001';
+    const mrn = this.patient()?.medicalRecordNumber || 'Pending Verification';
     return `MRN: ${mrn} · Track consultation bills, pharmacy invoices, payments made, and current balance`;
   });
 
@@ -87,22 +90,16 @@ export class MyInvoicesComponent implements OnInit {
         this.fetchInvoices(pat.id);
       },
       error: () => {
-        const fallbackId = 'a11ce000-0000-0000-0000-000000000001';
-        this.patient.set({
-          id: fallbackId,
-          firstName: 'Alice',
-          lastName: 'Patient',
-          medicalRecordNumber: 'PAT-ALICE-001'
-        } as any);
-        this.fetchInvoices(fallbackId);
+        this.isLoading.set(false);
+        this.toast.error('Unable to verify your patient billing profile.');
       }
     });
   }
 
   fetchInvoices(patientId: string) {
     this.billingService.getInvoicesByPatient(patientId).subscribe({
-      next: (invs: any) => {
-        const list = Array.isArray(invs) ? invs : invs?.items || [];
+      next: (invs: Invoice[] | PagedResponse<Invoice>) => {
+        const list = Array.isArray(invs) ? invs : (invs.items ?? []);
         this.invoices.set(list);
         this.isLoading.set(false);
       },

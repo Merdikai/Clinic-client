@@ -3,6 +3,23 @@
     title="P&L & Financial Reports"
     subtitle="Executive financial statements, revenue cycles, cashier drawer audits, and timeframe data exports">
     <div actions class="header-actions">
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="isRequestingAsync()"
+        (click)="requestAsyncExecutiveSummary()">
+        <mat-icon aria-hidden="true">summarize</mat-icon>
+        <span>{{ isRequestingAsync() ? 'Queuing...' : 'Generate Async Snapshot' }}</span>
+      </button>
+      @if (asyncJobId()) {
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="downloadAsyncSnapshot()">
+          <mat-icon aria-hidden="true">cloud_download</mat-icon>
+          <span>{{ asyncJobStatus() === 'ready' ? 'Download Ready Snapshot (.CSV)' : 'Download Snapshot Status' }}</span>
+        </button>
+      }
       <button mat-stroked-button type="button" (click)="openExportModal('patients')">
         <mat-icon aria-hidden="true">download</mat-icon>
         <span>Export Patients (.CSV)</span>
@@ -210,7 +227,7 @@
           message="No physician appointments recorded in the current active window." />
       } @else {
         <div class="doc-counts-list">
-          @for (doc of doctorAppointments(); track doc.doctorId) {
+          @for (doc of doctorAppointments(); track (doc.doctorName + '-' + $index)) {
             <div class="doc-count-item">
               <div class="doc-meta">
                 <strong>Dr. {{ doc.doctorName }}</strong>
@@ -225,6 +242,7 @@
   </div>
 
   <!-- Front-Desk Cash Register Drawer & Shift Reconciliations Ledger -->
+  @defer (on viewport; prefetch on idle) {
   <section class="report-panel" aria-labelledby="reconciliations-heading">
     <div class="panel-header">
       <div>
@@ -289,8 +307,14 @@
         message="When receptionists close shifts at the Front Desk Operations Center, their reconciled cash drawer logs will appear here." />
     }
   </section>
+  } @placeholder (minimum 150ms) {
+    <app-skeleton variant="table" [count]="4" [columns]="6" label="Preparing cash reconciliation ledger" />
+  } @loading (minimum 150ms) {
+    <app-skeleton variant="table" [count]="4" [columns]="6" label="Loading cash reconciliation ledger" />
+  }
 
   <!-- Front-Desk Visitor & Inquiry Tickets Log -->
+  @defer (on viewport; prefetch on idle) {
   <section class="report-panel" aria-labelledby="inquiries-heading">
     <div class="panel-header">
       <div>
@@ -348,6 +372,11 @@
         message="Walk-in and telephone inquiries recorded at the reception desk will synchronize here for administrative oversight." />
     }
   </section>
+  } @placeholder (minimum 150ms) {
+    <app-skeleton variant="table" [count]="4" [columns]="6" label="Preparing visitor inquiries table" />
+  } @loading (minimum 150ms) {
+    <app-skeleton variant="table" [count]="4" [columns]="6" label="Loading visitor inquiries table" />
+  }
 
   <!-- ========================================================================= -->
   <!-- MODAL: TIMEFRAME EXCEL EXPORT DIALOG (Daily, Weekly, Monthly, Yearly)     -->

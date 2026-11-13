@@ -1,4 +1,6 @@
-import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,11 +10,20 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { ReportService } from '../../services/report.service';
+import {
+  DailyRevenueReport,
+  DoctorAppointmentCount,
+  ReportService,
+  TopMedicineReport
+} from '../../services/report.service';
+import { DashboardSummary } from '../../services/dashboard.service';
 import { ReceptionService } from '../../services/reception.service';
 import { FinanceService } from '../../services/finance.service';
+import { LiveSyncService } from '../../services/live-sync.service';
 import { DailyCashReconciliation, VisitorInquiry } from '../../models/reception.model';
 import { FinanceDashboardMetrics } from '../../models/finance.model';
+import { extractProblemDetailsMessage } from '../../models/api.model';
+import { buildTemporalTimeframeRange, toEndOfDayOrStartIso } from '../../shared/utils/temporal.util';
 import { ToastService } from '../../ui/toast/toast.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
@@ -22,6 +33,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
 @Component({
   selector: 'app-reports',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     FormsModule,
@@ -41,38 +53,43 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
   styleUrls: ['./reports.component.scss']
 })
 export class ReportsComponent implements OnInit {
-  private reportService = inject(ReportService);
-  private receptionService = inject(ReceptionService);
-  private financeService = inject(FinanceService);
-  private toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly reportService = inject(ReportService);
+  private readonly receptionService = inject(ReceptionService);
+  private readonly financeService = inject(FinanceService);
+  private readonly liveSync = inject(LiveSyncService);
+  private readonly toast = inject(ToastService);
 
-  summary = signal<any>(null);
-  dailyRevenue = signal<any>(null);
-  financeMetrics = signal<FinanceDashboardMetrics | null>(null);
-  topMedicines = signal<any[]>([]);
-  doctorAppointments = signal<any[]>([]);
-  reconciliations = signal<DailyCashReconciliation[]>([]);
-  inquiries = signal<VisitorInquiry[]>([]);
+  readonly summary = signal<DashboardSummary | null>(null);
+  readonly dailyRevenue = signal<DailyRevenueReport | null>(null);
+  readonly financeMetrics = signal<FinanceDashboardMetrics | null>(null);
+  readonly topMedicines = signal<TopMedicineReport[]>([]);
+  readonly doctorAppointments = signal<DoctorAppointmentCount[]>([]);
+  readonly reconciliations = signal<DailyCashReconciliation[]>([]);
+  readonly inquiries = signal<VisitorInquiry[]>([]);
 
-  isLoading = signal(true);
-  metricsLoading = signal(true);
-  dailyRevenueLoading = signal(true);
-  doctorsLoading = signal(true);
-  reconciliationsLoading = signal(true);
-  inquiriesLoading = signal(true);
+  readonly isLoading = signal(true);
+  readonly metricsLoading = signal(true);
+  readonly dailyRevenueLoading = signal(true);
+  readonly doctorsLoading = signal(true);
+  readonly reconciliationsLoading = signal(true);
+  readonly inquiriesLoading = signal(true);
+
+  readonly asyncJobId = signal<string | null>(null);
+  readonly asyncJobStatus = signal<'idle' | 'queued' | 'ready'>('idle');
+  readonly isRequestingAsync = signal(false);
 
   selectedDate = new Date();
 
-  // Timeframe Export Modal State
-  showExportModal = signal(false);
-  exportTarget = signal<'patients' | 'invoices'>('invoices');
-  selectedTimeframe = signal<'daily' | 'weekly' | 'monthly' | 'yearly' | 'all'>('monthly');
-  customDate = signal<Date>(new Date());
-  customMonth = signal<number>(new Date().getMonth() + 1);
-  customYear = signal<number>(new Date().getFullYear());
-  isExporting = signal(false);
+  readonly showExportModal = signal(false);
+  readonly exportTarget = signal<'patients' | 'invoices'>('invoices');
+  readonly selectedTimeframe = signal<'daily' | 'weekly' | 'monthly' | 'yearly' | 'all'>('monthly');
+  readonly customDate = signal<Date>(new Date());
+  readonly customMonth = signal<number>(new Date().getMonth() + 1);
+  readonly customYear = signal<number>(new Date().getFullYear());
+  readonly isExporting = signal(false);
 
-  months = [
+  readonly months = [
     { value: 1, name: 'January' },
     { value: 2, name: 'February' },
     { value: 3, name: 'March' },
@@ -87,7 +104,7 @@ export class ReportsComponent implements OnInit {
     { value: 12, name: 'December' }
   ];
 
-  years = [2024, 2025, 2026, 2027];
+  readonly years = [2024, 2025, 2026, 2027];
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
@@ -98,6 +115,12 @@ export class ReportsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAllReports();
+    this.liveSync.reportReady$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+      if (this.asyncJobId() === event.jobId || !this.asyncJobId()) {
+        this.asyncJobId.set(event.jobId);
+        this.asyncJobStatus.set('ready');
+      }
+    });
   }
 
   loadAllReports(): void {
@@ -175,7 +198,7 @@ export class ReportsComponent implements OnInit {
 
   loadRevenueForDate(date: Date): void {
     this.dailyRevenueLoading.set(true);
-    const iso = date.toISOString();
+    const iso = toEndOfDayOrStartIso(date);
     this.reportService.getRevenueReport(iso).subscribe({
       next: (rev) => {
         this.dailyRevenue.set(rev);
@@ -184,6 +207,51 @@ export class ReportsComponent implements OnInit {
       error: () => {
         this.dailyRevenue.set(null);
         this.dailyRevenueLoading.set(false);
+      }
+    });
+  }
+
+  requestAsyncExecutiveSummary(): void {
+    this.isRequestingAsync.set(true);
+    this.asyncJobStatus.set('queued');
+    this.reportService.enqueueAsyncSummary('executive-summary').subscribe({
+      next: (res) => {
+        this.isRequestingAsync.set(false);
+        this.asyncJobId.set(res.jobId);
+        this.asyncJobStatus.set('queued');
+        this.toast.info(`Executive snapshot job ${res.jobId.slice(0, 8)} queued in background worker.`);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isRequestingAsync.set(false);
+        this.asyncJobStatus.set('idle');
+        this.toast.error(extractProblemDetailsMessage(err.error, 'Failed to queue background report job.'));
+      }
+    });
+  }
+
+  downloadAsyncSnapshot(): void {
+    const jobId = this.asyncJobId();
+    if (!jobId) return;
+
+    this.reportService.downloadAsyncArtifact(jobId).subscribe({
+      next: (response) => {
+        const blob = response.body;
+        if (!blob) return;
+        this.asyncJobStatus.set('ready');
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `MedFlow_Executive_Snapshot_${jobId.slice(0, 8)}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toast.success('Background executive snapshot downloaded!');
+      },
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 409) {
+          this.toast.info('Report is still being compiled by background worker. Please retry in a moment.');
+        } else {
+          this.toast.error(extractProblemDetailsMessage(err.error, 'Could not download background report.'));
+        }
       }
     });
   }
@@ -235,48 +303,12 @@ export class ReportsComponent implements OnInit {
     this.isExporting.set(true);
     const target = this.exportTarget();
     const tf = this.selectedTimeframe();
-    let startDate: string | undefined;
-    let endDate: string | undefined;
-    let fileLabel: string = tf;
+    const range = buildTemporalTimeframeRange(tf, this.customDate(), this.customMonth(), this.customYear());
 
-    const now = new Date();
-
-    if (tf === 'daily') {
-      const d = this.customDate();
-      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
-      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
-      startDate = start.toISOString();
-      endDate = end.toISOString();
-      fileLabel = `daily-${d.toISOString().slice(0, 10)}`;
-    } else if (tf === 'weekly') {
-      const end = new Date();
-      const start = new Date();
-      start.setDate(end.getDate() - 7);
-      startDate = start.toISOString();
-      endDate = end.toISOString();
-      fileLabel = `weekly-${now.toISOString().slice(0, 10)}`;
-    } else if (tf === 'monthly') {
-      const m = this.customMonth();
-      const y = this.customYear();
-      const start = new Date(y, m - 1, 1, 0, 0, 0);
-      const end = new Date(y, m, 0, 23, 59, 59);
-      startDate = start.toISOString();
-      endDate = end.toISOString();
-      fileLabel = `monthly-${y}-${String(m).padStart(2, '0')}`;
-    } else if (tf === 'yearly') {
-      const y = this.customYear();
-      const start = new Date(y, 0, 1, 0, 0, 0);
-      const end = new Date(y, 11, 31, 23, 59, 59);
-      startDate = start.toISOString();
-      endDate = end.toISOString();
-      fileLabel = `yearly-${y}`;
-    } else {
-      fileLabel = `all-records-${now.toISOString().slice(0, 10)}`;
-    }
-
-    const obs$ = target === 'patients'
-      ? this.reportService.exportPatientsCsv(startDate, endDate, tf)
-      : this.reportService.exportInvoicesCsv(startDate, endDate, tf);
+    const obs$ =
+      target === 'patients'
+        ? this.reportService.exportPatientsCsv(range.startDate, range.endDate, tf)
+        : this.reportService.exportInvoicesCsv(range.startDate, range.endDate, tf);
 
     const docName = target === 'patients' ? 'Patients' : 'Invoices_Ledger';
     this.toast.info(`Preparing ${docName} (${tf}) Excel export...`);
@@ -288,7 +320,7 @@ export class ReportsComponent implements OnInit {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `MedFlow_${docName}_${fileLabel}.csv`;
+        a.download = `MedFlow_${docName}_${range.fileLabel}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
         this.toast.success(`${docName} Excel spreadsheet downloaded successfully!`);

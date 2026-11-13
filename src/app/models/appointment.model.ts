@@ -1,3 +1,18 @@
+export interface VitalSignsSnapshot {
+  readonly id?: string;
+  readonly appointmentId?: string;
+  readonly systolicBP?: number;
+  readonly diastolicBP?: number;
+  readonly heartRateBpm?: number;
+  readonly temperatureC?: number;
+  readonly respiratoryRate?: number;
+  readonly weightKg?: number;
+  readonly heightCm?: number;
+  readonly oxygenSaturation?: number;
+  readonly painScore?: number;
+  readonly recordedAt?: string;
+}
+
 export interface Appointment {
   id: string;
   patientId: string;
@@ -13,7 +28,7 @@ export interface Appointment {
   triageNotes?: string;
   tokenNumber?: string;
   visitType?: string;
-  vitalSigns?: any;
+  vitalSigns?: VitalSignsSnapshot;
 }
 
 export interface CheckInAppointmentRequest {
@@ -45,4 +60,3 @@ export interface UpdateAppointmentStatusRequest {
   status: string;
   roomAssignment?: string;
 }
-

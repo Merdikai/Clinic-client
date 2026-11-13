@@ -44,8 +44,8 @@ export class UserManagementService {
    * Admin atomic staff provisioning — creates user + assigns role in one call.
    * Calls POST /api/v1/users (AdminCreateUserCommand).
    */
-  createUser(payload: CreateUserDto): Observable<any> {
-    return this.http.post(`${this.baseUrl}/users`, {
+  createUser(payload: CreateUserDto): Observable<UserDto> {
+    return this.http.post<UserDto>(`${this.baseUrl}/users`, {
       userName: payload.userName,
       username: payload.userName,
       email: payload.email,
@@ -57,23 +57,23 @@ export class UserManagementService {
     });
   }
 
-  assignRole(userId: string, roleName: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/users/${userId}/roles`, { roleName });
+  assignRole(userId: string, roleName: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/users/${userId}/roles`, { roleName });
   }
 
-  removeRole(userId: string, roleName: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/users/${userId}/roles/${roleName}`);
+  removeRole(userId: string, roleName: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/users/${userId}/roles/${roleName}`);
   }
 
-  toggleUserStatus(userId: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/users/${userId}/toggle-status`, {});
+  toggleUserStatus(userId: string): Observable<{ isActive?: boolean } | void> {
+    return this.http.post<{ isActive?: boolean } | void>(`${this.baseUrl}/users/${userId}/toggle-status`, {});
   }
 
   /**
    * Admin credential reset — directly sets a staff member's password.
    * Calls POST /api/v1/users/{userId}/reset-password (AdminResetPasswordCommand).
    */
-  resetPassword(userId: string, newPassword: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/users/${userId}/reset-password`, { newPassword });
+  resetPassword(userId: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/users/${userId}/reset-password`, { newPassword });
   }
 }

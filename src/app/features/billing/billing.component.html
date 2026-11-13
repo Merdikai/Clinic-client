@@ -340,7 +340,8 @@
 
   <!-- TAB 2: INSURANCE CLAIMS & TPAS -->
   @if (activeTab() === 'claims' && !isPatient()) {
-    <section class="tab-pane-content" role="tabpanel" aria-label="Insurance claims">
+    @defer (on viewport; prefetch on idle) {
+      <section class="tab-pane-content" role="tabpanel" aria-label="Insurance claims">
       <div class="pane-toolbar">
         <div class="filter-group">
           <span class="filter-label">Clearinghouse Status</span>
@@ -432,11 +433,19 @@
         }
       </div>
     </section>
+    } @placeholder {
+      <div class="table-card">
+        <div class="skeleton-wrap">
+          <app-skeleton variant="table" [count]="5" [columns]="8" />
+        </div>
+      </div>
+    }
   }
 
   <!-- TAB 3: BILLING ADJUSTMENTS & REFUNDS -->
   @if (activeTab() === 'adjustments' && !isPatient()) {
-    <section class="tab-pane-content" role="tabpanel" aria-label="Discounts and refunds">
+    @defer (on viewport; prefetch on idle) {
+      <section class="tab-pane-content" role="tabpanel" aria-label="Discounts and refunds">
       <div class="pane-toolbar">
         <div class="filter-group">
           <span class="filter-label">Approval Status</span>
@@ -512,11 +521,19 @@
         }
       </div>
     </section>
+    } @placeholder {
+      <div class="table-card">
+        <div class="skeleton-wrap">
+          <app-skeleton variant="table" [count]="5" [columns]="8" />
+        </div>
+      </div>
+    }
   }
 
   <!-- TAB 4: SUPPLIER PAYABLES (AP) -->
   @if (activeTab() === 'expenses' && !isPatient()) {
-    <section class="tab-pane-content" role="tabpanel" aria-label="Supplier payables">
+    @defer (on viewport; prefetch on idle) {
+      <section class="tab-pane-content" role="tabpanel" aria-label="Supplier payables">
       <div class="pane-toolbar">
         <div class="filter-group">
           <span class="filter-label">Vendor Category</span>
@@ -601,11 +618,19 @@
         }
       </div>
     </section>
+    } @placeholder {
+      <div class="table-card">
+        <div class="skeleton-wrap">
+          <app-skeleton variant="table" [count]="5" [columns]="8" />
+        </div>
+      </div>
+    }
   }
 
   <!-- TAB 5: PETTY CASH FLOAT LEDGER -->
   @if (activeTab() === 'petty-cash' && !isPatient()) {
-    <section class="tab-pane-content" role="tabpanel" aria-label="Petty cash float">
+    @defer (on viewport; prefetch on idle) {
+      <section class="tab-pane-content" role="tabpanel" aria-label="Petty cash float">
       <div class="summary-banner">
         <div>
           <span class="banner-sub">Current Vault Cash Balance</span>
@@ -679,11 +704,19 @@
         }
       </div>
     </section>
+    } @placeholder {
+      <div class="table-card">
+        <div class="skeleton-wrap">
+          <app-skeleton variant="table" [count]="5" [columns]="8" />
+        </div>
+      </div>
+    }
   }
 
   <!-- TAB 6: STAFF PAYROLL & COMMISSIONS -->
   @if (activeTab() === 'payroll' && !isPatient()) {
-    <section class="tab-pane-content" role="tabpanel" aria-label="Staff payroll and commissions">
+    @defer (on viewport; prefetch on idle) {
+      <section class="tab-pane-content" role="tabpanel" aria-label="Staff payroll and commissions">
       <div class="summary-banner">
         <div class="payroll-stats-grid">
           <div class="stat-box">
@@ -794,11 +827,19 @@
         }
       </div>
     </section>
+    } @placeholder {
+      <div class="table-card">
+        <div class="skeleton-wrap">
+          <app-skeleton variant="table" [count]="5" [columns]="8" />
+        </div>
+      </div>
+    }
   }
 
   <!-- TAB 7: RECEPTION DRAWER SHIFT AUDITS -->
   @if (activeTab() === 'reconciliation' && !isPatient()) {
-    <section class="tab-pane-content" role="tabpanel" aria-label="Reception drawer audits">
+    @defer (on viewport; prefetch on idle) {
+      <section class="tab-pane-content" role="tabpanel" aria-label="Reception drawer audits">
       <div class="pane-toolbar">
         <div class="filter-group">
           <span class="filter-label">Audit Status</span>
@@ -877,6 +918,13 @@
         }
       </div>
     </section>
+    } @placeholder {
+      <div class="table-card">
+        <div class="skeleton-wrap">
+          <app-skeleton variant="table" [count]="5" [columns]="8" />
+        </div>
+      </div>
+    }
   }
 
   <!-- MODAL: SETTLE INVOICE PAYMENT -->

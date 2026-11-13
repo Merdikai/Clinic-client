@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -26,7 +26,7 @@ import { LabOrder } from '../../../models/lab.model';
 import { RadiologyOrder } from '../../../models/radiology.model';
 import { NursingProcedure } from '../../../models/nursing.model';
 import { Appointment } from '../../../models/appointment.model';
-import { Patient } from '../../../models/patient.model';
+import { PagedResponse, Patient } from '../../../models/patient.model';
 import { Prescription } from '../../../models/prescription.model';
 
 @Component({
@@ -47,7 +47,8 @@ import { Prescription } from '../../../models/prescription.model';
     EmptyStateComponent
   ],
   templateUrl: './doctor-inbasket.component.html',
-  styleUrls: ['./doctor-inbasket.component.scss']
+  styleUrls: ['./doctor-inbasket.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DoctorInbasketComponent implements OnInit {
   private labService = inject(LabService);
@@ -358,8 +359,8 @@ export class DoctorInbasketComponent implements OnInit {
     this.isLoading.set(true);
 
     this.labService.getOrders(1, 100).subscribe({
-      next: (res: any) => {
-        const list = res?.items || (Array.isArray(res) ? res : []);
+      next: (res: PagedResponse<LabOrder> | LabOrder[]) => {
+        const list = Array.isArray(res) ? res : (res?.items ?? []);
         this.labOrders.set(list);
         this.isLoading.set(false);
       },
@@ -377,17 +378,23 @@ export class DoctorInbasketComponent implements OnInit {
     });
 
     this.appointmentService.getAll(1, 100).subscribe({
-      next: (res: any) => this.appointments.set(res?.items || res || []),
+      next: (res: PagedResponse<Appointment> | Appointment[]) => {
+        this.appointments.set(Array.isArray(res) ? res : (res?.items ?? []));
+      },
       error: () => this.appointments.set([])
     });
 
     this.prescriptionService.getAll().subscribe({
-      next: (res: any) => this.prescriptions.set(res?.items || res || []),
+      next: (res: PagedResponse<Prescription> | Prescription[]) => {
+        this.prescriptions.set(Array.isArray(res) ? res : (res?.items ?? []));
+      },
       error: () => this.prescriptions.set([])
     });
 
     this.patientService.getAll(1, 100).subscribe({
-      next: (res: any) => this.patients.set(res?.items || res || []),
+      next: (res: PagedResponse<Patient> | Patient[]) => {
+        this.patients.set(Array.isArray(res) ? res : (res?.items ?? []));
+      },
       error: () => this.patients.set([])
     });
   }

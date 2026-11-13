@@ -1,5 +1,6 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,6 +18,9 @@ import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { Patient } from '../../models/patient.model';
+import { CreateAppointmentRequest } from '../../models/appointment.model';
+import { extractProblemDetailsMessage } from '../../models/api.model';
+import { combineDateAndTimeToUtcIso } from '../../shared/utils/temporal.util';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -38,18 +42,19 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
     StatusChipComponent
   ],
   templateUrl: './appointment-booking.component.html',
-  styleUrls: ['./appointment-booking.component.scss']
+  styleUrls: ['./appointment-booking.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppointmentBookingComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private patientService = inject(PatientService);
-  private doctorService = inject(DoctorService);
-  private appointmentService = inject(AppointmentService);
-  public authService = inject(AuthService);
-  private permissionService = inject(PermissionService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private toast = inject(ToastService);
+  private readonly fb = inject(FormBuilder);
+  private readonly patientService = inject(PatientService);
+  private readonly doctorService = inject(DoctorService);
+  private readonly appointmentService = inject(AppointmentService);
+  public readonly authService = inject(AuthService);
+  private readonly permissionService = inject(PermissionService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly toast = inject(ToastService);
 
   isDoctor = computed(() => this.authService.isDoctor());
   isPatient = computed(() =>
@@ -67,7 +72,7 @@ export class AppointmentBookingComponent implements OnInit {
   errorMessage = signal('');
 
   // Defensive RxJS mutation pipeline
-  private submitClick$ = new Subject<any>();
+  private readonly submitClick$ = new Subject<CreateAppointmentRequest>();
 
   constructor() {
     this.submitClick$.pipe(
@@ -75,9 +80,9 @@ export class AppointmentBookingComponent implements OnInit {
         this.isSubmitting.set(true);
         this.errorMessage.set('');
         return this.appointmentService.create(request).pipe(
-          catchError((error) => {
+          catchError((error: HttpErrorResponse) => {
             this.isSubmitting.set(false);
-            this.errorMessage.set(error.error?.detail || error.error?.message || 'Failed to book appointment');
+            this.errorMessage.set(extractProblemDetailsMessage(error.error, 'Failed to book appointment'));
             return of(null);
           })
         );
@@ -88,15 +93,15 @@ export class AppointmentBookingComponent implements OnInit {
         this.isSubmitting.set(false);
         this.toast.success('Appointment booked successfully.');
         if (this.isPatient()) {
-          this.router.navigate(['/my-appointments']);
+          void this.router.navigate(['/my-appointments']);
         } else {
-          this.router.navigate(['/appointments']);
+          void this.router.navigate(['/appointments']);
         }
       }
     });
   }
 
-  bookingForm = this.fb.group({
+  bookingForm = this.fb.nonNullable.group({
     patientId: ['', Validators.required],
     doctorId: ['', Validators.required],
     date: ['', Validators.required],
@@ -108,7 +113,7 @@ export class AppointmentBookingComponent implements OnInit {
   ngOnInit() {
     if (this.isDoctor()) {
       this.toast.info('Doctors do not book appointments directly.');
-      this.router.navigate(['/my-consultations']);
+      void this.router.navigate(['/my-consultations']);
       return;
     }
 
@@ -121,16 +126,9 @@ export class AppointmentBookingComponent implements OnInit {
           this.isLoadingPatients.set(false);
         },
         error: () => {
-          const fallback: any = {
-            id: 'a11ce000-0000-0000-0000-000000000001',
-            firstName: 'Alice',
-            lastName: 'Patient',
-            medicalRecordNumber: 'PAT-ALICE-001',
-            email: 'alice.patient@clinic.com'
-          };
-          this.currentPatient.set(fallback);
-          this.bookingForm.patchValue({ patientId: fallback.id });
           this.isLoadingPatients.set(false);
+          this.errorMessage.set('Unable to verify your patient profile. Please ensure you are signed in with your patient account.');
+          this.toast.error('Unable to load your patient profile.');
         }
       });
     } else {
@@ -140,19 +138,20 @@ export class AppointmentBookingComponent implements OnInit {
     this.loadDoctors();
 
     this.route.queryParams.subscribe((params) => {
-      if (params['patientId'] && !this.isPatient()) {
-        this.bookingForm.patchValue({ patientId: params['patientId'] });
+      const patientIdParam = params['patientId'] as string | undefined;
+      if (patientIdParam && !this.isPatient()) {
+        this.bookingForm.patchValue({ patientId: patientIdParam });
       }
     });
   }
 
   goBack() {
     if (this.isDoctor()) {
-      this.router.navigate(['/my-consultations']);
+      void this.router.navigate(['/my-consultations']);
     } else if (this.isPatient()) {
-      this.router.navigate(['/my-appointments']);
+      void this.router.navigate(['/my-appointments']);
     } else {
-      this.router.navigate(['/appointments']);
+      void this.router.navigate(['/appointments']);
     }
   }
 
@@ -184,16 +183,15 @@ export class AppointmentBookingComponent implements OnInit {
       return;
     }
 
-    const date = this.bookingForm.value.date!;
-    const time = this.bookingForm.value.time!;
-    const scheduledDateTime = new Date(`${date}T${time}:00`).toISOString();
+    const raw = this.bookingForm.getRawValue();
+    const scheduledDateTime = combineDateAndTimeToUtcIso(raw.date, raw.time);
 
-    const request = {
-      patientId: this.bookingForm.value.patientId!,
-      doctorId: this.bookingForm.value.doctorId!,
+    const request: CreateAppointmentRequest = {
+      patientId: raw.patientId,
+      doctorId: raw.doctorId,
       scheduledDateTime,
-      durationMinutes: this.bookingForm.value.durationMinutes!,
-      reasonForVisit: this.bookingForm.value.reasonForVisit!
+      durationMinutes: raw.durationMinutes,
+      reasonForVisit: raw.reasonForVisit
     };
 
     this.submitClick$.next(request);

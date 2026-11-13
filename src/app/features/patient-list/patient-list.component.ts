@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PatientStore } from '../../store/patient.store';
 import { PatientService } from '../../services/patient.service';
+import { Patient } from '../../models/patient.model';
 import { AuthService } from '../../services/auth.service';
 import { PermissionService } from '../../services/permission.service';
 import { ToastService } from '../../ui/toast/toast.service';
@@ -39,7 +40,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
     EmptyStateComponent
   ],
   templateUrl: './patient-list.component.html',
-  styleUrls: ['./patient-list.component.scss']
+  styleUrls: ['./patient-list.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PatientListComponent implements OnInit {
   patientStore = inject(PatientStore);
@@ -127,12 +129,14 @@ export class PatientListComponent implements OnInit {
 
   getInitials(name: string): string {
     if (!name) return 'PT';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    const parts = name.trim().split(' ').filter(Boolean);
+    const first = parts[0]?.[0];
+    const second = parts[1]?.[0];
+    if (first && second) return (first + second).toUpperCase();
     return name.substring(0, 2).toUpperCase();
   }
 
-  editPatient(patient: any) {
+  editPatient(patient: Patient) {
     this.router.navigate(['/patients/edit', patient.id]);
   }
 

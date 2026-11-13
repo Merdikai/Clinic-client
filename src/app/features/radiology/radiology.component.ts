@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, HostListener, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -31,7 +31,8 @@ import {
   RadiologySafetyLog,
   RadiologyMetrics
 } from '../../models/radiology.model';
-import { Patient } from '../../models/patient.model';
+import { PagedResponse, Patient } from '../../models/patient.model';
+import { toPlainDateIso } from '../../shared/utils/temporal.util';
 
 export interface ModalitySuiteStatus {
   id: string;
@@ -67,7 +68,8 @@ export interface ModalitySuiteStatus {
     EmptyStateComponent
   ],
   templateUrl: './radiology.component.html',
-  styleUrls: ['./radiology.component.scss']
+  styleUrls: ['./radiology.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RadiologyComponent implements OnInit, OnDestroy {
   private radiologyService = inject(RadiologyService);
@@ -80,7 +82,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
 
   selectedParamOrderId = signal<string | null>(null);
   isCinePlaying = signal<boolean>(false);
-  private cineInterval: any = null;
+  private cineInterval: ReturnType<typeof setInterval> | null = null;
 
   // Active Workspace Navigation Tab
   activeTab = signal<'overview' | 'worklist' | 'viewer' | 'reports' | 'safety' | 'suites'>('overview');
@@ -251,29 +253,29 @@ export class RadiologyComponent implements OnInit, OnDestroy {
   currentUser = computed(() => this.authService.currentUser());
   isDoctor = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
-    const roles = (this.currentUser() as any)?.roles || [];
+    const roles = this.currentUser()?.roles ?? [];
     return role === 'doctor' || roles.includes('Doctor');
   });
   isRadiologist = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
-    const roles = (this.currentUser() as any)?.roles || [];
+    const roles = this.currentUser()?.roles ?? [];
     return role === 'radiologist' || roles.includes('Radiologist');
   });
   isAdmin = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
-    const roles = (this.currentUser() as any)?.roles || [];
+    const roles = this.currentUser()?.roles ?? [];
     return role === 'admin' || roles.includes('Admin');
   });
 
   isCashier = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
-    const roles = (this.currentUser() as any)?.roles || [];
+    const roles = this.currentUser()?.roles ?? [];
     return role === 'accountant' || roles.includes('Accountant');
   });
 
   isNurse = computed(() => {
     const role = (this.permissionService.activeRole() || '').toLowerCase();
-    const roles = (this.currentUser() as any)?.roles || [];
+    const roles = this.currentUser()?.roles ?? [];
     return role === 'nurse' || roles.includes('Nurse');
   });
 
@@ -793,7 +795,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       const currentTab = this.activeTab();
-      const rawTab = params['tab'] as any;
+      const rawTab = params['tab'] as 'overview' | 'worklist' | 'viewer' | 'reports' | 'safety' | 'suites' | undefined;
 
       if (rawTab && ['overview', 'worklist', 'viewer', 'reports', 'safety', 'suites'].includes(rawTab)) {
         if (this.isNurse() && ['viewer', 'reports', 'safety', 'suites'].includes(rawTab)) {
@@ -910,11 +912,12 @@ export class RadiologyComponent implements OnInit, OnDestroy {
             this.openReportingDesk(targetOrder, false);
           }
         } else {
-          if (!this.viewerOrder() && finalOrders.length > 0 && !this.isNurse()) {
-            this.viewerOrder.set(finalOrders[0]);
+          const firstFinal = finalOrders[0];
+          if (firstFinal && !this.viewerOrder() && !this.isNurse()) {
+            this.viewerOrder.set(firstFinal);
           }
-          if (!this.selectedOrder() && finalOrders.length > 0 && !this.isNurse() && this.activeTab() === 'reports') {
-            const pending = finalOrders.find(o => o.status === 'Ordered' || o.status === 'Scheduled' || o.status === 'InProgress') || finalOrders[0];
+          if (!this.selectedOrder() && firstFinal && !this.isNurse() && this.activeTab() === 'reports') {
+            const pending = finalOrders.find(o => o.status === 'Ordered' || o.status === 'Scheduled' || o.status === 'InProgress') ?? firstFinal;
             this.openReportingDesk(pending, false);
           }
         }
@@ -922,8 +925,9 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       error: () => {
         this.orders.set(this.fallbackRadiologyOrders);
         this.isLoading.set(false);
-        if (!this.viewerOrder() && !this.isNurse()) this.viewerOrder.set(this.fallbackRadiologyOrders[0]);
-        if (!this.selectedOrder() && !this.isNurse() && this.activeTab() === 'reports') this.openReportingDesk(this.fallbackRadiologyOrders[0], false);
+        const firstOrder = this.fallbackRadiologyOrders[0];
+        if (firstOrder && !this.viewerOrder() && !this.isNurse()) this.viewerOrder.set(firstOrder);
+        if (firstOrder && !this.selectedOrder() && !this.isNurse() && this.activeTab() === 'reports') this.openReportingDesk(firstOrder, false);
       }
     });
 
@@ -932,7 +936,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     });
 
     this.patientService.getAll(1, 100).subscribe({
-      next: (res: any) => this.patients.set(res?.items || res || [])
+      next: (res: PagedResponse<Patient> | Patient[]) => this.patients.set(Array.isArray(res) ? res : (res.items ?? []))
     });
   }
 
@@ -957,7 +961,8 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       return;
     }
     this.newSafetyAccession.set(`ACC-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`);
-    this.newSafetyPatient.set(this.patients()[0] ? `${this.patients()[0].firstName} ${this.patients()[0].lastName}` : 'Elena Rostova');
+    const firstPatient = this.patients()[0];
+    this.newSafetyPatient.set(firstPatient ? `${firstPatient.firstName} ${firstPatient.lastName}` : 'Elena Rostova');
     this.newSafetyModality.set('CT Scan');
     this.newSafetyProcedure.set('CT Chest / Abdomen with IV Contrast');
     this.newSafetyDlp.set(480);
@@ -1035,7 +1040,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     }
   }
 
-  private downloadSafetyLogsCsv(logs: any[]) {
+  private downloadSafetyLogsCsv(logs: RadiologySafetyLog[]) {
     const headers = [
       'Accession Number',
       'Patient Name',
@@ -1054,7 +1059,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       'Operating Tech / Radiologist'
     ];
 
-    const escapeCsv = (val: any) => {
+    const escapeCsv = (val: unknown) => {
       if (val === undefined || val === null) return '""';
       const str = String(val).replace(/"/g, '""');
       return `"${str}"`;
@@ -1065,7 +1070,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       escapeCsv(l.patientName),
       escapeCsv(l.modality),
       escapeCsv(l.procedureName),
-      escapeCsv(new Date(l.performedAt).toLocaleString()),
+      escapeCsv(l.performedAt ? new Date(l.performedAt).toLocaleString() : 'N/A'),
       escapeCsv(l.radiationDoseDlp ?? 'N/A'),
       escapeCsv(l.radiationDoseDap ?? 'N/A'),
       escapeCsv(l.exposureParameters || 'Standard Protocol'),
@@ -1075,14 +1080,14 @@ export class RadiologyComponent implements OnInit, OnDestroy {
       escapeCsv(l.contrastLotNumber || 'N/A'),
       escapeCsv(l.contrastRoute || 'N/A'),
       escapeCsv(l.adverseReaction || 'None'),
-      escapeCsv(l.operatorName || this.getRadiologistSignature())
+      escapeCsv(l.operatorName || l.performedByTechnicianName || this.getRadiologistSignature())
     ].join(','));
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = toPlainDateIso(new Date().toISOString());
     link.setAttribute('href', url);
     link.setAttribute('download', `Hospital_Radiation_Dosimetry_Safety_Audit_${dateStr}.csv`);
     document.body.appendChild(link);
@@ -1093,7 +1098,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     this.toast.success('Radiation Safety Registry CSV downloaded to your computer.');
   }
 
-  private downloadSafetyLogsPdf(logs: any[]) {
+  private downloadSafetyLogsPdf(logs: RadiologySafetyLog[]) {
     const printWindow = window.open('', '_blank', 'width=1150,height=850');
     if (!printWindow) {
       this.toast.error('Pop-up blocked. Please allow pop-ups to export PDF audit report.');
@@ -1112,7 +1117,7 @@ export class RadiologyComponent implements OnInit, OnDestroy {
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#0f172a;">${l.patientName}</td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;"><span style="background:#f0f9ff; color:#075985; padding:3px 7px; border-radius:4px; font-size:11px; font-weight:700;">${l.modality}</span></td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; color:#334155;">${l.procedureName}</td>
-        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#475569;">${new Date(l.performedAt).toLocaleString()}</td>
+        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#475569;">${l.performedAt ? new Date(l.performedAt).toLocaleString() : 'N/A'}</td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-weight:700; color:${(l.radiationDoseDlp || 0) > 800 ? '#991b1b' : '#0f172a'};">${l.radiationDoseDlp ? l.radiationDoseDlp + ' mGy·cm' : 'N/A'}</td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;">${l.contrastUsed ? `<strong style="color:#1b5e20;">YES</strong> (${l.contrastAgentName || 'Omnipaque'} - ${l.contrastVolumeMl || 80}mL)` : '<span style="color:#64748b;">None</span>'}</td>
         <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; color:#1b5e20; font-weight:600;">${l.adverseReaction || 'None'}</td>
@@ -1350,9 +1355,13 @@ export class RadiologyComponent implements OnInit, OnDestroy {
     this.viewerWindowLevelPreset.set('Default');
     this.viewerActiveSlice.set(0);
     if (order.imageUrl) {
+      const imageUrl = order.imageUrl;
       this.slicesList.update(list => {
         const copy = [...list];
-        copy[0] = { ...copy[0], url: order.imageUrl! };
+        const firstSlice = copy[0];
+        if (firstSlice) {
+          copy[0] = { ...firstSlice, url: imageUrl };
+        }
         return copy;
       });
     }

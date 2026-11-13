@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 
 import { PatientService } from '../../../services/patient.service';
 import { AuthService } from '../../../services/auth.service';
-import { Patient } from '../../../models/patient.model';
+import { PagedResponse, Patient } from '../../../models/patient.model';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
@@ -32,7 +32,8 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.
     EmptyStateComponent
   ],
   templateUrl: './my-patients.component.html',
-  styleUrls: ['./my-patients.component.scss']
+  styleUrls: ['./my-patients.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MyPatientsComponent implements OnInit {
   private patientService = inject(PatientService);
@@ -66,15 +67,16 @@ export class MyPatientsComponent implements OnInit {
   loadPatients() {
     this.isLoading.set(true);
     this.patientService.getMyPanel().subscribe({
-      next: (res: any) => {
-        const list = Array.isArray(res) ? res : (res?.items || []);
+      next: (res: Patient[] | PagedResponse<Patient>) => {
+        const list = Array.isArray(res) ? res : (res.items ?? []);
         this.patients.set(list);
         this.isLoading.set(false);
       },
       error: () => {
         this.patientService.getAll(1, 100).subscribe({
-          next: (allRes: any) => {
-            this.patients.set(allRes?.items || allRes || []);
+          next: (allRes: PagedResponse<Patient> | Patient[]) => {
+            const list = Array.isArray(allRes) ? allRes : (allRes.items ?? []);
+            this.patients.set(list);
             this.isLoading.set(false);
           },
           error: () => this.isLoading.set(false)

@@ -96,6 +96,8 @@ export interface ReportRadiologyOrderDto {
   contrastVolumeMl?: number;
   contrastLotNumber?: string;
   contrastRoute?: string;
+  adverseReaction?: string;
+  operatorName?: string;
 }
 
 export interface DoctorSignOffRadiologyDto {
@@ -139,4 +141,6 @@ export interface RadiologySafetyLog {
   contrastVolumeMl?: number;
   contrastLotNumber?: string;
   contrastRoute?: string;
+  adverseReaction?: string;
+  operatorName?: string;
 }

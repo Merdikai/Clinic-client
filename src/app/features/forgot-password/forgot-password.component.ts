@@ -1,5 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -8,6 +9,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../services/auth.service';
+import { extractProblemDetailsMessage } from '../../models/api.model';
+
+interface ForgotPasswordResponse {
+  readonly resetToken?: string | null;
+  readonly resetLink?: string | null;
+  readonly message?: string;
+}
 
 @Component({
   selector: 'app-forgot-password',
@@ -23,11 +31,12 @@ import { AuthService } from '../../services/auth.service';
     MatIconModule
   ],
   templateUrl: './forgot-password.component.html',
-  styleUrls: ['./forgot-password.component.scss']
+  styleUrls: ['./forgot-password.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ForgotPasswordComponent {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
 
   isSubmitting = signal(false);
   isSubmitted = signal(false);
@@ -37,7 +46,7 @@ export class ForgotPasswordComponent {
   resetLink = signal<string | null>(null);
   copied = signal(false);
 
-  forgotForm = this.fb.group({
+  forgotForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]]
   });
 
@@ -55,10 +64,10 @@ export class ForgotPasswordComponent {
     this.isSubmitting.set(true);
     this.errorMessage.set('');
 
-    const email = this.forgotForm.value.email!;
+    const { email } = this.forgotForm.getRawValue();
 
     this.authService.forgotPassword(email).subscribe({
-      next: (res: any) => {
+      next: (res: ForgotPasswordResponse) => {
         this.isSubmitting.set(false);
         this.isSubmitted.set(true);
         if (res?.resetToken) {
@@ -66,10 +75,9 @@ export class ForgotPasswordComponent {
           this.resetLink.set(res.resetLink || `/reset-password?token=${res.resetToken}`);
         }
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         this.isSubmitting.set(false);
-        const detail = err?.error?.detail || err?.error?.message || 'Failed to dispatch password reset request.';
-        this.errorMessage.set(detail);
+        this.errorMessage.set(extractProblemDetailsMessage(err.error, 'Failed to dispatch password reset request.'));
       }
     });
   }
@@ -79,7 +87,7 @@ export class ForgotPasswordComponent {
     if (!link) return;
 
     const fullUrl = window.location.origin + (link.startsWith('/') ? link : '/' + link);
-    navigator.clipboard.writeText(fullUrl).then(() => {
+    void navigator.clipboard.writeText(fullUrl).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2500);
     });

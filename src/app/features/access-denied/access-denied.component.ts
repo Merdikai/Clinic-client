@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -7,6 +7,7 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
   selector: 'app-access-denied',
   standalone: true,
   imports: [RouterModule, MatButtonModule, StatusChipComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="error-page" aria-labelledby="error-title">
       <div class="error-card">

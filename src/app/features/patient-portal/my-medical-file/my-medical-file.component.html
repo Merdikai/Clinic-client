@@ -76,7 +76,7 @@
         <h2 id="visit-history-heading">Clinical Visit History &amp; Consultation Summaries</h2>
       </div>
 
-      @if (medicalHistory()?.visits?.length > 0) {
+      @if ((medicalHistory()?.visits?.length ?? 0) > 0) {
         <div class="timeline-wrap">
           @for (visit of medicalHistory()?.visits; track visit.visitDate + visit.diagnosis) {
             <article class="timeline-event">

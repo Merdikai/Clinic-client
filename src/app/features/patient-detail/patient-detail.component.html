@@ -1,34 +1,33 @@
 <div class="ehr-page patient-detail-page">
   <app-page-header [title]="patientFullName()"
     [subtitle]="patient() ? ('MRN: ' + (patient()?.medicalRecordNumber || 'Pending Assignment')) : 'Patient Clinical Record'"
-    backLink="/patients"
-    backLabel="Patient Directory">
+    backLink="/patients" backLabel="Patient Directory">
     @if (patient()) {
-      @if (canEditPatient()) {
-      <button mat-flat-button color="primary" type="button" (click)="openEditModal()">
-        Edit Patient File
-      </button>
-      }
-      @if (canCreateAppointment()) {
-      <a mat-stroked-button routerLink="/appointments/book" [queryParams]="{patientId: id()}">
-        Schedule Visit
-      </a>
-      }
-      @if (isDoctor()) {
-      <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">
-        Order Imaging
-      </a>
-      } @else if (isRadiologist() && canOpenRadiology()) {
-      <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'viewer'}">
-        PACS Viewer
-      </a>
-      }
-      @if (isDoctor() || isNurse() || isAdmin() || permissionService.hasPermission('ClinicalGovernance.BreakGlass')) {
-      <button type="button" mat-stroked-button class="break-glass-trigger" (click)="isBreakGlassModalOpen.set(true)"
-        matTooltip="Emergency override with mandatory HIPAA audit logging">
-        Break-Glass Override
-      </button>
-      }
+    @if (canEditPatient()) {
+    <button mat-flat-button color="primary" type="button" (click)="openEditModal()">
+      Edit Patient File
+    </button>
+    }
+    @if (canCreateAppointment()) {
+    <a mat-stroked-button routerLink="/appointments/book" [queryParams]="{patientId: id()}">
+      Schedule Visit
+    </a>
+    }
+    @if (isDoctor()) {
+    <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist', orderPatientId: id()}">
+      Order Imaging
+    </a>
+    } @else if (isRadiologist() && canOpenRadiology()) {
+    <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'viewer'}">
+      PACS Viewer
+    </a>
+    }
+    @if (isDoctor() || isNurse() || isAdmin() || permissionService.hasPermission('ClinicalGovernance.BreakGlass')) {
+    <button type="button" mat-stroked-button class="break-glass-trigger" (click)="isBreakGlassModalOpen.set(true)"
+      matTooltip="Emergency override with mandatory HIPAA audit logging">
+      Break-Glass Override
+    </button>
+    }
     }
   </app-page-header>
 
@@ -41,14 +40,20 @@
 
   <section class="patient-summary-bar" aria-label="Patient key clinical demographics">
     <div class="summary-meta-row">
-      <span class="meta-item">DOB: <strong>{{ patient()?.dateOfBirth | date:'mediumDate' }}</strong></span>
-      <span class="meta-item">Sex: <strong>{{ patient()?.gender || 'Unspecified' }}</strong></span>
-      <span class="meta-item">Phone: <strong>{{ patient()?.phone || 'N/A' }}</strong></span>
+      <span class="meta-item"><ng-container i18n="@@patientDetailDobLabel">DOB</ng-container>: <strong>{{
+          patient()?.dateOfBirth | date:'mediumDate' }}</strong>@if (patientAge() !== null) { ({{ patientAge() }} yrs)
+        }</span>
+      <span class="meta-item"><ng-container i18n="@@patientDetailSexLabel">Sex</ng-container>: <strong>{{
+          patient()?.gender || 'Unspecified' }}</strong></span>
+      <span class="meta-item"><ng-container i18n="@@patientDetailPhoneLabel">Phone</ng-container>: <strong>{{
+          patient()?.phone || 'N/A' }}</strong></span>
       @if (patient()?.email) {
-      <span class="meta-item">Email: <strong>{{ patient()?.email }}</strong></span>
+      <span class="meta-item"><ng-container i18n="@@patientDetailEmailLabel">Email</ng-container>: <strong>{{
+          patient()?.email }}</strong></span>
       }
       @if (patient()?.nationalId) {
-      <span class="meta-item">National ID: <strong>{{ patient()?.nationalId }}</strong></span>
+      <span class="meta-item"><ng-container i18n="@@patientDetailNationalIdLabel">National ID</ng-container>: <strong>{{
+          patient()?.nationalId }}</strong></span>
       }
     </div>
 
@@ -119,9 +124,10 @@
           </app-empty-state>
           }
           } @else {
-          @if (history()?.visits && history().visits.length > 0) {
+          @if (history()?.visits; as visits) {
+          @if (visits.length > 0) {
           <div class="timeline-list">
-            @for (visit of history().visits; track visit.appointmentId) {
+            @for (visit of visits; track visit.appointmentId) {
             <article class="timeline-card">
               <header class="timeline-head">
                 <span class="visit-date">{{ visit.visitDate | date:'mediumDate' }}</span>
@@ -191,6 +197,11 @@
             </article>
             }
           </div>
+          } @else {
+          <app-empty-state icon="history_edu" title="No previous consultations"
+            description="There are no recorded consultation notes for this patient yet.">
+          </app-empty-state>
+          }
           } @else {
           <app-empty-state icon="history_edu" title="No previous consultations"
             description="There are no recorded consultation notes for this patient yet.">
@@ -402,8 +413,9 @@
       <!-- Tab 5: Lab & Diagnostics -->
       <mat-tab label="Lab & Diagnostics">
         <div class="tab-pane">
+          @defer (on viewport; prefetch on idle) {
           <div class="section-toolbar">
-            <h2>Laboratory Orders &amp; Results</h2>
+            <h2 i18n="@@patientDetailLabHeading">Laboratory Orders &amp; Results</h2>
             @if (canOpenLaboratory()) {
             <a mat-stroked-button routerLink="/laboratory">Open Laboratory</a>
             }
@@ -479,14 +491,21 @@
             }
           </div>
           }
+          } @placeholder {
+          <app-skeleton variant="table" [count]="3" [columns]="3"
+            label="Preparing laboratory diagnostics"></app-skeleton>
+          } @loading (minimum 150ms) {
+          <app-skeleton variant="table" [count]="3" [columns]="3" label="Loading laboratory diagnostics"></app-skeleton>
+          }
         </div>
       </mat-tab>
 
       <!-- Tab 6: Radiology & Imaging -->
       <mat-tab label="Radiology & Imaging">
         <div class="tab-pane">
+          @defer (on viewport; prefetch on idle) {
           <div class="section-toolbar">
-            <h2>Radiology Examinations &amp; PACS Studies</h2>
+            <h2 i18n="@@patientDetailRadHeading">Radiology Examinations &amp; PACS Studies</h2>
             @if (canOpenRadiology()) {
             <div class="toolbar-actions">
               <a mat-stroked-button routerLink="/radiology" [queryParams]="{tab: 'worklist'}">Open PACS Suite</a>
@@ -549,14 +568,17 @@
             }
           </div>
           }
+          } @placeholder {
+          <app-skeleton variant="table" [count]="3" [columns]="3" label="Preparing radiology viewer"></app-skeleton>
+          } @loading (minimum 150ms) {
+          <app-skeleton variant="table" [count]="3" [columns]="3" label="Loading radiology studies"></app-skeleton>
+          }
         </div>
       </mat-tab>
     </mat-tab-group>
   </section>
   } @else {
-  <app-empty-state
-    icon="person_off"
-    title="Patient Record Not Found"
+  <app-empty-state icon="person_off" title="Patient Record Not Found"
     message="Unable to load the requested clinical chart or your current role lacks chart access.">
   </app-empty-state>
   }

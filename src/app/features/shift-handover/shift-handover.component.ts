@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +35,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
     EmptyStateComponent
   ],
   templateUrl: './shift-handover.component.html',
-  styleUrls: ['./shift-handover.component.scss']
+  styleUrls: ['./shift-handover.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ShiftHandoverComponent implements OnInit {
   private nursingService = inject(NursingService);

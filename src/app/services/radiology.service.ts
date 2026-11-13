@@ -12,6 +12,23 @@ import {
   RadiologySafetyLog
 } from '../models/radiology.model';
 
+export interface CreateRadiologySafetyLogDto {
+  readonly orderId?: string;
+  readonly accessionNumber?: string;
+  readonly patientName?: string;
+  readonly modality?: string;
+  readonly procedureName?: string;
+  readonly performedByTechnicianName?: string;
+  readonly radiationDoseDlp?: number;
+  readonly radiationDoseDap?: number;
+  readonly exposureParameters?: string;
+  readonly contrastUsed?: boolean;
+  readonly contrastAgentName?: string;
+  readonly contrastVolumeMl?: number;
+  readonly contrastLotNumber?: string;
+  readonly contrastRoute?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -78,7 +95,7 @@ export class RadiologyService {
     return this.http.get<RadiologySafetyLog[]>(`${this.apiUrl}/safety-logs`, { params });
   }
 
-  createSafetyLog(dto: any): Observable<RadiologySafetyLog> {
+  createSafetyLog(dto: CreateRadiologySafetyLogDto): Observable<RadiologySafetyLog> {
     return this.http.post<RadiologySafetyLog>(`${this.apiUrl}/safety-logs`, dto);
   }
 

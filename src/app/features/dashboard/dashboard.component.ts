@@ -1,4 +1,6 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -25,7 +27,7 @@ import { ReceptionService } from '../../services/reception.service';
 import { PharmacyService, PharmacyMetrics } from '../../services/pharmacy.service';
 import { FinanceService } from '../../services/finance.service';
 import { RadiologyService } from '../../services/radiology.service';
-import { Patient } from '../../models/patient.model';
+import { PagedResponse, Patient } from '../../models/patient.model';
 import { Appointment } from '../../models/appointment.model';
 import { Prescription } from '../../models/prescription.model';
 import { Invoice } from '../../models/billing.model';
@@ -34,6 +36,7 @@ import { Medicine } from '../../models/medicine.model';
 import { DailyCashSummary, VisitorInquiry, MpiLookupResult } from '../../models/reception.model';
 import { FinanceDashboardMetrics } from '../../models/finance.model';
 import { RadiologyMetrics, RadiologyOrder } from '../../models/radiology.model';
+import { extractProblemDetailsMessage } from '../../models/api.model';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -42,6 +45,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     FormsModule,
@@ -64,6 +68,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private dashboardService = inject(DashboardService);
   private liveSync = inject(LiveSyncService);
   public authService = inject(AuthService);
@@ -307,25 +312,70 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
-    this.loadData();
-    this.labStore.loadMetrics();
-    this.labStore.loadOrders();
-    this.labStore.loadTemplates();
+  ngOnInit(): void {
+    this.loadRoleDashboardData();
     this.setupRealtimeListeners();
-    this.loadPatientPortalData();
-    this.loadNurseData();
-    this.loadReceptionData();
-    this.loadPharmacyData();
-    this.loadAccountantData();
-    this.loadRadiologyData();
   }
 
-  loadNurseData() {
+  private loadRoleDashboardData(): void {
+    const role = this.userRole().toLowerCase();
+
+    switch (role) {
+      case 'patient':
+        this.isLoading.set(false);
+        this.loadPatientPortalData();
+        break;
+      case 'nurse':
+        this.loadData();
+        this.loadNurseData();
+        break;
+      case 'receptionist':
+        this.loadData();
+        this.loadReceptionData();
+        break;
+      case 'pharmacist':
+        this.isLoading.set(false);
+        this.loadPharmacyData();
+        break;
+      case 'accountant':
+      case 'finance':
+      case 'financeofficer':
+        this.isLoading.set(false);
+        this.loadAccountantData();
+        break;
+      case 'labtechnician':
+        this.isLoading.set(false);
+        this.labStore.loadMetrics();
+        this.labStore.loadOrders();
+        this.labStore.loadTemplates();
+        break;
+      case 'radiologist':
+        this.isLoading.set(false);
+        this.loadRadiologyData();
+        break;
+      case 'doctor':
+        this.loadData();
+        this.labStore.loadMetrics();
+        break;
+      case 'admin':
+      default:
+        this.loadData();
+        this.labStore.loadMetrics();
+        this.labStore.loadOrders();
+        this.loadNurseData();
+        this.loadReceptionData();
+        this.loadPharmacyData();
+        this.loadAccountantData();
+        this.loadRadiologyData();
+        break;
+    }
+  }
+
+  loadNurseData(): void {
     this.nurseLoading.set(true);
     this.appointmentService.getAll(1, 50).subscribe({
-      next: (res: any) => {
-        const appts = res?.items || (Array.isArray(res) ? res : []);
+      next: (res: PagedResponse<Appointment> | Appointment[]) => {
+        const appts = Array.isArray(res) ? res : (res?.items ?? []);
         this.nurseAppointments.set(appts);
         this.nurseLoading.set(false);
       },
@@ -364,17 +414,18 @@ export class DashboardComponent implements OnInit {
 
     if (appt.id) {
       this.vitalSignsService.getByAppointment(appt.id).subscribe({
-        next: (v: any) => {
+        next: (rawV) => {
+          const v = rawV as unknown as Record<string, number | undefined> | null;
           if (v) {
-            const sys = v.systolicBP ?? v.systolicBp ?? v.SystolicBP;
-            const dia = v.diastolicBP ?? v.diastolicBp ?? v.DiastolicBP;
-            const hr = v.heartRateBpm ?? v.heartRate ?? v.HeartRateBpm;
-            const temp = v.temperatureC ?? v.temperature ?? v.TemperatureC;
-            const resp = v.respiratoryRate ?? v.RespiratoryRate;
-            const wt = v.weightKg ?? v.WeightKg;
-            const ht = v.heightCm ?? v.HeightCm;
-            const spo2 = v.oxygenSaturation ?? v.OxygenSaturation;
-            const pain = v.painScore ?? v.PainScore;
+            const sys = v['systolicBP'] ?? v['systolicBp'] ?? v['SystolicBP'];
+            const dia = v['diastolicBP'] ?? v['diastolicBp'] ?? v['DiastolicBP'];
+            const hr = v['heartRateBpm'] ?? v['heartRate'] ?? v['HeartRateBpm'];
+            const temp = v['temperatureC'] ?? v['temperature'] ?? v['TemperatureC'];
+            const resp = v['respiratoryRate'] ?? v['RespiratoryRate'];
+            const wt = v['weightKg'] ?? v['WeightKg'];
+            const ht = v['heightCm'] ?? v['HeightCm'];
+            const spo2 = v['oxygenSaturation'] ?? v['OxygenSaturation'];
+            const pain = v['painScore'] ?? v['PainScore'];
 
             if (sys != null) this.nurseSystolic.set(Number(sys));
             if (dia != null) this.nurseDiastolic.set(Number(dia));
@@ -486,87 +537,105 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  loadPatientPortalData() {
+  loadPatientPortalData(): void {
     this.patientLoading.set(true);
     this.patientService.getMyProfile().subscribe({
-      next: (pat: any) => {
+      next: (pat: Patient) => {
         this.patientProfile.set(pat);
-        this.fetchPatientDetails(pat.id);
+        if (pat?.id) {
+          this.fetchPatientDetails(pat.id);
+        } else {
+          this.patientLoading.set(false);
+        }
       },
-      error: () => {
-        const fallbackPatient = {
-          id: 'a11ce000-0000-0000-0000-000000000001',
-          firstName: 'Alice',
-          lastName: 'Patient',
-          medicalRecordNumber: 'PAT-ALICE-001',
-          dateOfBirth: '1992-04-15',
-          gender: 'Female',
-          phone: '+1 (555) 666-7777',
-          email: 'alice.patient@clinic.com',
-          address: '742 Evergreen Terrace, Springfield',
-          bloodGroup: 'O+',
-          emergencyContact: 'Bob Patient (+1 555-999-8888)'
-        } as any;
-        this.patientProfile.set(fallbackPatient);
-        this.fetchPatientDetails(fallbackPatient.id);
+      error: (err: HttpErrorResponse) => {
+        this.patientProfile.set(null);
+        this.patientAppointments.set([]);
+        this.patientPrescriptions.set([]);
+        this.patientInvoices.set([]);
+        this.patientLoading.set(false);
+        if (err.status !== 404) {
+          this.toast.error(extractProblemDetailsMessage(err.error, 'Unable to load personal health record.'));
+        }
       }
     });
   }
 
-  private fetchPatientDetails(patientId: string) {
+  private fetchPatientDetails(patientId: string): void {
     this.appointmentService.getAll(1, 20, patientId).subscribe({
-      next: (res: any) => {
-        const appts = Array.isArray(res) ? res : res?.items || [];
+      next: (res: PagedResponse<Appointment> | Appointment[]) => {
+        const appts = Array.isArray(res) ? res : (res?.items ?? []);
         this.patientAppointments.set(appts);
-      }
+      },
+      error: () => this.patientAppointments.set([])
     });
 
     this.prescriptionService.getPatientPrescriptions(patientId).subscribe({
-      next: (rxs: any) => {
-        const rxList = Array.isArray(rxs) ? rxs : rxs?.items || [];
+      next: (rxs: Prescription[] | PagedResponse<Prescription>) => {
+        const rxList = Array.isArray(rxs) ? rxs : (rxs?.items ?? []);
         this.patientPrescriptions.set(rxList);
-      }
+      },
+      error: () => this.patientPrescriptions.set([])
     });
 
     this.billingService.getInvoicesByPatient(patientId).subscribe({
-      next: (invs: any) => {
-        const invList = Array.isArray(invs) ? invs : invs?.items || [];
+      next: (invs: Invoice[] | PagedResponse<Invoice>) => {
+        const invList = Array.isArray(invs) ? invs : (invs?.items ?? []);
         this.patientInvoices.set(invList);
         this.patientLoading.set(false);
       },
       error: () => {
+        this.patientInvoices.set([]);
         this.patientLoading.set(false);
       }
     });
   }
 
-  private setupRealtimeListeners() {
-    this.liveSync.appointmentBooked$.subscribe(() => {
-      this.loadData();
-      if (this.patientProfile()?.id) {
+  private setupRealtimeListeners(): void {
+    this.liveSync.appointmentBooked$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.isPatientView() && this.patientProfile()?.id) {
         this.fetchPatientDetails(this.patientProfile()!.id);
+      } else if (!this.isPatientView()) {
+        this.loadData();
       }
     });
 
-    this.liveSync.patientCheckedIn$.subscribe(() => {
-      this.loadData();
+    this.liveSync.patientCheckedIn$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (!this.isPatientView()) {
+        this.loadData();
+      }
     });
 
-    this.liveSync.lowStockAlert$.subscribe(() => {
-      this.loadPharmacyData();
+    this.liveSync.lowStockAlert$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.isPharmacistView() || this.authService.hasRole('Admin')) {
+        this.loadPharmacyData();
+      }
     });
 
-    this.liveSync.invoicePaid$.subscribe(() => {
-      this.loadData();
-      this.loadPharmacyData();
-      this.loadAccountantData();
-      if (this.patientProfile()?.id) {
+    this.liveSync.invoicePaid$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.isPatientView() && this.patientProfile()?.id) {
         this.fetchPatientDetails(this.patientProfile()!.id);
+      } else {
+        if (this.isAccountantView() || this.authService.hasRole('Admin')) {
+          this.loadAccountantData();
+        }
+        if (this.isPharmacistView() || this.authService.hasRole('Admin')) {
+          this.loadPharmacyData();
+        }
+        if (!this.isPatientView()) {
+          this.loadData();
+        }
+      }
+    });
+
+    this.liveSync.reconnected$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ prolonged }) => {
+      if (prolonged) {
+        this.loadRoleDashboardData();
       }
     });
   }
 
-  loadReceptionData() {
+  loadReceptionData(): void {
     this.receptionLoading.set(true);
     this.receptionService.getTodayCashSummary().subscribe({
       next: summary => {
@@ -584,8 +653,8 @@ export class DashboardComponent implements OnInit {
     });
 
     this.appointmentService.getAll(1, 100).subscribe({
-      next: (res: any) => {
-        const appts = Array.isArray(res) ? res : res?.items || [];
+      next: (res: PagedResponse<Appointment> | Appointment[]) => {
+        const appts = Array.isArray(res) ? res : (res?.items ?? []);
         this.receptionTodayAppointments.set(appts);
         this.receptionLoading.set(false);
       },
@@ -753,7 +822,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  loadPharmacyData() {
+  loadPharmacyData(): void {
     this.pharmacyLoading.set(true);
     this.pharmacyService.getMetrics().subscribe({
       next: (m) => this.pharmacyMetrics.set(m),
@@ -761,8 +830,8 @@ export class DashboardComponent implements OnInit {
     });
 
     this.prescriptionService.getAll(undefined, 'Pending').subscribe({
-      next: (rxs: any) => {
-        const list = Array.isArray(rxs) ? rxs : rxs?.items || [];
+      next: (rxs: Prescription[] | PagedResponse<Prescription>) => {
+        const list = Array.isArray(rxs) ? rxs : (rxs?.items ?? []);
         this.pharmacyPendingPrescriptions.set(list);
         this.pharmacyLoading.set(false);
       },
@@ -775,7 +844,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  loadAccountantData() {
+  loadAccountantData(): void {
     this.financeLoading.set(true);
     this.financeService.getMetrics().subscribe({
       next: (m) => {
@@ -786,131 +855,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  fallbackRadiologyOrders: RadiologyOrder[] = [
-    {
-      id: 'rad-seed-01',
-      orderNumber: 'RAD-20260920-0001',
-      accessionNumber: 'ACC-20260920-0001',
-      patientId: 'p-1',
-      patientName: 'Elena Rostova',
-      patientMedicalRecordNumber: 'MRN-9021-ER',
-      doctorId: 'd-1',
-      doctorName: 'Sarah James',
-      modality: 'CT Scan',
-      procedureName: 'CTA Chest Pulmonary Embolism Protocol',
-      bodyPart: 'Chest / Pulmonary Vasculature',
-      clinicalIndication: 'Acute pleuritic chest pain, severe tachycardia, hypoxia. Rule out PE.',
-      priority: 'Stat',
-      status: 'InProgress',
-      roomSuite: 'Suite 2 - Dual-Source CT (SOMATOM)',
-      equipmentModel: 'Siemens SOMATOM Force (128-Slice)',
-      isCritical: true,
-      criticalAlertNotes: 'EMERGENCY: Suspected saddle pulmonary embolus with RV strain.',
-      orderedAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
-      price: 280,
-      isBilled: true,
-      contrastUsed: true,
-      contrastAgentName: 'Omnipaque 350',
-      radiationDoseDlp: 420.5
-    },
-    {
-      id: 'rad-seed-02',
-      orderNumber: 'RAD-20260920-0002',
-      accessionNumber: 'ACC-20260920-0002',
-      patientId: 'p-2',
-      patientName: 'John Connor',
-      patientMedicalRecordNumber: 'MRN-4481-JC',
-      doctorId: 'd-2',
-      doctorName: 'John Smith',
-      modality: 'X-Ray',
-      procedureName: 'Chest X-Ray PA & Lateral (2 Views)',
-      bodyPart: 'Thorax',
-      clinicalIndication: 'Productive purulent cough, fever 38.8C. Rule out consolidation.',
-      priority: 'Urgent',
-      status: 'Ordered',
-      roomSuite: 'Suite 1 - Digital Radiography',
-      equipmentModel: 'Siemens Multix Impact DR',
-      orderedAt: new Date(Date.now() - 3600000 * 2.5).toISOString(),
-      price: 65,
-      isBilled: false,
-      contrastUsed: false
-    },
-    {
-      id: 'rad-seed-03',
-      orderNumber: 'RAD-20260920-0003',
-      accessionNumber: 'ACC-20260920-0003',
-      patientId: 'p-3',
-      patientName: 'Robert Langdon',
-      patientMedicalRecordNumber: 'MRN-7732-RL',
-      doctorId: 'd-1',
-      doctorName: 'Sarah James',
-      modality: 'CT Scan',
-      procedureName: 'CT Head Non-Contrast Rapid Protocol',
-      bodyPart: 'Head / Brain',
-      clinicalIndication: 'Sudden onset focal neurological deficit, left arm paresis.',
-      priority: 'Stat',
-      status: 'Scheduled',
-      roomSuite: 'Suite 2 - Dual-Source CT (SOMATOM)',
-      equipmentModel: 'Siemens SOMATOM Force (128-Slice)',
-      isCritical: true,
-      criticalAlertNotes: 'Acute Stroke Protocol: Code Stroke evaluation.',
-      orderedAt: new Date(Date.now() - 3600000 * 0.8).toISOString(),
-      price: 220,
-      isBilled: false,
-      contrastUsed: false,
-      radiationDoseDlp: 780.0
-    },
-    {
-      id: 'rad-seed-04',
-      orderNumber: 'RAD-20260920-0004',
-      accessionNumber: 'ACC-20260920-0004',
-      patientId: 'p-4',
-      patientName: 'Sophia Martinez',
-      patientMedicalRecordNumber: 'MRN-3310-SM',
-      doctorId: 'd-2',
-      doctorName: 'John Smith',
-      modality: 'Ultrasound',
-      procedureName: 'Abdominal Complete Sonogram',
-      bodyPart: 'Abdomen / RUQ',
-      clinicalIndication: 'Right upper quadrant post-prandial colic. Rule out cholelithiasis.',
-      priority: 'Routine',
-      status: 'Completed',
-      roomSuite: 'Suite 4 - Ultrasound Bay A',
-      equipmentModel: 'Philips EPIQ Elite US',
-      findings: 'Multiple mobile acoustic shadowing gallstones. No acute cholecystitis.',
-      impression: 'Cholelithiasis without biliary tree obstruction.',
-      radiologistSignature: 'Attending Radiologist, MD',
-      orderedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      reportedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-      price: 120,
-      isBilled: true,
-      contrastUsed: false
-    },
-    {
-      id: 'rad-seed-05',
-      orderNumber: 'RAD-20260920-0005',
-      accessionNumber: 'ACC-20260920-0005',
-      patientId: 'p-5',
-      patientName: 'Michael Chang',
-      patientMedicalRecordNumber: 'MRN-5592-MC',
-      doctorId: 'd-1',
-      doctorName: 'Sarah James',
-      modality: 'MRI',
-      procedureName: 'Lumbar Spine MRI 3T Non-Contrast',
-      bodyPart: 'Spine / Lumbar',
-      clinicalIndication: 'Radiculopathy radiating down right lower extremity, refractory to NSAIDs.',
-      priority: 'Routine',
-      status: 'Scheduled',
-      roomSuite: 'Suite 3 - MRI GE SIGNA 1.5T',
-      equipmentModel: 'GE SIGNA Voyager 1.5T',
-      orderedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-      price: 480,
-      isBilled: false,
-      contrastUsed: false
-    }
-  ];
-
-  loadRadiologyData() {
+  loadRadiologyData(): void {
     this.radiologyLoading.set(true);
     this.radiologyService.getMetrics().subscribe({
       next: (m) => this.radiologyMetrics.set(m),
@@ -919,15 +864,11 @@ export class DashboardComponent implements OnInit {
 
     this.radiologyService.getOrders().subscribe({
       next: (orders) => {
-        if (orders && orders.length > 0) {
-          this.radiologyOrders.set(orders);
-        } else {
-          this.radiologyOrders.set(this.fallbackRadiologyOrders);
-        }
+        this.radiologyOrders.set(orders ?? []);
         this.radiologyLoading.set(false);
       },
       error: () => {
-        this.radiologyOrders.set(this.fallbackRadiologyOrders);
+        this.radiologyOrders.set([]);
         this.radiologyLoading.set(false);
       }
     });

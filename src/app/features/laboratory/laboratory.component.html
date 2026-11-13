@@ -566,13 +566,13 @@
                               <mat-icon aria-hidden="true">block</mat-icon>
                             </button>
                           }
-                          @if (isLabTech() && (order.status === 'SampleCollected' || order.status === 'InProgress' || order.status === 'Completed')) {
+                          @if (isLabTech() && order.items[0] && (order.status === 'SampleCollected' || order.status === 'InProgress' || order.status === 'Completed')) {
                             <button
                               mat-icon-button
                               type="button"
                               aria-label="Record or view results"
                               matTooltip="Record / View Results"
-                              (click)="openResultModal(order, order.items[0])"
+                              (click)="openResultModal(order, order.items[0]!)"
                             >
                               <mat-icon aria-hidden="true">edit_note</mat-icon>
                             </button>
@@ -771,7 +771,8 @@
 
       <!-- TAB 3: REAGENTS & CHEMICAL INVENTORY -->
       @case (3) {
-        <section class="section-card" aria-label="Reagents and chemical inventory">
+        @defer (on viewport; prefetch on idle) {
+          <section class="section-card" aria-label="Reagents and chemical inventory">
           <div class="table-toolbar">
             <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
               <mat-label>Search Reagents</mat-label>
@@ -867,11 +868,17 @@
             </div>
           }
         </section>
+        } @placeholder {
+          <section class="section-card">
+            <app-skeleton variant="table" [count]="5" />
+          </section>
+        }
       }
 
       <!-- TAB 4: SUPPLY REQUISITIONS -->
       @case (4) {
-        <section class="section-card" aria-label="Laboratory supply requisitions">
+        @defer (on viewport; prefetch on idle) {
+          <section class="section-card" aria-label="Laboratory supply requisitions">
           <div class="table-toolbar">
             <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
               <mat-label>Search Requisitions</mat-label>
@@ -950,11 +957,17 @@
             </div>
           }
         </section>
+        } @placeholder {
+          <section class="section-card">
+            <app-skeleton variant="table" [count]="5" />
+          </section>
+        }
       }
 
       <!-- TAB 5: EQUIPMENT & QUALITY CONTROL (QC) -->
       @case (5) {
-        <section class="section-card" aria-label="Equipment quality control logs">
+        @defer (on viewport; prefetch on idle) {
+          <section class="section-card" aria-label="Equipment quality control logs">
           <div class="section-header-row">
             <div>
               <h2>Equipment Calibration &amp; Quality Control Logs</h2>
@@ -1021,6 +1034,11 @@
             </div>
           }
         </section>
+        } @placeholder {
+          <section class="section-card">
+            <app-skeleton variant="table" [count]="5" />
+          </section>
+        }
       }
 
       <!-- TAB 6: DIAGNOSTIC CATALOG -->
@@ -1617,7 +1635,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (p of getParsedParameters(item.result.parameterResultsJson); track p.parameterName) {
+                      @for (p of getParsedResultParameters(item.result.parameterResultsJson); track p.parameterName) {
                         <tr>
                           <td>{{ p.parameterName }}</td>
                           <td><strong>{{ p.value }}</strong></td>
@@ -1630,7 +1648,7 @@
                   </table>
                 </div>
 
-                @if (item.result?.remarks) {
+                @if (item.result.remarks) {
                   <p class="card-desc"><strong>Clinical Remarks:</strong> {{ item.result.remarks }}</p>
                 }
               }

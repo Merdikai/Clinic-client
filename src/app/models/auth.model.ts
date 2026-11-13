@@ -27,6 +27,9 @@ export interface UserInfo {
   id?: string;
   userId?: string;
   username: string;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   fullName: string;
   roles: string[];

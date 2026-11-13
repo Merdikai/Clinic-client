@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en-US" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="patientDetailDobLabel" datatype="html">
+        <source>DOB</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">43,44</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="patientDetailSexLabel" datatype="html">
+        <source>Sex</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">46,47</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="patientDetailPhoneLabel" datatype="html">
+        <source>Phone</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">48,49</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="patientDetailEmailLabel" datatype="html">
+        <source>Email</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">51,52</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="patientDetailNationalIdLabel" datatype="html">
+        <source>National ID</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">55,56</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="patientDetailLabHeading" datatype="html">
+        <source>Laboratory Orders &amp; Results</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">418,419</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="patientDetailRadHeading" datatype="html">
+        <source>Radiology Examinations &amp; PACS Studies</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/patient-detail/patient-detail.component.html</context>
+          <context context-type="linenumber">508,509</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="shell.workspaceLabel" datatype="html">
+        <source><x id="INTERPOLATION" equiv-text="{{ activeSimulatedRole() }}"/> Workspace</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">611,613</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="shell.switchAccountLabel" datatype="html">
+        <source>Switch Account</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">616,617</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="shell.auditTrail" datatype="html">
+        <source>Audit Trail</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">630,631</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="shell.staffDirectory" datatype="html">
+        <source>Staff Directory</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">632,634</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="shell.bookAppointment" datatype="html">
+        <source>Book Appointment</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">636,638</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">639,640</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">643,644</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="shell.newPatient" datatype="html">
+        <source>New Patient</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">640,642</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/shell/shell.component.html</context>
+          <context context-type="linenumber">644,647</context>
+        </context-group>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

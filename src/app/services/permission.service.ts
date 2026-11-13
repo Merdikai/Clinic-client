@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface RolePermissionMatrixDto {
   roleName: string;
@@ -14,6 +15,7 @@ export interface RolePermissionMatrixDto {
 })
 export class PermissionService {
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private baseUrl = environment.apiUrl;
 
   // Default fallback permissions if offline or before initial load (Real-world clinical role standards)
@@ -111,10 +113,15 @@ export class PermissionService {
   }
 
   constructor() {
-    this.loadAllPermissions();
+    if (this.authService.isAuthenticated() && this.authService.isAdmin()) {
+      this.loadAllPermissions();
+    }
   }
 
   loadAllPermissions(): void {
+    if (!this.authService.isAuthenticated() || !this.authService.isAdmin()) {
+      return;
+    }
     this.http.get<RolePermissionMatrixDto[]>(`${this.baseUrl}/permissions`).pipe(
       tap(matrix => {
         if (matrix && matrix.length > 0) {

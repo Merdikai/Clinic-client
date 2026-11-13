@@ -1,5 +1,6 @@
-import { Component, HostListener, OnInit, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +13,8 @@ import { NursingService } from '../../services/nursing.service';
 import { PatientService } from '../../services/patient.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../ui/toast/toast.service';
+import { PagedResponse, Patient } from '../../models/patient.model';
+import { extractProblemDetailsMessage } from '../../models/api.model';
 import { NursingProcedure, CreateNursingProcedureRequest } from '../../models/nursing.model';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
@@ -36,7 +39,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
     EmptyStateComponent
   ],
   templateUrl: './nursing-procedures.component.html',
-  styleUrls: ['./nursing-procedures.component.scss']
+  styleUrls: ['./nursing-procedures.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NursingProceduresComponent implements OnInit {
   private nursingService = inject(NursingService);
@@ -45,7 +49,7 @@ export class NursingProceduresComponent implements OnInit {
   private toast = inject(ToastService);
 
   procedures = signal<NursingProcedure[]>([]);
-  patients = signal<any[]>([]);
+  patients = signal<Patient[]>([]);
   isLoading = signal<boolean>(false);
   isSubmitting = signal<boolean>(false);
   isModalOpen = signal<boolean>(false);
@@ -178,8 +182,8 @@ export class NursingProceduresComponent implements OnInit {
 
   loadPatients(): void {
     this.patientService.getAll(1, 200).subscribe({
-      next: (res: any) => {
-        const list = res.items || res.data || (Array.isArray(res) ? res : []);
+      next: (res: PagedResponse<Patient> | Patient[] | { data?: Patient[]; items?: Patient[] }) => {
+        const list = Array.isArray(res) ? res : (res.items ?? ('data' in res ? res.data : undefined) ?? []);
         this.patients.set(list);
       },
       error: () => {}
@@ -187,7 +191,8 @@ export class NursingProceduresComponent implements OnInit {
   }
 
   openNewProcedureModal(patientId?: string): void {
-    this.formPatientId.set(patientId || (this.patients().length > 0 ? this.patients()[0].id : ''));
+    const firstPatient = this.patients()[0];
+    this.formPatientId.set(patientId || (firstPatient ? firstPatient.id : ''));
     this.formProcedureType.set('Wound Dressing & Care');
     this.formBodySite.set('');
     this.formPatientTolerance.set('Well Tolerated');

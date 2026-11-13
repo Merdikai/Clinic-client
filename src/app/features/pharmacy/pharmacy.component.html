@@ -1015,7 +1015,8 @@
 
       <!-- TAB 3: STOCK REQUISITIONS & PURCHASE ORDERS -->
       @case (3) {
-        <section class="tab-panel" aria-label="Stock requisitions and purchase orders">
+        @defer (on viewport; prefetch on idle) {
+          <section class="tab-panel" aria-label="Stock requisitions and purchase orders">
           <div class="section-card">
             <div class="drawer-header">
               <div>
@@ -1098,11 +1099,19 @@
             }
           </div>
         </section>
+        } @placeholder {
+          <section class="tab-panel">
+            <div class="section-card">
+              <app-skeleton variant="table" [count]="5" />
+            </div>
+          </section>
+        }
       }
 
       <!-- TAB 4: CONTROLLED SUBSTANCES AUDIT LEDGER -->
       @case (4) {
-        <section class="tab-panel" aria-label="Controlled substances audit ledger">
+        @defer (on viewport; prefetch on idle) {
+          <section class="tab-panel" aria-label="Controlled substances audit ledger">
           <div class="section-card">
             <div class="drawer-header">
               <div>
@@ -1175,6 +1184,13 @@
             }
           </div>
         </section>
+        } @placeholder {
+          <section class="tab-panel">
+            <div class="section-card">
+              <app-skeleton variant="table" [count]="5" />
+            </div>
+          </section>
+        }
       }
     }
   }

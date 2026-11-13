@@ -1,6 +1,7 @@
-﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideRouter } from '@angular/router';
 import { UserManagementComponent } from './user-management.component';
 
 describe('UserManagementComponent', () => {
@@ -12,6 +13,7 @@ describe('UserManagementComponent', () => {
       imports: [UserManagementComponent],
       providers: [
         provideHttpClient(),
+        provideRouter([]),
         provideNoopAnimations()
       ]
     }).compileComponents();

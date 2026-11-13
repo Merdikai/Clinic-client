@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface StaffDutyShift {
   id: string;
@@ -31,18 +32,42 @@ export interface DoctorDelegation {
   createdAtUtc: string;
 }
 
+type ApiDataWrapper<T> = T | { readonly data?: T; readonly items?: T };
+
+function unwrapData<T>(res: ApiDataWrapper<T> | null | undefined): T | null {
+  if (res && typeof res === 'object' && 'data' in res && res.data !== undefined) {
+    return res.data;
+  }
+  return (res as T) ?? null;
+}
+
+function unwrapList<T>(res: T[] | { readonly data?: T[]; readonly items?: T[] } | null | undefined): T[] {
+  if (Array.isArray(res)) {
+    return res;
+  }
+  if (res && typeof res === 'object') {
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.items)) return res.items;
+  }
+  return [];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class StaffDutyService {
-  private http = inject(HttpClient);
-  private baseUrl = environment.apiUrl;
+  private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
+  private readonly baseUrl = environment.apiUrl;
 
-  private currentDutySubject = new BehaviorSubject<StaffDutyShift | null>(null);
-  public currentDuty$ = this.currentDutySubject.asObservable();
+  private readonly currentDutySubject = new BehaviorSubject<StaffDutyShift | null>(null);
+  readonly currentDuty$ = this.currentDutySubject.asObservable();
 
   constructor() {
-    // Hydrate from localStorage first for instant UI
+    if (!this.authService.isAuthenticated() || this.authService.isPatient()) {
+      return;
+    }
+
     try {
       const saved = localStorage.getItem('clinic_active_shift');
       if (saved) {
@@ -51,91 +76,101 @@ export class StaffDutyService {
           this.currentDutySubject.next(parsed);
         }
       }
-    } catch (_) {}
+    } catch {}
 
-    // Then sync with actual server state
     this.refreshDutyStatus().pipe(catchError(() => of(null))).subscribe();
   }
 
-  public get isOnDuty(): boolean {
+  get isOnDuty(): boolean {
     return !!this.currentDutySubject.value?.isActive;
   }
 
-  public get activeShift(): StaffDutyShift | null {
+  get activeShift(): StaffDutyShift | null {
     return this.currentDutySubject.value;
   }
 
   refreshDutyStatus(): Observable<StaffDutyShift | null> {
-    return this.http.get<any>(`${this.baseUrl}/staff-duty/my-status`).pipe(
-      map(res => {
-        const shift = (res && res.data !== undefined ? res.data : res) as StaffDutyShift | null;
-        // Treat null/empty or inactive shift as off-duty
-        return (shift && shift.id && shift.isActive) ? shift : null;
+    if (!this.authService.isAuthenticated() || this.authService.isPatient()) {
+      this.currentDutySubject.next(null);
+      return of(null);
+    }
+
+    return this.http.get<ApiDataWrapper<StaffDutyShift>>(`${this.baseUrl}/staff-duty/my-status`).pipe(
+      map((res) => {
+        const shift = unwrapData(res);
+        return shift && shift.id && shift.isActive ? shift : null;
       }),
-      tap(shift => {
+      tap((shift) => {
         this.currentDutySubject.next(shift);
-        if (shift) {
-          localStorage.setItem('clinic_active_shift', JSON.stringify(shift));
-        } else {
-          localStorage.removeItem('clinic_active_shift');
-        }
+        try {
+          if (shift) {
+            localStorage.setItem('clinic_active_shift', JSON.stringify(shift));
+          } else {
+            localStorage.removeItem('clinic_active_shift');
+          }
+        } catch {}
       })
     );
   }
 
   clockIn(department: string, shiftType: string, notes?: string): Observable<StaffDutyShift> {
-    return this.http.post<any>(`${this.baseUrl}/staff-duty/clock-in`, {
-      department,
-      shiftType,
-      notes
-    }).pipe(
-      map(res => (res && res.data !== undefined ? res.data : res) as StaffDutyShift),
-      tap(shift => {
-        this.currentDutySubject.next(shift);
-        if (shift) {
-          localStorage.setItem('clinic_active_shift', JSON.stringify(shift));
-        }
+    return this.http
+      .post<ApiDataWrapper<StaffDutyShift>>(`${this.baseUrl}/staff-duty/clock-in`, {
+        department,
+        shiftType,
+        notes
       })
-    );
+      .pipe(
+        map((res) => unwrapData(res) as StaffDutyShift),
+        tap((shift) => {
+          this.currentDutySubject.next(shift);
+          if (shift) {
+            try {
+              localStorage.setItem('clinic_active_shift', JSON.stringify(shift));
+            } catch {}
+          }
+        })
+      );
   }
 
   clockOut(handoverNotes?: string): Observable<StaffDutyShift | null> {
-    return this.http.post<any>(`${this.baseUrl}/staff-duty/clock-out`, {
-      handoverNotes
-    }).pipe(
-      map(res => (res && res.data !== undefined ? res.data : res) as StaffDutyShift | null),
-      tap(() => {
-        this.currentDutySubject.next(null);
-        localStorage.removeItem('clinic_active_shift');
+    return this.http
+      .post<ApiDataWrapper<StaffDutyShift>>(`${this.baseUrl}/staff-duty/clock-out`, {
+        handoverNotes
       })
-    );
+      .pipe(
+        map((res) => unwrapData(res)),
+        tap(() => {
+          this.currentDutySubject.next(null);
+          try {
+            localStorage.removeItem('clinic_active_shift');
+          } catch {}
+        })
+      );
   }
 
   getActiveStaff(): Observable<StaffDutyShift[]> {
-    return this.http.get<any>(`${this.baseUrl}/staff-duty/active-staff`).pipe(
-      map(res => {
-        const list: any[] = Array.isArray(res) ? res : (res?.data || res?.items || []);
-        return list as StaffDutyShift[];
-      })
-    );
+    return this.http
+      .get<StaffDutyShift[] | { data?: StaffDutyShift[]; items?: StaffDutyShift[] }>(
+        `${this.baseUrl}/staff-duty/active-staff`
+      )
+      .pipe(map((res) => unwrapList(res)));
   }
 
   getActiveDelegations(): Observable<DoctorDelegation[]> {
-    return this.http.get<any>(`${this.baseUrl}/doctor-delegations/active`).pipe(
-      map(res => {
-        const list: any[] = Array.isArray(res) ? res : (res?.data || res?.items || []);
-        return list as DoctorDelegation[];
-      })
-    );
+    return this.http
+      .get<DoctorDelegation[] | { data?: DoctorDelegation[]; items?: DoctorDelegation[] }>(
+        `${this.baseUrl}/doctor-delegations/active`
+      )
+      .pipe(map((res) => unwrapList(res)));
   }
 
   getMyDelegations(): Observable<DoctorDelegation[]> {
-    return this.http.get<any>(`${this.baseUrl}/doctor-delegations/my-delegations`).pipe(
-      map(res => {
-        const list: any[] = Array.isArray(res) ? res : (res?.data || res?.items || []);
-        return list as DoctorDelegation[];
-      })
-    );
+    return this.http
+      .get<DoctorDelegation[] | { data?: DoctorDelegation[]; items?: DoctorDelegation[] }>(
+        `${this.baseUrl}/doctor-delegations/my-delegations`
+      )
+      .pipe(map((res) => unwrapList(res)));
   }
 
   createDelegation(payload: {
@@ -156,14 +191,14 @@ export class StaffDutyService {
       startDateUtc: payload.startDateUtc,
       endDateUtc: payload.endDateUtc,
       reason: payload.reason ?? 'Clinical Coverage / On-Call Rotation',
-      notes: payload.notes ?? null,
+      notes: payload.notes ?? null
     };
-    return this.http.post<any>(`${this.baseUrl}/doctor-delegations`, body).pipe(
-      map(res => (res && res.data !== undefined ? res.data : res) as DoctorDelegation)
-    );
+    return this.http
+      .post<ApiDataWrapper<DoctorDelegation>>(`${this.baseUrl}/doctor-delegations`, body)
+      .pipe(map((res) => unwrapData(res) as DoctorDelegation));
   }
 
-  revokeDelegation(id: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/doctor-delegations/${id}/revoke`, {});
+  revokeDelegation(id: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/doctor-delegations/${id}/revoke`, {});
   }
 }

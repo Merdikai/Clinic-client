@@ -1,10 +1,12 @@
 import { inject, computed } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { setAllEntities, setEntity, addEntity, withEntities } from '@ngrx/signals/entities';
+import { setAllEntities, addEntity, removeEntity, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, catchError, of, exhaustMap } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { PatientService } from '../services/patient.service';
 import { Patient, PagedResponse, CreatePatientRequest } from '../models/patient.model';
+import { extractProblemDetailsMessage } from '../models/api.model';
 import { ToastService } from '../ui/toast/toast.service';
 
 interface PatientMetadataState {
@@ -43,17 +45,16 @@ export const PatientStore = signalStore(
           patientService.getAll(store.currentPage(), store.pageSize(), store.searchTerm()).pipe(
             tap({
               next: (response: PagedResponse<Patient>) => {
-                patchState(
-                  store,
-                  setAllEntities(response.items || []),
-                  {
-                    totalCount: response.totalCount || 0,
-                    isLoading: false
-                  }
-                );
+                patchState(store, setAllEntities(response.items || []), {
+                  totalCount: response.totalCount || 0,
+                  isLoading: false
+                });
               },
-              error: (error) => {
-                patchState(store, { isLoading: false, error: error.message || 'Failed to load patients' });
+              error: (error: HttpErrorResponse) => {
+                patchState(store, {
+                  isLoading: false,
+                  error: extractProblemDetailsMessage(error.error, error.message || 'Failed to load patients')
+                });
               }
             }),
             catchError(() => of(null))
@@ -75,8 +76,11 @@ export const PatientStore = signalStore(
                 });
                 toast.success(`Patient ${patient.firstName} ${patient.lastName} registered successfully!`);
               },
-              error: (error) => {
-                patchState(store, { isLoading: false, error: error.message });
+              error: (error: HttpErrorResponse) => {
+                patchState(store, {
+                  isLoading: false,
+                  error: extractProblemDetailsMessage(error.error, error.message)
+                });
               }
             }),
             catchError(() => of(null))
@@ -85,13 +89,41 @@ export const PatientStore = signalStore(
       )
     ),
 
-    setSearchTerm(term: string) {
+    deletePatient: rxMethod<string>(
+      pipe(
+        exhaustMap((patientId) => {
+          const original = store.entities().find((p) => p.id === patientId);
+          if (!original) return of(null);
+
+          patchState(store, removeEntity(patientId), {
+            totalCount: Math.max(0, store.totalCount() - 1)
+          });
+
+          return patientService.delete(patientId).pipe(
+            tap({
+              next: () => {
+                toast.success('Patient deleted successfully');
+              },
+              error: (err: HttpErrorResponse) => {
+                patchState(store, addEntity(original), {
+                  totalCount: store.totalCount() + 1
+                });
+                toast.error(`Error deleting patient: ${extractProblemDetailsMessage(err.error, 'Server error')}`);
+              }
+            }),
+            catchError(() => of(null))
+          );
+        })
+      )
+    ),
+
+    setSearchTerm(term: string): void {
       patchState(store, { searchTerm: term, currentPage: 1 });
     },
-    setPage(page: number) {
+    setPage(page: number): void {
       patchState(store, { currentPage: page });
     },
-    setPageSize(size: number) {
+    setPageSize(size: number): void {
       patchState(store, { pageSize: size, currentPage: 1 });
     }
   }))

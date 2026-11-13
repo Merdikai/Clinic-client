@@ -6,552 +6,587 @@
       <a routerLink="/dashboard" class="brand-wordmark" [attr.aria-label]="isCollapsed() ? 'CliniCare home' : null">
         {{ isCollapsed() ? 'CC' : 'CLINICARE' }}
       </a>
-      <button
-        mat-icon-button
-        type="button"
-        class="collapse-toggle-btn"
-        (click)="toggleSidebar()"
+      <button mat-icon-button type="button" class="collapse-toggle-btn" (click)="toggleSidebar()"
         [attr.aria-label]="isCollapsed() ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'"
-        [attr.aria-expanded]="!isCollapsed()"
-        [matTooltip]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+        [attr.aria-expanded]="!isCollapsed()" [matTooltip]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
         <mat-icon aria-hidden="true">{{ isCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
 
     <nav class="sidebar-nav" aria-label="Primary navigation">
       @switch (activeSimulatedRole()) {
-        @case ('Patient') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Health Services</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Overview" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Overview' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Overview</span>
-          </a>
-          <a routerLink="/my-appointments" routerLinkActive="active" class="nav-item"
-            matTooltip="My Appointments" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Appointments' : null">
-            <mat-icon aria-hidden="true">event_available</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Appointments</span>
-          </a>
-          <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item"
-            matTooltip="Book Appointment" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Book Appointment' : null">
-            <mat-icon aria-hidden="true">add_alarm</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Book Appointment</span>
-          </a>
+      @case ('Patient') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Health Services</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Overview" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Overview' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Overview</span>
+      </a>
+      <a routerLink="/my-appointments" routerLinkActive="active" class="nav-item" matTooltip="My Appointments"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Appointments' : null">
+        <mat-icon aria-hidden="true">event_available</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Appointments</span>
+      </a>
+      <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item" matTooltip="Book Appointment"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Book Appointment' : null">
+        <mat-icon aria-hidden="true">add_alarm</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Book Appointment</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Records &amp; Billing</div>
-          <a routerLink="/my-medical-file" routerLinkActive="active" class="nav-item"
-            matTooltip="My Medical Record" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Medical Record' : null">
-            <mat-icon aria-hidden="true">folder_shared</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Medical Record</span>
-          </a>
-          <a routerLink="/my-prescriptions" routerLinkActive="active" class="nav-item"
-            matTooltip="My Prescriptions" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Prescriptions' : null">
-            <mat-icon aria-hidden="true">medication</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Prescriptions</span>
-          </a>
-          <a routerLink="/my-invoices" routerLinkActive="active" class="nav-item"
-            matTooltip="My Invoices" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Invoices' : null">
-            <mat-icon aria-hidden="true">receipt_long</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Invoices</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Records &amp; Billing</div>
+      <a routerLink="/my-medical-file" routerLinkActive="active" class="nav-item" matTooltip="My Medical Record"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Medical Record' : null">
+        <mat-icon aria-hidden="true">folder_shared</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Medical Record</span>
+      </a>
+      <a routerLink="/my-prescriptions" routerLinkActive="active" class="nav-item" matTooltip="My Prescriptions"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Prescriptions' : null">
+        <mat-icon aria-hidden="true">medication</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Prescriptions</span>
+      </a>
+      <a routerLink="/my-invoices" routerLinkActive="active" class="nav-item" matTooltip="My Invoices"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Invoices' : null">
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Invoices</span>
+      </a>
+      }
 
-        @case ('Doctor') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Clinical Care</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/my-consultations" routerLinkActive="active" class="nav-item"
-            matTooltip="My Consultations" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Consultations' : null">
-            <mat-icon aria-hidden="true">event_available</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Consultations</span>
-            <span class="nav-count" *ngIf="!isCollapsed() && todayConsultationsCount() > 0">{{ todayConsultationsCount() }}</span>
-          </a>
-          <a routerLink="/doctor-inbasket" routerLinkActive="active" class="nav-item"
-            matTooltip="InBasket" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'InBasket' : null">
-            <mat-icon aria-hidden="true">inbox</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">InBasket</span>
-            <span class="nav-count tone-warning" *ngIf="!isCollapsed() && inbasketPendingCount() > 0">{{ inbasketPendingCount() }}</span>
-          </a>
-          <a routerLink="/my-patients" routerLinkActive="active" class="nav-item"
-            matTooltip="My Patient Panel" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Patient Panel' : null">
-            <mat-icon aria-hidden="true">groups</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Patient Panel</span>
-          </a>
-          <a routerLink="/patients" routerLinkActive="active" class="nav-item"
-            matTooltip="Patient Directory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patient Directory' : null">
-            <mat-icon aria-hidden="true">folder_shared</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Patient Directory</span>
-          </a>
-          <a routerLink="/schedules" routerLinkActive="active" class="nav-item"
-            matTooltip="My Schedule" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Schedule' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">My Schedule</span>
-          </a>
+      @case ('Doctor') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Clinical Care</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/my-consultations" routerLinkActive="active" class="nav-item" matTooltip="My Consultations"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Consultations' : null">
+        <mat-icon aria-hidden="true">event_available</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Consultations</span>
+        <span class="nav-count" *ngIf="!isCollapsed() && todayConsultationsCount() > 0">{{ todayConsultationsCount()
+          }}</span>
+      </a>
+      <a routerLink="/doctor-inbasket" routerLinkActive="active" class="nav-item" matTooltip="InBasket"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'InBasket' : null">
+        <mat-icon aria-hidden="true">inbox</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">InBasket</span>
+        <span class="nav-count tone-warning" *ngIf="!isCollapsed() && inbasketPendingCount() > 0">{{
+          inbasketPendingCount() }}</span>
+      </a>
+      <a routerLink="/my-patients" routerLinkActive="active" class="nav-item" matTooltip="My Patient Panel"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Patient Panel' : null">
+        <mat-icon aria-hidden="true">groups</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Patient Panel</span>
+      </a>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patient Directory"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patient Directory' : null">
+        <mat-icon aria-hidden="true">folder_shared</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Patient Directory</span>
+      </a>
+      <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="My Schedule"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'My Schedule' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">My Schedule</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Diagnostics &amp; Coverage</div>
-          <a routerLink="/radiology" routerLinkActive="active" class="nav-item"
-            matTooltip="Radiology" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Radiology' : null">
-            <mat-icon aria-hidden="true">camera</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Radiology</span>
-          </a>
-          <a routerLink="/laboratory" routerLinkActive="active" class="nav-item"
-            matTooltip="Laboratory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Laboratory' : null">
-            <mat-icon aria-hidden="true">biotech</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Laboratory</span>
-          </a>
-          <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item"
-            matTooltip="Medication Formulary" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Medication Formulary' : null">
-            <mat-icon aria-hidden="true">medication</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Medication Formulary</span>
-          </a>
-          <a routerLink="/users/roster" routerLinkActive="active" class="nav-item"
-            matTooltip="Coverage &amp; Delegations" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Coverage and Delegations' : null">
-            <mat-icon aria-hidden="true">medical_services</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Coverage &amp; Delegations</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Diagnostics &amp; Coverage</div>
+      <a routerLink="/radiology" routerLinkActive="active" class="nav-item" matTooltip="Radiology"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Radiology' : null">
+        <mat-icon aria-hidden="true">camera</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Radiology</span>
+      </a>
+      <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Laboratory"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Laboratory' : null">
+        <mat-icon aria-hidden="true">biotech</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Laboratory</span>
+      </a>
+      <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item" matTooltip="Medication Formulary"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Medication Formulary' : null">
+        <mat-icon aria-hidden="true">medication</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Medication Formulary</span>
+      </a>
+      <a routerLink="/users/roster" routerLinkActive="active" class="nav-item" matTooltip="Coverage &amp; Delegations"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Coverage and Delegations' : null">
+        <mat-icon aria-hidden="true">medical_services</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Coverage &amp; Delegations</span>
+      </a>
+      }
 
-        @case ('Nurse') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Triage &amp; Clinical Care</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Triage &amp; Queue" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Triage and Queue' : null">
-            <mat-icon aria-hidden="true">fact_check</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Triage &amp; Queue</span>
-            <span class="nav-count" *ngIf="!isCollapsed() && todayConsultationsCount() > 0">{{ todayConsultationsCount() }}</span>
-          </a>
-          <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item"
-            matTooltip="Book Appointment" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Book Appointment' : null">
-            <mat-icon aria-hidden="true">add_alarm</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Book Appointment</span>
-          </a>
-          <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients Directory' : null">
-            <mat-icon aria-hidden="true">people</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Patients Directory</span>
-          </a>
-          <a routerLink="/patients/new" routerLinkActive="active" class="nav-item"
-            matTooltip="Register Patient" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Register Patient' : null">
-            <mat-icon aria-hidden="true">person_add</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Register Patient</span>
-          </a>
+      @case ('Nurse') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Triage &amp; Clinical Care</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item" matTooltip="Triage &amp; Queue" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Triage and Queue' : null">
+        <mat-icon aria-hidden="true">fact_check</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Triage &amp; Queue</span>
+        <span class="nav-count" *ngIf="!isCollapsed() && todayConsultationsCount() > 0">{{ todayConsultationsCount()
+          }}</span>
+      </a>
+      <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item" matTooltip="Book Appointment"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Book Appointment' : null">
+        <mat-icon aria-hidden="true">add_alarm</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Book Appointment</span>
+      </a>
+      <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Patients Directory' : null">
+        <mat-icon aria-hidden="true">people</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Patients Directory</span>
+      </a>
+      <a routerLink="/patients/new" routerLinkActive="active" class="nav-item" matTooltip="Register Patient"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Register Patient' : null">
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Register Patient</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Nursing &amp; Diagnostics</div>
-          <a routerLink="/nurse/procedures" routerLinkActive="active" class="nav-item"
-            matTooltip="Nursing Procedures" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Nursing Procedures' : null">
-            <mat-icon aria-hidden="true">healing</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Nursing Procedures</span>
-          </a>
-          <a routerLink="/nurse/handover" routerLinkActive="active" class="nav-item"
-            matTooltip="Shift Handover (SBAR)" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Shift Handover SBAR' : null">
-            <mat-icon aria-hidden="true">swap_horizontal_circle</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Shift Handover (SBAR)</span>
-          </a>
-          <a routerLink="/laboratory" routerLinkActive="active" class="nav-item"
-            matTooltip="Specimen Orders" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Specimen Orders' : null">
-            <mat-icon aria-hidden="true">biotech</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Specimen Orders</span>
-          </a>
-          <a routerLink="/radiology" routerLinkActive="active" class="nav-item"
-            matTooltip="Radiology Orders" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Radiology Orders' : null">
-            <mat-icon aria-hidden="true">camera</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Radiology Orders</span>
-          </a>
-          <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item"
-            matTooltip="Medication Formulary" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Medication Formulary' : null">
-            <mat-icon aria-hidden="true">medication</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Medication Formulary</span>
-          </a>
-          <a routerLink="/schedules" routerLinkActive="active" class="nav-item"
-            matTooltip="Duty Roster" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty Roster' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Duty Roster</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Nursing &amp; Diagnostics</div>
+      <a routerLink="/nurse/procedures" routerLinkActive="active" class="nav-item" matTooltip="Nursing Procedures"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Nursing Procedures' : null">
+        <mat-icon aria-hidden="true">healing</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Nursing Procedures</span>
+      </a>
+      <a routerLink="/nurse/handover" routerLinkActive="active" class="nav-item" matTooltip="Shift Handover (SBAR)"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Shift Handover SBAR' : null">
+        <mat-icon aria-hidden="true">swap_horizontal_circle</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Shift Handover (SBAR)</span>
+      </a>
+      <a routerLink="/laboratory" routerLinkActive="active" class="nav-item" matTooltip="Specimen Orders"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Specimen Orders' : null">
+        <mat-icon aria-hidden="true">biotech</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Specimen Orders</span>
+      </a>
+      <a routerLink="/radiology" routerLinkActive="active" class="nav-item" matTooltip="Radiology Orders"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Radiology Orders' : null">
+        <mat-icon aria-hidden="true">camera</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Radiology Orders</span>
+      </a>
+      <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item" matTooltip="Medication Formulary"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Medication Formulary' : null">
+        <mat-icon aria-hidden="true">medication</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Medication Formulary</span>
+      </a>
+      <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Duty Roster"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty Roster' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Duty Roster</span>
+      </a>
+      }
 
-        @case ('Receptionist') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Front Desk</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Appointments Queue" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Appointments Queue' : null">
-            <mat-icon aria-hidden="true">how_to_reg</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Appointments Queue</span>
-            <span class="nav-count" *ngIf="!isCollapsed() && activeAppointmentsCount() > 0">{{ activeAppointmentsCount() }}</span>
-          </a>
-          <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item"
-            matTooltip="Book Appointment" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Book Appointment' : null">
-            <mat-icon aria-hidden="true">add_alarm</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Book Appointment</span>
-          </a>
-          <a routerLink="/schedules" routerLinkActive="active" class="nav-item"
-            matTooltip="Doctor Availability" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Doctor Availability' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Doctor Availability</span>
-          </a>
+      @case ('Receptionist') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Front Desk</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item" matTooltip="Appointments Queue" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Appointments Queue' : null">
+        <mat-icon aria-hidden="true">how_to_reg</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Appointments Queue</span>
+        <span class="nav-count" *ngIf="!isCollapsed() && activeAppointmentsCount() > 0">{{ activeAppointmentsCount()
+          }}</span>
+      </a>
+      <a routerLink="/appointments/book" routerLinkActive="active" class="nav-item" matTooltip="Book Appointment"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Book Appointment' : null">
+        <mat-icon aria-hidden="true">add_alarm</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Book Appointment</span>
+      </a>
+      <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Doctor Availability"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Doctor Availability' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Doctor Availability</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Patients &amp; Cashier</div>
-          <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Master Patient Index" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Master Patient Index' : null">
-            <mat-icon aria-hidden="true">badge</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Master Patient Index</span>
-          </a>
-          <a routerLink="/patients/new" routerLinkActive="active" class="nav-item"
-            matTooltip="New Patient Registration" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'New Patient Registration' : null">
-            <mat-icon aria-hidden="true">person_add</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">New Registration</span>
-          </a>
-          <a routerLink="/billing" routerLinkActive="active" class="nav-item"
-            matTooltip="Cashier &amp; Billing" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Cashier and Billing' : null">
-            <mat-icon aria-hidden="true">point_of_sale</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Cashier &amp; Billing</span>
-            <span class="nav-count tone-warning" *ngIf="!isCollapsed() && pendingInvoicesCount() > 0">{{ pendingInvoicesCount() }}</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Patients &amp; Cashier</div>
+      <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Master Patient Index" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Master Patient Index' : null">
+        <mat-icon aria-hidden="true">badge</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Master Patient Index</span>
+      </a>
+      <a routerLink="/patients/new" routerLinkActive="active" class="nav-item" matTooltip="New Patient Registration"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'New Patient Registration' : null">
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">New Registration</span>
+      </a>
+      <a routerLink="/billing" routerLinkActive="active" class="nav-item" matTooltip="Cashier &amp; Billing"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Cashier and Billing' : null">
+        <mat-icon aria-hidden="true">point_of_sale</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Cashier &amp; Billing</span>
+        <span class="nav-count tone-warning" *ngIf="!isCollapsed() && pendingInvoicesCount() > 0">{{
+          pendingInvoicesCount() }}</span>
+      </a>
+      }
 
-        @case ('Pharmacist') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Dispensary</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/pharmacy/prescriptions" routerLinkActive="active" class="nav-item"
-            matTooltip="Prescriptions Queue" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Prescriptions Queue' : null">
-            <mat-icon aria-hidden="true">local_pharmacy</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Prescriptions Queue</span>
-            <span class="nav-count tone-warning" *ngIf="!isCollapsed() && (pharmacyMetrics()?.pendingPrescriptionsCount || 0) > 0">
-              {{ pharmacyMetrics()?.pendingPrescriptionsCount }}
-            </span>
-          </a>
-          <a routerLink="/pharmacy/pos" routerLinkActive="active" class="nav-item"
-            matTooltip="Counter POS" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Counter POS' : null">
-            <mat-icon aria-hidden="true">point_of_sale</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Counter POS</span>
-          </a>
+      @case ('Pharmacist') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Dispensary</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/pharmacy/prescriptions" routerLinkActive="active" class="nav-item"
+        matTooltip="Prescriptions Queue" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Prescriptions Queue' : null">
+        <mat-icon aria-hidden="true">local_pharmacy</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Prescriptions Queue</span>
+        <span class="nav-count tone-warning"
+          *ngIf="!isCollapsed() && (pharmacyMetrics()?.pendingPrescriptionsCount || 0) > 0">
+          {{ pharmacyMetrics()?.pendingPrescriptionsCount }}
+        </span>
+      </a>
+      <a routerLink="/pharmacy/pos" routerLinkActive="active" class="nav-item" matTooltip="Counter POS"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Counter POS' : null">
+        <mat-icon aria-hidden="true">point_of_sale</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Counter POS</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Inventory &amp; Compliance</div>
-          <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item"
-            matTooltip="Drug Formulary" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Drug Formulary' : null">
-            <mat-icon aria-hidden="true">inventory_2</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Drug Formulary</span>
-            <span class="nav-count tone-danger" *ngIf="!isCollapsed() && (pharmacyMetrics()?.lowStockMedicinesCount || 0) > 0">
-              {{ pharmacyMetrics()?.lowStockMedicinesCount }}
-            </span>
-          </a>
-          <a routerLink="/pharmacy/requisitions" routerLinkActive="active" class="nav-item"
-            matTooltip="Stock Requisitions" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Stock Requisitions' : null">
-            <mat-icon aria-hidden="true">local_shipping</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Stock Requisitions</span>
-          </a>
-          <a routerLink="/pharmacy/audit" routerLinkActive="active" class="nav-item"
-            matTooltip="Controlled Safe Audit" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Controlled Safe Audit' : null">
-            <mat-icon aria-hidden="true">shield_locked</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Controlled Safe Audit</span>
-          </a>
-          <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Pharmacy' }" [class.active]="isBillingDeptActive('Pharmacy')" class="nav-item"
-            matTooltip="Dispensary Invoices" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dispensary Invoices' : null">
-            <mat-icon aria-hidden="true">receipt_long</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dispensary Invoices</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Inventory &amp; Compliance</div>
+      <a routerLink="/pharmacy/formulary" routerLinkActive="active" class="nav-item" matTooltip="Drug Formulary"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Drug Formulary' : null">
+        <mat-icon aria-hidden="true">inventory_2</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Drug Formulary</span>
+        <span class="nav-count tone-danger"
+          *ngIf="!isCollapsed() && (pharmacyMetrics()?.lowStockMedicinesCount || 0) > 0">
+          {{ pharmacyMetrics()?.lowStockMedicinesCount }}
+        </span>
+      </a>
+      <a routerLink="/pharmacy/requisitions" routerLinkActive="active" class="nav-item" matTooltip="Stock Requisitions"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Stock Requisitions' : null">
+        <mat-icon aria-hidden="true">local_shipping</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Stock Requisitions</span>
+      </a>
+      <a routerLink="/pharmacy/audit" routerLinkActive="active" class="nav-item" matTooltip="Controlled Safe Audit"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Controlled Safe Audit' : null">
+        <mat-icon aria-hidden="true">shield_locked</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Controlled Safe Audit</span>
+      </a>
+      <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Pharmacy' }"
+        [class.active]="isBillingDeptActive('Pharmacy')" class="nav-item" matTooltip="Dispensary Invoices"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dispensary Invoices' : null">
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dispensary Invoices</span>
+      </a>
+      }
 
-        @case ('Accountant') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Revenue &amp; Receivables</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Finance Overview" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Finance Overview' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Finance Overview</span>
-          </a>
-          <a routerLink="/billing" [queryParams]="{ tab: 'invoices' }" [class.active]="isBillingTabActive('invoices')" class="nav-item"
-            matTooltip="Invoices &amp; AR" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Invoices and AR' : null">
-            <mat-icon aria-hidden="true">receipt_long</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Invoices &amp; AR</span>
-          </a>
-          <a routerLink="/billing" [queryParams]="{ tab: 'claims' }" [class.active]="isBillingTabActive('claims')" class="nav-item"
-            matTooltip="Insurance Claims" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Insurance Claims' : null">
-            <mat-icon aria-hidden="true">health_and_safety</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Insurance Claims</span>
-            <span class="nav-count tone-info" *ngIf="!isCollapsed() && (financeMetrics()?.pendingClaimsCount || 0) > 0">
-              {{ financeMetrics()?.pendingClaimsCount }}
-            </span>
-          </a>
-          <a routerLink="/billing" [queryParams]="{ tab: 'adjustments' }" [class.active]="isBillingTabActive('adjustments')" class="nav-item"
-            matTooltip="Adjustments &amp; Refunds" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Adjustments and Refunds' : null">
-            <mat-icon aria-hidden="true">price_check</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Adjustments &amp; Refunds</span>
-          </a>
+      @case ('Accountant') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Revenue &amp; Receivables</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Finance Overview" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Finance Overview' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Finance Overview</span>
+      </a>
+      <a routerLink="/billing" [queryParams]="{ tab: 'invoices' }" [class.active]="isBillingTabActive('invoices')"
+        class="nav-item" matTooltip="Invoices &amp; AR" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Invoices and AR' : null">
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Invoices &amp; AR</span>
+      </a>
+      <a routerLink="/billing" [queryParams]="{ tab: 'claims' }" [class.active]="isBillingTabActive('claims')"
+        class="nav-item" matTooltip="Insurance Claims" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Insurance Claims' : null">
+        <mat-icon aria-hidden="true">health_and_safety</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Insurance Claims</span>
+        <span class="nav-count tone-info" *ngIf="!isCollapsed() && (financeMetrics()?.pendingClaimsCount || 0) > 0">
+          {{ financeMetrics()?.pendingClaimsCount }}
+        </span>
+      </a>
+      <a routerLink="/billing" [queryParams]="{ tab: 'adjustments' }" [class.active]="isBillingTabActive('adjustments')"
+        class="nav-item" matTooltip="Adjustments &amp; Refunds" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Adjustments and Refunds' : null">
+        <mat-icon aria-hidden="true">price_check</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Adjustments &amp; Refunds</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Payables &amp; Audit</div>
-          <a routerLink="/billing" [queryParams]="{ tab: 'expenses' }" [class.active]="isBillingTabActive('expenses')" class="nav-item"
-            matTooltip="Supplier Payables" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Supplier Payables' : null">
-            <mat-icon aria-hidden="true">account_balance_wallet</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Supplier Payables</span>
-          </a>
-          <a routerLink="/billing" [queryParams]="{ tab: 'petty-cash' }" [class.active]="isBillingTabActive('petty-cash')" class="nav-item"
-            matTooltip="Petty Cash" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Petty Cash' : null">
-            <mat-icon aria-hidden="true">payments</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Petty Cash</span>
-          </a>
-          <a routerLink="/billing" [queryParams]="{ tab: 'payroll' }" [class.active]="isBillingTabActive('payroll')" class="nav-item"
-            matTooltip="Payroll &amp; Commissions" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Payroll and Commissions' : null">
-            <mat-icon aria-hidden="true">badge</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Payroll &amp; Commissions</span>
-          </a>
-          <a routerLink="/billing" [queryParams]="{ tab: 'reconciliation' }" [class.active]="isBillingTabActive('reconciliation')" class="nav-item"
-            matTooltip="Shift Drawer Audits" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Shift Drawer Audits' : null">
-            <mat-icon aria-hidden="true">fact_check</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Shift Drawer Audits</span>
-            <span class="nav-count tone-danger" *ngIf="!isCollapsed() && (financeMetrics()?.unreconciledDrawersCount || 0) > 0">
-              {{ financeMetrics()?.unreconciledDrawersCount }}
-            </span>
-          </a>
-          <a routerLink="/reports" routerLinkActive="active" class="nav-item"
-            matTooltip="Financial Reports" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Financial Reports' : null">
-            <mat-icon aria-hidden="true">analytics</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Financial Reports</span>
-          </a>
-          <a routerLink="/schedules" routerLinkActive="active" class="nav-item"
-            matTooltip="Duty Schedule" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty Schedule' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Duty Schedule</span>
-          </a>
-          <a routerLink="/patients" routerLinkActive="active" class="nav-item"
-            matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients Directory' : null">
-            <mat-icon aria-hidden="true">people</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Patients Directory</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Payables &amp; Audit</div>
+      <a routerLink="/billing" [queryParams]="{ tab: 'expenses' }" [class.active]="isBillingTabActive('expenses')"
+        class="nav-item" matTooltip="Supplier Payables" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Supplier Payables' : null">
+        <mat-icon aria-hidden="true">account_balance_wallet</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Supplier Payables</span>
+      </a>
+      <a routerLink="/billing" [queryParams]="{ tab: 'petty-cash' }" [class.active]="isBillingTabActive('petty-cash')"
+        class="nav-item" matTooltip="Petty Cash" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Petty Cash' : null">
+        <mat-icon aria-hidden="true">payments</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Petty Cash</span>
+      </a>
+      <a routerLink="/billing" [queryParams]="{ tab: 'payroll' }" [class.active]="isBillingTabActive('payroll')"
+        class="nav-item" matTooltip="Payroll &amp; Commissions" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Payroll and Commissions' : null">
+        <mat-icon aria-hidden="true">badge</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Payroll &amp; Commissions</span>
+      </a>
+      <a routerLink="/billing" [queryParams]="{ tab: 'reconciliation' }"
+        [class.active]="isBillingTabActive('reconciliation')" class="nav-item" matTooltip="Shift Drawer Audits"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Shift Drawer Audits' : null">
+        <mat-icon aria-hidden="true">fact_check</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Shift Drawer Audits</span>
+        <span class="nav-count tone-danger"
+          *ngIf="!isCollapsed() && (financeMetrics()?.unreconciledDrawersCount || 0) > 0">
+          {{ financeMetrics()?.unreconciledDrawersCount }}
+        </span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item" matTooltip="Financial Reports"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Financial Reports' : null">
+        <mat-icon aria-hidden="true">analytics</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Financial Reports</span>
+      </a>
+      <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Duty Schedule"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty Schedule' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Duty Schedule</span>
+      </a>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patients Directory"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients Directory' : null">
+        <mat-icon aria-hidden="true">people</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Patients Directory</span>
+      </a>
+      }
 
-        @case ('LabTechnician') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Laboratory Workflow</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'worklist' }" [class.active]="isLabTabActive('worklist')" class="nav-item"
-            matTooltip="Diagnostic Worklist" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Diagnostic Worklist' : null">
-            <mat-icon aria-hidden="true">science</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Diagnostic Worklist</span>
-            <span class="nav-count tone-info" *ngIf="!isCollapsed() && (labMetrics()?.pendingOrders || 0) > 0">
-              {{ labMetrics()?.pendingOrders }}
-            </span>
-          </a>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'accession' }" [class.active]="isLabTabActive('accession')" class="nav-item"
-            matTooltip="Specimen Accession" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Specimen Accession' : null">
-            <mat-icon aria-hidden="true">qr_code_scanner</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Specimen Accession</span>
-          </a>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'execution' }" [class.active]="isLabTabActive('execution')" class="nav-item"
-            matTooltip="Analyzer &amp; Results" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Analyzer and Results' : null">
-            <mat-icon aria-hidden="true">precision_manufacturing</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Analyzer &amp; Results</span>
-            <span class="nav-count tone-danger" *ngIf="!isCollapsed() && (labMetrics()?.criticalValueAlerts || 0) > 0">
-              {{ labMetrics()?.criticalValueAlerts }}
-            </span>
-          </a>
+      @case ('LabTechnician') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Laboratory Workflow</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'worklist' }" [class.active]="isLabTabActive('worklist')"
+        class="nav-item" matTooltip="Diagnostic Worklist" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Diagnostic Worklist' : null">
+        <mat-icon aria-hidden="true">science</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Diagnostic Worklist</span>
+        <span class="nav-count tone-info" *ngIf="!isCollapsed() && (labMetrics()?.pendingOrders || 0) > 0">
+          {{ labMetrics()?.pendingOrders }}
+        </span>
+      </a>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'accession' }" [class.active]="isLabTabActive('accession')"
+        class="nav-item" matTooltip="Specimen Accession" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Specimen Accession' : null">
+        <mat-icon aria-hidden="true">qr_code_scanner</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Specimen Accession</span>
+      </a>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'execution' }" [class.active]="isLabTabActive('execution')"
+        class="nav-item" matTooltip="Analyzer &amp; Results" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Analyzer and Results' : null">
+        <mat-icon aria-hidden="true">precision_manufacturing</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Analyzer &amp; Results</span>
+        <span class="nav-count tone-danger" *ngIf="!isCollapsed() && (labMetrics()?.criticalValueAlerts || 0) > 0">
+          {{ labMetrics()?.criticalValueAlerts }}
+        </span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Reagents &amp; Quality</div>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'reagents' }" [class.active]="isLabTabActive('reagents')" class="nav-item"
-            matTooltip="Reagents &amp; Kits" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Reagents and Kits' : null">
-            <mat-icon aria-hidden="true">biotech</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Reagents &amp; Kits</span>
-          </a>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'requisitions' }" [class.active]="isLabTabActive('requisitions')" class="nav-item"
-            matTooltip="Supply Requisitions" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Supply Requisitions' : null">
-            <mat-icon aria-hidden="true">inventory</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Supply Requisitions</span>
-          </a>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'qc' }" [class.active]="isLabTabActive('qc')" class="nav-item"
-            matTooltip="Analyzer Quality Control" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Analyzer Quality Control' : null">
-            <mat-icon aria-hidden="true">health_and_safety</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Quality Control</span>
-          </a>
-          <a routerLink="/laboratory" [queryParams]="{ tab: 'catalog' }" [class.active]="isLabTabActive('catalog')" class="nav-item"
-            matTooltip="Test Catalog" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Test Catalog' : null">
-            <mat-icon aria-hidden="true">menu_book</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Test Catalog</span>
-          </a>
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Reagents &amp; Quality</div>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'reagents' }" [class.active]="isLabTabActive('reagents')"
+        class="nav-item" matTooltip="Reagents &amp; Kits" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Reagents and Kits' : null">
+        <mat-icon aria-hidden="true">biotech</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Reagents &amp; Kits</span>
+      </a>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'requisitions' }"
+        [class.active]="isLabTabActive('requisitions')" class="nav-item" matTooltip="Supply Requisitions"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Supply Requisitions' : null">
+        <mat-icon aria-hidden="true">inventory</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Supply Requisitions</span>
+      </a>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'qc' }" [class.active]="isLabTabActive('qc')" class="nav-item"
+        matTooltip="Analyzer Quality Control" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Analyzer Quality Control' : null">
+        <mat-icon aria-hidden="true">health_and_safety</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Quality Control</span>
+      </a>
+      <a routerLink="/laboratory" [queryParams]="{ tab: 'catalog' }" [class.active]="isLabTabActive('catalog')"
+        class="nav-item" matTooltip="Test Catalog" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Test Catalog' : null">
+        <mat-icon aria-hidden="true">menu_book</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Test Catalog</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Directory &amp; Billing</div>
-          <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Laboratory' }" [class.active]="isBillingDeptActive('Laboratory')" class="nav-item"
-            matTooltip="Lab Invoices" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Lab Invoices' : null">
-            <mat-icon aria-hidden="true">receipt_long</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Lab Invoices</span>
-          </a>
-          <a routerLink="/schedules" routerLinkActive="active" class="nav-item"
-            matTooltip="Duty Schedule" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty Schedule' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Duty Schedule</span>
-          </a>
-          <a routerLink="/patients" routerLinkActive="active" class="nav-item"
-            matTooltip="Patients Directory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients Directory' : null">
-            <mat-icon aria-hidden="true">people</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Patients Directory</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Directory &amp; Billing</div>
+      <a [routerLink]="['/billing']" [queryParams]="{ dept: 'Laboratory' }"
+        [class.active]="isBillingDeptActive('Laboratory')" class="nav-item" matTooltip="Lab Invoices"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Lab Invoices' : null">
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Lab Invoices</span>
+      </a>
+      <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Duty Schedule"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty Schedule' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Duty Schedule</span>
+      </a>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patients Directory"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients Directory' : null">
+        <mat-icon aria-hidden="true">people</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Patients Directory</span>
+      </a>
+      }
 
-        @case ('Radiologist') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Imaging &amp; PACS</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/doctor-inbasket" routerLinkActive="active" class="nav-item"
-            matTooltip="Sign-Off InBasket" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Sign-Off InBasket' : null">
-            <mat-icon aria-hidden="true">inbox</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Sign-Off InBasket</span>
-          </a>
-          <a routerLink="/radiology" [queryParams]="{ tab: 'worklist' }" [class.active]="isRadiologyTabActive('worklist') || isRadiologyTabActive('overview')" class="nav-item"
-            matTooltip="RIS Worklist" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'RIS Worklist' : null">
-            <mat-icon aria-hidden="true">view_list</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">RIS Worklist</span>
-            <span class="nav-count" *ngIf="!isCollapsed() && radiologyStudiesCount() > 0">{{ radiologyStudiesCount() }}</span>
-          </a>
-          <a routerLink="/radiology" [queryParams]="{ tab: 'viewer' }" [class.active]="isRadiologyTabActive('viewer')" class="nav-item"
-            matTooltip="PACS Viewer" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'PACS Viewer' : null">
-            <mat-icon aria-hidden="true">center_focus_strong</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">PACS Viewer</span>
-          </a>
-          <a routerLink="/radiology" [queryParams]="{ tab: 'reports' }" [class.active]="isRadiologyTabActive('reports')" class="nav-item"
-            matTooltip="Diagnostic Reports" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Diagnostic Reports' : null">
-            <mat-icon aria-hidden="true">assignment_turned_in</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Diagnostic Reports</span>
-            <span class="nav-count tone-warning" *ngIf="!isCollapsed() && radiologyUnreportedCount() > 0">
-              {{ radiologyUnreportedCount() }}
-            </span>
-          </a>
+      @case ('Radiologist') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Imaging &amp; PACS</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/doctor-inbasket" routerLinkActive="active" class="nav-item" matTooltip="Sign-Off InBasket"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Sign-Off InBasket' : null">
+        <mat-icon aria-hidden="true">inbox</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Sign-Off InBasket</span>
+      </a>
+      <a routerLink="/radiology" [queryParams]="{ tab: 'worklist' }"
+        [class.active]="isRadiologyTabActive('worklist') || isRadiologyTabActive('overview')" class="nav-item"
+        matTooltip="RIS Worklist" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'RIS Worklist' : null">
+        <mat-icon aria-hidden="true">view_list</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">RIS Worklist</span>
+        <span class="nav-count" *ngIf="!isCollapsed() && radiologyStudiesCount() > 0">{{ radiologyStudiesCount()
+          }}</span>
+      </a>
+      <a routerLink="/radiology" [queryParams]="{ tab: 'viewer' }" [class.active]="isRadiologyTabActive('viewer')"
+        class="nav-item" matTooltip="PACS Viewer" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'PACS Viewer' : null">
+        <mat-icon aria-hidden="true">center_focus_strong</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">PACS Viewer</span>
+      </a>
+      <a routerLink="/radiology" [queryParams]="{ tab: 'reports' }" [class.active]="isRadiologyTabActive('reports')"
+        class="nav-item" matTooltip="Diagnostic Reports" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Diagnostic Reports' : null">
+        <mat-icon aria-hidden="true">assignment_turned_in</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Diagnostic Reports</span>
+        <span class="nav-count tone-warning" *ngIf="!isCollapsed() && radiologyUnreportedCount() > 0">
+          {{ radiologyUnreportedCount() }}
+        </span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Safety &amp; Directory</div>
-          <a routerLink="/radiology" [queryParams]="{ tab: 'safety' }" [class.active]="isRadiologyTabActive('safety')" class="nav-item"
-            matTooltip="Radiation &amp; Contrast Log" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Radiation and Contrast Log' : null">
-            <mat-icon aria-hidden="true">shield</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Radiation &amp; Contrast Log</span>
-          </a>
-          <a routerLink="/radiology" [queryParams]="{ tab: 'suites' }" [class.active]="isRadiologyTabActive('suites')" class="nav-item"
-            matTooltip="Modality Suites" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Modality Suites' : null">
-            <mat-icon aria-hidden="true">meeting_room</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Modality Suites</span>
-          </a>
-          <a routerLink="/patients" routerLinkActive="active" class="nav-item"
-            matTooltip="Patient Directory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patient Directory' : null">
-            <mat-icon aria-hidden="true">folder_shared</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Patient Directory</span>
-          </a>
-          <a routerLink="/schedules" [queryParams]="{ dept: 'radiology' }" routerLinkActive="active" class="nav-item"
-            matTooltip="Modality Shifts" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Modality Shifts' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Modality Shifts</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Safety &amp; Directory</div>
+      <a routerLink="/radiology" [queryParams]="{ tab: 'safety' }" [class.active]="isRadiologyTabActive('safety')"
+        class="nav-item" matTooltip="Radiation &amp; Contrast Log" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Radiation and Contrast Log' : null">
+        <mat-icon aria-hidden="true">shield</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Radiation &amp; Contrast Log</span>
+      </a>
+      <a routerLink="/radiology" [queryParams]="{ tab: 'suites' }" [class.active]="isRadiologyTabActive('suites')"
+        class="nav-item" matTooltip="Modality Suites" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Modality Suites' : null">
+        <mat-icon aria-hidden="true">meeting_room</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Modality Suites</span>
+      </a>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patient Directory"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patient Directory' : null">
+        <mat-icon aria-hidden="true">folder_shared</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Patient Directory</span>
+      </a>
+      <a routerLink="/schedules" [queryParams]="{ dept: 'radiology' }" routerLinkActive="active" class="nav-item"
+        matTooltip="Modality Shifts" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Modality Shifts' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Modality Shifts</span>
+      </a>
+      }
 
-        @case ('Admin') {
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Overview</div>
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          <a routerLink="/reports" routerLinkActive="active" class="nav-item"
-            matTooltip="Enterprise Reports" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Enterprise Reports' : null">
-            <mat-icon aria-hidden="true">insights</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Enterprise Reports</span>
-          </a>
+      @case ('Admin') {
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Overview</div>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item" matTooltip="Enterprise Reports"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Enterprise Reports' : null">
+        <mat-icon aria-hidden="true">insights</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Enterprise Reports</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Identity &amp; Access</div>
-          <a routerLink="/users/directory" routerLinkActive="active" class="nav-item"
-            matTooltip="Staff Directory" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Staff Directory' : null">
-            <mat-icon aria-hidden="true">badge</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Staff Directory</span>
-          </a>
-          <a routerLink="/users/pbac" routerLinkActive="active" class="nav-item"
-            matTooltip="PBAC Permissions" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'PBAC Permissions' : null">
-            <mat-icon aria-hidden="true">lock_person</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">PBAC Permissions</span>
-          </a>
-          <a routerLink="/users/audit" routerLinkActive="active" class="nav-item"
-            matTooltip="HIPAA Audit Trail" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'HIPAA Audit Trail' : null">
-            <mat-icon aria-hidden="true">history_edu</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">HIPAA Audit Trail</span>
-          </a>
-          <a routerLink="/users/roster" routerLinkActive="active" class="nav-item"
-            matTooltip="Duty &amp; Delegations" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty and Delegations' : null">
-            <mat-icon aria-hidden="true">medical_services</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Duty &amp; Delegations</span>
-          </a>
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Identity &amp; Access</div>
+      <a routerLink="/users/directory" routerLinkActive="active" class="nav-item" matTooltip="Staff Directory"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Staff Directory' : null">
+        <mat-icon aria-hidden="true">badge</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Staff Directory</span>
+      </a>
+      <a routerLink="/users/pbac" routerLinkActive="active" class="nav-item" matTooltip="PBAC Permissions"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'PBAC Permissions' : null">
+        <mat-icon aria-hidden="true">lock_person</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">PBAC Permissions</span>
+      </a>
+      <a routerLink="/users/audit" routerLinkActive="active" class="nav-item" matTooltip="HIPAA Audit Trail"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'HIPAA Audit Trail' : null">
+        <mat-icon aria-hidden="true">history_edu</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">HIPAA Audit Trail</span>
+      </a>
+      <a routerLink="/users/roster" routerLinkActive="active" class="nav-item" matTooltip="Duty &amp; Delegations"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Duty and Delegations' : null">
+        <mat-icon aria-hidden="true">medical_services</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Duty &amp; Delegations</span>
+      </a>
 
-          <div class="nav-section-title" *ngIf="!isCollapsed()">Operations</div>
-          <a routerLink="/schedules" routerLinkActive="active" class="nav-item"
-            matTooltip="Doctor Schedules" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Doctor Schedules' : null">
-            <mat-icon aria-hidden="true">calendar_month</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Doctor Schedules</span>
-          </a>
-          <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
-            matTooltip="Master Patient Index" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Master Patient Index' : null">
-            <mat-icon aria-hidden="true">folder_shared</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Master Patient Index</span>
-          </a>
-        }
+      <div class="nav-section-title" *ngIf="!isCollapsed()">Operations</div>
+      <a routerLink="/schedules" routerLinkActive="active" class="nav-item" matTooltip="Doctor Schedules"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Doctor Schedules' : null">
+        <mat-icon aria-hidden="true">calendar_month</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Doctor Schedules</span>
+      </a>
+      <a routerLink="/patients" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item"
+        matTooltip="Master Patient Index" [matTooltipDisabled]="!isCollapsed()"
+        [attr.aria-label]="isCollapsed() ? 'Master Patient Index' : null">
+        <mat-icon aria-hidden="true">folder_shared</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Master Patient Index</span>
+      </a>
+      }
 
-        @default {
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-item"
-            matTooltip="Dashboard" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
-            <mat-icon aria-hidden="true">dashboard</mat-icon>
-            <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
-          </a>
-          @if (hasPermission('Patients.View')) {
-            <a routerLink="/patients" routerLinkActive="active" class="nav-item"
-              matTooltip="Patients" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients' : null">
-              <mat-icon aria-hidden="true">people</mat-icon>
-              <span class="nav-label" *ngIf="!isCollapsed()">Patients</span>
-            </a>
-          }
-          @if (hasPermission('Appointments.View')) {
-            <a routerLink="/appointments" routerLinkActive="active" class="nav-item"
-              matTooltip="Appointments" [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Appointments' : null">
-              <mat-icon aria-hidden="true">event_available</mat-icon>
-              <span class="nav-label" *ngIf="!isCollapsed()">Appointments</span>
-            </a>
-          }
-        }
+      @default {
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" matTooltip="Dashboard"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Dashboard' : null">
+        <mat-icon aria-hidden="true">dashboard</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Dashboard</span>
+      </a>
+      @if (hasPermission('Patients.View')) {
+      <a routerLink="/patients" routerLinkActive="active" class="nav-item" matTooltip="Patients"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Patients' : null">
+        <mat-icon aria-hidden="true">people</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Patients</span>
+      </a>
+      }
+      @if (hasPermission('Appointments.View')) {
+      <a routerLink="/appointments" routerLinkActive="active" class="nav-item" matTooltip="Appointments"
+        [matTooltipDisabled]="!isCollapsed()" [attr.aria-label]="isCollapsed() ? 'Appointments' : null">
+        <mat-icon aria-hidden="true">event_available</mat-icon>
+        <span class="nav-label" *ngIf="!isCollapsed()">Appointments</span>
+      </a>
+      }
+      }
       }
     </nav>
 
     <div class="sidebar-footer">
       @if (hasPermission('StaffDuty.ClockInOut') && activeSimulatedRole() !== 'Patient') {
-        @if (dutyService.currentDuty$ | async; as duty) {
-          <button
-            type="button"
-            class="duty-pill on-duty"
-            (click)="openDutyModal('info')"
-            [attr.aria-label]="'On duty in ' + duty.department + '. Manage shift'"
-            [matTooltip]="'On duty: ' + duty.department">
-            <span class="duty-indicator" aria-hidden="true"></span>
-            <span class="duty-text" *ngIf="!isCollapsed()">On Duty · {{ duty.department }}</span>
-          </button>
-        } @else {
-          <button
-            type="button"
-            class="duty-pill off-duty"
-            (click)="openDutyModal('clock-in')"
-            aria-label="Off duty. Click to clock in"
-            matTooltip="Off duty · Clock in">
-            <span class="duty-indicator" aria-hidden="true"></span>
-            <span class="duty-text" *ngIf="!isCollapsed()">Off Duty · Clock In</span>
-          </button>
-        }
+      @if (dutyService.currentDuty$ | async; as duty) {
+      <button type="button" class="duty-pill on-duty" (click)="openDutyModal('info')"
+        [attr.aria-label]="'On duty in ' + duty.department + '. Manage shift'"
+        [matTooltip]="'On duty: ' + duty.department">
+        <span class="duty-indicator" aria-hidden="true"></span>
+        <span class="duty-text" *ngIf="!isCollapsed()">On Duty · {{ duty.department }}</span>
+      </button>
+      } @else {
+      <button type="button" class="duty-pill off-duty" (click)="openDutyModal('clock-in')"
+        aria-label="Off duty. Click to clock in" matTooltip="Off duty · Clock in">
+        <span class="duty-indicator" aria-hidden="true"></span>
+        <span class="duty-text" *ngIf="!isCollapsed()">Off Duty · Clock In</span>
+      </button>
+      }
       }
 
       <div class="footer-user-row">
@@ -563,12 +598,7 @@
           </div>
         </div>
 
-        <button
-          mat-icon-button
-          type="button"
-          (click)="logout()"
-          aria-label="Sign out"
-          matTooltip="Sign out">
+        <button mat-icon-button type="button" (click)="logout()" aria-label="Sign out" matTooltip="Sign out">
           <mat-icon aria-hidden="true">logout</mat-icon>
         </button>
       </div>
@@ -578,44 +608,62 @@
   <div class="workspace-column">
     <header class="topbar">
       <div class="topbar-left">
-        <span class="workspace-label">{{ activeSimulatedRole() }} Workspace</span>
+        <span class="workspace-label" i18n="@@shell.workspaceLabel">{{ activeSimulatedRole() }} Workspace</span>
 
         @if (isDevMode || availableRoles().length > 1) {
-          <div class="role-switcher">
-            <label for="role-switcher-select" class="switcher-label">Role View</label>
-            <select
-              id="role-switcher-select"
-              class="switcher-select"
-              [ngModel]="activeSimulatedRole()"
-              (ngModelChange)="setRolePreview($event)">
-              @for (r of availableRoles(); track r) {
-                <option [value]="r">{{ r }}</option>
-              }
-            </select>
-          </div>
+        <div class="role-switcher">
+          <label for="role-switcher-select" class="switcher-label" i18n="@@shell.switchAccountLabel">Switch
+            Account</label>
+          <select id="role-switcher-select" class="switcher-select" [disabled]="isSwitchingAccount()"
+            [ngModel]="activeSimulatedRole()" (ngModelChange)="setRolePreview($event)">
+            @for (r of availableRoles(); track r) {
+            <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </div>
         }
       </div>
 
       <div class="topbar-right">
         @switch (activeSimulatedRole()) {
-          @case ('Admin') {
-            <a mat-stroked-button routerLink="/users/audit">Audit Trail</a>
-            <a mat-flat-button color="primary" routerLink="/users/directory">Staff Directory</a>
-          }
-          @case ('Patient') {
-            <a mat-flat-button color="primary" routerLink="/appointments/book">Book Appointment</a>
-          }
-          @case ('Receptionist') {
-            <a mat-stroked-button routerLink="/appointments/book">Book Appointment</a>
-            <a mat-flat-button color="primary" routerLink="/patients/new">New Patient</a>
-          }
-          @case ('Nurse') {
-            <a mat-stroked-button routerLink="/appointments/book">Book Appointment</a>
-            <a mat-flat-button color="primary" routerLink="/patients/new">New Patient</a>
-          }
+        @case ('Admin') {
+        <a mat-stroked-button routerLink="/users/audit" i18n="@@shell.auditTrail">Audit Trail</a>
+        <a mat-flat-button color="primary" routerLink="/users/directory" i18n="@@shell.staffDirectory">Staff
+          Directory</a>
+        }
+        @case ('Patient') {
+        <a mat-flat-button color="primary" routerLink="/appointments/book" i18n="@@shell.bookAppointment">Book
+          Appointment</a>
+        }
+        @case ('Receptionist') {
+        <a mat-stroked-button routerLink="/appointments/book" i18n="@@shell.bookAppointment">Book Appointment</a>
+        <a mat-flat-button color="primary" routerLink="/patients/new" i18n="@@shell.newPatient">New Patient</a>
+        }
+        @case ('Nurse') {
+        <a mat-stroked-button routerLink="/appointments/book" i18n="@@shell.bookAppointment">Book Appointment</a>
+        <a mat-flat-button color="primary" routerLink="/patients/new" i18n="@@shell.newPatient">New Patient</a>
+        }
         }
       </div>
     </header>
+
+    @if (liveSync.connectionState() === 'reconnecting' || liveSync.connectionState() === 'disconnected') {
+    <div class="sync-banner" [class.is-reconnecting]="liveSync.connectionState() === 'reconnecting'" role="status"
+      aria-live="polite">
+      <span class="sync-banner-text">
+        <mat-icon aria-hidden="true">{{ liveSync.connectionState() === 'reconnecting' ? 'sync' : 'cloud_off'
+          }}</mat-icon>
+        @if (liveSync.connectionState() === 'reconnecting') {
+        <span>Reconnecting to live clinical event stream...</span>
+        } @else {
+        <span>Live synchronization disconnected. Updates may not stream automatically.</span>
+        }
+      </span>
+      @if (liveSync.connectionState() === 'disconnected') {
+      <button mat-stroked-button type="button" (click)="liveSync.reconnect()">Reconnect</button>
+      }
+    </div>
+    }
 
     <main id="main-content" tabindex="-1" class="content-scroller">
       <router-outlet></router-outlet>
@@ -624,115 +672,108 @@
 </div>
 
 @if (showDutyModal) {
-  <div class="modal-backdrop" (click)="closeDutyModal()">
-    <div
-      class="modal-dialog duty-modal-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="duty-modal-title"
-      (click)="$event.stopPropagation()">
-      @if (dutyModalMode === 'clock-in') {
-        <div class="modal-header">
-          <div>
-            <h2 id="duty-modal-title" class="modal-title">Clock In to Active Roster</h2>
-            <p class="modal-subtitle">Register your department and shift assignment.</p>
-          </div>
-          <button mat-icon-button type="button" (click)="closeDutyModal()" aria-label="Close dialog">
-            <mat-icon aria-hidden="true">close</mat-icon>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Department / Clinical Unit</mat-label>
-            <mat-select [(ngModel)]="dutyDepartment">
-              <mat-option value="General Practice (OPD)">General Practice (OPD)</mat-option>
-              <mat-option value="Emergency Care &amp; Triage">Emergency Care &amp; Triage</mat-option>
-              <mat-option value="Pediatrics">Pediatrics</mat-option>
-              <mat-option value="Cardiology">Cardiology</mat-option>
-              <mat-option value="Laboratory &amp; Diagnostics">Laboratory &amp; Diagnostics</mat-option>
-              <mat-option value="Radiology &amp; Imaging">Radiology &amp; Imaging</mat-option>
-              <mat-option value="Pharmacy Dispensary">Pharmacy Dispensary</mat-option>
-              <mat-option value="Billing &amp; Reception">Billing &amp; Reception</mat-option>
-              <mat-option value="Administration">Administration</mat-option>
-              <mat-option value="ICU / Critical Care">ICU / Critical Care</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Shift Type</mat-label>
-            <mat-select [(ngModel)]="dutyShiftType">
-              <mat-option value="Day Shift (08:00 - 16:00)">Day Shift (08:00 - 16:00)</mat-option>
-              <mat-option value="Evening Shift (16:00 - 00:00)">Evening Shift (16:00 - 00:00)</mat-option>
-              <mat-option value="Night On-Call (00:00 - 08:00)">Night On-Call (00:00 - 08:00)</mat-option>
-              <mat-option value="Emergency Coverage">Emergency Coverage</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Shift Notes (Optional)</mat-label>
-            <textarea matInput rows="2" [(ngModel)]="dutyNotes" placeholder="e.g. Covering OPD consultations"></textarea>
-          </mat-form-field>
-        </div>
-
-        <div class="modal-footer">
-          <button mat-flat-button color="primary" type="button" (click)="handleClockIn()" [disabled]="dutyLoading">
-            {{ dutyLoading ? 'Clocking In...' : 'Clock In' }}
-          </button>
-          <button mat-stroked-button type="button" (click)="closeDutyModal()" [disabled]="dutyLoading">
-            Cancel
-          </button>
-        </div>
-      } @else {
-        <div class="modal-header">
-          <div>
-            <h2 id="duty-modal-title" class="modal-title">Active Duty Shift</h2>
-            <p class="modal-subtitle">Review your current roster session or clock out.</p>
-          </div>
-          <button mat-icon-button type="button" (click)="closeDutyModal()" aria-label="Close dialog">
-            <mat-icon aria-hidden="true">close</mat-icon>
-          </button>
-        </div>
-
-        <div class="modal-body" *ngIf="dutyService.currentDuty$ | async as shift">
-          <div class="duty-summary-card">
-            <div class="summary-row">
-              <span class="label">Staff Member</span>
-              <span class="val">{{ shift.userName }} ({{ shift.role }})</span>
-            </div>
-            <div class="summary-row">
-              <span class="label">Department</span>
-              <span class="val">{{ shift.department }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="label">Shift</span>
-              <span class="val">{{ shift.shiftType }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="label">Clock-In Time</span>
-              <span class="val val-success">{{ shift.clockInTimeUtc | date:'medium' }}</span>
-            </div>
-          </div>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Handover Notes (Optional)</mat-label>
-            <textarea
-              matInput
-              rows="3"
-              [(ngModel)]="dutyHandoverNotes"
-              placeholder="Summary of active cases or instructions for incoming staff..."></textarea>
-          </mat-form-field>
-        </div>
-
-        <div class="modal-footer">
-          <button mat-flat-button color="primary" type="button" (click)="handleClockOut()" [disabled]="dutyLoading">
-            {{ dutyLoading ? 'Clocking Out...' : 'Complete Shift & Clock Out' }}
-          </button>
-          <button mat-stroked-button type="button" (click)="closeDutyModal()" [disabled]="dutyLoading">
-            Close
-          </button>
-        </div>
-      }
+<div class="modal-backdrop" (click)="closeDutyModal()">
+  <div class="modal-dialog duty-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="duty-modal-title"
+    (click)="$event.stopPropagation()">
+    @if (dutyModalMode === 'clock-in') {
+    <div class="modal-header">
+      <div>
+        <h2 id="duty-modal-title" class="modal-title">Clock In to Active Roster</h2>
+        <p class="modal-subtitle">Register your department and shift assignment.</p>
+      </div>
+      <button mat-icon-button type="button" (click)="closeDutyModal()" aria-label="Close dialog">
+        <mat-icon aria-hidden="true">close</mat-icon>
+      </button>
     </div>
+
+    <div class="modal-body">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Department / Clinical Unit</mat-label>
+        <mat-select [(ngModel)]="dutyDepartment">
+          <mat-option value="General Practice (OPD)">General Practice (OPD)</mat-option>
+          <mat-option value="Emergency Care &amp; Triage">Emergency Care &amp; Triage</mat-option>
+          <mat-option value="Pediatrics">Pediatrics</mat-option>
+          <mat-option value="Cardiology">Cardiology</mat-option>
+          <mat-option value="Laboratory &amp; Diagnostics">Laboratory &amp; Diagnostics</mat-option>
+          <mat-option value="Radiology &amp; Imaging">Radiology &amp; Imaging</mat-option>
+          <mat-option value="Pharmacy Dispensary">Pharmacy Dispensary</mat-option>
+          <mat-option value="Billing &amp; Reception">Billing &amp; Reception</mat-option>
+          <mat-option value="Administration">Administration</mat-option>
+          <mat-option value="ICU / Critical Care">ICU / Critical Care</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Shift Type</mat-label>
+        <mat-select [(ngModel)]="dutyShiftType">
+          <mat-option value="Day Shift (08:00 - 16:00)">Day Shift (08:00 - 16:00)</mat-option>
+          <mat-option value="Evening Shift (16:00 - 00:00)">Evening Shift (16:00 - 00:00)</mat-option>
+          <mat-option value="Night On-Call (00:00 - 08:00)">Night On-Call (00:00 - 08:00)</mat-option>
+          <mat-option value="Emergency Coverage">Emergency Coverage</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Shift Notes (Optional)</mat-label>
+        <textarea matInput rows="2" [(ngModel)]="dutyNotes" placeholder="e.g. Covering OPD consultations"></textarea>
+      </mat-form-field>
+    </div>
+
+    <div class="modal-footer">
+      <button mat-flat-button color="primary" type="button" (click)="handleClockIn()" [disabled]="dutyLoading">
+        {{ dutyLoading ? 'Clocking In...' : 'Clock In' }}
+      </button>
+      <button mat-stroked-button type="button" (click)="closeDutyModal()" [disabled]="dutyLoading">
+        Cancel
+      </button>
+    </div>
+    } @else {
+    <div class="modal-header">
+      <div>
+        <h2 id="duty-modal-title" class="modal-title">Active Duty Shift</h2>
+        <p class="modal-subtitle">Review your current roster session or clock out.</p>
+      </div>
+      <button mat-icon-button type="button" (click)="closeDutyModal()" aria-label="Close dialog">
+        <mat-icon aria-hidden="true">close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="dutyService.currentDuty$ | async as shift">
+      <div class="duty-summary-card">
+        <div class="summary-row">
+          <span class="label">Staff Member</span>
+          <span class="val">{{ shift.userName }} ({{ shift.role }})</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Department</span>
+          <span class="val">{{ shift.department }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Shift</span>
+          <span class="val">{{ shift.shiftType }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Clock-In Time</span>
+          <span class="val val-success">{{ shift.clockInTimeUtc | date:'medium' }}</span>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Handover Notes (Optional)</mat-label>
+        <textarea matInput rows="3" [(ngModel)]="dutyHandoverNotes"
+          placeholder="Summary of active cases or instructions for incoming staff..."></textarea>
+      </mat-form-field>
+    </div>
+
+    <div class="modal-footer">
+      <button mat-flat-button color="primary" type="button" (click)="handleClockOut()" [disabled]="dutyLoading">
+        {{ dutyLoading ? 'Clocking Out...' : 'Complete Shift & Clock Out' }}
+      </button>
+      <button mat-stroked-button type="button" (click)="closeDutyModal()" [disabled]="dutyLoading">
+        Close
+      </button>
+    </div>
+    }
   </div>
+</div>
 }

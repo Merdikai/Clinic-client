@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -20,6 +20,7 @@ import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.com
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
+import { PagedResponse, Patient } from '../../models/patient.model';
 import {
   CreateLabEquipmentLogRequest,
   CreateLabOrderRequest,
@@ -30,6 +31,7 @@ import {
   LabOrder,
   LabOrderItem,
   LabParameterResult,
+  LabParameterTemplate,
   LabReagent,
   LabResultFlag,
   LabStockRequisition,
@@ -41,6 +43,16 @@ import {
   UpdateLabTestTemplateRequest,
   UpdateReagentStockRequest
 } from '../../models/lab.model';
+
+interface ResultParameterEntry {
+  name: string;
+  unit: string;
+  minRef?: number;
+  maxRef?: number;
+  normalText?: string;
+  value: string | number;
+  flag: LabResultFlag;
+}
 
 @Component({
   selector: 'app-laboratory',
@@ -62,7 +74,8 @@ import {
     EmptyStateComponent
   ],
   templateUrl: './laboratory.component.html',
-  styleUrls: ['./laboratory.component.scss']
+  styleUrls: ['./laboratory.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LaboratoryComponent implements OnInit {
   authService = inject(AuthService);
@@ -103,7 +116,7 @@ export class LaboratoryComponent implements OnInit {
   selectedTab = signal<number>(0);
 
   // Entities & Data Signals
-  patients = signal<any[]>([]);
+  patients = signal<Patient[]>([]);
   reagents = signal<LabReagent[]>([]);
   requisitions = signal<LabStockRequisition[]>([]);
   equipmentLogs = signal<LabEquipmentLog[]>([]);
@@ -227,15 +240,7 @@ export class LaboratoryComponent implements OnInit {
   });
 
   // Result entry parameters
-  resultParameters = signal<Array<{
-    name: string;
-    unit: string;
-    minRef?: number;
-    maxRef?: number;
-    normalText?: string;
-    value: string | number;
-    flag: LabResultFlag;
-  }>>([]);
+  resultParameters = signal<ResultParameterEntry[]>([]);
   resultRemarks = signal<string>('');
 
   // Catalog Filter State
@@ -424,8 +429,8 @@ export class LaboratoryComponent implements OnInit {
 
   loadPatients() {
     this.patientService.getAll(1, 100).subscribe({
-      next: (res: any) => {
-        this.patients.set(res.items || (Array.isArray(res) ? res : []));
+      next: (res: PagedResponse<Patient> | Patient[]) => {
+        this.patients.set(Array.isArray(res) ? res : (res.items ?? []));
       },
       error: () => {}
     });
@@ -671,10 +676,13 @@ export class LaboratoryComponent implements OnInit {
     this.resultRemarks.set(item.result?.remarks || '');
 
     const template = this.labStore.templates().find(t => t.id === item.labTestTemplateId);
-    let params: any[] = [];
+    let params: LabParameterTemplate[] = [];
     if (template && template.parametersJson) {
       try {
-        params = JSON.parse(template.parametersJson);
+        const parsed: unknown = JSON.parse(template.parametersJson);
+        if (Array.isArray(parsed)) {
+          params = parsed as LabParameterTemplate[];
+        }
       } catch {
         params = [];
       }
@@ -713,8 +721,8 @@ export class LaboratoryComponent implements OnInit {
     this.resultParameters.set([]);
   }
 
-  evaluateParamFlag(param: any) {
-    const val = parseFloat(param.value);
+  evaluateParamFlag(param: ResultParameterEntry) {
+    const val = parseFloat(String(param.value));
     if (isNaN(val)) {
       param.flag = 'Normal';
       return;
@@ -1081,9 +1089,19 @@ export class LaboratoryComponent implements OnInit {
   }
 
   // --- Helper Formatting ---
-  getParsedParameters(json: string): any[] {
+  getParsedParameters(json: string): LabParameterTemplate[] {
     try {
-      return JSON.parse(json);
+      const parsed: unknown = JSON.parse(json);
+      return Array.isArray(parsed) ? (parsed as LabParameterTemplate[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  getParsedResultParameters(json: string): LabParameterResult[] {
+    try {
+      const parsed: unknown = JSON.parse(json);
+      return Array.isArray(parsed) ? (parsed as LabParameterResult[]) : [];
     } catch {
       return [];
     }

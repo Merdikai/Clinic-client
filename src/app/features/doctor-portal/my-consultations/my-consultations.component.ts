@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -21,8 +21,10 @@ import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.componen
 import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 
+import { HttpErrorResponse } from '@angular/common/http';
 import { Appointment } from '../../../models/appointment.model';
-import { Patient } from '../../../models/patient.model';
+import { PagedResponse, Patient } from '../../../models/patient.model';
+import { extractProblemDetailsMessage } from '../../../models/api.model';
 import { CreateConsultationRequest } from '../../../models/consultation.model';
 import { Medicine } from '../../../models/medicine.model';
 import { LabTestTemplate } from '../../../models/lab.model';
@@ -63,7 +65,8 @@ interface NursingProcedureDraft {
     EmptyStateComponent
   ],
   templateUrl: './my-consultations.component.html',
-  styleUrls: ['./my-consultations.component.scss']
+  styleUrls: ['./my-consultations.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MyAppointmentsConsultationsComponent implements OnInit {
   private appointmentService = inject(AppointmentService);
@@ -244,16 +247,16 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
   loadData() {
     this.isLoading.set(true);
     this.appointmentService.getMyAppointments().subscribe({
-      next: (res: any) => {
-        const list = Array.isArray(res) ? res : (res?.items || []);
+      next: (res: Appointment[] | PagedResponse<Appointment>) => {
+        const list = Array.isArray(res) ? res : (res?.items ?? []);
         this.appointments.set(list);
         this.isLoading.set(false);
         this.checkRouteAppointment(list);
       },
       error: () => {
         this.appointmentService.getAll(1, 100).subscribe({
-          next: (allRes: any) => {
-            const list = allRes?.items || allRes || [];
+          next: (allRes: PagedResponse<Appointment> | Appointment[]) => {
+            const list = Array.isArray(allRes) ? allRes : (allRes?.items ?? []);
             this.appointments.set(list);
             this.isLoading.set(false);
             this.checkRouteAppointment(list);
@@ -264,11 +267,15 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
     });
 
     this.patientService.getAll(1, 100).subscribe({
-      next: (res: any) => this.patients.set(res?.items || res || [])
+      next: (res: PagedResponse<Patient> | Patient[]) => {
+        this.patients.set(Array.isArray(res) ? res : (res?.items ?? []));
+      }
     });
 
     this.medicineService.getAll(1, 100).subscribe({
-      next: (res: any) => this.medicines.set(res?.items || res || [])
+      next: (res: PagedResponse<Medicine> | Medicine[]) => {
+        this.medicines.set(Array.isArray(res) ? res : (res?.items ?? []));
+      }
     });
 
     this.labService.getTemplates().subscribe({
@@ -277,14 +284,14 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
   }
 
   private checkRouteAppointment(list: Appointment[]) {
-    const targetApptId = this.route.snapshot.queryParams['appointmentId'];
+    const targetApptId = this.route.snapshot.queryParams['appointmentId'] as string | undefined;
     if (targetApptId) {
       const target = list.find((a: Appointment) => a.id?.toLowerCase() === targetApptId.toLowerCase());
       if (target) {
         this.openEncounter(target);
       } else {
         this.appointmentService.getById(targetApptId).subscribe({
-          next: (appt: any) => {
+          next: (appt: Appointment) => {
             if (appt) {
               this.openEncounter(appt);
             }
@@ -309,7 +316,8 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
         this.toast.success(`Appointment for ${appt.patientName} approved and scheduled.`);
         this.loadData();
       },
-      error: (err: any) => this.toast.error('Failed to approve appointment: ' + (err.error?.detail || err.message))
+      error: (err: HttpErrorResponse) =>
+        this.toast.error('Failed to approve appointment: ' + extractProblemDetailsMessage(err.error, err.message))
     });
   }
 
@@ -442,7 +450,7 @@ export class MyAppointmentsConsultationsComponent implements OnInit {
       return;
     }
 
-    const user: any = this.authService.currentUser();
+    const user = this.authService.currentUser();
     const payload = {
       appointmentId: appt.id,
       consultationId: appt.id,

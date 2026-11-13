@@ -1,20 +1,23 @@
-import { Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { UserManagementService, UserDto, CreateUserDto } from '../../services/user-management.service';
-import { PermissionService } from '../../services/permission.service';
-import { EmrAccessService, EmrAccessAuditLog } from '../../services/emr-access.service';
+import { PermissionService, RolePermissionMatrixDto } from '../../services/permission.service';
+import { EmrAccessService, EmrAccessAuditLog, PagedResponse } from '../../services/emr-access.service';
 import { StaffDutyService, StaffDutyShift, DoctorDelegation } from '../../services/staff-duty.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../ui/toast/toast.service';
+import { extractProblemDetailsMessage } from '../../models/api.model';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
@@ -34,6 +37,7 @@ export interface PermissionItem {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    ScrollingModule,
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
@@ -45,7 +49,8 @@ export interface PermissionItem {
     EmptyStateComponent
   ],
   templateUrl: './user-management.component.html',
-  styleUrls: ['./user-management.component.scss']
+  styleUrls: ['./user-management.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserManagementComponent implements OnInit {
   private userService = inject(UserManagementService);
@@ -451,13 +456,13 @@ export class UserManagementComponent implements OnInit {
   loadUsers(): void {
     this.loadingUsers.set(true);
     this.userService.getUsers().subscribe({
-      next: (res) => {
-        let list: any[] = [];
+      next: (res: UserDto[] | { data?: UserDto[]; items?: UserDto[] }) => {
+        let list: (UserDto & { createdDate?: string })[] = [];
         if (Array.isArray(res)) list = res;
-        else if (res && Array.isArray((res as any).data)) list = (res as any).data;
-        else if (res && Array.isArray((res as any).items)) list = (res as any).items;
+        else if (res && Array.isArray(res.data)) list = res.data;
+        else if (res && Array.isArray(res.items)) list = res.items;
 
-        const mapped: UserDto[] = list.map(u => ({
+        const mapped: UserDto[] = list.map((u) => ({
           id: u.id || u.userId || '',
           userName: u.userName || u.username || '',
           email: u.email || '',
@@ -621,11 +626,11 @@ export class UserManagementComponent implements OnInit {
   loadMatrixPermissions(role: string): void {
     this.loadingMatrix.set(true);
     this.permissionService.getRolePermissions(role).subscribe({
-      next: (res: any) => {
+      next: (res: RolePermissionMatrixDto[] | (RolePermissionMatrixDto & { role?: string; permissions?: string[] })) => {
         let rawPerms: string[] = [];
         if (Array.isArray(res)) {
-          const item = res.find((r: any) => (r.roleName || r.role || '').toLowerCase() === role.toLowerCase());
-          rawPerms = item?.grantedPermissions || item?.permissions || [];
+          const item = res.find((r) => (r.roleName || '').toLowerCase() === role.toLowerCase());
+          rawPerms = item?.grantedPermissions ?? [];
         } else if (res) {
           rawPerms = res.grantedPermissions || res.permissions || [];
         }
@@ -699,8 +704,8 @@ export class UserManagementComponent implements OnInit {
         this.isSavingMatrix.set(false);
         this.permissionService.loadAllPermissions();
       },
-      error: (err: any) => {
-        this.toast.error(err.error?.message || 'Failed to update role permissions.');
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(extractProblemDetailsMessage(err.error, 'Failed to update role permissions.'));
         this.isSavingMatrix.set(false);
       }
     });
@@ -710,11 +715,11 @@ export class UserManagementComponent implements OnInit {
   loadAuditLogs(): void {
     this.loadingAudit.set(true);
     this.emrAccessService.getAuditLogs(1, 50, undefined, this.emergencyOnlyFilter()).subscribe({
-      next: (res) => {
+      next: (res: PagedResponse<EmrAccessAuditLog> | EmrAccessAuditLog[] | { data?: EmrAccessAuditLog[] }) => {
         let list: EmrAccessAuditLog[] = [];
-        if (Array.isArray(res)) list = res as any;
-        else if (res && Array.isArray(res.items)) list = res.items;
-        else if (res && Array.isArray((res as any).data)) list = (res as any).data;
+        if (Array.isArray(res)) list = res;
+        else if ('items' in res && Array.isArray(res.items)) list = res.items;
+        else if ('data' in res && Array.isArray(res.data)) list = res.data;
 
         this.auditLogs.set(list);
         this.loadingAudit.set(false);
@@ -830,14 +835,14 @@ export class UserManagementComponent implements OnInit {
       const full = (u.fullName || '').toLowerCase();
       const user = (u.userName || u.username || '').toLowerCase();
       return (delSearch && (full.includes(delSearch) || user.includes(delSearch))) ||
-             (full && delSearch.includes(full));
+        (full && delSearch.includes(full));
     });
 
     const coveringDoc = this.users().find(u => {
       const full = (u.fullName || '').toLowerCase();
       const user = (u.userName || u.username || '').toLowerCase();
       return (covSearch && (full.includes(covSearch) || user.includes(covSearch))) ||
-             (full && covSearch.includes(full));
+        (full && covSearch.includes(full));
     });
 
     let startDateIso: string;
@@ -912,10 +917,15 @@ export class UserManagementComponent implements OnInit {
     return map[accessType] || accessType;
   }
 
+  trackByAuditId = (_index: number, item: EmrAccessAuditLog): string =>
+    item.id || item.accessedAtUtc;
+
   getUserInitials(user: UserDto): string {
-    if (user.firstName && user.lastName) return (user.firstName[0] + user.lastName[0]).toUpperCase();
-    if (user.firstName) return user.firstName[0].toUpperCase();
-    if (user.userName) return user.userName[0].toUpperCase();
+    const f = user.firstName?.[0] ?? '';
+    const l = user.lastName?.[0] ?? '';
+    if (f && l) return (f + l).toUpperCase();
+    if (f) return f.toUpperCase();
+    if (user.userName?.[0]) return user.userName[0].toUpperCase();
     return 'U';
   }
 

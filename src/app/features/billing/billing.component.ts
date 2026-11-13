@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -25,7 +25,15 @@ import {
   PettyCashVoucher,
   PayrollRecord
 } from '../../models/finance.model';
+import { Patient, PagedResponse } from '../../models/patient.model';
+import { Invoice } from '../../models/billing.model';
 import { DailyCashReconciliationResponse } from '../../models/reception.model';
+
+interface ServicePreset {
+  readonly label: string;
+  readonly desc: string;
+  readonly price: number;
+}
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
@@ -51,7 +59,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
     EmptyStateComponent
   ],
   templateUrl: './billing.component.html',
-  styleUrls: ['./billing.component.scss']
+  styleUrls: ['./billing.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BillingComponent implements OnInit {
   public permissionService = inject(PermissionService);
@@ -153,7 +162,7 @@ export class BillingComponent implements OnInit {
   reconciliationsLoading = signal(false);
 
   // Patients list for selects
-  patients = signal<any[]>([]);
+  patients = signal<Patient[]>([]);
 
   // Filter signals
   claimStatusFilter = signal<string>('All');
@@ -167,7 +176,7 @@ export class BillingComponent implements OnInit {
 
   // Modals & Drawers
   showNewInvoiceModal = signal(false);
-  selectedInvoiceForPay = signal<any | null>(null);
+  selectedInvoiceForPay = signal<Invoice | null>(null);
   paymentAmountInput = 0;
   paymentMethodInput = 'Cash';
   paymentReferenceInput = '';
@@ -249,7 +258,7 @@ export class BillingComponent implements OnInit {
   activePdfInvoiceId = signal<string | null>(null);
   selectedPdfDesign = signal<'ExecutiveNavy' | 'ModernEmerald' | 'ClinicalCyan'>('ExecutiveNavy');
 
-  servicePresets = [
+  servicePresets: readonly ServicePreset[] = [
     { label: 'General Consultation ($50.00)', desc: 'General Medical Consultation', price: 50 },
     { label: 'Comprehensive Diagnostic Lab ($120.00)', desc: 'Diagnostic Laboratory Screening', price: 120 },
     { label: 'Specialist Follow-up ($85.00)', desc: 'Physician Specialist Follow-up Consultation', price: 85 },
@@ -461,8 +470,8 @@ export class BillingComponent implements OnInit {
 
   loadPatients(): void {
     this.patientService.getAll(1, 100).subscribe({
-      next: (res: any) => {
-        const list = res.items || (Array.isArray(res) ? res : []);
+      next: (res: PagedResponse<Patient> | Patient[]) => {
+        const list = Array.isArray(res) ? res : (res.items ?? []);
         this.patients.set(list);
       },
       error: () => this.patients.set([])
@@ -543,7 +552,7 @@ export class BillingComponent implements OnInit {
   }
 
   // Invoice Operations
-  applyPreset(preset: any): void {
+  applyPreset(preset: ServicePreset): void {
     if (preset.desc) {
       this.invoiceForm.patchValue({
         description: preset.desc,
@@ -552,7 +561,7 @@ export class BillingComponent implements OnInit {
     }
   }
 
-  openPaymentDialog(invoice: any): void {
+  openPaymentDialog(invoice: Invoice): void {
     this.selectedInvoiceForPay.set(invoice);
     this.paymentAmountInput = invoice.balanceDue;
     this.paymentMethodInput = 'Cash';
@@ -625,7 +634,7 @@ export class BillingComponent implements OnInit {
   }
 
   // Claims Operations
-  openNewClaimModal(invoice?: any): void {
+  openNewClaimModal(invoice?: Invoice): void {
     if (invoice) {
       this.newClaimForm.patchValue({
         invoiceId: invoice.id,
@@ -707,7 +716,7 @@ export class BillingComponent implements OnInit {
   }
 
   // Adjustments Operations
-  openNewAdjustmentModal(invoice?: any): void {
+  openNewAdjustmentModal(invoice?: Invoice): void {
     if (invoice) {
       this.newAdjustmentForm.patchValue({
         invoiceId: invoice.id,

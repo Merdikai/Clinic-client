@@ -1,10 +1,11 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 export type SkeletonVariant = 'text' | 'row' | 'card' | 'avatar' | 'table';
 
 @Component({
   selector: 'app-skeleton',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="skeleton-host"

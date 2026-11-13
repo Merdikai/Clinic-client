@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -7,6 +7,7 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
   selector: 'app-not-found',
   standalone: true,
   imports: [RouterModule, MatButtonModule, StatusChipComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <main id="main-content" tabindex="-1" class="error-page" aria-labelledby="error-title">
@@ -79,4 +80,4 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
     }
   `]
 })
-export class NotFoundComponent {}
+export class NotFoundComponent { }

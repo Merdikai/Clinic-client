@@ -1,11 +1,13 @@
 import { inject, computed } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { setAllEntities, addEntity, updateEntity, withEntities } from '@ngrx/signals/entities';
+import { setAllEntities, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of, exhaustMap } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { LabService } from '../services/lab.service';
 import { LabOrder, LabTestTemplate, LabMetrics } from '../models/lab.model';
-import { ToastService } from '../ui/toast/toast.service';
+import { PagedResponse } from '../models/patient.model';
+import { extractProblemDetailsMessage } from '../models/api.model';
 
 interface LabState {
   isLoading: boolean;
@@ -33,8 +35,10 @@ export const LabStore = signalStore(
   withState(initialLabState),
   withComputed((state) => ({
     allOrders: computed(() => state.entities()),
-    activeOrders: computed(() => state.entities().filter(o => o.status !== 'Completed' && o.status !== 'Cancelled')),
-    completedOrders: computed(() => state.entities().filter(o => o.status === 'Completed')),
+    activeOrders: computed(() =>
+      state.entities().filter((o) => o.status !== 'Completed' && o.status !== 'Cancelled')
+    ),
+    completedOrders: computed(() => state.entities().filter((o) => o.status === 'Completed')),
     filteredOrders: computed(() => {
       let list = state.entities();
       const s = state.searchFilter().toLowerCase().trim();
@@ -42,34 +46,38 @@ export const LabStore = signalStore(
       const priority = state.priorityFilter();
 
       if (status !== 'ALL') {
-        list = list.filter(o => o.status === status);
+        list = list.filter((o) => o.status === status);
       }
       if (priority !== 'ALL') {
-        list = list.filter(o => o.priority === priority);
+        list = list.filter((o) => o.priority === priority);
       }
       if (s) {
-        list = list.filter(o =>
-          o.orderNumber.toLowerCase().includes(s) ||
-          o.patientName.toLowerCase().includes(s) ||
-          o.patientMedicalRecordNumber.toLowerCase().includes(s)
+        list = list.filter(
+          (o) =>
+            o.orderNumber.toLowerCase().includes(s) ||
+            o.patientName.toLowerCase().includes(s) ||
+            o.patientMedicalRecordNumber.toLowerCase().includes(s)
         );
       }
       return list;
     })
   })),
-  withMethods((store, labService = inject(LabService), toast = inject(ToastService)) => ({
+  withMethods((store, labService = inject(LabService)) => ({
     loadOrders: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
         switchMap(() =>
           labService.getOrders(1, 100).pipe(
             tap({
-              next: (res: any) => {
-                const items: LabOrder[] = res.items || (Array.isArray(res) ? res : []);
+              next: (res: PagedResponse<LabOrder> | LabOrder[]) => {
+                const items: LabOrder[] = Array.isArray(res) ? res : res.items ?? [];
                 patchState(store, setAllEntities(items), { isLoading: false });
               },
-              error: (err) => {
-                patchState(store, { isLoading: false, error: err.message || 'Failed to load lab orders' });
+              error: (err: HttpErrorResponse) => {
+                patchState(store, {
+                  isLoading: false,
+                  error: extractProblemDetailsMessage(err.error, err.message || 'Failed to load lab orders')
+                });
               }
             }),
             catchError(() => of(null))
@@ -98,7 +106,7 @@ export const LabStore = signalStore(
           labService.getMetrics().pipe(
             tap({
               next: (metrics) => patchState(store, { metrics }),
-              error: () => {}
+              error: () => { }
             }),
             catchError(() => of(null))
           )
@@ -106,29 +114,29 @@ export const LabStore = signalStore(
       )
     ),
 
-    setSearchFilter(searchFilter: string) {
+    setSearchFilter(searchFilter: string): void {
       patchState(store, { searchFilter });
     },
 
-    setStatusFilter(statusFilter: string) {
+    setStatusFilter(statusFilter: string): void {
       patchState(store, { statusFilter });
     },
 
-    setPriorityFilter(priorityFilter: string) {
+    setPriorityFilter(priorityFilter: string): void {
       patchState(store, { priorityFilter });
     },
 
-    addTemplate(template: LabTestTemplate) {
+    addTemplate(template: LabTestTemplate): void {
       patchState(store, { templates: [template, ...store.templates()] });
     },
 
-    updateTemplateInStore(template: LabTestTemplate) {
-      const updated = store.templates().map(t => t.id === template.id ? template : t);
+    updateTemplateInStore(template: LabTestTemplate): void {
+      const updated = store.templates().map((t) => (t.id === template.id ? template : t));
       patchState(store, { templates: updated });
     },
 
-    removeTemplateFromStore(id: string) {
-      const remaining = store.templates().filter(t => t.id !== id);
+    removeTemplateFromStore(id: string): void {
+      const remaining = store.templates().filter((t) => t.id !== id);
       patchState(store, { templates: remaining });
     }
   }))

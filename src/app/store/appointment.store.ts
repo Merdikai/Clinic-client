@@ -2,20 +2,25 @@ import { inject, computed } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
 import { setAllEntities, updateEntity, withEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, exhaustMap } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AppointmentService } from '../services/appointment.service';
-import { Appointment } from '../models/appointment.model';
+import { Appointment, VitalSignsSnapshot } from '../models/appointment.model';
+import { PagedResponse } from '../models/patient.model';
+import { extractProblemDetailsMessage } from '../models/api.model';
 import { ToastService } from '../ui/toast/toast.service';
 
 interface AppointmentMetadataState {
   selectedDate: Date | null;
   isLoading: boolean;
+  isMutating: boolean;
   error: string | null;
 }
 
 const initialMetadataState: AppointmentMetadataState = {
   selectedDate: null,
   isLoading: false,
+  isMutating: false,
   error: null
 };
 
@@ -37,12 +42,15 @@ export const AppointmentStore = signalStore(
         switchMap(() =>
           apptService.getAll().pipe(
             tap({
-              next: (res: any) => {
-                const items = Array.isArray(res) ? res : res?.items || [];
+              next: (res: PagedResponse<Appointment> | Appointment[]) => {
+                const items = Array.isArray(res) ? res : res?.items ?? [];
                 patchState(store, setAllEntities(items), { isLoading: false });
               },
-              error: (err) => {
-                patchState(store, { isLoading: false, error: err.message || 'Failed to load appointments' });
+              error: (err: HttpErrorResponse) => {
+                patchState(store, {
+                  isLoading: false,
+                  error: extractProblemDetailsMessage(err.error, err.message || 'Failed to load appointments')
+                });
               }
             }),
             catchError(() => of(null))
@@ -51,73 +59,102 @@ export const AppointmentStore = signalStore(
       )
     ),
 
-    updateAppointmentVitals(appointmentId: string, vitalSigns: any) {
+    updateAppointmentVitals(appointmentId: string, vitalSigns: VitalSignsSnapshot): void {
       patchState(store, updateEntity({ id: appointmentId, changes: { vitalSigns } }));
     },
 
-    setSelectedDate(date: Date | null) {
+    setSelectedDate(date: Date | null): void {
       patchState(store, { selectedDate: date });
     },
 
-    // TMS Pattern: Optimistic check-in with rollback
-    approve(appointmentId: string) {
-      const original = store.entities().find(a => a.id === appointmentId);
-      if (!original) return;
+    approve: rxMethod<string>(
+      pipe(
+        exhaustMap((appointmentId) => {
+          const original = store.entities().find((a) => a.id === appointmentId);
+          if (!original) return of(null);
 
-      // Optimistic update
-      patchState(store, updateEntity({ id: appointmentId, changes: { status: 'Scheduled' } }));
-      toast.info('Approving appointment...');
+          patchState(store, updateEntity({ id: appointmentId, changes: { status: 'Scheduled' } }), {
+            isMutating: true
+          });
+          toast.info('Approving appointment...');
 
-      apptService.approveAppointment(appointmentId).subscribe({
-        next: () => {
-          toast.success('Appointment approved and scheduled!');
-        },
-        error: (err) => {
-          patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
-          toast.error('Approval failed: ' + (err.error?.detail || err.error?.message || err.message || 'Server error'));
-        }
-      });
-    },
+          return apptService.approveAppointment(appointmentId).pipe(
+            tap({
+              next: () => {
+                patchState(store, { isMutating: false });
+                toast.success('Appointment approved and scheduled!');
+              },
+              error: (err: HttpErrorResponse) => {
+                patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }), {
+                  isMutating: false
+                });
+                toast.error(`Approval failed: ${extractProblemDetailsMessage(err.error, 'Server error')}`);
+              }
+            }),
+            catchError(() => of(null))
+          );
+        })
+      )
+    ),
 
-    checkIn(appointmentId: string) {
-      const original = store.entities().find(a => a.id === appointmentId);
-      if (!original) return;
+    checkIn: rxMethod<string>(
+      pipe(
+        exhaustMap((appointmentId) => {
+          const original = store.entities().find((a) => a.id === appointmentId);
+          if (!original) return of(null);
 
-      // Optimistic update
-      patchState(store, updateEntity({ id: appointmentId, changes: { status: 'CheckedIn' } }));
-      toast.info('Patient checked in');
+          patchState(store, updateEntity({ id: appointmentId, changes: { status: 'CheckedIn' } }), {
+            isMutating: true
+          });
+          toast.info('Checking in patient...');
 
-      apptService.checkIn(appointmentId).subscribe({
-        next: () => {
-          toast.success('Check-in confirmed');
-        },
-        error: (err) => {
-          // Rollback on error
-          patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
-          toast.error(`Check-in failed: ${err.error?.detail || err.error?.message || err.message || 'Server error'}`);
-        }
-      });
-    },
+          return apptService.checkIn(appointmentId).pipe(
+            tap({
+              next: () => {
+                patchState(store, { isMutating: false });
+                toast.success('Check-in confirmed');
+              },
+              error: (err: HttpErrorResponse) => {
+                patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }), {
+                  isMutating: false
+                });
+                toast.error(`Check-in failed: ${extractProblemDetailsMessage(err.error, 'Server error')}`);
+              }
+            }),
+            catchError(() => of(null))
+          );
+        })
+      )
+    ),
 
-    // TMS Pattern: Optimistic cancellation with rollback
-    cancel(appointmentId: string) {
-      const original = store.entities().find(a => a.id === appointmentId);
-      if (!original) return;
+    cancel: rxMethod<string>(
+      pipe(
+        exhaustMap((appointmentId) => {
+          const original = store.entities().find((a) => a.id === appointmentId);
+          if (!original) return of(null);
 
-      // Optimistic update
-      patchState(store, updateEntity({ id: appointmentId, changes: { status: 'Cancelled' } }));
-      toast.info('Appointment cancelled');
+          patchState(store, updateEntity({ id: appointmentId, changes: { status: 'Cancelled' } }), {
+            isMutating: true
+          });
+          toast.info('Cancelling appointment...');
 
-      apptService.cancel(appointmentId).subscribe({
-        next: () => {
-          toast.success('Cancellation confirmed');
-        },
-        error: (err) => {
-          // Rollback on error
-          patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }));
-          toast.error(`Cancellation failed: ${err.error?.detail || err.error?.message || err.message || 'Server error'}`);
-        }
-      });
-    }
+          return apptService.cancel(appointmentId).pipe(
+            tap({
+              next: () => {
+                patchState(store, { isMutating: false });
+                toast.success('Cancellation confirmed');
+              },
+              error: (err: HttpErrorResponse) => {
+                patchState(store, updateEntity({ id: appointmentId, changes: { status: original.status } }), {
+                  isMutating: false
+                });
+                toast.error(`Cancellation failed: ${extractProblemDetailsMessage(err.error, 'Server error')}`);
+              }
+            }),
+            catchError(() => of(null))
+          );
+        })
+      )
+    )
   }))
 );

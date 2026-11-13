@@ -45,6 +45,9 @@
             "browser": "src/main.ts",
             "index": "src/index.html",
             "tsConfig": "tsconfig.app.json",
+            "polyfills": [
+              "@angular/localize/init"
+            ],
             "preserveSymlinks": true,
             "inlineStyleLanguage": "scss",
             "assets": [

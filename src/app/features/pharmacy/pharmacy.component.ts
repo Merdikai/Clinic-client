@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
@@ -26,7 +26,8 @@ import {
 } from '../../services/pharmacy.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { LiveSyncService } from '../../services/live-sync.service';
-import { Medicine } from '../../models/medicine.model';
+import { CreateMedicineRequest, Medicine } from '../../models/medicine.model';
+import { Prescription } from '../../models/prescription.model';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatusChipComponent, StatusTone } from '../../shared/ui/status-chip/status-chip.component';
@@ -52,7 +53,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.com
     EmptyStateComponent
   ],
   templateUrl: './pharmacy.component.html',
-  styleUrls: ['./pharmacy.component.scss']
+  styleUrls: ['./pharmacy.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PharmacyComponent implements OnInit {
   public permissionService = inject(PermissionService);
@@ -115,7 +117,7 @@ export class PharmacyComponent implements OnInit {
   loadingMetrics = signal<boolean>(true);
 
   // Prescription Queue
-  prescriptions = signal<any[]>([]);
+  prescriptions = signal<Prescription[]>([]);
   rxStatusFilter = signal<'All' | 'Pending' | 'Dispensed'>('Pending');
   prescriptionSearch = signal<string>('');
   quickRxCodeInput = signal<string>('');
@@ -155,7 +157,7 @@ export class PharmacyComponent implements OnInit {
 
   // Dispensing Verification Modal
   showDispenseModal = signal<boolean>(false);
-  activeDispenseRx = signal<any | null>(null);
+  activeDispenseRx = signal<Prescription | null>(null);
   verificationNotesInput = signal<string>('');
 
   // Processing state
@@ -329,8 +331,8 @@ export class PharmacyComponent implements OnInit {
     const search = this.prescriptionSearch().trim().toLowerCase();
     if (search) {
       list = list.filter(rx =>
-        rx.patientName.toLowerCase().includes(search) ||
-        rx.patientMrn.toLowerCase().includes(search) ||
+        (rx.patientName || '').toLowerCase().includes(search) ||
+        (rx.patientMrn || '').toLowerCase().includes(search) ||
         (rx.doctorName && rx.doctorName.toLowerCase().includes(search)) ||
         rx.id.toLowerCase().includes(search)
       );
@@ -472,7 +474,7 @@ export class PharmacyComponent implements OnInit {
   });
 
   // PRESCRIPTION ACTIONS
-  openDispenseModal(rx: any): void {
+  openDispenseModal(rx: Prescription): void {
     this.activeDispenseRx.set(rx);
     this.verificationNotesInput.set('Clinical dosage, frequency, and patient drug-allergy profile checked & verified.');
     this.showDispenseModal.set(true);
@@ -677,7 +679,7 @@ export class PharmacyComponent implements OnInit {
     this.isProcessing.set(true);
 
     const val = this.medicineForm.value;
-    const payload: any = {
+    const payload: CreateMedicineRequest = {
       name: val.name!.trim(),
       genericName: val.genericName?.trim() || undefined,
       code: val.code!.trim(),
@@ -773,7 +775,7 @@ export class PharmacyComponent implements OnInit {
   // REQUISITION ACTIONS
   openRequisitionModal(): void {
     this.requisitionForm.reset({
-      medicineId: this.medicineStore.medicines().length > 0 ? this.medicineStore.medicines()[0].id : '',
+      medicineId: this.medicineStore.medicines()[0]?.id ?? '',
       quantityRequested: 100,
       type: 'PurchaseOrder',
       department: 'Main Central Pharmacy',

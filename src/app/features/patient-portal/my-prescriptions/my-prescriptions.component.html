@@ -54,7 +54,7 @@
       </div>
 
       <div class="rx-meds-list">
-        @for (item of (rx.items?.length ? rx.items : [{
+        @for (item of (rx.items.length ? rx.items : [{
         medicineName: rx.medicineName || 'Cetirizine 10mg',
         quantity: rx.quantity || 2,
         dosageInstructions: rx.dosageInstructions || '1 tablet once daily in the evening after food for 14 days'
@@ -132,7 +132,12 @@
 
         <h3 class="modal-subheading">Prescribed Medications</h3>
         <div class="modal-meds-list">
-          @for (item of (rx.items?.length ? rx.items : [rx]); track $index) {
+          @for (item of (rx.items.length ? rx.items : [{
+            medicineName: rx.medicineName || 'Prescribed Drug',
+            genericName: rx.genericName,
+            dosageInstructions: rx.dosageInstructions || 'Take as directed by your physician',
+            quantity: rx.quantity || 1
+          }]); track $index) {
           <div class="modal-med-row">
             <div class="med-info">
               <strong>{{ item.medicineName || rx.medicineName || 'Prescribed Drug' }}</strong>

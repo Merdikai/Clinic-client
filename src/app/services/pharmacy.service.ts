@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Medicine } from '../models/medicine.model';
+import { DispenseResponse, Prescription } from '../models/prescription.model';
+import { Invoice } from '../models/billing.model';
 
 export interface PharmacyMetrics {
   pendingPrescriptionsCount: number;
@@ -116,19 +118,19 @@ export class PharmacyService {
   }
 
   // PRESCRIPTIONS DISPENSARY QUEUE
-  getPrescriptions(status?: string, patientId?: string): Observable<any[]> {
+  getPrescriptions(status?: string, patientId?: string): Observable<Prescription[]> {
     let params = new HttpParams();
     if (status) params = params.set('status', status);
     if (patientId) params = params.set('patientId', patientId);
-    return this.http.get<any[]>(this.prescriptionsUrl, { params });
+    return this.http.get<Prescription[]>(this.prescriptionsUrl, { params });
   }
 
-  dispensePrescription(id: string, verificationNotes?: string): Observable<any> {
-    return this.http.post<any>(`${this.prescriptionsUrl}/${id}/dispense`, { verificationNotes });
+  dispensePrescription(id: string, verificationNotes?: string): Observable<DispenseResponse> {
+    return this.http.post<DispenseResponse>(`${this.prescriptionsUrl}/${id}/dispense`, { verificationNotes });
   }
 
-  generateInvoice(id: string): Observable<any> {
-    return this.http.post<any>(`${this.prescriptionsUrl}/${id}/invoice`, {});
+  generateInvoice(id: string): Observable<Invoice> {
+    return this.http.post<Invoice>(`${this.prescriptionsUrl}/${id}/invoice`, {});
   }
 
   getPrescriptionLabel(id: string, itemId?: string): Observable<PrescriptionLabel[]> {

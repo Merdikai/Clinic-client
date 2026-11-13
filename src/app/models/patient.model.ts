@@ -12,6 +12,8 @@ export interface Patient {
   bloodType?: string;
   allergies?: string;
   emergencyContact?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
   nationalId?: string;
   insuranceProvider?: string;
   insurancePolicyNumber?: string;
@@ -31,6 +33,8 @@ export interface CreatePatientRequest {
   bloodGroup?: string;
   allergies?: string;
   emergencyContact?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
   nationalId?: string;
   insuranceProvider?: string;
   insurancePolicyNumber?: string;

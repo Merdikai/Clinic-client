@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -10,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { DoctorScheduleService } from '../../services/doctor-schedule.service';
-import { DoctorService } from '../../services/doctor.service';
+import { DoctorDto, DoctorService } from '../../services/doctor.service';
 import { UserDto, UserManagementService } from '../../services/user-management.service';
 import { CreateDoctorScheduleRequest, DoctorSchedule } from '../../models/doctor-schedule.model';
 import { AuthService } from '../../services/auth.service';
@@ -62,7 +62,8 @@ export interface UnifiedShiftItem {
     EmptyStateComponent
   ],
   templateUrl: './doctor-schedules.component.html',
-  styleUrls: ['./doctor-schedules.component.scss']
+  styleUrls: ['./doctor-schedules.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DoctorSchedulesComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -109,7 +110,7 @@ export class DoctorSchedulesComponent implements OnInit {
   );
 
   schedules = signal<DoctorSchedule[]>([]);
-  doctors = signal<any[]>([]);
+  doctors = signal<DoctorDto[]>([]);
   realClinicUsers = signal<UserDto[]>([]);
   editingShiftId = signal<string | null>(null);
   isEditMode = computed(() => this.editingShiftId() !== null);
@@ -611,10 +612,10 @@ export class DoctorSchedulesComponent implements OnInit {
   currentUserDisplayName = computed<string>(() => {
     const user = this.authService.currentUser();
     if (!user) return '';
-    const fullName = (user as any).fullName || '';
-    const firstName = (user as any).firstName || '';
-    const lastName = (user as any).lastName || '';
-    const username = (user as any).username || (user as any).userName || '';
+    const fullName = user.fullName || '';
+    const firstName = user.firstName || '';
+    const lastName = user.lastName || '';
+    const username = user.username || user.userName || '';
     const combined = `${firstName} ${lastName}`.trim();
     return fullName || combined || username;
   });
@@ -624,7 +625,7 @@ export class DoctorSchedulesComponent implements OnInit {
     const rawName = this.currentUserDisplayName().toLowerCase().trim();
     const userId = (this.currentUserId() || '').toLowerCase();
     const user = this.authService.currentUser();
-    const username = ((user as any)?.username || (user as any)?.userName || '').toLowerCase().trim();
+    const username = (user?.username || user?.userName || '').toLowerCase().trim();
     const userRoles = (this.authService.userRoles() || []).map(r => r.toLowerCase());
     const isReceptionist = userRoles.includes('receptionist');
 
@@ -677,7 +678,7 @@ export class DoctorSchedulesComponent implements OnInit {
 
   loadAllRealClinicStaff(): void {
     this.userService.getUsers().subscribe({
-      next: (res: any) => {
+      next: (res: UserDto[] | { data?: UserDto[]; items?: UserDto[] }) => {
         let list: UserDto[] = [];
         if (Array.isArray(res)) list = res;
         else if (res && Array.isArray(res.data)) list = res.data;
@@ -842,8 +843,8 @@ export class DoctorSchedulesComponent implements OnInit {
     this.scheduleForm.patchValue({ department: dept });
     this.customStaffMode.set(false);
     const staffList = this.availableStaffForSelectedDept();
-    if (staffList.length > 0) {
-      const first = staffList[0];
+    const first = staffList[0];
+    if (first) {
       this.selectedStaffDropdown.set(first.name);
       this.scheduleForm.patchValue({
         staffName: first.name,
@@ -938,10 +939,11 @@ export class DoctorSchedulesComponent implements OnInit {
     this.doctorService.getAllDoctors().subscribe({
       next: (docs) => {
         const docList = docs || [];
-        if (docList.length > 0) {
+        const firstDoc = docList[0];
+        if (firstDoc) {
           this.doctors.set(docList);
           if (!this.scheduleForm.get('staffName')?.value) {
-            this.scheduleForm.patchValue({ staffName: `Dr. ${docList[0].firstName} ${docList[0].lastName}` });
+            this.scheduleForm.patchValue({ staffName: `Dr. ${firstDoc.firstName} ${firstDoc.lastName}` });
           }
         } else {
           this.fallbackToUserDoctors();
@@ -953,25 +955,27 @@ export class DoctorSchedulesComponent implements OnInit {
 
   private fallbackToUserDoctors(): void {
     this.userService.getUsers().subscribe({
-      next: (res: any) => {
-        let list: any[] = [];
+      next: (res: UserDto[] | { data?: UserDto[]; items?: UserDto[] }) => {
+        let list: UserDto[] = [];
         if (Array.isArray(res)) list = res;
         else if (res && Array.isArray(res.data)) list = res.data;
         else if (res && Array.isArray(res.items)) list = res.items;
 
-        const docUsers = list.filter(u => {
+        const docUsers: DoctorDto[] = list.filter(u => {
           const roles = u.roles || (u.role ? [u.role] : []);
           return roles.some((r: string) => r.toLowerCase() === 'doctor' || r.toLowerCase() === 'admin');
         }).map(u => ({
-          id: u.id || u.userId,
+          id: u.id || u.userId || '',
           firstName: u.firstName || u.userName || 'Doctor',
           lastName: u.lastName || '',
+          fullName: u.fullName,
           email: u.email || ''
         }));
 
         this.doctors.set(docUsers);
-        if (docUsers.length > 0 && !this.scheduleForm.get('staffName')?.value) {
-          this.scheduleForm.patchValue({ staffName: `Dr. ${docUsers[0].firstName} ${docUsers[0].lastName}` });
+        const firstUserDoc = docUsers[0];
+        if (firstUserDoc && !this.scheduleForm.get('staffName')?.value) {
+          this.scheduleForm.patchValue({ staffName: `Dr. ${firstUserDoc.firstName} ${firstUserDoc.lastName}` });
         }
       },
       error: () => { }

@@ -3,26 +3,27 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Appointment, CreateAppointmentRequest, UpdateAppointmentTriageRequest, UpdateAppointmentStatusRequest } from '../models/appointment.model';
+import { PagedResponse } from '../models/patient.model';
 
 @Injectable({ providedIn: 'root' })
 export class AppointmentService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/appointments`;
 
-  getAll(page = 1, pageSize = 50, patientId?: string, status?: string): Observable<any> {
+  getAll(page = 1, pageSize = 50, patientId?: string, status?: string): Observable<PagedResponse<Appointment> | Appointment[]> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
-    
+
     if (patientId) params = params.set('patientId', patientId);
     if (status) params = params.set('status', status);
 
-    return this.http.get<any>(this.apiUrl, { params });
+    return this.http.get<PagedResponse<Appointment> | Appointment[]>(this.apiUrl, { params });
   }
 
-  getPatientAppointments(patientId: string): Observable<any> {
+  getPatientAppointments(patientId: string): Observable<PagedResponse<Appointment> | Appointment[]> {
     const params = new HttpParams().set('patientId', patientId);
-    return this.http.get<any>(this.apiUrl, { params });
+    return this.http.get<PagedResponse<Appointment> | Appointment[]>(this.apiUrl, { params });
   }
 
   create(request: CreateAppointmentRequest): Observable<Appointment> {
@@ -46,12 +47,12 @@ export class AppointmentService {
     return this.http.get<Appointment[]>(`${this.apiUrl}/doctor/${doctorId}`, { params });
   }
 
-  approveAppointment(id: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/approve`, {});
+  approveAppointment(id: string): Observable<Appointment | void> {
+    return this.http.patch<Appointment | void>(`${this.apiUrl}/${id}/approve`, {});
   }
 
-  checkIn(id: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/checkin`, {});
+  checkIn(id: string): Observable<Appointment | void> {
+    return this.http.patch<Appointment | void>(`${this.apiUrl}/${id}/checkin`, {});
   }
 
   checkInWithDetails(id: string, tokenNumber?: string, visitType?: string): Observable<Appointment> {
@@ -66,8 +67,8 @@ export class AppointmentService {
     return this.http.patch<Appointment>(`${this.apiUrl}/${id}/no-show`, { notes: notes || null });
   }
 
-  cancel(id: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/cancel`, {});
+  cancel(id: string): Observable<Appointment | void> {
+    return this.http.patch<Appointment | void>(`${this.apiUrl}/${id}/cancel`, {});
   }
 
   updateTriage(id: string, request: UpdateAppointmentTriageRequest): Observable<Appointment> {

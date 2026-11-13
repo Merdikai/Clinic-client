@@ -1,14 +1,16 @@
-import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 
 import { AppointmentService } from '../../../services/appointment.service';
-import { PatientService } from '../../../services/patient.service';
+import { MedicalHistoryVisitDto, PatientMedicalHistoryDto, PatientService } from '../../../services/patient.service';
 import { Appointment } from '../../../models/appointment.model';
-import { Patient } from '../../../models/patient.model';
+import { PagedResponse, Patient } from '../../../models/patient.model';
+import { ResultEnvelope, extractProblemDetailsMessage, unwrapResult } from '../../../models/api.model';
 import { ToastService } from '../../../ui/toast/toast.service';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
@@ -30,16 +32,17 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.
     EmptyStateComponent
   ],
   templateUrl: './my-appointments.component.html',
-  styleUrls: ['./my-appointments.component.scss']
+  styleUrls: ['./my-appointments.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MyAppointmentsComponent implements OnInit {
-  private appointmentService = inject(AppointmentService);
-  private patientService = inject(PatientService);
-  private toast = inject(ToastService);
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly patientService = inject(PatientService);
+  private readonly toast = inject(ToastService);
 
   patient = signal<Patient | null>(null);
   appointments = signal<Appointment[]>([]);
-  medicalHistoryVisits = signal<any[]>([]);
+  medicalHistoryVisits = signal<readonly MedicalHistoryVisitDto[]>([]);
   isLoading = signal(true);
   selectedFilter = signal<'ALL' | 'SCHEDULED' | 'PENDING' | 'COMPLETED'>('ALL');
 
@@ -49,16 +52,16 @@ export class MyAppointmentsComponent implements OnInit {
   isCancelling = signal(false);
 
   pageSubtitle = computed(() => {
-    const mrn = this.patient()?.medicalRecordNumber || 'PAT-ALICE-001';
+    const mrn = this.patient()?.medicalRecordNumber || 'Pending Verification';
     return `MRN: ${mrn} · View confirmed appointments, consultation results, recorded vitals, and pending visit requests`;
   });
 
   filteredAppointments = computed(() => {
     const list = this.appointments();
     const filter = this.selectedFilter();
-    if (filter === 'SCHEDULED') return list.filter(a => a.status === 'Scheduled');
-    if (filter === 'PENDING') return list.filter(a => a.status === 'PendingApproval');
-    if (filter === 'COMPLETED') return list.filter(a => a.status === 'Completed');
+    if (filter === 'SCHEDULED') return list.filter((a) => a.status === 'Scheduled');
+    if (filter === 'PENDING') return list.filter((a) => a.status === 'PendingApproval');
+    if (filter === 'COMPLETED') return list.filter((a) => a.status === 'Completed');
     return list;
   });
 
@@ -82,30 +85,16 @@ export class MyAppointmentsComponent implements OnInit {
         this.fetchMedicalHistory(pat.id);
       },
       error: () => {
-        const fallbackId = 'a11ce000-0000-0000-0000-000000000001';
-        this.patient.set({
-          id: fallbackId,
-          firstName: 'Alice',
-          lastName: 'Patient',
-          medicalRecordNumber: 'PAT-ALICE-001',
-          dateOfBirth: '1992-04-15',
-          gender: 'Female',
-          phone: '+1 (555) 666-7777',
-          email: 'alice.patient@clinic.com',
-          address: '742 Evergreen Terrace, Springfield',
-          bloodGroup: 'O+',
-          emergencyContact: 'Bob Patient (+1 555-999-8888)'
-        } as any);
-        this.fetchPatientAppointments(fallbackId);
-        this.fetchMedicalHistory(fallbackId);
+        this.isLoading.set(false);
+        this.toast.error('Unable to load your patient profile. Please sign in with your patient account.');
       }
     });
   }
 
   fetchPatientAppointments(patientId: string) {
     this.appointmentService.getAll(1, 50, patientId).subscribe({
-      next: (res: any) => {
-        const appts = Array.isArray(res) ? res : res?.items || [];
+      next: (res: PagedResponse<Appointment> | Appointment[]) => {
+        const appts = Array.isArray(res) ? res : (res.items ?? []);
         this.appointments.set(appts);
         this.isLoading.set(false);
       },
@@ -115,15 +104,16 @@ export class MyAppointmentsComponent implements OnInit {
 
   fetchMedicalHistory(patientId: string) {
     this.patientService.getMedicalHistory(patientId).subscribe({
-      next: (res: any) => {
-        const visits = res?.value?.visits || res?.visits || [];
-        this.medicalHistoryVisits.set(visits);
-      }
+      next: (res: PatientMedicalHistoryDto | ResultEnvelope<PatientMedicalHistoryDto>) => {
+        const dto = unwrapResult(res);
+        this.medicalHistoryVisits.set(dto.visits ?? []);
+      },
+      error: () => {}
     });
   }
 
-  getVisitResultForAppt(apptId: string) {
-    return this.medicalHistoryVisits().find(v => v.appointmentId === apptId);
+  getVisitResultForAppt(apptId: string): MedicalHistoryVisitDto | undefined {
+    return this.medicalHistoryVisits().find((v) => v.appointmentId === apptId);
   }
 
   statusLabel(status: string): string {
@@ -150,13 +140,14 @@ export class MyAppointmentsComponent implements OnInit {
         this.isCancelling.set(false);
         this.closeCancelModal();
         this.toast.success('Appointment cancelled successfully.');
-        if (this.patient()?.id) {
-          this.fetchPatientAppointments(this.patient()!.id);
+        const currentPat = this.patient();
+        if (currentPat?.id) {
+          this.fetchPatientAppointments(currentPat.id);
         }
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         this.isCancelling.set(false);
-        this.toast.error(err.error?.detail || err.error?.message || 'Failed to cancel appointment');
+        this.toast.error(extractProblemDetailsMessage(err.error, 'Failed to cancel appointment'));
       }
     });
   }

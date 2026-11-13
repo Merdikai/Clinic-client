@@ -1,13 +1,17 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { of } from 'rxjs';
+import { catchError, retry } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { PermissionService } from '../services/permission.service';
 import { StaffDutyService } from '../services/staff-duty.service';
@@ -25,13 +29,15 @@ import { RadiologyService } from '../services/radiology.service';
 import { NursingService } from '../services/nursing.service';
 import { UserManagementService } from '../services/user-management.service';
 import { EmrAccessService } from '../services/emr-access.service';
+import { Appointment } from '../models/appointment.model';
+import { PagedResponse, Patient } from '../models/patient.model';
+import { extractProblemDetailsMessage } from '../models/api.model';
 import { environment } from '../../environments/environment';
-import { of } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     RouterModule,
@@ -50,53 +56,64 @@ import { catchError, retry } from 'rxjs/operators';
   styleUrls: ['./shell.component.scss']
 })
 export class ShellComponent implements OnInit {
-  authService = inject(AuthService);
-  permissionService = inject(PermissionService);
-  dutyService = inject(StaffDutyService);
-  liveSync = inject(LiveSyncService);
-  themeService = inject(ThemeService);
-  toast = inject(ToastService);
-  pharmacyService = inject(PharmacyService);
-  financeService = inject(FinanceService);
-  labService = inject(LabService);
-  patientService = inject(PatientService);
-  appointmentService = inject(AppointmentService);
-  router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly authService = inject(AuthService);
+  readonly permissionService = inject(PermissionService);
+  readonly dutyService = inject(StaffDutyService);
+  readonly liveSync = inject(LiveSyncService);
+  readonly themeService = inject(ThemeService);
+  readonly toast = inject(ToastService);
+  readonly pharmacyService = inject(PharmacyService);
+  readonly financeService = inject(FinanceService);
+  readonly labService = inject(LabService);
+  readonly patientService = inject(PatientService);
+  readonly appointmentService = inject(AppointmentService);
+  readonly router = inject(Router);
+  private readonly radiologyService = inject(RadiologyService);
+  private readonly nursingService = inject(NursingService);
+  private readonly userService = inject(UserManagementService);
+  private readonly emrAccessService = inject(EmrAccessService);
 
-  isCollapsed = signal<boolean>(false);
-  currentUser = this.authService.currentUser;
-  pharmacyMetrics = signal<PharmacyMetrics | null>(null);
-  financeMetrics = signal<FinanceDashboardMetrics | null>(null);
-  labMetrics = signal<LabMetrics | null>(null);
+  private readonly devAccountPresets: Readonly<Record<string, { readonly username: string; readonly password: string }>> = {
+    Admin: { username: 'admin', password: 'Admin@123456!' },
+    Doctor: { username: 'dr.smith', password: 'Doctor@12345!' },
+    Nurse: { username: 'nurse.joy', password: 'Nurse@123456!' },
+    Receptionist: { username: 'receptionist.clara', password: 'Receptionist@12!' },
+    Pharmacist: { username: 'pharmacist.sam', password: 'Pharmacist@1!' },
+    LabTechnician: { username: 'lab.tech', password: 'LabTech@123!' },
+    Radiologist: { username: 'radiologist.ray', password: 'Radiology@123!' },
+    Accountant: { username: 'accountant.dave', password: 'Accountant@1!' },
+    Patient: { username: 'patient.alice', password: 'Patient@1234!' }
+  };
 
-  // Environment & Role simulation gating
-  isDevMode = !environment.production;
+  readonly isCollapsed = signal<boolean>(false);
+  readonly isSwitchingAccount = signal<boolean>(false);
+  readonly currentUser = this.authService.currentUser;
+  readonly pharmacyMetrics = signal<PharmacyMetrics | null>(null);
+  readonly financeMetrics = signal<FinanceDashboardMetrics | null>(null);
+  readonly labMetrics = signal<LabMetrics | null>(null);
 
-  // Role Counts & Nav Metric Signals
-  totalPatientsCount = signal<number>(0);
-  doctorPanelCount = signal<number>(0);
-  activeAppointmentsCount = signal<number>(0);
-  todayConsultationsCount = signal<number>(0);
-  pendingInvoicesCount = signal<number>(0);
-  inbasketPendingCount = signal<number>(0);
-  labCatalogCount = signal<number>(0);
-  radiologyStudiesCount = signal<number>(0);
-  radiologyUnreportedCount = signal<number>(0);
-  radiologyCriticalCount = signal<number>(0);
-  radiologySafetyCount = signal<number>(0);
-  private radiologyService = inject(RadiologyService);
-  private nursingService = inject(NursingService);
-  private userService = inject(UserManagementService);
-  private emrAccessService = inject(EmrAccessService);
-  nurseProceduresCount = signal<number>(0);
+  readonly isDevMode = !environment.production;
 
-  // Admin IAM & Governance Signals
-  adminStaffUsersCount = signal<number>(0);
-  adminActiveDutyCount = signal<number>(0);
-  adminAuditLogsCount = signal<number>(0);
-  adminDelegationsCount = signal<number>(0);
+  readonly totalPatientsCount = signal<number>(0);
+  readonly doctorPanelCount = signal<number>(0);
+  readonly activeAppointmentsCount = signal<number>(0);
+  readonly todayConsultationsCount = signal<number>(0);
+  readonly pendingInvoicesCount = signal<number>(0);
+  readonly inbasketPendingCount = signal<number>(0);
+  readonly labCatalogCount = signal<number>(0);
+  readonly radiologyStudiesCount = signal<number>(0);
+  readonly radiologyUnreportedCount = signal<number>(0);
+  readonly radiologyCriticalCount = signal<number>(0);
+  readonly radiologySafetyCount = signal<number>(0);
+  readonly nurseProceduresCount = signal<number>(0);
 
-  adminDisplayName = computed(() => {
+  readonly adminStaffUsersCount = signal<number>(0);
+  readonly adminActiveDutyCount = signal<number>(0);
+  readonly adminAuditLogsCount = signal<number>(0);
+  readonly adminDelegationsCount = signal<number>(0);
+
+  readonly adminDisplayName = computed(() => {
     const user = this.currentUser();
     if (!user) return 'System Administrator';
     if (user.fullName && user.fullName !== 'User') return user.fullName;
@@ -104,9 +121,9 @@ export class ShellComponent implements OnInit {
     return 'System Administrator';
   });
 
-  adminDepartment = computed(() => 'Enterprise Governance & IAM');
+  readonly adminDepartment = computed(() => 'Enterprise Governance & IAM');
 
-  nurseDisplayName = computed(() => {
+  readonly nurseDisplayName = computed(() => {
     const user = this.currentUser();
     if (!user) return 'Staff Nurse, RN';
     if (user.fullName && user.fullName !== 'User') return `${user.fullName}, RN`;
@@ -114,9 +131,9 @@ export class ShellComponent implements OnInit {
     return 'Staff Nurse, RN';
   });
 
-  nurseDepartment = computed(() => 'Triage & Inpatient Nursing Care');
+  readonly nurseDepartment = computed(() => 'Triage & Inpatient Nursing Care');
 
-  radiologistDisplayName = computed(() => {
+  readonly radiologistDisplayName = computed(() => {
     const user = this.currentUser();
     const fullName = user?.fullName || '';
     const username = user?.username || '';
@@ -133,7 +150,7 @@ export class ShellComponent implements OnInit {
     return 'Attending Radiologist, MD';
   });
 
-  doctorDisplayName = computed(() => {
+  readonly doctorDisplayName = computed(() => {
     const user = this.currentUser();
     if (!user) return 'Dr. John Smith';
     if (user.fullName) return user.fullName.startsWith('Dr.') ? user.fullName : `Dr. ${user.fullName}`;
@@ -145,13 +162,13 @@ export class ShellComponent implements OnInit {
     return 'Dr. John Smith';
   });
 
-  doctorDepartment = computed(() => {
+  readonly doctorDepartment = computed(() => {
     const name = this.doctorDisplayName();
     if (name.includes('James')) return 'Family Medicine & Pediatrics';
     return 'Cardiology & Internal Medicine';
   });
 
-  patientDisplayName = computed(() => {
+  readonly patientDisplayName = computed(() => {
     const user = this.currentUser();
     if (!user) return 'Patient';
     if (user.fullName && user.fullName !== 'User') return user.fullName;
@@ -159,7 +176,7 @@ export class ShellComponent implements OnInit {
     return 'Patient';
   });
 
-  accountantDisplayName = computed(() => {
+  readonly accountantDisplayName = computed(() => {
     const user = this.currentUser();
     if (!user) return 'Financial Controller';
     if (user.fullName && user.fullName !== 'User') return `${user.fullName}, CPA`;
@@ -167,25 +184,29 @@ export class ShellComponent implements OnInit {
     return 'Financial Controller';
   });
 
-  accountantDepartment = computed(() => 'Financial Control & Revenue Governance');
+  readonly accountantDepartment = computed(() => 'Financial Control & Revenue Governance');
 
-  userDisplayName = computed(() => {
+  readonly userDisplayName = computed(() => {
     const user = this.currentUser();
     return user?.fullName || user?.username || 'Clinic Staff';
   });
 
-  userInitial = computed(() => {
+  readonly userInitial = computed(() => {
     const label = this.userDisplayName().trim();
     return (label || 'U').slice(0, 1).toUpperCase();
   });
 
-  allRoles = ['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'LabTechnician', 'Radiologist', 'Accountant', 'Patient'];
-  availableRoles = computed(() =>
+  readonly allRoles = ['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'LabTechnician', 'Radiologist', 'Accountant', 'Patient'];
+  readonly availableRoles = computed(() =>
     !environment.production
       ? this.allRoles
-      : (this.authService.userRoles().length > 0 ? this.authService.userRoles() : ['Patient'])
+      : this.authService.userRoles().length > 0
+        ? this.authService.userRoles()
+        : ['Patient']
   );
-  activeSimulatedRole = this.permissionService.activeRole;
+
+  // Reflects the primary verified JWT role (in prod) or selected role view synced via real login in dev
+  readonly activeSimulatedRole = this.permissionService.activeRole;
 
   showDutyModal = false;
   dutyModalMode: 'clock-in' | 'clock-out' | 'info' = 'clock-in';
@@ -198,49 +219,115 @@ export class ShellComponent implements OnInit {
   ngOnInit(): void {
     this.themeService.setTheme('light');
     this.liveSync.connect();
-    if (this.authService.userRoles().length > 0) {
-      const initialRole = this.authService.userRoles()[0];
-      this.permissionService.setActiveRole(initialRole);
-    }
-    this.loadPharmacyMetrics();
-    this.loadFinanceMetrics();
-    this.loadLabMetrics();
-    this.loadPatientCount();
-    this.loadAppointmentCount();
-    this.loadDoctorPanel();
-    this.loadRadiologyMetrics();
-    this.loadNursingProcedures();
-    this.loadAdminMetrics();
-    this.dutyService.refreshDutyStatus().subscribe({ error: () => {} });
+    this.permissionService.loadAllPermissions();
 
-    this.liveSync.lowStockAlert$.subscribe(() => {
-      this.loadPharmacyMetrics();
-      this.loadLabMetrics();
+    const verifiedRoles = this.authService.userRoles();
+    if (verifiedRoles.length > 0 && verifiedRoles[0]) {
+      this.permissionService.setActiveRole(verifiedRoles[0]);
+    }
+
+    this.loadRoleScopedMetrics();
+
+    this.liveSync.lowStockAlert$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.hasAnyRole(['Pharmacist', 'Admin'])) this.loadPharmacyMetrics();
+      if (this.hasAnyRole(['LabTechnician', 'Admin', 'Doctor'])) this.loadLabMetrics();
     });
-    this.liveSync.appointmentUpdated$.subscribe(() => {
-      this.loadPharmacyMetrics();
-      this.loadLabMetrics();
-      this.loadAppointmentCount();
-      this.loadPatientCount();
+
+    this.liveSync.appointmentUpdated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist', 'Patient'])) {
+        this.loadAppointmentCount();
+      }
+      if (this.hasAnyRole(['Admin', 'Doctor', 'Nurse', 'Receptionist'])) {
+        this.loadPatientCount();
+      }
     });
-    this.liveSync.invoicePaid$.subscribe(() => {
-      this.loadPharmacyMetrics();
-      this.loadFinanceMetrics();
-      this.loadLabMetrics();
+
+    this.liveSync.invoicePaid$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.hasAnyRole(['Accountant', 'Admin'])) this.loadFinanceMetrics();
+      if (this.hasAnyRole(['Pharmacist', 'Admin'])) this.loadPharmacyMetrics();
     });
-    this.liveSync.radiologyOrderUpdated$.subscribe(() => {
-      this.loadRadiologyMetrics();
+
+    this.liveSync.radiologyOrderUpdated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.hasAnyRole(['Radiologist', 'Doctor', 'Nurse', 'Admin'])) this.loadRadiologyMetrics();
     });
-    this.liveSync.labOrderUpdated$.subscribe(() => {
-      this.loadLabMetrics();
+
+    this.liveSync.labOrderUpdated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.hasAnyRole(['LabTechnician', 'Doctor', 'Nurse', 'Admin'])) this.loadLabMetrics();
     });
-    this.liveSync.breakGlassAlert$.subscribe(() => {
-      this.loadAdminMetrics();
+
+    this.liveSync.breakGlassAlert$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.hasRole('Admin')) this.loadAdminMetrics();
     });
-    this.liveSync.dutyRosterChanged$.subscribe(() => {
+
+    this.liveSync.dutyRosterChanged$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (!this.hasRole('Patient')) {
+        this.dutyService.refreshDutyStatus().subscribe({ error: () => {} });
+      }
+      if (this.hasRole('Admin')) this.loadAdminMetrics();
+    });
+
+    this.liveSync.reconnected$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ prolonged }) => {
+      if (prolonged) {
+        this.loadRoleScopedMetrics();
+      }
+    });
+  }
+
+  private loadRoleScopedMetrics(): void {
+    const role = this.activeRoleResolved();
+
+    if (role !== 'Patient') {
       this.dutyService.refreshDutyStatus().subscribe({ error: () => {} });
-      this.loadAdminMetrics();
-    });
+    }
+
+    switch (role.toLowerCase()) {
+      case 'admin':
+        this.loadAdminMetrics();
+        this.loadPatientCount();
+        this.loadAppointmentCount();
+        this.loadFinanceMetrics();
+        break;
+      case 'doctor':
+        this.loadPatientCount();
+        this.loadAppointmentCount();
+        this.loadDoctorPanel();
+        break;
+      case 'nurse':
+        this.loadPatientCount();
+        this.loadAppointmentCount();
+        this.loadNursingProcedures();
+        break;
+      case 'receptionist':
+        this.loadPatientCount();
+        this.loadAppointmentCount();
+        break;
+      case 'pharmacist':
+        this.loadPharmacyMetrics();
+        break;
+      case 'labtechnician':
+        this.loadLabMetrics();
+        break;
+      case 'radiologist':
+        this.loadRadiologyMetrics();
+        break;
+      case 'accountant':
+        this.loadFinanceMetrics();
+        break;
+      case 'patient':
+        this.loadPatientCount();
+        this.loadAppointmentCount();
+        break;
+      default:
+        break;
+    }
+  }
+
+  private activeRoleResolved(): string {
+    const jwtRole = this.authService.userRoles()[0];
+    if (jwtRole) {
+      return jwtRole;
+    }
+    return this.activeSimulatedRole();
   }
 
   onEscapeKey(): void {
@@ -250,8 +337,7 @@ export class ShellComponent implements OnInit {
   }
 
   loadPharmacyMetrics(): void {
-    const role = this.activeSimulatedRole();
-    if (role !== 'Pharmacist' && role !== 'Admin') return;
+    if (!this.hasAnyRole(['Pharmacist', 'Admin'])) return;
     this.pharmacyService.getMetrics().subscribe({
       next: (m) => this.pharmacyMetrics.set(m),
       error: () => {}
@@ -259,6 +345,7 @@ export class ShellComponent implements OnInit {
   }
 
   loadFinanceMetrics(): void {
+    if (!this.hasAnyRole(['Accountant', 'Admin'])) return;
     this.financeService.getMetrics().subscribe({
       next: (m) => this.financeMetrics.set(m),
       error: () => {}
@@ -266,6 +353,7 @@ export class ShellComponent implements OnInit {
   }
 
   loadLabMetrics(): void {
+    if (!this.hasAnyRole(['LabTechnician', 'Doctor', 'Nurse', 'Radiologist', 'Admin'])) return;
     this.labService.getMetrics().subscribe({
       next: (m) => this.labMetrics.set(m),
       error: () => {}
@@ -273,13 +361,13 @@ export class ShellComponent implements OnInit {
   }
 
   loadPatientCount(): void {
-    if (this.activeSimulatedRole() === 'Patient') {
+    if (this.activeRoleResolved() === 'Patient') {
       this.totalPatientsCount.set(1);
       return;
     }
     this.patientService.getAll(1, 1).subscribe({
-      next: (res: any) => {
-        const count = res?.totalCount || (Array.isArray(res?.items) ? res.items.length : 8);
+      next: (res: PagedResponse<Patient>) => {
+        const count = res.totalCount || (Array.isArray(res.items) ? res.items.length : 0);
         if (count) this.totalPatientsCount.set(count);
       },
       error: () => {}
@@ -287,29 +375,32 @@ export class ShellComponent implements OnInit {
   }
 
   loadAppointmentCount(): void {
-    const isDoctor = this.currentUser()?.roles?.includes('Doctor') || this.activeSimulatedRole() === 'Doctor';
-    const isPatient = this.currentUser()?.roles?.includes('Patient') || this.activeSimulatedRole() === 'Patient';
+    const isDoctor = this.authService.hasRole('Doctor');
+    const isPatient = this.authService.hasRole('Patient');
+
     if (isDoctor || isPatient) {
       this.appointmentService.getMyAppointments().subscribe({
-        next: (res: any) => {
-          const list = Array.isArray(res) ? res : (res?.items || []);
+        next: (res: Appointment[] | PagedResponse<Appointment>) => {
+          const list = Array.isArray(res) ? res : res?.items ?? [];
           this.activeAppointmentsCount.set(list.length);
-          const queue = list.filter((a: any) => a.status === 'Scheduled' || a.status === 'CheckedIn' || a.status === 'TriageComplete' || a.status === 'PendingApproval');
+          const queue = list.filter(
+            (a) =>
+              a.status === 'Scheduled' ||
+              a.status === 'CheckedIn' ||
+              a.status === 'TriageComplete' ||
+              a.status === 'PendingApproval'
+          );
           this.todayConsultationsCount.set(queue.length);
         },
         error: () => {}
       });
-    } else {
+    } else if (this.hasAnyRole(['Admin', 'Nurse', 'Receptionist'])) {
       this.appointmentService.getAll(1, 50).subscribe({
-        next: (res: any) => {
-          const list = Array.isArray(res) ? res : (res?.items || []);
-          if (list.length > 0) {
-            this.activeAppointmentsCount.set(list.length);
-            const queue = list.filter((a: any) => a.status === 'Scheduled' || a.status === 'CheckedIn');
-            if (queue.length > 0) {
-              this.todayConsultationsCount.set(queue.length);
-            }
-          }
+        next: (res: Appointment[] | PagedResponse<Appointment>) => {
+          const list = Array.isArray(res) ? res : res?.items ?? [];
+          this.activeAppointmentsCount.set(list.length);
+          const queue = list.filter((a) => a.status === 'Scheduled' || a.status === 'CheckedIn');
+          this.todayConsultationsCount.set(queue.length);
         },
         error: () => {}
       });
@@ -317,21 +408,21 @@ export class ShellComponent implements OnInit {
   }
 
   loadDoctorPanel(): void {
+    if (!this.hasAnyRole(['Doctor', 'Admin'])) return;
     this.patientService.getMyPanel().subscribe({
-      next: (res: any) => {
-        const list = Array.isArray(res) ? res : (res?.items || []);
-        if (list.length > 0) this.doctorPanelCount.set(list.length);
+      next: (res: Patient[]) => {
+        if (Array.isArray(res) && res.length > 0) this.doctorPanelCount.set(res.length);
       },
       error: () => {}
     });
   }
 
   loadNursingProcedures(): void {
+    if (!this.hasAnyRole(['Nurse', 'Admin'])) return;
     this.nursingService.getProcedures().subscribe({
-      next: (procs: any) => {
-        const list = Array.isArray(procs) ? procs : (procs?.items || []);
-        if (list.length > 0) {
-          this.nurseProceduresCount.set(list.length);
+      next: (procs) => {
+        if (Array.isArray(procs)) {
+          this.nurseProceduresCount.set(procs.length);
         }
       },
       error: () => {}
@@ -383,36 +474,45 @@ export class ShellComponent implements OnInit {
   }
 
   loadRadiologyMetrics(): void {
-    this.radiologyService.getMetrics().pipe(
-      retry({ count: 2, delay: 2000 }),
-      catchError(() => of(null))
-    ).subscribe({
-      next: (m: any) => {
-        if (m) {
-          this.radiologyStudiesCount.set(m.totalOrders ?? 0);
-          const pending = (m.orderedCount ?? 0) + (m.inProgressCount ?? 0) + (m.scheduledCount ?? 0);
-          this.radiologyUnreportedCount.set(pending);
-          this.radiologyCriticalCount.set(m.criticalAlertsCount ?? 0);
-        }
-      },
-      error: () => {}
-    });
+    if (!this.hasAnyRole(['Radiologist', 'Doctor', 'Nurse', 'Admin'])) return;
+    this.radiologyService
+      .getMetrics()
+      .pipe(
+        retry({ count: 1, delay: 1000 }),
+        catchError(() => of(null))
+      )
+      .subscribe({
+        next: (m) => {
+          if (m) {
+            this.radiologyStudiesCount.set(m.totalOrders ?? 0);
+            const pending = (m.orderedCount ?? 0) + (m.inProgressCount ?? 0) + (m.scheduledCount ?? 0);
+            this.radiologyUnreportedCount.set(pending);
+            this.radiologyCriticalCount.set(m.criticalAlertsCount ?? 0);
+          }
+        },
+        error: () => {}
+      });
 
-    this.radiologyService.getSafetyLogs().pipe(
-      retry({ count: 2, delay: 2000 }),
-      catchError(() => of([]))
-    ).subscribe({
-      next: (logs) => {
-        if (logs && logs.length > 0) {
-          this.radiologySafetyCount.set(logs.length);
-        }
-      },
-      error: () => {}
-    });
+    if (this.hasAnyRole(['Radiologist', 'Admin'])) {
+      this.radiologyService
+        .getSafetyLogs()
+        .pipe(
+          retry({ count: 1, delay: 1000 }),
+          catchError(() => of([]))
+        )
+        .subscribe({
+          next: (logs) => {
+            if (logs && logs.length > 0) {
+              this.radiologySafetyCount.set(logs.length);
+            }
+          },
+          error: () => {}
+        });
+    }
   }
 
   toggleSidebar(): void {
-    this.isCollapsed.update(v => !v);
+    this.isCollapsed.update((v) => !v);
   }
 
   getRoleIcon(role: string): string {
@@ -444,13 +544,14 @@ export class ShellComponent implements OnInit {
   }
 
   hasRole(role: string): boolean {
-    const simulated = this.activeSimulatedRole();
-    return simulated.toLowerCase() === role.toLowerCase();
+    if (environment.production) {
+      return this.authService.hasRole(role);
+    }
+    return this.authService.hasRole(role) || this.activeSimulatedRole().toLowerCase() === role.toLowerCase();
   }
 
   hasAnyRole(roles: string[]): boolean {
-    const simulated = this.activeSimulatedRole();
-    return roles.some(r => r.toLowerCase() === simulated.toLowerCase());
+    return roles.some((r) => this.hasRole(r));
   }
 
   hasPermission(permKey: string): boolean {
@@ -462,6 +563,8 @@ export class ShellComponent implements OnInit {
   }
 
   loadAdminMetrics(): void {
+    if (!this.hasRole('Admin')) return;
+
     this.userService.getUsers().subscribe({
       next: (users) => {
         if (users && users.length > 0) this.adminStaffUsersCount.set(users.length);
@@ -477,9 +580,9 @@ export class ShellComponent implements OnInit {
     });
 
     this.emrAccessService.getAuditLogs(1, 1).subscribe({
-      next: (res: any) => {
-        const count = res?.totalCount ?? (Array.isArray(res) ? res.length : 18);
-        if (count !== undefined) this.adminAuditLogsCount.set(count);
+      next: (res) => {
+        const count = res?.totalCount ?? (Array.isArray(res) ? res.length : 0);
+        this.adminAuditLogsCount.set(count);
       },
       error: () => {}
     });
@@ -492,23 +595,49 @@ export class ShellComponent implements OnInit {
     });
   }
 
-  setRolePreview(role: string) {
-    if (environment.production && !this.authService.userRoles().includes(role)) {
+  setRolePreview(role: string): void {
+    if (this.authService.hasRole(role)) {
+      this.permissionService.setActiveRole(role);
+      this.loadRoleScopedMetrics();
       return;
     }
-    this.permissionService.setActiveRole(role);
-    this.loadPatientCount();
-    this.loadAppointmentCount();
-    if (role === 'Admin') this.loadAdminMetrics();
+
+    if (environment.production) {
+      return;
+    }
+
+    const preset = this.devAccountPresets[role];
+    if (!preset) {
+      return;
+    }
+
+    // Authenticate with the real seeded account for this role so JWT claims match the UI view end-to-end
+    this.isSwitchingAccount.set(true);
+    this.authService.login(preset).subscribe({
+      next: (res) => {
+        this.isSwitchingAccount.set(false);
+        this.permissionService.setActiveRole(res.roles?.[0] ?? role);
+        this.permissionService.loadAllPermissions();
+        this.liveSync.reconnect();
+        this.loadRoleScopedMetrics();
+        this.toast.success(`Switched session to ${res.fullName || preset.username} (${role})`);
+        void this.router.navigateByUrl('/dashboard');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isSwitchingAccount.set(false);
+        this.toast.error(extractProblemDetailsMessage(err.error, `Could not switch to ${role} account.`));
+      }
+    });
   }
 
   logout(): void {
+    this.liveSync.disconnect();
     this.authService.logout();
   }
 
-  openDutyModal(mode: 'clock-in' | 'clock-out' | 'info') {
+  openDutyModal(mode: 'clock-in' | 'clock-out' | 'info'): void {
     this.dutyModalMode = mode;
-    const role = this.activeSimulatedRole();
+    const role = this.activeRoleResolved();
     this.dutyDepartment = this.getRoleDepartment(role);
     this.dutyShiftType = 'Day Shift (08:00 - 16:00)';
     this.dutyNotes = '';
@@ -530,11 +659,11 @@ export class ShellComponent implements OnInit {
     }
   }
 
-  closeDutyModal() {
+  closeDutyModal(): void {
     this.showDutyModal = false;
   }
 
-  handleClockIn() {
+  handleClockIn(): void {
     this.dutyLoading = true;
     this.dutyService.clockIn(this.dutyDepartment, this.dutyShiftType, this.dutyNotes).subscribe({
       next: () => {
@@ -542,14 +671,14 @@ export class ShellComponent implements OnInit {
         this.showDutyModal = false;
         this.toast.success('Clocked in to active clinical roster.');
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.dutyLoading = false;
-        this.toast.error(err.error?.detail || err.error?.message || 'Failed to clock in.');
+        this.toast.error(extractProblemDetailsMessage(err.error, 'Failed to clock in.'));
       }
     });
   }
 
-  handleClockOut() {
+  handleClockOut(): void {
     this.dutyLoading = true;
     this.dutyService.clockOut(this.dutyHandoverNotes).subscribe({
       next: () => {
@@ -557,9 +686,9 @@ export class ShellComponent implements OnInit {
         this.showDutyModal = false;
         this.toast.info('Shift completed and clocked out.');
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.dutyLoading = false;
-        this.toast.error(err.error?.detail || err.error?.message || 'Failed to clock out.');
+        this.toast.error(extractProblemDetailsMessage(err.error, 'Failed to clock out.'));
       }
     });
   }

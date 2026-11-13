@@ -449,3 +449,32 @@
     border: 1px solid CanvasText;
   }
 }
+
+.sync-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-24);
+  background-color: var(--semantic-danger-bg);
+  color: var(--semantic-danger-text);
+  border-block-end: 1px solid var(--border-subtle);
+  font-size: var(--text-14);
+
+  &.is-reconnecting {
+    background-color: var(--semantic-warning-bg);
+    color: var(--semantic-warning-text);
+  }
+}
+
+.sync-banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}

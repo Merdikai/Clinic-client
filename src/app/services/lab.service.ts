@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { PagedResponse } from '../models/patient.model';
+import { Invoice } from '../models/billing.model';
 import {
   LabOrder,
   LabTestTemplate,
@@ -44,11 +46,11 @@ export class LabService {
     return this.http.put<LabTestTemplate>(`${this.apiUrl}/lab-tests/${id}`, request);
   }
 
-  deleteTemplate(id: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/lab-tests/${id}`);
+  deleteTemplate(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/lab-tests/${id}`);
   }
 
-  getOrders(page = 1, pageSize = 10, search = '', status = '', priority = '', patientId = ''): Observable<any> {
+  getOrders(page = 1, pageSize = 10, search = '', status = '', priority = '', patientId = ''): Observable<PagedResponse<LabOrder> | LabOrder[]> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
@@ -58,7 +60,7 @@ export class LabService {
     if (priority && priority !== 'ALL') params = params.set('priority', priority);
     if (patientId) params = params.set('patientId', patientId);
 
-    return this.http.get<any>(`${this.apiUrl}/lab-orders`, { params });
+    return this.http.get<PagedResponse<LabOrder> | LabOrder[]>(`${this.apiUrl}/lab-orders`, { params });
   }
 
   getOrdersByPatient(patientId: string): Observable<LabOrder[]> {
@@ -73,8 +75,8 @@ export class LabService {
     return this.http.post<LabOrder>(`${this.apiUrl}/lab-orders`, request);
   }
 
-  updateOrderStatus(orderId: string, status: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/lab-orders/${orderId}/status`, JSON.stringify(status), {
+  updateOrderStatus(orderId: string, status: string): Observable<LabOrder | void> {
+    return this.http.put<LabOrder | void>(`${this.apiUrl}/lab-orders/${orderId}/status`, JSON.stringify(status), {
       headers: { 'Content-Type': 'application/json' }
     });
   }
@@ -83,8 +85,8 @@ export class LabService {
     return this.http.post<LabOrder>(`${this.apiUrl}/lab-orders/${orderId}/specimen-intake`, request);
   }
 
-  specimenReject(orderId: string, request: SpecimenRejectRequest): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/lab-orders/${orderId}/specimen-reject`, request);
+  specimenReject(orderId: string, request: SpecimenRejectRequest): Observable<LabOrder | void> {
+    return this.http.post<LabOrder | void>(`${this.apiUrl}/lab-orders/${orderId}/specimen-reject`, request);
   }
 
   recordResult(request: RecordLabResultRequest): Observable<LabResult> {
@@ -144,8 +146,8 @@ export class LabService {
     return this.http.post<LabOrder>(`${this.apiUrl}/lab-orders/${orderId}/doctor-signoff`, { notes });
   }
 
-  generateInvoice(orderId: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/lab-orders/${orderId}/invoice`, {});
+  generateInvoice(orderId: string): Observable<Invoice> {
+    return this.http.post<Invoice>(`${this.apiUrl}/lab-orders/${orderId}/invoice`, {});
   }
 }
 

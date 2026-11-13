@@ -23,8 +23,8 @@ export class DashboardService {
   private http = inject(HttpClient);
 
   getSummary() {
-    return this.http.get<any>(`${environment.apiUrl}/reports/dashboard`).pipe(
-      map((res: any) => ({
+    return this.http.get<Partial<DashboardSummary>>(`${environment.apiUrl}/reports/dashboard`).pipe(
+      map((res): DashboardSummary => ({
         totalPatients: res.totalPatients ?? 0,
         todayAppointments: res.todayAppointments ?? res.totalAppointmentsToday ?? 0,
         totalAppointmentsToday: res.todayAppointments ?? res.totalAppointmentsToday ?? 0,
