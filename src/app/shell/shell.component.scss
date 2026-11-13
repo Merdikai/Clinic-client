@@ -45,22 +45,65 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-block-size: 56px;
+  min-block-size: 60px;
   padding: var(--space-12) var(--space-16);
   border-block-end: 1px solid var(--border-subtle);
+  background-color: var(--surface-sidebar);
 }
 
 .brand-wordmark {
-  font-size: var(--text-16);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
   text-decoration: none;
-  white-space: nowrap;
+  color: var(--text-primary);
+  user-select: none;
+
+  .brand-logo-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--action-primary);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &:hover .brand-logo-icon {
+    transform: scale(1.1);
+  }
+
+  .brand-text-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .brand-title {
+    font-size: var(--text-16);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+  }
+
+  .brand-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--surface-hover);
+    color: var(--action-primary);
+    border: 1px solid var(--border-subtle);
+    letter-spacing: 0.06em;
+  }
 }
 
 .collapse-toggle-btn {
   color: var(--text-secondary);
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+    background-color: var(--surface-hover);
+  }
 }
 
 .sidebar-nav {
@@ -73,15 +116,16 @@
 }
 
 .nav-section-title {
-  font-size: var(--text-12);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
   padding: var(--space-12) var(--space-12) var(--space-4);
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-12);
@@ -93,7 +137,7 @@
   font-size: var(--text-14);
   font-weight: 500;
   border: 1px solid transparent;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 
   mat-icon {
     font-size: 20px;
@@ -102,25 +146,40 @@
     line-height: 20px;
     flex-shrink: 0;
     color: var(--text-muted);
+    transition: color 0.18s ease, transform 0.18s ease, filter 0.18s ease;
   }
 
   &:hover {
-    background-color: var(--surface-subtle);
+    background-color: var(--surface-hover);
     color: var(--text-primary);
+    transform: translateX(3px);
 
     mat-icon {
       color: var(--text-primary);
+      transform: scale(1.05);
     }
   }
 
   &.active {
     background-color: var(--surface-subtle);
-    color: var(--text-primary);
+    color: var(--action-primary);
     border-color: var(--border-default);
     font-weight: 600;
 
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 18%;
+      height: 64%;
+      width: 3.5px;
+      border-radius: 0 4px 4px 0;
+      background-color: var(--action-primary);
+    }
+
     mat-icon {
-      color: var(--text-primary);
+      color: var(--action-primary);
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.4));
     }
   }
 }
@@ -134,14 +193,15 @@
 }
 
 .nav-count {
-  font-size: var(--text-12);
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  padding: 2px var(--space-8);
-  border-radius: var(--radius-sm);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
   background-color: var(--semantic-neutral-bg);
   color: var(--semantic-neutral-text);
   border: 1px solid var(--semantic-neutral-border);
+  transition: transform 0.15s ease;
 
   &.tone-warning {
     background-color: var(--semantic-warning-bg);
@@ -167,13 +227,13 @@
   padding: var(--space-12);
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: var(--space-10);
   background-color: var(--surface-sidebar);
 }
 
 .duty-pill {
   inline-size: 100%;
-  min-block-size: 36px;
+  min-block-size: 38px;
   padding: var(--space-8) var(--space-12);
   border-radius: var(--radius-sm);
   display: flex;
@@ -186,11 +246,12 @@
   background-color: var(--surface-subtle);
   color: var(--text-secondary);
   text-align: start;
+  transition: all 0.18s ease;
 
   .duty-indicator {
     inline-size: 8px;
     block-size: 8px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-full);
     background-color: var(--text-disabled);
     flex-shrink: 0;
   }
@@ -208,11 +269,27 @@
 
     .duty-indicator {
       background-color: var(--semantic-success-accent);
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: duty-pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
     }
   }
 
   &:hover {
     background-color: var(--surface-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+@keyframes duty-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
   }
 }
 
@@ -221,27 +298,29 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
+  padding: var(--space-4) 0;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-10);
   min-inline-size: 0;
 }
 
 .user-avatar {
-  inline-size: 32px;
-  block-size: 32px;
-  border-radius: var(--radius-sm);
-  background-color: var(--action-primary);
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--action-primary), #0284c7);
   color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--text-14);
-  font-weight: 600;
+  font-weight: 700;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .user-details {
@@ -260,8 +339,11 @@
 }
 
 .user-role {
-  font-size: var(--text-12);
-  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--action-primary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .workspace-column {
