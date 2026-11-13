@@ -58,6 +58,10 @@
             ],
             "styles": [
               "src/styles.scss"
+            ],
+            "allowedCommonJsDependencies": [
+              "jsbi",
+              "@js-temporal/polyfill"
             ]
           },
           "configurations": {
