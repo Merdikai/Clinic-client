@@ -312,22 +312,34 @@
     } @else {
       <section class="kpi-grid" aria-label="Triage summary">
         <div class="kpi-card" [class.accent-warning]="awaitingTriageCount() > 0">
-          <span class="kpi-label">Awaiting Triage</span>
+          <div class="kpi-head">
+            <span class="kpi-label">Awaiting Triage</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">hourglass_top</mat-icon>
+          </div>
           <strong class="kpi-val">{{ awaitingTriageCount() }}</strong>
           <span class="kpi-sub">Needs vitals &amp; intake</span>
         </div>
         <div class="kpi-card accent-success">
-          <span class="kpi-label">Triaged &amp; Waiting</span>
+          <div class="kpi-head">
+            <span class="kpi-label">Triaged &amp; Waiting</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">check_circle</mat-icon>
+          </div>
           <strong class="kpi-val">{{ triagedWaitingCount() }}</strong>
           <span class="kpi-sub">Ready for physician</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">Active Bays Occupied</span>
+          <div class="kpi-head">
+            <span class="kpi-label">Active Bays Occupied</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">meeting_room</mat-icon>
+          </div>
           <strong class="kpi-val">{{ activeBaysOccupancyCount() }}</strong>
           <span class="kpi-sub">Exam &amp; triage bays</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">Procedures Logged</span>
+          <div class="kpi-head">
+            <span class="kpi-label">Procedures Logged</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">vaccines</mat-icon>
+          </div>
           <strong class="kpi-val">{{ nurseProceduresTodayCount() }}</strong>
           <span class="kpi-sub">Wound care, IVs &amp; injections</span>
         </div>
@@ -441,23 +453,35 @@
       <app-skeleton variant="table" [count]="5" [columns]="6" label="Loading today's arrivals" />
     } @else {
       <section class="kpi-grid" aria-label="Front desk summary">
-        <div class="kpi-card">
-          <span class="kpi-label">Checked-In Today</span>
+        <div class="kpi-card kpi-link" routerLink="/appointments">
+          <div class="kpi-head">
+            <span class="kpi-label">Checked-In Today</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">how_to_reg</mat-icon>
+          </div>
           <strong class="kpi-val">{{ receptionCheckInCount() }}</strong>
           <span class="kpi-sub">Arrived &amp; routed</span>
         </div>
-        <div class="kpi-card" [class.accent-warning]="receptionScheduledCount() > 0">
-          <span class="kpi-label">Expected Arrivals</span>
+        <div class="kpi-card kpi-link" routerLink="/appointments" [class.accent-warning]="receptionScheduledCount() > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Expected Arrivals</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">schedule</mat-icon>
+          </div>
           <strong class="kpi-val">{{ receptionScheduledCount() }}</strong>
           <span class="kpi-sub">Awaiting arrival check-in</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Today's Collections</span>
+        <div class="kpi-card kpi-link" (click)="openDrawerModal()">
+          <div class="kpi-head">
+            <span class="kpi-label">Today's Collections</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">point_of_sale</mat-icon>
+          </div>
           <strong class="kpi-val">{{ receptionCashTotal() | currency:'USD' }}</strong>
           <span class="kpi-sub">Cash, card &amp; insurance</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Open Inquiries</span>
+        <div class="kpi-card kpi-link" (click)="openInquiryModal()">
+          <div class="kpi-head">
+            <span class="kpi-label">Open Inquiries</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">contact_support</mat-icon>
+          </div>
           <strong class="kpi-val">{{ receptionOpenInquiriesCount() }}</strong>
           <span class="kpi-sub">Visitor &amp; phone tickets</span>
         </div>
