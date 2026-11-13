@@ -997,23 +997,35 @@
       </section>
 
       <section class="kpi-grid" aria-label="Patient metrics">
-        <div class="kpi-card">
-          <span class="kpi-label">Scheduled Visits</span>
+        <div class="kpi-card kpi-link" routerLink="/my-appointments">
+          <div class="kpi-head">
+            <span class="kpi-label">Scheduled Visits</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">event_available</mat-icon>
+          </div>
           <strong class="kpi-val">{{ patientScheduledApptsCount() }}</strong>
           <span class="kpi-sub">Upcoming consultations</span>
         </div>
-        <div class="kpi-card" [class.accent-warning]="patientPendingApptsCount() > 0">
-          <span class="kpi-label">Pending Approval</span>
+        <div class="kpi-card kpi-link" routerLink="/my-appointments" [class.accent-warning]="patientPendingApptsCount() > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Pending Approval</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">schedule</mat-icon>
+          </div>
           <strong class="kpi-val">{{ patientPendingApptsCount() }}</strong>
           <span class="kpi-sub">Awaiting clinic confirmation</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Prescriptions</span>
+        <div class="kpi-card kpi-link" routerLink="/my-prescriptions">
+          <div class="kpi-head">
+            <span class="kpi-label">Prescriptions</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">medication</mat-icon>
+          </div>
           <strong class="kpi-val">{{ patientPrescriptions().length }}</strong>
           <span class="kpi-sub">Medication orders on file</span>
         </div>
-        <div class="kpi-card" [class.accent-danger]="patientOutstandingBalance() > 0">
-          <span class="kpi-label">Balance Due</span>
+        <div class="kpi-card kpi-link" routerLink="/my-invoices" [class.accent-danger]="patientOutstandingBalance() > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Balance Due</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">account_balance_wallet</mat-icon>
+          </div>
           <strong class="kpi-val">{{ patientOutstandingBalance() | currency:'USD' }}</strong>
           <span class="kpi-sub">Unpaid invoice balance</span>
         </div>
