@@ -644,6 +644,33 @@
         <a mat-flat-button color="primary" routerLink="/patients/new" i18n="@@shell.newPatient">New Patient</a>
         }
         }
+
+        <!-- Real-Time Sync Indicator -->
+        <div class="sync-indicator-pill" [class.is-connected]="liveSync.connectionState() === 'connected'"
+          [class.is-reconnecting]="liveSync.connectionState() === 'reconnecting'"
+          [matTooltip]="liveSync.connectionState() === 'connected' ? 'Live Telemetry Connected' : 'Sync Disconnected'">
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span class="sync-text">{{ liveSync.connectionState() === 'connected' ? 'Live' : 'Offline' }}</span>
+        </div>
+
+        <!-- Light / Deep Dark Blue Theme Toggle -->
+        <button mat-icon-button type="button" class="theme-toggle-btn" (click)="themeService.toggleTheme()"
+          [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark blue mode'"
+          [matTooltip]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark blue mode'">
+          <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
+        <!-- User Quick Profile Pill & Logout -->
+        <div class="topbar-user-pill">
+          <div class="avatar-sm">
+            {{ (currentUser()?.firstName?.[0] || currentUser()?.username?.[0] || 'U') | uppercase }}
+          </div>
+          <span class="user-short-name">{{ currentUser()?.firstName || currentUser()?.username }}</span>
+          <button mat-icon-button type="button" class="logout-btn" (click)="logout()"
+            matTooltip="Sign Out" aria-label="Sign Out">
+            <mat-icon aria-hidden="true">logout</mat-icon>
+          </button>
+        </div>
       </div>
     </header>
 

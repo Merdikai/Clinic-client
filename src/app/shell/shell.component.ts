@@ -217,7 +217,6 @@ export class ShellComponent implements OnInit {
   dutyLoading = false;
 
   ngOnInit(): void {
-    this.themeService.setTheme('light');
     this.liveSync.connect();
     this.permissionService.loadAllPermissions();
 
