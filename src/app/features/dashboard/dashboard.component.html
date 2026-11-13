@@ -1131,23 +1131,35 @@
       <app-skeleton variant="table" [count]="4" [columns]="4" label="Loading specimen orders" />
     } @else {
       <section class="kpi-grid" aria-label="Laboratory summary">
-        <div class="kpi-card" [class.accent-warning]="(labStore.metrics()?.pendingOrders ?? 0) > 0">
-          <span class="kpi-label">Pending Specimens</span>
+        <div class="kpi-card kpi-link" routerLink="/laboratory" [class.accent-warning]="(labStore.metrics()?.pendingOrders ?? 0) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Pending Specimens</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">biotech</mat-icon>
+          </div>
           <strong class="kpi-val">{{ labStore.metrics()?.pendingOrders ?? 0 }}</strong>
           <span class="kpi-sub">Awaiting phlebotomy</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Samples Collected</span>
+        <div class="kpi-card kpi-link" routerLink="/laboratory">
+          <div class="kpi-head">
+            <span class="kpi-label">Samples Collected</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">science</mat-icon>
+          </div>
           <strong class="kpi-val">{{ labStore.metrics()?.samplesCollected ?? 0 }}</strong>
           <span class="kpi-sub">Ready on analyzer bench</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Testing In Progress</span>
+        <div class="kpi-card kpi-link" routerLink="/laboratory">
+          <div class="kpi-head">
+            <span class="kpi-label">Testing In Progress</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">hourglass_bottom</mat-icon>
+          </div>
           <strong class="kpi-val">{{ labStore.metrics()?.inProgress ?? 0 }}</strong>
           <span class="kpi-sub">Active analyzer runs</span>
         </div>
-        <div class="kpi-card accent-success">
-          <span class="kpi-label">Completed Today</span>
+        <div class="kpi-card kpi-link accent-success" routerLink="/laboratory">
+          <div class="kpi-head">
+            <span class="kpi-label">Completed Today</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">check_circle</mat-icon>
+          </div>
           <strong class="kpi-val">{{ labStore.metrics()?.completedToday ?? 0 }}</strong>
           <span class="kpi-sub">Finalized &amp; reported</span>
         </div>
@@ -1222,26 +1234,38 @@
       <app-skeleton variant="table" [count]="5" [columns]="6" label="Loading RIS worklist" />
     } @else {
       <section class="kpi-grid" aria-label="Radiology summary">
-        <a class="kpi-card kpi-link" routerLink="/radiology" [queryParams]="{ tab: 'worklist' }">
-          <span class="kpi-label">RIS Modality Orders</span>
+        <div class="kpi-card kpi-link" routerLink="/radiology" [queryParams]="{ tab: 'worklist' }">
+          <div class="kpi-head">
+            <span class="kpi-label">RIS Modality Orders</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">camera_alt</mat-icon>
+          </div>
           <strong class="kpi-val">{{ radiologyOrders().length }}</strong>
           <span class="kpi-sub">View worklist queue</span>
-        </a>
-        <a class="kpi-card kpi-link" [class.accent-warning]="radiologyUnreportedOrders().length > 0" routerLink="/radiology" [queryParams]="{ tab: 'reports' }">
-          <span class="kpi-label">Awaiting Read</span>
+        </div>
+        <div class="kpi-card kpi-link" [class.accent-warning]="radiologyUnreportedOrders().length > 0" routerLink="/radiology" [queryParams]="{ tab: 'reports' }">
+          <div class="kpi-head">
+            <span class="kpi-label">Awaiting Read</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">assignment_late</mat-icon>
+          </div>
           <strong class="kpi-val">{{ radiologyUnreportedOrders().length }}</strong>
           <span class="kpi-sub">Open reporting queue</span>
-        </a>
-        <a class="kpi-card kpi-link" [class.accent-danger]="radiologyCriticalOrders().length > 0" routerLink="/radiology" [queryParams]="{ tab: 'worklist', priority: 'Stat' }">
-          <span class="kpi-label">STAT Critical Alerts</span>
+        </div>
+        <div class="kpi-card kpi-link" [class.accent-danger]="radiologyCriticalOrders().length > 0" routerLink="/radiology" [queryParams]="{ tab: 'worklist', priority: 'Stat' }">
+          <div class="kpi-head">
+            <span class="kpi-label">STAT Critical Alerts</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">notification_important</mat-icon>
+          </div>
           <strong class="kpi-val">{{ radiologyCriticalOrders().length }}</strong>
           <span class="kpi-sub">Immediate read-back required</span>
-        </a>
-        <a class="kpi-card kpi-link" routerLink="/radiology" [queryParams]="{ tab: 'suites' }">
-          <span class="kpi-label">Modality Suites</span>
+        </div>
+        <div class="kpi-card kpi-link" routerLink="/radiology" [queryParams]="{ tab: 'suites' }">
+          <div class="kpi-head">
+            <span class="kpi-label">Modality Suites</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">meeting_room</mat-icon>
+          </div>
           <strong class="kpi-val">5 / 5</strong>
           <span class="kpi-sub">Inspect room status</span>
-        </a>
+        </div>
       </section>
 
       @if (radiologyCriticalOrders().length > 0) {
