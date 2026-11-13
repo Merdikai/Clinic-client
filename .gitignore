@@ -1,19 +1,23 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# ==========================================
+# MediFlow Web Portal - Frontend Git Ignore
+# Angular 22 | TypeScript | Vitest | NgRx
+# ==========================================
 
 # ==========================================
-# Compiled & Build Output
+# 1. Compiled & Build Output
 # ==========================================
-/dist
-/tmp
-/out-tsc
-/bazel-out
+/dist/
+/tmp/
+/out-tsc/
+/bazel-out/
 *.tsbuildinfo
 .esbuild/
+.vite/
 
 # ==========================================
-# Node & Package Managers
+# 2. Node & Package Managers
 # ==========================================
-/node_modules
+/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -22,36 +26,38 @@ lerna-debug.log*
 .pnpm-store/
 
 # ==========================================
-# Angular CLI
+# 3. Angular CLI & SASS Cache
 # ==========================================
 /.angular/
 .sass-cache/
 
 # ==========================================
-# Testing & Coverage
+# 4. Testing, Coverage & Reports
 # ==========================================
 /coverage/
 .nyc_output/
 /connect.lock
 /libpeerconnection.log
 testem.log
-/typings
+/typings/
 test-results/
 playwright-report/
 blob-report/
 .playwright/
+vitest.results.json
 
 # ==========================================
-# Environment & Local Secrets
+# 5. Environment & Local Secrets
 # ==========================================
 .env
 .env.local
 .env.*.local
 *.env
 !.env.example
+src/environments/environment.development.local.ts
 
 # ==========================================
-# IDEs and Editors
+# 6. IDEs and Editors
 # ==========================================
 .idea/
 .project
@@ -64,6 +70,7 @@ blob-report/
 *.swp
 *.*~
 .history/
+*.orig
 
 # Visual Studio Code
 .vscode/*
@@ -74,7 +81,7 @@ blob-report/
 !.vscode/mcp.json
 
 # ==========================================
-# Operating System Files
+# 7. Operating System Files
 # ==========================================
 .DS_Store
 .DS_Store?
@@ -86,16 +93,19 @@ Thumbs.db
 Desktop.ini
 
 # ==========================================
-# Temporary & Scratch Files
+# 8. Temporary & Scratch Files
 # ==========================================
 *.tmp
 *.bak
+scratch/
 scratch_*.txt
 extracted_diff.txt
 
 # ==========================================
-# Documentation & Screenshots (Tracked)
+# 9. Tracked Assets & Documentation (Tracked)
 # ==========================================
 !screenshots/
 !screenshots/**
-
+!docs/
+!docs/**
+!src/assets/**
