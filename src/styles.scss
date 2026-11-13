@@ -26,6 +26,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body,
+.app-layout,
+.sidebar,
+.topbar,
+.mat-mdc-card,
+.mat-mdc-table,
+.dash-panel,
+.kpi-card,
+.action-tile {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom Sleek Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: var(--radius-sm);
+  &:hover {
+    background: var(--border-control);
+  }
+}
+
 h1, h2, h3, h4, h5, h6, p {
   margin-top: 0;
 }
@@ -202,6 +233,75 @@ h3 {
   --mdc-outlined-button-container-shape: var(--radius-sm);
   --mdc-outlined-button-outline-color: var(--border-control);
   border-radius: var(--radius-sm);
+}
+
+/* Button Micro-Interactions & Hover Dynamics */
+.mat-mdc-button-base:not([disabled]) {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* Deep Dark Blue Dropdown & Material Controls */
+[data-theme='dark'],
+.dark-theme,
+.dark-mode {
+  .mat-mdc-menu-panel,
+  .mat-mdc-select-panel,
+  .mat-mdc-autocomplete-panel {
+    background-color: var(--surface-card) !important;
+    border: 1px solid var(--border-default) !important;
+    box-shadow: var(--shadow-hover) !important;
+  }
+
+  .mat-mdc-option {
+    color: var(--text-primary) !important;
+
+    &:hover:not(.mdc-list-item--disabled) {
+      background-color: var(--surface-hover) !important;
+    }
+
+    &.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+      background-color: var(--surface-subtle) !important;
+      color: var(--action-primary) !important;
+    }
+  }
+
+  .mat-mdc-table {
+    background-color: var(--surface-card);
+    color: var(--text-primary);
+  }
+
+  .mat-mdc-header-cell {
+    background-color: var(--surface-subtle);
+    color: var(--text-secondary);
+    border-bottom-color: var(--border-default);
+  }
+
+  .mat-mdc-cell {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-subtle);
+  }
+
+  .mat-mdc-row:hover {
+    background-color: var(--surface-hover);
+  }
+
+  .mat-mdc-form-field {
+    --mdc-outlined-text-field-outline-color: var(--border-default);
+    --mdc-outlined-text-field-focus-outline-color: var(--border-focus);
+    --mdc-outlined-text-field-input-text-color: var(--text-primary);
+    --mdc-outlined-text-field-label-text-color: var(--text-muted);
+    --mdc-outlined-text-field-focus-label-text-color: var(--action-primary);
+  }
 }
 
 /* Standardized Dialog Surface */

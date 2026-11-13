@@ -42,6 +42,17 @@ export class ThemeService {
   }
 
   private getInitialTheme(): AppTheme {
+    try {
+      const saved = localStorage.getItem(this.THEME_KEY);
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+      if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch {
+      // Fallback in SSR or restricted storage environments
+    }
     return 'light';
   }
 }

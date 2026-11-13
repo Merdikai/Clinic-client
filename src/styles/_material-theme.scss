@@ -1,9 +1,9 @@
 @use '@angular/material' as mat;
 
 /* ==========================================================================
-   ANGULAR MATERIAL M3 NEUTRAL CLINICAL THEME (Phase 3)
-   Replaces prebuilt azure-blue.css with neutral grey/slate tonal palette,
-   2-radius shape tokens (4px / 8px), and accessible contrast boundaries.
+   ANGULAR MATERIAL M3 CLINICAL THEME
+   Refined clinical light & deep dark blue palette,
+   accessible contrast boundaries, and Material M3 token overrides.
    ========================================================================== */
 
 $_clinical-slate-palette: (
@@ -125,11 +125,11 @@ html {
   ));
 
   @include mat.theme-overrides((
-    primary: #1e293b,
+    primary: #0284c7,
     on-primary: #ffffff,
-    primary-container: #e2e8f0,
-    on-primary-container: #0f172a,
-    secondary: #334155,
+    primary-container: #e0f2fe,
+    on-primary-container: #0369a1,
+    secondary: #0f172a,
     on-secondary: #ffffff,
     secondary-container: #f1f5f9,
     on-secondary-container: #0f172a,
@@ -160,3 +160,32 @@ html {
   ));
 }
 
+html[data-theme='dark'],
+.dark-theme,
+.dark-mode {
+  @include mat.theme-overrides((
+    primary: #38bdf8,
+    on-primary: #0a0f1d,
+    primary-container: #0c4a6e,
+    on-primary-container: #e0f2fe,
+    secondary: #94a3b8,
+    on-secondary: #0a0f1d,
+    secondary-container: #1e293b,
+    on-secondary-container: #f8fafc,
+    surface: #0f172a,
+    surface-bright: #17233f,
+    surface-container-lowest: #0a0f1d,
+    surface-container-low: #0f172a,
+    surface-container: #131f37,
+    surface-container-high: #17233f,
+    surface-container-highest: #1e293b,
+    on-surface: #f8fafc,
+    on-surface-variant: #cbd5e1,
+    outline: #38bdf8,
+    outline-variant: #25334d,
+    error: #ef4444,
+    on-error: #0a0f1d,
+    error-container: rgba(239, 68, 68, 0.2),
+    on-error-container: #fca5a5,
+  ));
+}

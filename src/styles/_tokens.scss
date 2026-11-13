@@ -1,6 +1,7 @@
 /* ==========================================================================
-   CLINICAL EHR DESIGN SYSTEM — FOUNDATION TOKENS (Phase 2)
-   Strict light-first neutral palette, WCAG 2.1 AA contrast, 4px grid, 6 type sizes
+   CLINICAL EHR DESIGN SYSTEM — FOUNDATION TOKENS
+   Strict 4px grid, 6 typography sizes, accessible WCAG 2.1 AA contrast,
+   refined warm clinical Light theme & sleek Deep Dark Blue (Midnight Slate)
    ========================================================================== */
 
 :root {
@@ -30,7 +31,7 @@
   --leading-normal: 1.45;
   --leading-relaxed: 1.5;
 
-  /* Spacing Scale — Strictly multiples of 4px (4 / 8 / 12 / 16 / 24 / 32 / 48) */
+  /* Spacing Scale — Multiples of 4px (4 / 8 / 12 / 16 / 24 / 32 / 48) */
   --space-4: 4px;
   --space-8: 8px;
   --space-12: 12px;
@@ -39,75 +40,148 @@
   --space-32: 32px;
   --space-48: 48px;
 
-  /* Border Radius — Strictly 2 values (4px controls/chips, 8px cards/dialogs) */
+  /* Border Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
+  --radius-lg: 12px;
 
-  /* Elevation — Flat or single subtle card shadow only (no layering or blur) */
+  /* Elevation */
   --shadow-none: none;
-  --shadow-card: 0 1px 2px 0 rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-hover: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
 
-  /* Neutral Surfaces */
+  /* Light Theme Surfaces (Warm Clinical Enterprise) */
   --surface-page: #f8fafc;
   --surface-card: #ffffff;
   --surface-subtle: #f1f5f9;
   --surface-hover: #e2e8f0;
   --surface-sidebar: #ffffff;
+  --surface-sidebar-active: rgba(2, 132, 199, 0.08);
   --surface-modal: #ffffff;
-  --modal-scrim: rgba(15, 23, 42, 0.45);
+  --modal-scrim: rgba(15, 23, 42, 0.5);
 
-  /* Neutral Borders (WCAG 1.4.11 compliant control borders >= 3:1 on white) */
+  /* Light Theme Borders */
   --border-subtle: #e2e8f0;
   --border-default: #cbd5e1;
-  --border-control: #64748b;
-  --border-focus: #0f172a;
+  --border-control: #94a3b8;
+  --border-focus: #0284c7;
+  --border-hover: #94a3b8;
 
-  /* Neutral Text (WCAG 1.4.3 compliant >= 4.5:1 on white & subtle grey) */
+  /* Light Theme Text */
   --text-primary: #0f172a;
   --text-secondary: #334155;
-  --text-muted: #475569;
-  --text-disabled: #64748b;
+  --text-muted: #64748b;
+  --text-disabled: #94a3b8;
   --text-inverse: #ffffff;
 
-  /* Primary Interactive Action (Neutral Slate) */
-  --action-primary: #1e293b;
-  --action-primary-hover: #0f172a;
-  --action-primary-active: #334155;
-  --focus-ring-color: #0f172a;
+  /* Primary Brand Action (Medical Cyan-Navy) */
+  --action-primary: #0284c7;
+  --action-primary-hover: #0369a1;
+  --action-primary-active: #075985;
+  --focus-ring-color: #0284c7;
 
-  /* Semantic Status Colors — Strict Meaning Only (Muted Clinical Hues, >= 4.5:1 text) */
-  /* Success: Completed, Paid, CheckedIn, Active, Normal */
-  --semantic-success-text: #1b5e20;
-  --semantic-success-accent: #2e7d32;
-  --semantic-success-bg: #edf7ed;
-  --semantic-success-border: #81c784;
+  /* Semantic Status Colors (Light Theme) */
+  --semantic-success-text: #166534;
+  --semantic-success-accent: #22c55e;
+  --semantic-success-bg: #f0fdf4;
+  --semantic-success-border: #86efac;
 
-  /* Warning: PartiallyPaid, LowStock, Scheduled, Ordered, Pending */
-  --semantic-warning-text: #7c2d12;
-  --semantic-warning-accent: #c2410c;
-  --semantic-warning-bg: #fff7ed;
-  --semantic-warning-border: #fdba74;
+  --semantic-warning-text: #854d0e;
+  --semantic-warning-accent: #f59e0b;
+  --semantic-warning-bg: #fefce8;
+  --semantic-warning-border: #fde047;
 
-  /* Danger: Cancelled, Unpaid, OutOfStock, Critical, Rejected, Overdue */
   --semantic-danger-text: #991b1b;
-  --semantic-danger-accent: #c62828;
+  --semantic-danger-accent: #ef4444;
   --semantic-danger-bg: #fef2f2;
   --semantic-danger-border: #fca5a5;
 
-  /* Info: InConsultation, InProgress, SampleCollected, Informational */
   --semantic-info-text: #075985;
-  --semantic-info-accent: #0277bd;
+  --semantic-info-accent: #0284c7;
   --semantic-info-bg: #f0f9ff;
   --semantic-info-border: #7dd3fc;
 
-  /* Neutral / Inactive: Disabled, Archived, Routine, Draft */
   --semantic-neutral-text: #334155;
-  --semantic-neutral-accent: #475569;
+  --semantic-neutral-accent: #64748b;
   --semantic-neutral-bg: #f1f5f9;
   --semantic-neutral-border: #cbd5e1;
 
-  /* Skeleton Loading Surfaces */
+  /* Skeleton Loading */
   --skeleton-base: #e2e8f0;
-  --skeleton-highlight: #f1f5f9;
+  --skeleton-highlight: #f8fafc;
 }
 
+/* ==========================================================================
+   DEEP DARK BLUE (MIDNIGHT SLATE) THEME OVERRIDES
+   Strictly NO brown, warm gray, or muddy tones. Rich midnight / slate blue.
+   ========================================================================== */
+
+[data-theme='dark'],
+.dark-theme,
+.dark-mode {
+  color-scheme: dark;
+
+  /* Deep Dark Blue Surfaces */
+  --surface-page: #0a0f1d;
+  --surface-card: #0f172a;
+  --surface-subtle: #17233f;
+  --surface-hover: #1e293b;
+  --surface-sidebar: #090e1a;
+  --surface-sidebar-active: rgba(56, 189, 248, 0.12);
+  --surface-modal: #0f172a;
+  --modal-scrim: rgba(2, 6, 23, 0.8);
+
+  /* Deep Dark Blue Elevations */
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.35), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 6px 16px -2px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(56, 189, 248, 0.08);
+
+  /* Blue-Tinted Slate Borders */
+  --border-subtle: #1e293b;
+  --border-default: #25334d;
+  --border-control: #334155;
+  --border-focus: #38bdf8;
+  --border-hover: #38bdf8;
+
+  /* High-Contrast Crisp Typography */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-disabled: #475569;
+  --text-inverse: #0a0f1d;
+
+  /* Vibrant Medical Sky-Blue Action */
+  --action-primary: #38bdf8;
+  --action-primary-hover: #7dd3fc;
+  --action-primary-active: #0284c7;
+  --focus-ring-color: #38bdf8;
+
+  /* Luminous Semantic Status Colors in Dark Mode */
+  --semantic-success-text: #4ade80;
+  --semantic-success-accent: #22c55e;
+  --semantic-success-bg: rgba(34, 197, 94, 0.14);
+  --semantic-success-border: rgba(34, 197, 94, 0.35);
+
+  --semantic-warning-text: #fde047;
+  --semantic-warning-accent: #f59e0b;
+  --semantic-warning-bg: rgba(245, 158, 11, 0.14);
+  --semantic-warning-border: rgba(245, 158, 11, 0.35);
+
+  --semantic-danger-text: #f87171;
+  --semantic-danger-accent: #ef4444;
+  --semantic-danger-bg: rgba(239, 68, 68, 0.14);
+  --semantic-danger-border: rgba(239, 68, 68, 0.35);
+
+  --semantic-info-text: #38bdf8;
+  --semantic-info-accent: #0ea5e9;
+  --semantic-info-bg: rgba(56, 189, 248, 0.14);
+  --semantic-info-border: rgba(56, 189, 248, 0.35);
+
+  --semantic-neutral-text: #cbd5e1;
+  --semantic-neutral-accent: #94a3b8;
+  --semantic-neutral-bg: rgba(148, 163, 184, 0.14);
+  --semantic-neutral-border: rgba(148, 163, 184, 0.28);
+
+  /* Dark Skeletons */
+  --skeleton-base: #131f37;
+  --skeleton-highlight: #1e293b;
+}
