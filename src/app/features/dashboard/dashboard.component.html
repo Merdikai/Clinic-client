@@ -46,23 +46,35 @@
       <app-skeleton variant="table" [count]="5" [columns]="4" label="Loading live clinic stream" />
     } @else {
       <section class="kpi-grid" aria-label="Operational metrics">
-        <div class="kpi-card">
-          <span class="kpi-label">Total Patients</span>
+        <div class="kpi-card kpi-link" routerLink="/patients">
+          <div class="kpi-head">
+            <span class="kpi-label">Total Patients</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">groups</mat-icon>
+          </div>
           <strong class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</strong>
           <span class="kpi-sub">Registered clinical records</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Today's Visits</span>
+        <div class="kpi-card kpi-link" routerLink="/appointments">
+          <div class="kpi-head">
+            <span class="kpi-label">Today's Visits</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">event_available</mat-icon>
+          </div>
           <strong class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</strong>
           <span class="kpi-sub">Scheduled consultations</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Daily Revenue</span>
+        <div class="kpi-card kpi-link" routerLink="/reports">
+          <div class="kpi-head">
+            <span class="kpi-label">Daily Revenue</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">payments</mat-icon>
+          </div>
           <strong class="kpi-val">{{ (summary()?.todayRevenue ?? 0) | currency:'USD' }}</strong>
           <span class="kpi-sub">Settled today</span>
         </div>
-        <div class="kpi-card" [class.accent-warning]="(summary()?.lowStockItemsCount ?? 0) > 0">
-          <span class="kpi-label">Low Stock Items</span>
+        <div class="kpi-card kpi-link" routerLink="/pharmacy/formulary" [class.accent-warning]="(summary()?.lowStockItemsCount ?? 0) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Low Stock Items</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">inventory_2</mat-icon>
+          </div>
           <strong class="kpi-val">{{ summary()?.lowStockItemsCount ?? 0 }}</strong>
           <span class="kpi-sub">Items requiring reorder</span>
         </div>
@@ -137,68 +149,138 @@
   }
 
   @if (userRole() === 'Doctor') {
-    @if (isLoading()) {
-      <app-skeleton variant="card" [count]="3" label="Loading physician metrics" />
-      <app-skeleton variant="row" [count]="4" label="Loading clinical desk shortcuts" />
+    @if (isLoading() || doctorLoading()) {
+      <app-skeleton variant="card" [count]="4" label="Loading physician metrics" />
+      <app-skeleton variant="table" [count]="5" [columns]="5" label="Loading consultations queue" />
     } @else {
       <section class="kpi-grid" aria-label="Physician summary">
-        <div class="kpi-card">
-          <span class="kpi-label">Today's Appointments</span>
-          <strong class="kpi-val">{{ summary()?.totalAppointmentsToday ?? 0 }}</strong>
-          <span class="kpi-sub">Assigned consultations</span>
+        <div class="kpi-card kpi-link" routerLink="/my-consultations">
+          <div class="kpi-head">
+            <span class="kpi-label">Today's Consultations</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">event_available</mat-icon>
+          </div>
+          <strong class="kpi-val">{{ doctorAssignedTodayCount() }}</strong>
+          <span class="kpi-sub">Assigned clinical visits</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Active Patients</span>
-          <strong class="kpi-val">{{ summary()?.totalPatients ?? 0 }}</strong>
-          <span class="kpi-sub">Under clinic care</span>
+        <div class="kpi-card" [class.accent-warning]="doctorAwaitingConsultationCount() > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Awaiting Encounter</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">pending_actions</mat-icon>
+          </div>
+          <strong class="kpi-val">{{ doctorAwaitingConsultationCount() }}</strong>
+          <span class="kpi-sub">Checked-in &amp; triaged</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Medication Formulary</span>
-          <strong class="kpi-val">Active</strong>
-          <span class="kpi-sub">Ready for e-prescribing</span>
+        <div class="kpi-card" [class.accent-warning]="(labStore.metrics()?.pendingOrders ?? 0) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">InBasket Sign-Off</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">assignment_late</mat-icon>
+          </div>
+          <strong class="kpi-val">{{ labStore.metrics()?.pendingOrders ?? 0 }}</strong>
+          <span class="kpi-sub">Lab &amp; imaging reports pending review</span>
+        </div>
+        <div class="kpi-card" [class.accent-danger]="(labStore.metrics()?.criticalValueAlerts ?? 0) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Critical Alerts</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">notification_important</mat-icon>
+          </div>
+          <strong class="kpi-val">{{ labStore.metrics()?.criticalValueAlerts ?? 0 }}</strong>
+          <span class="kpi-sub">Panic values needing immediate action</span>
         </div>
       </section>
 
+      <!-- Active Consultations Queue -->
+      <section class="dash-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Today's Assigned Consultations Queue</h2>
+            <p class="panel-subtitle">Patients queued for today. Click Start Encounter to begin clinical documentation.</p>
+          </div>
+          <div class="panel-actions">
+            <a routerLink="/my-consultations" mat-stroked-button>All Consultations</a>
+            <a routerLink="/doctor-inbasket" mat-flat-button color="primary">Open InBasket</a>
+          </div>
+        </div>
+
+        @if (doctorAppointments().length > 0) {
+          <div class="table-responsive">
+            <table class="ehr-table">
+              <thead>
+                <tr>
+                  <th scope="col">Time</th>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Reason / Chief Complaint</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Vitals Intake</th>
+                  <th scope="col" class="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (appt of doctorAppointments(); track appt.id) {
+                  <tr>
+                    <td class="font-mono">{{ appt.scheduledDateTime | date:'shortTime' }}</td>
+                    <td>
+                      <strong class="cell-primary">{{ appt.patientName }}</strong>
+                      <span class="cell-sub" *ngIf="appt.tokenNumber">Token: #{{ appt.tokenNumber }}</span>
+                    </td>
+                    <td>{{ appt.reasonForVisit || 'General Clinical Review' }}</td>
+                    <td><app-status-chip [status]="appt.status" /></td>
+                    <td>
+                      @if (appt.vitalSigns) {
+                        <span class="vitals-summary-badge">
+                          BP: {{ appt.vitalSigns.systolicBP ? (appt.vitalSigns.systolicBP + '/' + appt.vitalSigns.diastolicBP) : '--' }} | HR: {{ appt.vitalSigns.heartRateBpm || '--' }} bpm
+                        </span>
+                      } @else {
+                        <span class="text-muted">Awaiting Triage</span>
+                      }
+                    </td>
+                    <td class="col-actions">
+                      <a [routerLink]="['/my-consultations']" [queryParams]="{ appointmentId: appt.id }" mat-flat-button color="primary">
+                        Start Encounter
+                      </a>
+                      <a [routerLink]="['/patients', appt.patientId]" mat-button>Chart</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <app-empty-state
+            icon="event_available"
+            title="No consultations currently queued"
+            description="Patients checked in by reception or triage will appear here in your active queue.">
+            <a routerLink="/appointments" mat-stroked-button>View Clinic Master Schedule</a>
+          </app-empty-state>
+        }
+      </section>
+
+      <!-- InBasket & Recent Stream -->
       <div class="dash-two-col">
         <section class="dash-panel">
           <div class="panel-header">
-            <h2 class="panel-title">Clinical Workstations</h2>
+            <h2 class="panel-title">InBasket Pending Diagnostic Sign-Off</h2>
+            <a routerLink="/doctor-inbasket" mat-button>View InBasket</a>
           </div>
-          <div class="workflow-list">
-            <div class="workflow-row">
-              <div class="workflow-copy">
-                <h3 class="workflow-title">My Consultations Queue</h3>
-                <p class="workflow-desc">Review assigned visits, start encounters, and complete SOAP clinical notes.</p>
+          @if ((labStore.metrics()?.pendingOrders ?? 0) > 0) {
+            <div class="inbasket-alert-box">
+              <mat-icon class="text-warning" aria-hidden="true">warning</mat-icon>
+              <div>
+                <strong>{{ labStore.metrics()?.pendingOrders ?? 0 }} Diagnostic Result(s) Awaiting Review</strong>
+                <p class="text-secondary">Please review and sign off lab orders and radiological findings before end of shift.</p>
               </div>
-              <a mat-flat-button color="primary" routerLink="/my-consultations">Open Queue</a>
+              <a routerLink="/doctor-inbasket" mat-flat-button color="primary">Review Now</a>
             </div>
-            <div class="workflow-row">
-              <div class="workflow-copy">
-                <h3 class="workflow-title">Physician InBasket</h3>
-                <p class="workflow-desc">Sign off diagnostic laboratory reports and approve electronic refill requests.</p>
-              </div>
-              <a mat-stroked-button routerLink="/doctor-inbasket">Open InBasket</a>
-            </div>
-            <div class="workflow-row">
-              <div class="workflow-copy">
-                <h3 class="workflow-title">My Patient Panel</h3>
-                <p class="workflow-desc">Track assigned chronic care patients, active problems, and care plans.</p>
-              </div>
-              <a mat-stroked-button routerLink="/my-patients">View Panel</a>
-            </div>
-            <div class="workflow-row">
-              <div class="workflow-copy">
-                <h3 class="workflow-title">Shifts &amp; Duty Roster</h3>
-                <p class="workflow-desc">Review OPD clinic slots and physician coverage assignments.</p>
-              </div>
-              <a mat-stroked-button routerLink="/schedules">View Roster</a>
-            </div>
-          </div>
+          } @else {
+            <app-empty-state
+              icon="verified"
+              title="All diagnostic reports signed"
+              description="No pending laboratory or imaging sign-offs requiring attention." />
+          }
         </section>
 
         <section class="dash-panel">
           <div class="panel-header">
-            <h2 class="panel-title">Activity Feed</h2>
+            <h2 class="panel-title">Clinical Activity Feed</h2>
           </div>
           @if (recentEvents().length > 0) {
             <ul class="feed-list">

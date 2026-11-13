@@ -150,6 +150,18 @@ export class DashboardComponent implements OnInit {
     this.radiologyOrders().filter(o => o.status !== 'Reported' && o.status !== 'Completed' && o.status !== 'Cancelled')
   );
 
+  // Doctor Operations Signals
+  doctorAppointments = signal<Appointment[]>([]);
+  doctorLoading = signal<boolean>(false);
+
+  doctorAssignedTodayCount = computed(() => {
+    return this.doctorAppointments().length || this.summary()?.todayAppointments || 0;
+  });
+
+  doctorAwaitingConsultationCount = computed(() => {
+    return this.doctorAppointments().filter(a => a.status === 'CheckedIn' || a.status === 'TriageComplete' || a.status === 'Scheduled').length;
+  });
+
   // Accountant Operations Signals
   financeMetrics = signal<FinanceDashboardMetrics | null>(null);
   financeLoading = signal<boolean>(false);
@@ -355,7 +367,9 @@ export class DashboardComponent implements OnInit {
         break;
       case 'doctor':
         this.loadData();
+        this.loadDoctorData();
         this.labStore.loadMetrics();
+        this.labStore.loadOrders();
         break;
       case 'admin':
       default:
@@ -369,6 +383,26 @@ export class DashboardComponent implements OnInit {
         this.loadRadiologyData();
         break;
     }
+  }
+
+  loadDoctorData(): void {
+    this.doctorLoading.set(true);
+    this.appointmentService.getMyAppointments().subscribe({
+      next: (appts) => {
+        this.doctorAppointments.set(appts || []);
+        this.doctorLoading.set(false);
+      },
+      error: () => {
+        this.appointmentService.getAll(1, 20).subscribe({
+          next: (res) => {
+            const list = Array.isArray(res) ? res : (res?.items ?? []);
+            this.doctorAppointments.set(list);
+            this.doctorLoading.set(false);
+          },
+          error: () => this.doctorLoading.set(false)
+        });
+      }
+    });
   }
 
   loadNurseData(): void {
