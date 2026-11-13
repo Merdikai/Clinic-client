@@ -696,23 +696,35 @@
       <app-skeleton variant="row" [count]="4" label="Loading pending prescriptions" />
     } @else {
       <section class="kpi-grid" aria-label="Dispensary summary">
-        <div class="kpi-card" [class.accent-warning]="(pharmacyMetrics()?.pendingPrescriptionsCount ?? pharmacyPendingPrescriptions().length) > 0">
-          <span class="kpi-label">Pending Rx Orders</span>
+        <div class="kpi-card kpi-link" routerLink="/pharmacy/prescriptions" [class.accent-warning]="(pharmacyMetrics()?.pendingPrescriptionsCount ?? pharmacyPendingPrescriptions().length) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Pending Rx Orders</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">medication</mat-icon>
+          </div>
           <strong class="kpi-val">{{ pharmacyMetrics()?.pendingPrescriptionsCount ?? pharmacyPendingPrescriptions().length }}</strong>
           <span class="kpi-sub">Awaiting verification &amp; dispense</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Dispensary Sales Today</span>
+        <div class="kpi-card kpi-link" routerLink="/pharmacy/pos">
+          <div class="kpi-head">
+            <span class="kpi-label">Dispensary Sales Today</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">point_of_sale</mat-icon>
+          </div>
           <strong class="kpi-val">{{ (pharmacyMetrics()?.todayDispensaryRevenue ?? 0) | currency:'USD' }}</strong>
           <span class="kpi-sub">{{ pharmacyMetrics()?.dispensedTodayCount ?? 0 }} fulfilled today</span>
         </div>
-        <div class="kpi-card" [class.accent-danger]="(pharmacyMetrics()?.lowStockMedicinesCount ?? pharmacyLowStockMedicines().length) > 0">
-          <span class="kpi-label">Low Stock Alerts</span>
+        <div class="kpi-card kpi-link" routerLink="/pharmacy/formulary" [class.accent-danger]="(pharmacyMetrics()?.lowStockMedicinesCount ?? pharmacyLowStockMedicines().length) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Low Stock Alerts</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">warning</mat-icon>
+          </div>
           <strong class="kpi-val">{{ pharmacyMetrics()?.lowStockMedicinesCount ?? pharmacyLowStockMedicines().length }}</strong>
           <span class="kpi-sub">{{ pharmacyMetrics()?.nearExpiryMedicinesCount ?? 0 }} near expiry</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Controlled Safe</span>
+        <div class="kpi-card kpi-link" routerLink="/pharmacy/audit">
+          <div class="kpi-head">
+            <span class="kpi-label">Controlled Safe</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">shield</mat-icon>
+          </div>
           <strong class="kpi-val">{{ pharmacyMetrics()?.controlledSubstancesCount ?? 0 }}</strong>
           <span class="kpi-sub">Schedule II-V audit entries</span>
         </div>
@@ -842,23 +854,35 @@
       }
 
       <section class="kpi-grid" aria-label="Financial summary">
-        <div class="kpi-card">
-          <span class="kpi-label">Today's Revenue</span>
+        <div class="kpi-card kpi-link" routerLink="/reports">
+          <div class="kpi-head">
+            <span class="kpi-label">Today's Revenue</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">payments</mat-icon>
+          </div>
           <strong class="kpi-val">{{ (financeMetrics()?.todayRevenue ?? summary()?.todayRevenue ?? 0) | currency:'USD' }}</strong>
           <span class="kpi-sub">Total collected: {{ (financeMetrics()?.totalRevenue ?? 0) | currency:'USD' }}</span>
         </div>
-        <div class="kpi-card" [class.accent-warning]="(financeMetrics()?.pendingClaimsCount ?? 0) > 0">
-          <span class="kpi-label">Accounts Receivable (AR)</span>
+        <div class="kpi-card kpi-link" routerLink="/billing" [queryParams]="{ tab: 'invoices' }" [class.accent-warning]="(financeMetrics()?.pendingClaimsCount ?? 0) > 0">
+          <div class="kpi-head">
+            <span class="kpi-label">Accounts Receivable (AR)</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">account_balance_wallet</mat-icon>
+          </div>
           <strong class="kpi-val">{{ (financeMetrics()?.pendingReceivables ?? 0) | currency:'USD' }}</strong>
           <span class="kpi-sub">{{ financeMetrics()?.pendingClaimsCount ?? 0 }} claims pending</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Accounts Payable (AP)</span>
+        <div class="kpi-card kpi-link" routerLink="/billing" [queryParams]="{ tab: 'payables' }">
+          <div class="kpi-head">
+            <span class="kpi-label">Accounts Payable (AP)</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">receipt_long</mat-icon>
+          </div>
           <strong class="kpi-val">{{ (financeMetrics()?.pendingPayablesAmount ?? 0) | currency:'USD' }}</strong>
           <span class="kpi-sub">Open vendor bills &amp; expenses</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Net Operating Margin</span>
+        <div class="kpi-card kpi-link" routerLink="/reports">
+          <div class="kpi-head">
+            <span class="kpi-label">Net Operating Margin</span>
+            <mat-icon class="kpi-icon" aria-hidden="true">trending_up</mat-icon>
+          </div>
           <strong class="kpi-val">{{ (financeMetrics()?.netProfit ?? 0) | currency:'USD' }}</strong>
           <span class="kpi-sub">Petty cash float: {{ (financeMetrics()?.pettyCashCurrentBalance ?? 0) | currency:'USD' }}</span>
         </div>
