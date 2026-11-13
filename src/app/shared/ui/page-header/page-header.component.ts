@@ -57,18 +57,30 @@ import { MatIconModule } from '@angular/material/icon';
 
     .back-link {
       align-self: flex-start;
-      padding-inline: 0;
+      padding-inline: var(--space-4);
       min-block-size: 32px;
       color: var(--text-secondary);
       font-size: var(--text-14);
       font-weight: 600;
       margin-bottom: var(--space-4);
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
 
       mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
         margin-right: var(--space-4);
+        transition: transform 0.15s ease;
+      }
+
+      &:hover {
+        color: var(--action-primary);
+        background-color: var(--surface-hover);
+
+        mat-icon {
+          transform: translateX(-3px);
+        }
       }
     }
 

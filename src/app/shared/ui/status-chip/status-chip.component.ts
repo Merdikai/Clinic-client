@@ -50,24 +50,30 @@ const INFO_STATUSES = new Set([
     .status-chip {
       display: inline-flex;
       align-items: center;
-      gap: var(--space-4);
-      min-block-size: 28px;
-      padding: var(--space-4) var(--space-8);
-      border-radius: var(--radius-sm);
+      gap: 6px;
+      min-block-size: 24px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
       border: 1px solid var(--semantic-neutral-border);
       background-color: var(--semantic-neutral-bg);
       color: var(--semantic-neutral-text);
       font-size: var(--text-12);
       font-weight: 600;
-      line-height: 1.25;
-      letter-spacing: 0.01em;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      transition: all 0.15s ease;
+
+      &:hover {
+        transform: translateY(-0.5px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      }
     }
 
     .chip-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      line-height: 20px;
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+      line-height: 15px;
       flex-shrink: 0;
     }
 

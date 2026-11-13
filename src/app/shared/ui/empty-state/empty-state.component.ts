@@ -47,25 +47,36 @@ import { MatIconModule } from '@angular/material/icon';
       background-color: var(--surface-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        border-color: var(--border-default);
+      }
     }
 
     .empty-icon-box {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-sm);
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
       background-color: var(--surface-subtle);
       border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      margin-bottom: var(--space-4);
+      color: var(--action-primary);
+      margin-bottom: var(--space-6);
+      transition: transform 0.2s ease;
 
       mat-icon {
         font-size: 24px;
         width: 24px;
         height: 24px;
       }
+    }
+
+    .ehr-empty-state:hover .empty-icon-box {
+      transform: scale(1.05);
     }
 
     .empty-title {
